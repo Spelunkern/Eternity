@@ -40,3 +40,12 @@ closes opcode 2 and consumes opcode 3. Failed login closes on attempt 10.
 `AES-key || SHA256(IV)[0:16]`. In `ps_session.exe`, `CUserMgr::AddUser`
 (`00409700`) replaces an account's previous owner; native removal also checks
 the session ID so the old socket cannot erase its replacement.
+
+World handoff: `ps_game.exe` `CUser::PacketProcessing` (`00466da0`) accepts
+`TPC_GAME_CONNECT` (`A301`, 22 bytes: user ID and 16-byte session token) before
+encryption. `CWorld::LoginUser` (`0040c510`) initializes the derived AES state and
+sends `TP_GAME_CONNECT` (`A301`, 20 bytes: result, encryption mode and 16-byte game
+key). `CUserCrypto::EnterCharSelect` / `LeaveCharSelect` (`00458060` / `00458070`)
+switch outgoing traffic between AES and a separate world XOR transform; incoming
+traffic retains AES. The XOR table initialization still needs recovery.
+`ps_session.exe` `AddUserSessionLost` (`0040a2f0`) gives a handoff 30 seconds.
