@@ -1,0 +1,73 @@
+{
+  "ghidra_version": "12.1.4",
+  "database": {
+    "source": "EP4.5 PSM_Data backups",
+    "restored_databases": 10,
+    "tables": 127,
+    "modules": 397,
+    "integrity": "DBCC CHECKDB passed for all ten restored databases",
+    "unavailable_module_definitions": [
+      "PS_Billing.dbo.usp_Insert_Product_User_E",
+      "PS_Billing.dbo.usp_Insert_Product_User_E_old1",
+      "PS_Statics.dbo.p_age_ins"
+    ]
+  },
+  "services": [
+    {
+      "executable": "ps_dbAgent.exe",
+      "ghidra_functions": 3498,
+      "decompiled_selected_functions": 424
+    },
+    {
+      "executable": "ps_game.exe",
+      "ghidra_functions": 9045,
+      "decompiled_selected_functions": 1791
+    },
+    {
+      "executable": "ps_gameLog.exe",
+      "ghidra_functions": 2215,
+      "decompiled_selected_functions": 228
+    },
+    {
+      "executable": "ps_login.exe",
+      "ghidra_functions": 2421,
+      "decompiled_selected_functions": 285
+    },
+    {
+      "executable": "ps_session.exe",
+      "ghidra_functions": 2578,
+      "decompiled_selected_functions": 344
+    },
+    {
+      "executable": "ps_userLog.exe",
+      "ghidra_functions": 2199,
+      "decompiled_selected_functions": 210
+    }
+  ],
+  "unmatched_static_sql_call_candidates": [
+    {
+      "executable": "ps_dbAgent.exe",
+      "procedures": [
+        "usp_Save_User_GetPoint",
+        "usp_Save_User_Status_E"
+      ]
+    },
+    {
+      "executable": "ps_login.exe",
+      "procedures": [
+        "usp_try_gamelogin_korea"
+      ]
+    },
+    {
+      "executable": "ps_userLog.exe",
+      "procedures": [
+        "usp_Update_GameQueue_Send_E",
+        "usp_Update_GameQueue_Del_E",
+        "usp_Update_GameQueue_Ans_E",
+        "usp_Update_GameQueue_Hold_E",
+        "usp_Insert_GameQueue_E"
+      ]
+    }
+  ],
+  "validation": "Native foundation and isolated SQL tests passed. No original-client gameplay validation yet."
+}
