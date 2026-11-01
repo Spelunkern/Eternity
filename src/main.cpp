@@ -1,5 +1,11 @@
 #include "eternity/storage/sql_server.hpp"
 #include "eternity/game/definitions.hpp"
+#include "eternity/auth/sql_authenticator.hpp"
+#include "eternity/net/login_server.hpp"
+#include <asio.hpp>
+#include <charconv>
+#include <csignal>
+#include <cstdlib>
 #include <iostream>
 #include <string_view>
 
@@ -9,13 +15,37 @@ int main(int argc, char** argv) {
         return 0;
     }
     if (argc != 2 || (std::string_view(argv[1]) != "--check-database" &&
-                      std::string_view(argv[1]) != "--check-original-loaders")) {
-        std::cerr << "Usage: eternity-server --version | --check-database | --check-original-loaders\n"
-                     "Gameplay and client endpoints are not implemented yet.\n";
+                      std::string_view(argv[1]) != "--check-original-loaders" &&
+                      std::string_view(argv[1]) != "--serve-login")) {
+        std::cerr << "Usage: eternity-server --version | --check-database | --check-original-loaders | --serve-login\n"
+                     "World endpoints and gameplay are not implemented yet.\n";
         return 2;
     }
     try {
-        eternity::storage::SqlServer database(eternity::storage::SqlServerConfig::from_environment());
+        const auto database_config = eternity::storage::SqlServerConfig::from_environment();
+        eternity::storage::SqlServer database(database_config);
+        if (std::string_view(argv[1]) == "--serve-login") {
+            (void)database.query("SELECT 1;");
+            eternity::net::LoginServerOptions options;
+            if (const char* address=std::getenv("ETERNITY_LOGIN_BIND")) options.address=address;
+            if (const char* raw=std::getenv("ETERNITY_LOGIN_PORT")) {
+                const std::string_view value(raw);
+                unsigned int port=0;
+                const auto parsed=std::from_chars(value.data(),value.data()+value.size(),port);
+                if (parsed.ec!=std::errc{} || parsed.ptr!=value.data()+value.size() || port>65535)
+                    throw std::invalid_argument("ETERNITY_LOGIN_PORT must be in 0..65535");
+                options.port=static_cast<std::uint16_t>(port);
+            }
+            asio::io_context io;
+            eternity::net::LoginServer server(io,options,eternity::auth::SqlAuthenticator(database_config));
+            asio::signal_set signals(io,SIGINT,SIGTERM);
+            signals.async_wait([&server](const asio::error_code& error,int) { if(!error) server.stop(); });
+            server.start();
+            std::cout<<"Login listening on "<<options.address<<":"<<server.port()
+                     <<" (legacy SQL path; worlds offline)."<<std::endl;
+            io.run();
+            return 0;
+        }
         if (std::string_view(argv[1]) == "--check-original-loaders") {
             const auto definitions = eternity::game::Definitions::load(database);
             for (const auto& [name, catalog] : definitions.catalogs)

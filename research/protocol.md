@@ -17,8 +17,10 @@ Source: `originals/ps_login/ps_login.exe`, matching PDB, Ghidra 12.1.4.
   little-endian secret. HMAC-SHA256 uses that secret as key and the public modulus
   as message; its halves become the AES-128 key and counter IV.
 
-Native framing and cryptographic primitives are implemented and tested. Client
-endpoints and comparison with a running original remain pending.
+Native framing, cryptography and asynchronous TCP login are implemented and
+tested with a generated protocol peer and SQL Server. World selection returns
+the original offline result until the world endpoint is implemented. Actual
+client work is deferred.
 
 `CUser::OnDispatchDB` (`00404a10`) hashes the submitted password and calls
 `GetUserMD5` (`00406e50`), which expects `usp_try_gamelogin_korea` and three
@@ -29,3 +31,12 @@ semantics are not yet established. In `ps_game.exe`, `CWorld::LoginUser`
 it against 3 (`0044aa23`, `0044ad01`). This does not establish the SQL time unit.
 The native account repository currently tests
 the available plaintext `usp_Try_GameLogin3_R` path, not this missing MD5 path.
+
+`CUser::OnRecv` terminates username and password at payload offsets `0Eh` and
+`2Eh`; their data starts at 2 and `22h`. `TP_LOGIN` is 24 bytes; realm entries
+are 38 bytes and sent in batches of 48. `SAgent::PacketSystem` (`004127b0`)
+closes opcode 2 and consumes opcode 3. Failed login closes on attempt 10.
+`CUserCrypto::GetKeyGen` (`00404d50`) derives the 32-byte world key as
+`AES-key || SHA256(IV)[0:16]`. In `ps_session.exe`, `CUserMgr::AddUser`
+(`00409700`) replaces an account's previous owner; native removal also checks
+the session ID so the old socket cannot erase its replacement.

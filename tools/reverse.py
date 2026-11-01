@@ -15,6 +15,7 @@ def main():
     parser.add_argument("--ghidra", type=Path, default=os.environ.get("GHIDRA_HOME"))
     parser.add_argument("--filter", default="", help="Optional Java regex selecting functions to decompile")
     parser.add_argument("--process", action="store_true", help="Re-export an already imported program")
+    parser.add_argument("--output", type=Path, default=ROOT / "work" / "reverse")
     args = parser.parse_args()
     if not args.ghidra:
         parser.error("Set GHIDRA_HOME or pass --ghidra")
@@ -23,7 +24,7 @@ def main():
         parser.error("Invalid Ghidra installation")
     project = ROOT / "work" / "ghidra"
     project.mkdir(parents=True, exist_ok=True)
-    output = ROOT / "work" / "reverse"
+    output = args.output.resolve()
     names = SERVICES if "all" in args.services else args.services
     for name in names:
         original = ROOT / "originals" / name

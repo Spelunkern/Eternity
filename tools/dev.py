@@ -28,7 +28,7 @@ def main():
     elif args.action == "test":
         command += ["ctest", "--test-dir", "build", "--output-on-failure"]
     elif args.action == "integration":
-        command += ["build/storage-integration"]
+        command += ["sh", "-c", "build/storage-integration && build/login-sql-integration"]
     else:
         command += ["build/eternity-server", *args.arguments]
     subprocess.run(command, cwd=ROOT, check=True)

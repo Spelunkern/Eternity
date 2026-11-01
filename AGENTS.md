@@ -1,6 +1,7 @@
 # Eternity
 
 - Completion means an original EP4 client can connect and play with original server behavior.
+- Client work is deferred at the user's request. Continue server reconstruction and protocol tests independently.
 - Reconstruct native Linux code in C++20. Use Ghidra for reverse engineering.
 - Keep SQL Server and the recovered stored-procedure contracts for now. SQLite migration is deferred.
 - Exclude `ps_gamewar`. Preserve regular gameplay unless evidence shows it belongs exclusively to that service.
