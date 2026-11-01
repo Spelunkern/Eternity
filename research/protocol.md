@@ -24,5 +24,8 @@ endpoints and comparison with a running original remain pending.
 `GetUserMD5` (`00406e50`), which expects `usp_try_gamelogin_korea` and three
 result columns. The backups lack that procedure. Column 3 becomes `nJoinDiff`
 in `TP_LUSER_CONNECT` (offset 99), sent by `ChkPasswdMD5` (`00404700`). Its SQL
-semantics are not yet established. The native account repository currently tests
+semantics are not yet established. In `ps_game.exe`, `CWorld::LoginUser`
+(`0040c510`) stores it at `CUser + 5814h`; `EnterWorld` and `LeaveWorld` compare
+it against 3 (`0044aa23`, `0044ad01`). This does not establish the SQL time unit.
+The native account repository currently tests
 the available plaintext `usp_Try_GameLogin3_R` path, not this missing MD5 path.
