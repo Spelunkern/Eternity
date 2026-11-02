@@ -2643,3 +2643,24 @@ zone removal/recycling with restored definitions and parsed configuration,
 terminal companion replacement, portal state and scheduled principal respawn.
 Death-triggered accounting, full removal, obelisk ticking and the production
 world owner remain necessary before these controllers run as gameplay.
+
+
+Removal dependency audit (`ps_game.exe`, Ghidra decompilation checked against
+instructions): `CZone::MobRemoveByID` (`0041e910`) first finds the ID; a miss
+returns false without other work. It removes the global index/list through
+`RemoveMob` (`00416790`), then the cell list (`00424ac0`). It clears the raw zone
+pointer before sending 0602 to the old cell, retaining old cell coordinates
+until after delivery. Consequently composing the existing silent `leave` with a
+later packet send would expose different state during delivery.
+
+For a bound respawn, forced removal sets next=GetTickCount()+live definition
+delay only when current equals configured count, then decrements current with
+DWORD wrapping. Dispatch precedence is obelisk flag, obelisk member source,
+linked principal flag, linked member source. Principal dispatch calls
+BothMobDestroy after that decrement; member removal clears the first matching
+prefix slot (`0041d700` / `0041d730`). Recycling (`0040a630`) is last. Natural
+corpse cleanup (`UpdateMobDeath`, `00421a80`) has a different timer path, including
+strict death-time comparison and long-delay jitter; it cannot reuse forced
+removal accounting unchanged. These findings define the next native removal
+implementation and differential fixture; they do not constitute implemented
+world death handling.
