@@ -342,9 +342,24 @@ passive initialization suppresses them. A combined test retains the resulting
 partially filled MP after a later MP-max buff. Destruction follows
 `ResetCharacter` (`0044a050`): free active instances without reversal packets or
 replica deletion, including failed preparation. Required `ActorScene` services
-still own spatial queries, combat and complex user
-shape broadcasts. The live world does not implement
+still own spatial queries, combat and party/guild lookups. The live world does not implement
 those services yet; TCP character selection still does not enter the world.
+
+`SendUserShape` (`ps_game.exe`, `00482ad0`) now serializes native `0303` grid-view
+packets. Normal appearance includes death/motion, country/family, hair/face/size,
+job/sex, party role, grow mode, kills, eight item type/id/enchantment triples and
+the 20-byte character name plus NUL. Enchantment requires an exactly 20-byte craft
+string with decimal digits at 18..19; it is not clamped to the combat enchant range.
+Cloak presence adds its six gem bytes before the NUL-terminated guild name,
+giving `67 + guild_length` or `73 + guild_length` bytes. Social lookups still run
+outside a zone, but no packet is sent. Shape 100 with a copied-user snapshot
+uses its cached appearance/equipment/name/extra fields and length, forces the
+character name's final byte to NUL and skips current social lookups. A missing
+snapshot falls back to normal appearance. The actor owns serialization and
+receives current party/guild state through a required scene port. Loading copies
+the persisted identity; the owner supplies account country. Snapshot capture and
+live social/zone ownership remain pending. The oracle checks 256 original calls,
+including arbitrary legacy name bytes, craft edge cases, cloak and copied fields.
 
 Attack-only rebuilding now follows `InitEquipment(bool)` (`00454ba0`),
 `ItemEquipmentAttackAdd` (`00456450`) and `GemEquipmentAttackAdd` (`004565b0`).

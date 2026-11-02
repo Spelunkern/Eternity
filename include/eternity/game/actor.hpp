@@ -1,6 +1,7 @@
 #pragma once
 #include "eternity/game/effect_cycle.hpp"
 #include "eternity/game/resources.hpp"
+#include "eternity/game/user_shape.hpp"
 
 namespace eternity::game {
 // Required scene/transport services. Implementations own spatial queries, combat
@@ -20,17 +21,20 @@ public:
     virtual void stop_target_mob(std::uint32_t id) = 0;
     virtual void taunt(std::uint16_t aggro,float range) = 0;
     virtual void detect_hidden(const SkillDefinition&) = 0;
-    virtual void send_user_shape() = 0;
+    virtual UserShapeSocial user_shape_social() = 0;
     virtual void finish_periodic_damage(EffectStatus&,const SkillDefinition&,const EffectSource&,std::uint32_t elapsed) = 0;
 };
 struct ActorAppearance {
     bool visible=true;
     std::int32_t vehicle_mode=0,vehicle_shape=0,vehicle_addition=0;
     std::uint32_t vehicle_partner=0;
+    UserShapeIdentity identity;
+    std::optional<CopiedUserShape> copied_user;
 };
 struct ActorAttackState {
     std::int32_t mode=0,recovery=1;
     std::uint32_t previous_tick=0,next_tick=0;
+    std::uint8_t motion=0;
 };
 struct ActorEquipmentRules {
     // Immutable definition/enchant sources must outlive the actor; its inventory is owned separately.

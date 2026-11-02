@@ -26,7 +26,8 @@ independently. Resource recovery and its ordered view/self/group notifications
 are reconstructed; live world operations and gameplay remain pending.
 Actor preparation connects these stages, including effect-driven resource clamps
 and cleanup. Equipment/transformation attack rebuilding and elemental-effect
-replacement run natively in the actor.
+replacement run natively in the actor. User appearance packets include visible
+equipment, enchantments, cloak and social fields, with a copied-user snapshot path.
 Spatial/combat scene services and TCP world entry remain pending.
 The active MD5 login
 path needs a missing procedure; see [research](research/protocol.md).

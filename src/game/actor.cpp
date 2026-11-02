@@ -55,7 +55,15 @@ void Actor::rebuild_attack(EffectStatus& status,bool equipment) {
     else rebuild_transformed_attack(status.skills.equipment,equipment_.mobs.find(status.shape_template));
     recalculate_attack(status);
 }
-void Actor::user_shape_changed(EffectStatus&) {scene_.send_user_shape();}
+void Actor::user_shape_changed(EffectStatus&) {
+    // SendUserShape 00482ad0: copied profiles bypass current party/guild lookups.
+    if(status_.shape==100 && appearance_.copied_user) {
+        if(status_.in_zone) scene_.send_cell_view(character_copied_user_shape(id_,*appearance_.copied_user));
+    } else {
+        auto packet=character_user_shape(id_,appearance_.identity,attack_.mode==1,attack_.motion,scene_.user_shape_social(),inventory_);
+        if(status_.in_zone) scene_.send_cell_view(packet);
+    }
+}
 void Actor::replace_attack_elements(EffectStatus& status,std::uint8_t attribute) {
     EffectEquipment equipped;
     for(const auto& item:inventory_) if(item.bag==0) {

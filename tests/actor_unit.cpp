@@ -24,7 +24,7 @@ struct Scene final:ActorScene {
     void stop_target_mob(std::uint32_t) override {unexpected();}
     void taunt(std::uint16_t,float) override {unexpected();}
     void detect_hidden(const SkillDefinition&) override {unexpected();}
-    void send_user_shape() override {unexpected();}
+    UserShapeSocial user_shape_social() override {unexpected();return {};}
     void finish_periodic_damage(EffectStatus&,const SkillDefinition&,const EffectSource&,std::uint32_t) override {unexpected();}
 };
 int main(int argc,char** argv) {

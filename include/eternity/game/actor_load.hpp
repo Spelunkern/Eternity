@@ -17,6 +17,7 @@ struct ActorLoadOptions {
     std::uint32_t tick_ms=0,disconnected_seconds=0;
     std::int32_t billing_type=0;
     const BlessingDefinition* blessing=nullptr;
+    std::uint8_t country=2;
 };
 struct LoadedActor {
     std::unique_ptr<Actor> actor;
