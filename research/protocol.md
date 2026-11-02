@@ -1633,5 +1633,52 @@ a cloned fixture table, preserving procedure transaction logic. It verifies
 late-phase rollback/retry, product logs, receipt defaults, subsequent inventory
 updates, commit acknowledgments, owner isolation and zero-source deletion
 rollback. Original zero/quote MakeType SQL errors remain failures with bound
-native parameters. New purchases (`0e02`/`SaveBuyPointItem`), gifts, the complete
-transaction/retry/file owner, scheduling and live TCP delivery remain pending.
+native parameters. Gifts, the complete transaction/retry/file owner, scheduling and live TCP
+delivery remain pending.
+
+
+`PurchaseReplica` reconstructs `ps_dbAgent.exe` point purchases, `0e02` in
+`CUser::PacketUserPoint` (`00406cd9..00407075`). The envelope is `37+46*N`:
+21-byte product code, DWORD amount/date, make byte and BYTE item count. The first
+of ten history slots whose state is not 1 is reserved before item allocation.
+Each item allocates a normal inventory object (state 0) and a frozen SQL copy
+whose state packs bag/slot as two WORDs. Both use `strncpy(...,21)`, preserving
+21 non-NUL bytes rather than the ordinary item's forced 20-byte termination.
+Successful parsing enqueues the copies and requests DB job 18. Occupied targets,
+allocation failures or full history preserve earlier inventory writes and the
+reserved flag; temporary SQL copies are stranded. Failure returns false and
+requests job 9 for an active game user or ExitUser otherwise. Native envelopes
+reject invalid ownership, sizes and indices before any mutation.
+
+`SendCharacterPointLog` (`0040ab50`) emits `0e01` even with empty history:
+account, unchanged cached cash balance, count and 29-byte code/date/amount rows.
+History loading (`0042280e..00422908`) restores rows then clears ten state flags.
+Complete character SaveSuccess leaves purchase history and queued copies alone.
+
+`execute_purchase_save` reconstructs complete `DBCharacter::SaveBuyPointItem`
+(`0041ed10`). Each queued purchase acquires an item connection and begins a
+transaction, writes frozen copies in order without binding procedure returns or
+retrying inserts, then acquires a second connection for the point-charge/log
+procedure. That procedure commits independently before the item commit. Item
+begin/commit/rollback API errors log; a commit error still acknowledges and frees
+the queued purchase, as in the original. FreeDB calls End, which attempts rollback
+of an unfinished item transaction. Normal failures roll back items, free queued
+copies and leave the history flag at 1; iteration continues and the final return
+is false. HYT00 in either connection retains that entry, advances to later ones,
+and does not itself make the legacy return false. Missing first connection stops
+iteration with false. Missing second connection follows the ordinary error path.
+Successful SQL does not clear the original connection's previous SQLSTATE, so
+stale HYT00 classification also remains observable. Ports retain that state;
+`PurchaseStore` supplies two dedicated SQL connections outside character saving.
+
+A 1,536-state original-code fixture executes complete handlers, original C++
+lists/pools, SaveBuyPointItem, SaveSuccess and the history sender, comparing 192
+saves, 809 SQL attempts and 4,443 ordered DB/log events across twenty fault modes.
+It covers partial allocations, duplicate targets, full history, frozen metadata,
+stranded copies, SQL return/error distinctions, timeouts and stale SQLSTATE.
+Disposable SQL preserves original purchase/account procedure logic while
+redirecting the account procedure dependency into the scratch catalog. It proves
+independent commits, later character rollback/retry, insufficient-balance rollback,
+late item errors, mixed-queue continuation, signed DWORD costs and history reload.
+The complete user/DB-job owner, gifts, retry/file saving, scheduling and TCP
+purchase gameplay remain pending.

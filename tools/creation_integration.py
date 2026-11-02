@@ -46,7 +46,8 @@ def run(command, build_directory="build"):
                       "usp_Save_Char_FinishedQuest_E", "usp_Save_Char_QuickSlot_Del_E", "usp_Save_Char_QuickSlot_Add_E",
                       "usp_Create_Char_SavePoint", "usp_Save_Char_SavePoint", "usp_Save_Char_ConcernMarket_Add_E",
                       "usp_Save_Char_ConcernMarket_Del_E", "usp_Save_Char_Maxgrow_E",
-                      "usp_Read_Char_Product_Item_E", "usp_Save_Char_Product_Item_E", "usp_Save_User_StoredPointItems")
+                      "usp_Read_Char_Product_Item_E", "usp_Save_Char_Product_Item_E", "usp_Save_User_StoredPointItems",
+                      "usp_Save_User_BuyPointItems_NCash")
         names = ",".join(literal(procedure) for procedure in procedures)
         modules = sql("""SELECT p.name,m.definition FROM sys.sql_modules m
             JOIN sys.procedures p ON p.object_id=m.object_id
@@ -68,7 +69,18 @@ def run(command, build_directory="build"):
                 # Only this disposable fixture redirects the recovered linked-server table.
                 # Keep BEGIN DISTRIBUTED TRANSACTION and all original save branches intact.
                 definition = definition.replace(dependency, "dbo.Users_Product")
+            if module["name"].lower() == "usp_save_user_buypointitems_ncash":
+                dependency = "PS_UserData.dbo.usp_Update_UserPoint"
+                if dependency not in definition:
+                    raise ValueError("Original purchase point procedure dependency changed")
+                definition = definition.replace(dependency, "dbo.usp_Update_UserPoint")
             sql(f"EXEC({literal(definition)});", name)
+        point_update = sql("SELECT m.definition FROM sys.sql_modules m JOIN sys.procedures p "
+                           "ON p.object_id=m.object_id WHERE p.name='usp_Update_UserPoint' FOR JSON PATH;",
+                           "PS_UserData", json_output=True)
+        if len(point_update) != 1:
+            raise ValueError("Original account point update procedure is missing")
+        sql(f"EXEC({literal(point_update[0]['definition'])});", name)
         # A failure on the second starter item proves the outer character transaction rolls back.
         sql("ALTER TABLE dbo.CharItems ADD CONSTRAINT EternityRejectFixtureItem CHECK(ItemID<>2147483000); "
             "ALTER TABLE dbo.CharApplySkills ADD CONSTRAINT EternityRejectFixtureEffect CHECK(SkillID<>32760); "
@@ -93,6 +105,7 @@ def run(command, build_directory="build"):
         subprocess.run(command + [f"{build_directory}/interface-sql-integration", name], check=True)
         subprocess.run(command + [f"{build_directory}/account-state-sql-integration", name], check=True)
         subprocess.run(command + [f"{build_directory}/point-items-sql-integration", name], check=True)
+        subprocess.run(command + [f"{build_directory}/purchases-sql-integration", name], check=True)
     finally:
         # Only the fresh, randomly named fixture catalog is removed.
         sql(f"ALTER DATABASE {catalog} SET SINGLE_USER WITH ROLLBACK IMMEDIATE; DROP DATABASE {catalog};")

@@ -10,6 +10,7 @@ InventoryReplicaResult CharacterReplica::apply(std::span<const std::uint8_t> pac
     const auto dword=[&](std::size_t at){return static_cast<std::uint32_t>(word(at))|(static_cast<std::uint32_t>(word(at+2))<<16);};
     if(dword(2)!=core_.user_id) return InventoryReplicaResult::rejected;
     const auto op=word(0);
+    if(op==0xe02) return purchases_.apply(packet);
     if(op==0x710 || op==0xe05) return points_.apply(packet);
     if(op==0x61a) return market_.apply(packet);
     if(op==0x609 || (op>=0xd00 && op<=0xdff)) return interface_.apply(packet);

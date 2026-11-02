@@ -47,6 +47,7 @@ public:
     void inventory_save_success() noexcept;
 private:
     friend class PointItemReplica;
+    friend class PurchaseReplica;
     using Item=std::unique_ptr<CachedInventoryItem>;
     void journal(const Item&,bool bank);
     std::uint32_t account_id_,money_;InventoryReplicaPool& pool_;
