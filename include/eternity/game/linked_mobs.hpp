@@ -20,6 +20,13 @@ struct LinkedMobGroup {
     std::int32_t spawn_count=0;LinkedMobSpawn leader;
     std::array<LinkedMobSpawn,32> spawns{};std::int32_t current_index=0;
 };
+class LinkedMobWorld {
+public:
+    virtual ~LinkedMobWorld()=default;
+    virtual void remove_by_id(std::uint32_t)=0;
+    // Write the shared portal country, then the current zone's instance table.
+    virtual void set_portal_country(const MapPortal&,std::int32_t)=0;
+};
 // Per-zone stMapBoth copies. Configuration/SQL binding is supplied by the map
 // owner; this does not substitute a loader or an AI/tick provider.
 class LinkedMobPopulation {
@@ -30,6 +37,12 @@ public:
     std::span<const LinkedMobGroup> groups() const noexcept {return groups_;}
     // MapInitBothMob 0041b470, called after regular population initialization.
     bool initialize(const MapDefinition&,ZoneMobs&,MobPool&,MobInitPorts&,const std::function<std::uint32_t()>& unix_time);
+    // BothMobDestroy 0041bad0 / BothMobRespawn 0041be50 / UpdateBothMobRespawn 0041b870.
+    // Death accounting is owned by the caller. Required removal/portal owners
+    // may inspect records but must not resize group storage.
+    void destroyed(std::size_t,const MapDefinition&,ZoneMobs&,MobPool&,MobInitPorts&,LinkedMobWorld&);
+    void respawn(std::size_t,const MapDefinition&,ZoneMobs&,MobPool&,MobInitPorts&,LinkedMobWorld&);
+    void update(const MapDefinition&,ZoneMobs&,MobPool&,MobInitPorts&,std::uint32_t now,LinkedMobWorld&);
 private:
     std::vector<LinkedMobGroup> groups_;
 };

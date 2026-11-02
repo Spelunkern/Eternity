@@ -68,6 +68,27 @@ void verify_mob_population(const eternity::game::MobRuntimeTemplates& definition
     runtime.update_mob_population(pool,ports,181000,obelisks,linked_update);
     require(zone.size()==2 && respawn.current==2 && respawn.next==361000 && serial==109 && services.views==9,"SQL periodic respawn did not replenish one record at its deadline");
     runtime.release_mob_population(pool);require(pool.available()==3 && services.releases==9,"SQL periodic mob release changed");
+    struct World final:LinkedMobWorld {
+        ZoneMobs& zone;MobPool& pool;RuntimeZone& runtime;std::span<ConfiguredMap> maps;
+        World(ZoneMobs& z,MobPool& p,RuntimeZone& r,std::span<ConfiguredMap> m):zone(z),pool(p),runtime(r),maps(m) {}
+        void remove_by_id(std::uint32_t id) override {if(auto* mob=zone.find(id)) {require(zone.leave(*mob),"Cannot detach linked SQL companion");pool.release(*mob);}}
+        void set_portal_country(const MapPortal& target,std::int32_t country) override {for(auto& map:maps) for(auto& portal:map.definition.portals) if(&portal==&target) {portal.country=country;runtime.update_instance_portal_country(portal.id,country);return;}throw std::runtime_error("Unknown linked SQL portal owner");}
+    } world(zone,pool,runtime,linked_maps);
+    runtime_map.settings.create_type=3;runtime.linked_mobs->respawn(0,map,zone,pool,ports,world);
+    require(zone.size()==3 && serial==112 && linked_maps[0].definition.portals[0].country==3 && runtime.instance_portal_country(1010)==3,"SQL linked respawn did not set shared/instance portal state");
+    auto* dead=groups[0].leader.members[0];require(dead && dead->id==110 && zone.leave(*dead),"SQL linked leader did not bind/release");pool.release(*dead);
+    // The death owner supplies this accounting before invoking BothMobDestroy.
+    groups[0].leader.respawn.current=0;groups[0].leader.respawn.next=5000;
+    runtime.linked_mobs->destroyed(0,map,zone,pool,ports,world);
+    require(zone.size()==2 && serial==114 && groups[0].current_index==0 && groups[0].leader.members[0]==nullptr && linked_maps[0].definition.portals[0].country==0 && runtime.instance_portal_country(1010)==0,"SQL linked terminal phase/removal/reward/portal state changed");
+    const auto actual_linked=[&](std::uint32_t tick){runtime.linked_mobs->update(map,zone,pool,ports,tick,world);};
+    const auto unexpected_obelisk=[](std::uint32_t){throw std::runtime_error("Instance zone updated static obelisks");};
+    runtime.update_mob_population(pool,ports,4999,unexpected_obelisk,actual_linked);require(serial==114 && zone.size()==2,"SQL linked updater ignored the principal deadline");
+    runtime.update_mob_population(pool,ports,5000,unexpected_obelisk,actual_linked);
+    require(zone.size()==3 && serial==117 && groups[0].leader.members[0]==zone.find(115) && groups[0].spawns[0].members[0]==zone.find(116) && groups[0].spawns[0].members[1]==zone.find(117) && runtime.instance_portal_country(1010)==3,"SQL linked updater did not remove rewards and recreate the group");
+    for(auto* mob:zone.all()) require(mob->hp==2765 && mob->respawn->both_source!=nullptr,"SQL linked lifecycle lost restored resources or bindings");
+    runtime.release_mob_population(pool);require(pool.available()==3 && services.releases==17,"SQL linked lifecycle did not recycle its allocations");
+
 
 
 }

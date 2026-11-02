@@ -14,9 +14,8 @@ runtime assets stay local.
 
 Implemented and independently tested: SQL contracts, encrypted login/game TCP
 handshakes, account sessions, character lists/creation, actor preparation and
-persistence, map/zone/entity ownership, regular mob respawn, linked mob initialization and
-configuration, guild
-persistence and several inventory/combat primitives. See the
+persistence, map/zone/entity ownership, regular mob respawn, linked mob lifecycle
+and configuration, guild persistence and several inventory/combat primitives. See the
 [reconstruction notes](research/protocol.md) for evidence and remaining work.
 
 `--serve` starts login/game listeners with shared sessions and the persisted

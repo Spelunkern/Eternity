@@ -2574,8 +2574,8 @@ SQL integration loads the actual 68 configured maps and recovered mob catalog,
 resolves the distribution, and drives a parsed immediate/deferred configuration
 through allocation, entry and recycling. `--check-original-loaders` also loads
 this configuration and reports its group count; it does not start object runtime.
-Group transitions, death/respawn ticks, obelisks, live AI and complete world
-integration remain pending.
+Linked transitions and replenishment are covered below. Death accounting,
+obelisks, live AI and complete world integration remain pending.
 
 
 Mob runtime definitions now include the source respawn delay from
@@ -2609,5 +2609,37 @@ packet order, missing definitions, full/negative counts, collision/NaN/boundary
 failure and ID/timer wrap. Entry observers verify mutations occur before packet
 delivery. SQL integration replenishes a record using the restored 180000-ms
 interval, checks pre-deadline rejection and due-time admission, callback order,
-reused allocation and release. Death-triggered accounting, linked transitions,
-obelisk ticking, world scheduling and gameplay dispatch remain pending.
+reused allocation and release. Death-triggered accounting, obelisk ticking, world scheduling and gameplay
+dispatch remain pending.
+
+
+Linked population transitions follow `CZone::BothMobDestroy` (`ps_game.exe`,
+`0041bad0`), `BothMobRespawn` (`0041be50`) and `UpdateBothMobRespawn` (`0041b870`).
+Destroy clears the principal slot, removes companion prefixes in order and
+advances the phase. Completing the final phase resets it to zero, writes portal
+country 0 and spawns companions using candidate slot change_count. Respawn at
+phase zero writes country 3 and removes companions before checking the leader
+candidate. It sets current=1/deadline=0 before allocation, preserving these
+values on allocation failure. Random center selection occurs after initialization.
+Companion bursts preserve old member slots, unlike initial map population.
+
+The updater gates each group on its current principal candidate. A missing
+principal gets a due respawn attempt and skips companion replenishment that
+call. Otherwise each due, underfilled companion record gets one placement
+attempt, with successful count/deadline changes before entry and the live
+candidate's respawn interval. Required world providers perform removal and
+write the shared portal before its instance table; principal death accounting
+remains caller-owned.
+
+The 128-scenario fixture executes 2,048 sustained operations against the three
+original methods, actual allocation/constructor/initialization, zone insertion
+and instance portal updater. It compares phase changes, every member slot,
+counts/deadlines, all ten instance portal entries, callbacks, packets and actor
+state across 0/1/2/15 phase limits, missing candidates, allocation/placement
+failure and timer/ID wrap. OS/AI/transport boundaries remain ports. ID removal is
+an observer-only port in this comparison: it does not establish the original
+MobRemoveByID implementation. SQL integration separately composes actual
+zone removal/recycling with restored definitions and parsed configuration,
+terminal companion replacement, portal state and scheduled principal respawn.
+Death-triggered accounting, full removal, obelisk ticking and the production
+world owner remain necessary before these controllers run as gameplay.
