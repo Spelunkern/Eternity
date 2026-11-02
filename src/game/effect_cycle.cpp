@@ -291,7 +291,8 @@ bool EffectStore::replace(std::uint32_t uid,std::uint32_t cid,const std::vector<
         const std::array<storage::Parameter,1> character={std::int64_t{cid}};
         saved("DECLARE @Saved int; EXEC @Saved="+prefix_+"usp_Save_Char_ApplySkill_Del_E ?,0,0,1; SELECT @Saved;",character);
         for(const auto& effect:effects) {
-            const std::array<storage::Parameter,4> parameters={std::int64_t{cid},std::int64_t{std::bit_cast<std::int16_t>(effect.skill_id)},
+            if(effect.remaining==0) continue; // SaveCharacter 00424210 skips zero timers.
+            const std::array<storage::Parameter,4> parameters={std::int64_t{cid},std::int64_t{effect.skill_id},
                 std::int64_t{effect.level},std::int64_t{std::bit_cast<std::int32_t>(effect.remaining)}};
             saved("DECLARE @Saved int; EXEC @Saved="+prefix_+"usp_Save_Char_ApplySkill_Add_E2 ?,?,?,?; SELECT @Saved;",parameters);
         }

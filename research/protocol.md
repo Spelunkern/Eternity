@@ -238,7 +238,7 @@ group/raid `0c05`/`0c10` notifications follow, capped at 48 ordinary effects.
 expiry and separately sampled healing time. `ps_dbAgent.exe`
 `CUser::PacketUserSkillApply` (`00406250`, case `0902`) removes only the first
 matching replica record. SQL changes wait for `DBCharacter::SaveCharacter`
-(`00423190`), which deletes all saved effects and re-adds the ordered replica
+(`00423190`), which deletes all saved effects and re-adds nonzero timers from the ordered replica
 through `usp_Save_Char_ApplySkill_Add_E2`. Native effect snapshot replacement
 checks ownership and rolls back the whole replacement on failure. Disposable SQL
 tests verify those contracts without changing existing characters. Live actor
@@ -1419,3 +1419,46 @@ now also recovers when an early error occurs before SQL Server opens a transacti
 or the server already ended it; autocommit is restored only after rollback
 completes. Billing, skills, quest/quick-slot/save-point phases, max-grow saving,
 file fallback, scheduling and the complete runtime transaction owner remain pending.
+
+
+Learned/applied skill caches reconstruct `ps_dbAgent.exe`,
+`CUser::PacketUserSkill` (`00406100`, `0801`..`0804`) and
+`PacketUserSkillApply` (`00406250`, `0901`..`0905`). Learned level 1 appends
+a new allocation even for duplicate IDs; other levels update all matching IDs
+and clear their delays. Skill points update even if allocation fails or no
+matching skill exists. `0802` is a no-op. Individual delays can target any of
+256 pointers; bulk delays skip indices beyond the live count. Loaded skill
+numbers are reassigned sequentially, ignoring persisted numbers. The original
+loader aborts after allocating its 256th row; native failed loads retain their
+partial cache for disposal. Learning into the final pointer remains valid;
+native envelopes reject further writes that would corrupt unrelated memory.
+
+Applied add/set/remove affect the first ID/level match; add alone appends when
+missing. `0904` uses a single forward list scan for its incoming records, never
+rewinds and can update the same current node repeatedly for duplicate records.
+Zero timers remain cached. `0902` unlinks without recycling; native pools retain
+those allocations outside the available list. `0905` recycles the remaining
+list in order. The shared LIFO heap (`0040e4c0`) preserves payloads across reuse,
+including the unused applied-skill number byte. Fresh original payloads are
+unspecified; native fresh allocations initialize them to zero.
+
+The successful non-event reset job `SaveResetSkill` (`00404c40`) recycles learned
+rows, applies the staged skill-point total, clears the live count, marks reset
+and returns account-bound `050a`. Event-reset SQL, billing/request dispatch and
+transport delivery remain pending. `SaveSuccess` (`004097a6..004097b8`) alone
+advances saved count and clears reset after complete character commit.
+
+`SkillStore` implements `SaveCharacter` `00423f55..004242c2`: modify the saved
+learned prefix, or delete all on reset; insert remaining learned rows; delete
+all applied rows and reinsert only nonzero timers in order. IDs are zero-extended
+WORDs, learned delays are DWORDs supplied by WORD packets, and applied timers
+preserve signed DWORD bits in SQL. Thus out-of-range positive IDs/delays fail
+SQL SMALLINT conversion. The standalone `EffectStore` now preserves those same
+ID and zero-timer rules. `CharacterReplica` shares core skill points with this
+cache; each SQL phase leaves commit/rollback and acknowledgment to the owner.
+An original-code fixture compares 2,048 persistent operations, 7,392 SQL calls,
+96 resets, 128 acknowledgments and complete pool/cache state. Disposable SQL
+checks compose core, inventory and skills, proving reset/new-row boundaries,
+stored numbers, timer filtering, conversion failures and rollback/retry when
+a later applied insert fails. Quest/quick-slot/save-point/billing phases,
+max-grow saving, file fallback, scheduling and the runtime save owner are pending.

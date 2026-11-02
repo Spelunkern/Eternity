@@ -118,7 +118,7 @@ int main(int argc,char** argv) {
         game::EffectStore effect_store(database,1,catalog),wrong_realm(database,2,catalog);
         require(!effect_store.replace(7001,other.character_id,{}) && !wrong_realm.replace(7001,created.character_id,{}) &&
             !effect_store.replace(7002,created.character_id,{}),"Effect save reached a foreign character/server");
-        require(effect_store.replace(7001,created.character_id,{{10,2,50},{11,1,UINT32_MAX}}),"Original effect snapshot save failed");
+        require(effect_store.replace(7001,created.character_id,{{10,2,50},{11,1,UINT32_MAX},{12,3,0},{65535,255,0}}),"Original effect snapshot save failed");
         const auto saved_effects=database.query("SELECT SkillID,SkillLevel,LeftResetTime FROM "+prefix+"CharApplySkills WHERE CharID="+cid+" ORDER BY SkillID,SkillLevel;");
         require(saved_effects[0].rows.size()==2 && saved_effects[0].rows[0]==storage::Row{storage::Cell{"10"},storage::Cell{"2"},storage::Cell{"50"}} &&
             saved_effects[0].rows[1]==storage::Row{storage::Cell{"11"},storage::Cell{"1"},storage::Cell{"-1"}},"Original full effect replacement/remaining-time DWORD bits changed");
@@ -127,6 +127,11 @@ int main(int argc,char** argv) {
         require(effect_failure,"Effect save fixture did not reject its second insert");
         const auto rolled_back=database.query("SELECT SkillID,SkillLevel,LeftResetTime FROM "+prefix+"CharApplySkills WHERE CharID="+cid+" ORDER BY SkillID,SkillLevel;");
         require(rolled_back[0].rows==saved_effects[0].rows,"Failed effect snapshot save lost the previous rows or retained a partial insert");
+        bool effect_id_failure=false;
+        try{effect_store.replace(7001,created.character_id,{{65535,1,61}});}catch(const std::runtime_error&){effect_id_failure=true;}
+        require(effect_id_failure,"Original effect ID overflow became a negative SQL skill ID");
+        const auto overflow_rollback=database.query("SELECT SkillID,SkillLevel,LeftResetTime FROM "+prefix+"CharApplySkills WHERE CharID="+cid+" ORDER BY SkillID,SkillLevel;");
+        require(overflow_rollback[0].rows==saved_effects[0].rows,"Invalid effect ID lost the previous snapshot");
         require(effect_store.replace(7001,created.character_id,{}),"Empty effect snapshot save failed");
         const auto isolated_effects=database.query("SELECT COUNT(*) FROM "+prefix+"CharApplySkills WHERE CharID="+cid+"; SELECT COUNT(*) FROM "+prefix+"CharApplySkills WHERE CharID="+other_id+";");
         require(isolated_effects[0].rows[0][0]==storage::Cell{"0"} && isolated_effects[1].rows[0][0]==storage::Cell{"1"},"Effect replacement changed a foreign character or failed to clear its owner");
