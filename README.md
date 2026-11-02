@@ -34,6 +34,7 @@ reconstructed; world admission, broadcasts, combat and TCP world entry remain pe
 Zone selection/reuse and access rules are reconstructed; world object initialization
 and zone queue services remain required dependencies.
 Door/region templates, door operation and weather transitions are reconstructed.
+NPC definitions include shops, gate destinations and quest links; NPC world objects remain pending.
 The active MD5 login
 path needs a missing procedure; see [research](research/protocol.md).
 

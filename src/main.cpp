@@ -2,6 +2,8 @@
 #include "eternity/game/definitions.hpp"
 #include "eternity/game/map_config.hpp"
 #include "eternity/game/zone_environment.hpp"
+#include "eternity/game/npcs.hpp"
+#include "eternity/game/quests.hpp"
 #include "eternity/auth/sql_authenticator.hpp"
 #include "eternity/net/login_server.hpp"
 #include "eternity/net/world_server.hpp"
@@ -10,6 +12,8 @@
 #include <csignal>
 #include <cstdlib>
 #include <filesystem>
+#include <fstream>
+#include <iterator>
 #include <iostream>
 #include <string_view>
 
@@ -99,6 +103,13 @@ int main(int argc, char** argv) {
             std::cout << "Original definition procedures loaded successfully.\n";
             const char* configured=std::getenv("ETERNITY_MAP_INI");
             const std::filesystem::path map_ini=configured?configured:".local/server-data/Map.ini";
+            std::ifstream npc_file(map_ini.parent_path()/"NpcQuest.SData",std::ios::binary);
+            if(!npc_file) throw std::runtime_error("Cannot open original NpcQuest.SData");
+            const eternity::net::Packet npc_data((std::istreambuf_iterator<char>(npc_file)),{});
+            const auto npcs=eternity::game::NpcDefinitions::decode(npc_data);
+            const auto quests=eternity::game::QuestDefinitions::npc_quest(npc_data);
+            std::size_t npc_count=0;for(int type=1;type<=13;++type) npc_count+=npcs.count(type);
+            std::cout << "Original NPC/quest definitions loaded: " << npc_count << " NPCs, " << quests.size() << " quests (object runtime not started).\n";
             const auto maps=eternity::game::ServerMaps::load(eternity::game::MapConfiguration::load(map_ini),map_ini.parent_path()/"Map");
             std::cout << "Original map configuration and files loaded: " << maps.size() << " maps (runtime zones not initialized).\n";
             std::size_t doors=0,regions=0;

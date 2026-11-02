@@ -1,4 +1,5 @@
 #include "eternity/game/quests.hpp"
+#include "eternity/game/npcs.hpp"
 #include <algorithm>
 #include <stdexcept>
 
@@ -47,17 +48,7 @@ QuestDefinitions QuestDefinitions::decode(std::span<const std::uint8_t> data) {
 }
 QuestDefinitions QuestDefinitions::npc_quest(std::span<const std::uint8_t> data) {
     // DBInitializeConstNpcQuest 004caf80: NPC lists, 256x256 item links, then quests.
-    // Prefix traversal only locates the quest block; NPC behavior remains owned by its future runtime.
-    Reader input(data);
-    for(unsigned int group=0;group<13;++group) {
-        const auto count=input.number();if(count>65536) throw std::runtime_error("Invalid original NPC count");
-        for(std::uint32_t i=0;i<count;++i) {
-            input.take(group==0?20:19);input.string();input.string();
-            if(group==0) input.words();
-            if(group==1) for(unsigned int gate=0;gate<3;++gate) {input.take(14);input.string();input.take(4);}
-            input.words();input.words();
-        }
-    }
+    const auto npcs=NpcDefinitions::decode(data);Reader input(data);input.take(npcs.consumed());
     for(unsigned int link=0;link<65536;++link) {input.words();input.words();}
     auto result=decode(data.subspan(input.position()));result.consumed_+=input.position();return result;
 }

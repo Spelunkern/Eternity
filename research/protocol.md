@@ -532,3 +532,16 @@ Native initialization preserves this behavior, including repeated stat additions
 The oracle verifies 15 list scenarios with exact state/notification ordering,
 70-node batches, group changes, reentrant insertion and nested initialization;
 the actor test also checks its resulting persistence replica.
+
+NPC definitions: `ps_game.exe` `CNpcData::Load` (`004c9410`) reads thirteen
+positional lists from `NpcQuest.SData`: shops, gatekeepers and eleven ordinary
+NPC lists. The native decoder preserves the common 276-byte prefix, item pairs,
+start/end quest links and all three gate destinations. Country 1/2 maps to 0/1;
+other values map to 2. Name bytes 29/30 become a space/NUL. Gate destination Y
+adds the original single-precision 0.9 constant before spilling to float.
+`GetNpc` (`0041d640`) accepts types 1..13 and one-based row positions, ignoring
+embedded type/ID fields. The quest decoder now uses this NPC decoder to locate
+the item-link/quest blocks. NPC movement, combat and world object creation remain
+pending. The oracle executes the original loader and 85 positional lookups per
+input: six synthetic files plus the complete staged distribution. Integration
+compares every normalized NPC field, shop item, gate and quest link.
