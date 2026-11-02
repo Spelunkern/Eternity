@@ -13,7 +13,7 @@ net::Packet unhex(const std::string& text) {
 }
 int main(int argc,char** argv) {
     try {
-        require(argc==2,"Expected entry packet oracle file");std::ifstream input(argv[1]);require(input.good(),"Cannot open entry packet oracle");std::string line;unsigned int checked=0;
+        require(argc==3,"Expected entry packet and learned skill oracle files");std::ifstream input(argv[1]);require(input.good(),"Cannot open entry packet oracle");std::string line;unsigned int checked=0;
         while(std::getline(input,line)) {
             if(line.empty() || line[0]=='#') continue;std::istringstream row(line);
             unsigned int op=0,count=0;std::uint32_t tick=0;std::int32_t parameter=0;std::size_t packet_count=0;row>>op>>count>>tick>>parameter>>packet_count;
@@ -64,5 +64,19 @@ int main(int argc,char** argv) {
             std::string extra;require(!(row>>extra),"Unexpected trailing entry packet vector");++checked;
         }
         require(checked==321,"Entry packet coverage changed");std::cout<<checked<<" original initial character packet scenarios passed\n";
+        storage::ResultSet table;table.columns={"SkillID","SkillLevel","TypeDetail","TypeEffect","Weapon1","Weapon2","Weaponvalue","Bag",
+            "AbilityType1","AbilityValue1","AbilityType2","AbilityValue2","AbilityType3","AbilityValue3",
+            "AttrType","DefenceType","DefenceValue","ApplyRange","Arrow","ChangeType","ChangeLevel","FixRange","KeepTime","TimeHealHP","TimeHealSP","TimeHealMP"};
+        for(unsigned int id=1000;id<1255;++id) for(unsigned int level=1;level<=3;++level) {storage::Row row(table.columns.size(),storage::Cell{"0"});row[0]=std::to_string(id);row[1]=std::to_string(level);table.rows.push_back(std::move(row));}
+        const auto definitions=SkillDefinitions::load(table);std::ifstream learned(argv[2]);require(learned.good(),"Cannot open learned skill oracle");unsigned int restored_count=0;
+        while(std::getline(learned,line)) {
+            if(line.empty() || line[0]=='#') continue;std::istringstream row(line);unsigned int count=0,loaded=0,invalid=0;std::uint32_t tick=0;int bad=-1;
+            require(static_cast<bool>(row>>count>>tick>>bad>>loaded>>invalid),"Malformed learned skill vector");std::vector<PlayerSkill> skills;
+            for(unsigned int i=0;i<count;++i) skills.push_back({static_cast<std::uint16_t>(static_cast<int>(i)==bad?999:1000+i),std::array<std::uint16_t,3>{0,1,65535}[i%3],static_cast<std::uint8_t>(i%3+1),static_cast<std::uint8_t>(i),static_cast<std::uint8_t>(i)});
+            const auto restored=restore_skills(skills,definitions,tick);require(restored.active.size()==loaded && (restored.invalid?restored.invalid->id:0)==invalid,"Original learned skill rejection differs");
+            for(const auto& skill:restored.active) {unsigned int id=0,level=0,number=0;std::uint32_t end=0;require(static_cast<bool>(row>>id>>level>>number>>end) && skill.id==id && skill.level==level && skill.number==number && skill.end_tick==end,"Original learned skill restoration differs");}
+            std::string extra;require(!(row>>extra),"Trailing learned skill vector data");++restored_count;
+        }
+        require(restored_count==40,"Learned skill coverage changed");
     } catch(const std::exception& error) {std::cerr<<error.what()<<'\n';return 1;}
 }

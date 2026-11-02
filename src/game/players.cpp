@@ -131,6 +131,28 @@ Players::Players(storage::SqlServer& database,std::uint8_t server_id,std::string
     })) throw std::invalid_argument("Invalid player SQL catalog identifier");
     prefix_="["+catalog+"].dbo.";
 }
+void decode_player_auxiliary(PlayerSnapshot& player) {
+    // ps_dbAgent DBCharacter::LoadCharacter 00420610: WORD IDs/delays, BYTE counters, ordered quick slots.
+    player.effects.clear();player.quests.clear();player.finished_quests.clear();player.quick_slots.clear();
+    for(const auto& row:player.catalogs.at("AppliedSkills").rows) {
+        if(row.size()!=3) throw std::runtime_error("Original applied skill row changed");
+        player.effects.push_back({word(row,0),byte(row,1),dword(row,2)});
+    }
+    for(const auto& row:player.catalogs.at("Quests").rows) {
+        if(row.size()!=5) throw std::runtime_error("Original quest row changed");
+        player.quests.push_back({word(row,0),word(row,1),{byte(row,2),byte(row,3),byte(row,4)}});
+    }
+    for(const auto& row:player.catalogs.at("FinishedQuests").rows) {
+        if(row.size()!=2) throw std::runtime_error("Original finished quest row changed");
+        player.finished_quests.push_back({word(row,0),byte(row,1)});
+    }
+    const auto& quick=player.catalogs.at("QuickSlots").rows;
+    if(quick.size()>255) throw std::runtime_error("Player exceeds original quick-slot wire count");
+    for(const auto& row:quick) {
+        if(row.size()!=4) throw std::runtime_error("Original quick slot row changed");
+        player.quick_slots.push_back({byte(row,0),byte(row,1),byte(row,2),word(row,3)});
+    }
+}
 std::optional<PlayerSnapshot> Players::load(std::uint32_t uid,std::uint32_t cid,const std::string& username) {
     if(uid==0 || uid>2147483647 || cid==0 || cid>2147483647 || username.empty() || username.size()>12)
         throw std::invalid_argument("Invalid player load identity");
@@ -157,10 +179,7 @@ std::optional<PlayerSnapshot> Players::load(std::uint32_t uid,std::uint32_t cid,
         {"PointLog","usp_Read_Chars_PointLog_R",3,false},{"PointItems","usp_Read_User_StoredPointItems",3,true}};
     for(const auto& loader:loaders) snapshot.catalogs[loader.name]=result(database_.query(
         "EXEC "+prefix_+loader.procedure+" ?;",loader.user?user:character),loader.columns);
-    for(const auto& row:snapshot.catalogs.at("AppliedSkills").rows) {
-        if(row.size()!=3) throw std::runtime_error("Original applied skill row changed");
-        snapshot.effects.push_back({word(row,0),byte(row,1),dword(row,2)});
-    }
+    decode_player_auxiliary(snapshot);
     const std::array<storage::Parameter,2> cash={std::int64_t{uid},username};
     snapshot.catalogs["Cash"]=result(database_.query("DECLARE @Code int,@Cash int=0; EXEC @Code="+prefix_+
         "usp_Read_User_CashPoint_NCash @Cash OUTPUT,?,?; SELECT @Code,@Cash;",cash),2);

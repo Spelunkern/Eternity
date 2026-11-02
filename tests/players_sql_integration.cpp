@@ -3,6 +3,7 @@
 #include "eternity/game/equipment.hpp"
 #include "eternity/game/skills.hpp"
 #include "eternity/game/effect_cycle.hpp"
+#include "eternity/game/entry_packets.hpp"
 #include <algorithm>
 #include <bit>
 #include <iostream>
@@ -101,6 +102,9 @@ int main(int argc,char** argv) {
             require(snapshot->catalogs.at(name).rows.size()==1,"Original ancillary player procedure did not load its fixture row");
         require(snapshot->catalogs.at("Quests").rows[0][0]==storage::Cell{"23"} && snapshot->catalogs.at("FinishedQuests").rows[0][0]==storage::Cell{"24"},
                 "Original quest finish/delete filtering changed");
+        require(snapshot->quests.size()==1 && snapshot->quests[0].id==23 && snapshot->quests[0].delay==42 && snapshot->quests[0].counters==std::array<std::uint8_t,3>{3,4,5} &&
+                snapshot->finished_quests.size()==1 && snapshot->finished_quests[0].id==24 && snapshot->finished_quests[0].success==1,"Typed SQL quest state changed");
+        require(snapshot->quick_slots.size()==1 && game::character_quick_slots(snapshot->quick_slots)==net::Packet{0x0b,1,1,1,2,3,7,0},"SQL quick slot WORD did not reach the original packet");
         const auto consumed=database.query("SELECT COUNT(*) FROM "+prefix+"PointGiftNotify WHERE UserUID=7001; SELECT COUNT(*) FROM "+prefix+
             "Chars WHERE CharID="+cid+" AND JoinDate IS NOT NULL; SELECT COUNT(*) FROM "+prefix+"Chars WHERE CharID="+other_id+" AND JoinDate IS NOT NULL;");
         require(consumed[0].rows[0][0]==storage::Cell{"0"} && consumed[1].rows[0][0]==storage::Cell{"1"} && consumed[2].rows[0][0]==storage::Cell{"0"},

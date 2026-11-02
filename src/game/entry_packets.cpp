@@ -55,6 +55,16 @@ std::vector<net::Packet> character_bank(std::span<const PlayerItem> items,std::u
     }
     return result;
 }
+RestoredSkills restore_skills(std::span<const PlayerSkill> skills,const SkillDefinitions& definitions,std::uint32_t tick) {
+    // PacketUserDBSetInfo 0046d780 case 0504: rows already renumbered by the DB-agent.
+    RestoredSkills result;result.active.reserve(skills.size());
+    for(const auto& skill:skills) {
+        if(!definitions.find(skill.id,skill.level)) {result.invalid=skill;break;}
+        if(skill.number!=result.active.size()) throw std::invalid_argument("Learned skills are not in original DB-agent load order");
+        result.active.push_back({skill.id,skill.level,skill.number,tick+static_cast<std::uint32_t>(skill.delay)*1000U});
+    }
+    return result;
+}
 net::Packet character_skills(std::span<const LearnedSkillPacketEntry> skills,std::uint32_t tick) {
     // SendCharacterSkill 00483540 always sends, even with no learned skills.
     if(skills.size()>255) throw std::invalid_argument("Original skill packet count exceeded");
@@ -87,7 +97,7 @@ std::vector<net::Packet> character_quests(std::span<const QuestPacketEntry> ques
     });
 }
 std::vector<net::Packet> character_finished_quests(std::span<const FinishedQuest> quests) {
-    return batches<FinishedQuest>(quests,0x906,255,3,[](net::Packet& packet,std::size_t offset,const auto& quest) {put(packet,offset,quest.id,2);packet[offset+2]=quest.count;});
+    return batches<FinishedQuest>(quests,0x906,255,3,[](net::Packet& packet,std::size_t offset,const auto& quest) {put(packet,offset,quest.id,2);packet[offset+2]=quest.success;});
 }
 net::Packet character_speed(std::uint32_t id,const EffectStatus& status) {
     auto packet=header(0x51c,8);put(packet,2,id,4);packet[6]=attack_speed(status);packet[7]=move_speed(status);return packet;

@@ -295,3 +295,28 @@ filter precedes effect-category and map checks; a missing definition is ignored.
 `EffectCycle::restore` now preserves that outer loading step.
 `tools/effect_load_filter_oracle.py` verifies 84 original branch executions,
 including exact WORD ChangeType comparisons and non-buff/debuff definitions.
+
+Quest definitions follow `CQuestData::Load` (`004ca5d0`) in the server's
+`NpcQuest.SData`. `DBInitializeConstNpcQuest` (`004caf80`) first reads NPC lists
+and 256x256 item/quest links. Native prefix traversal locates the quest block;
+it does not implement NPC behavior. All pointer-free definition fields are
+retained without relying on host structure alignment. `GetQuest` (`0046c2c0`)
+indexes by row position rather than the embedded ID. Name truncation follows the
+original forced space/NUL. The oracle executes the complete original prefix and
+quest loaders; the staged distribution contains 1,720 records at file offset
+684,633. Integration compares every recovered definition byte with the original
+loader's aggregate fingerprint. Three synthetic records verify individual fields,
+padding, discarded text and long names. Post-load `CalcQuestItem`, quest condition
+checks and rewards remain pending.
+
+`Players::load` now retains typed quest, finished-quest and quick-slot state in
+addition to its raw SQL catalogs (`ps_dbAgent.exe` `DBCharacter::LoadCharacter`,
+`00420610`). `PacketUserDBSetInfo` (`ps_game.exe` `0046d780`, cases `0506/0507`)
+restores minute-based start/end/minimum-success times with DWORD wrapping,
+initializes active success to zero and counts mob/player kill quests. Unknown
+active quests produce error intents; unknown finished quests are ignored.
+Case `0504` reconstructs learned cooldown deadlines and stops on an unknown skill
+definition, requiring disconnection. The oracles verify 432 original quest
+restorations and 40 learned-skill load scenarios. SQL integration verifies the
+typed fields and quick-slot packet, including its WORD item/skill number.
+Live actor initialization and delivery remain pending.

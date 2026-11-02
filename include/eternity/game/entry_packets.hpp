@@ -8,6 +8,11 @@ struct LearnedSkillPacketEntry {
     std::uint8_t level=0,number=0;
     std::uint32_t end_tick=0;
 };
+struct RestoredSkills {
+    std::vector<LearnedSkillPacketEntry> active;
+    std::optional<PlayerSkill> invalid; // Original loader logs this definition error and disconnects.
+};
+RestoredSkills restore_skills(std::span<const PlayerSkill> skills,const SkillDefinitions& definitions,std::uint32_t tick);
 struct ActiveEffectPacketEntry {
     std::uint32_t instance_id=0;
     std::uint16_t skill_id=0;
@@ -15,9 +20,7 @@ struct ActiveEffectPacketEntry {
     std::uint32_t end_tick=0;
     bool offline_countdown=false;
 };
-struct QuickSlot {std::uint8_t bar=0,slot=0,bag=0;std::uint16_t number=0;};
 struct QuestPacketEntry {std::uint16_t id=0;std::uint32_t end_tick=0;bool timed=false;std::array<std::uint8_t,3> counters{};};
-struct FinishedQuest {std::uint16_t id=0;std::uint8_t count=0;};
 std::vector<net::Packet> character_items(std::span<const PlayerItem> items,std::int32_t maximum_bag);
 std::vector<net::Packet> character_bank(std::span<const PlayerItem> items,std::uint64_t money);
 net::Packet character_skills(std::span<const LearnedSkillPacketEntry> skills,std::uint32_t tick);

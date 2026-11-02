@@ -33,7 +33,7 @@ def main():
     elif args.action == "test":
         command += ["ctest", "--test-dir", "build", "--output-on-failure"]
     elif args.action == "integration":
-        subprocess.run(command + ["sh", "-c", "build/storage-integration && build/login-sql-integration && build/world-sql-integration"], cwd=ROOT, check=True)
+        subprocess.run(command + ["sh", "-c", "build/quests-unit tests/data/quests-oracle.tsv .local/server-data/NpcQuest.SData && build/storage-integration && build/login-sql-integration && build/world-sql-integration"], cwd=ROOT, check=True)
         # Explicit fixture IDs require IDENTITY_INSERT. Keep those privileges out of the runtime login.
         admin_command = command[:-1] + ["--env-file", str(ROOT / ".local" / "sqlserver.env"), IMAGE,
             "sh", "-c", 'ETERNITY_DB_USER=sa ETERNITY_DB_PASSWORD="$MSSQL_SA_PASSWORD" exec build/characters-sql-integration']
