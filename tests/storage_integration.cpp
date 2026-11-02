@@ -39,6 +39,19 @@ int main() {
         require(bound[0].rows[0][1] == Cell{"9223372036854775807"}, "Bound bigint lost precision");
         require(!bound[0].rows[0][2], "Bound NULL lost");
         require(bound[0].rows[0][3] == Cell{"12.5"}, "Bound floating-point value changed");
+        const std::array<Parameter,1> unicode_parameter={std::string{"á漢字기본아이템😀"}};
+        const auto unicode_bound=database.query("SELECT CAST(? AS nvarchar(128));",unicode_parameter);
+        require(unicode_bound.size()==1 && unicode_bound[0].rows[0][0]==Cell{"á漢字기본아이템😀"},
+                "Bound Unicode text did not preserve UTF-8/surrogate pairs");
+        const std::array<Parameter,1> empty_parameter={std::string{}};
+        const auto empty_bound=database.query("SELECT CAST(? AS nvarchar(128));",empty_parameter);
+        require(empty_bound.size()==1 && empty_bound[0].rows[0][0]==Cell{""},"Empty Unicode parameter became SQL NULL");
+        bool invalid_utf8=false;
+        try {
+            const std::array<Parameter,1> truncated_utf8={std::string{"\xe2\x82"}};
+            (void)database.query("SELECT CAST(? AS nvarchar(128));",truncated_utf8);
+        } catch(const std::exception&) {invalid_utf8=true;}
+        require(invalid_utf8,"Truncated UTF-8 parameter was silently accepted");
         database.query("CREATE TABLE #EternityTest(Value int NOT NULL);");
         database.begin();
         bool nested_rejected = false;

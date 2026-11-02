@@ -25,6 +25,7 @@ struct SqlServerConfig {
 
 using Cell = std::optional<std::string>;
 using Row = std::vector<Cell>;
+// Text parameters are UTF-8 and bound as Unicode; procedure varchar conversions remain SQL Server's responsibility.
 using Parameter = std::variant<std::monostate, std::string, std::int64_t, double>;
 struct ResultSet {
     std::vector<std::string> columns;

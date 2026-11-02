@@ -1,4 +1,6 @@
 #include "eternity/storage/sql_server.hpp"
+#include <codecvt>
+#include <locale>
 #include <algorithm>
 #include <array>
 #include <charconv>
@@ -137,6 +139,7 @@ std::vector<ResultSet> SqlServer::query(std::string_view sql, std::span<const Pa
         throw std::invalid_argument("Too many SQL parameters");
     SQLRETURN result = SQL_SUCCESS;
     std::vector<SQLLEN> indicators(parameters.size());
+    std::vector<std::vector<SQLWCHAR>> wide_parameters(parameters.size());
     if (parameters.empty()) {
         result = SQLExecDirect(statement.handle,
             reinterpret_cast<SQLCHAR*>(const_cast<char*>(sql.data())), static_cast<SQLINTEGER>(sql.size()));
@@ -151,12 +154,19 @@ std::vector<ResultSet> SqlServer::query(std::string_view sql, std::span<const Pa
             SQLPOINTER value = nullptr;
             const Parameter& parameter = parameters[index];
             if (const auto* text = std::get_if<std::string>(&parameter)) {
-                if (text->size() > static_cast<std::size_t>(std::numeric_limits<SQLLEN>::max()))
+                // Bind Unicode explicitly. SQL_VARCHAR can interpret UTF-8 bytes using the server's ANSI collation.
+                std::wstring_convert<std::codecvt_utf8_utf16<char16_t>,char16_t> converter;
+                const auto utf16=converter.from_bytes(*text);
+                if(converter.converted()!=text->size()) throw std::invalid_argument("SQL text parameter is not complete UTF-8");
+                auto& wide=wide_parameters[index];wide.assign(utf16.begin(),utf16.end());
+                if (wide.size() > static_cast<std::size_t>(std::numeric_limits<SQLLEN>::max())/sizeof(SQLWCHAR))
                     throw std::invalid_argument("SQL parameter is too long");
-                column_size = std::max<SQLULEN>(1, text->size());
-                buffer_size = static_cast<SQLLEN>(text->size());
+                c_type=SQL_C_WCHAR;sql_type=SQL_WVARCHAR;
+                column_size = std::max<SQLULEN>(1, wide.size());
+                buffer_size = static_cast<SQLLEN>(wide.size()*sizeof(SQLWCHAR));
                 indicators[index] = buffer_size;
-                value = const_cast<char*>(text->data());
+                wide.push_back(0);
+                value = wide.data();
             } else if (const auto* integer = std::get_if<std::int64_t>(&parameter)) {
                 c_type = SQL_C_SBIGINT;
                 sql_type = SQL_BIGINT;
