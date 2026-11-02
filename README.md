@@ -33,6 +33,7 @@ and map rules. Server map files/configuration, entry bounds and movement cell re
 reconstructed; world admission, broadcasts, combat and TCP world entry remain pending.
 Zone selection/reuse and access rules are reconstructed; world object initialization
 and zone queue services remain required dependencies.
+Door/region templates, door operation and weather transitions are reconstructed.
 The active MD5 login
 path needs a missing procedure; see [research](research/protocol.md).
 

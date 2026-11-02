@@ -1,6 +1,7 @@
 #include "eternity/storage/sql_server.hpp"
 #include "eternity/game/definitions.hpp"
 #include "eternity/game/map_config.hpp"
+#include "eternity/game/zone_environment.hpp"
 #include "eternity/auth/sql_authenticator.hpp"
 #include "eternity/net/login_server.hpp"
 #include "eternity/net/world_server.hpp"
@@ -100,6 +101,12 @@ int main(int argc, char** argv) {
             const std::filesystem::path map_ini=configured?configured:".local/server-data/Map.ini";
             const auto maps=eternity::game::ServerMaps::load(eternity::game::MapConfiguration::load(map_ini),map_ini.parent_path()/"Map");
             std::cout << "Original map configuration and files loaded: " << maps.size() << " maps (runtime zones not initialized).\n";
+            std::size_t doors=0,regions=0;
+            for(std::size_t id=0;id<maps.size();++id) {
+                const auto environment=eternity::game::ZoneEnvironment::prepare(*maps.find(static_cast<std::uint16_t>(id)));
+                doors+=environment.doors().size();regions+=environment.regions().size();
+            }
+            std::cout << "Native environment templates prepared: " << doors << " doors, " << regions << " regions (object runtime not started).\n";
             return 0;
         }
         // Read-only inspection of the recovered definition database.

@@ -473,6 +473,41 @@ allocation, map/object initialization, release and queue ownership; the native
 registry is not wired to TCP. Object runtime initialization, zone expiry/removal
 and admission remain pending.
 
+`ZoneEnvironment` reconstructs the environment portion of `CZone::MapInit`
+(`0041c8a0`): weather state copy, door creation and type-1 region descriptors.
+Door/region IDs compact after invalid records are skipped. Objects validate
+truncated X/Z cell indices rather than world bounds, retaining the original
+acceptance of small negative coordinates and positions in the last grid cell
+beyond the nominal map edge. Region centers use double addition/division with a
+final float spill; boxes and attribute values are retained. Door close times
+convert seconds to milliseconds with DWORD wrapping. NPC, mob, linked-boss and
+obelisk preparation are separate; this component does not replace full MapInit.
+
+`CDoor::Use` (`004b9590`) toggles a door only after its unsigned use deadline,
+sets a 2,000-ms cooldown and updates the close deadline when opening an automatic
+door. Manual close retains the previous close deadline. `UpdateAutoClose`
+(`004b95f0`) and `CZone::UpdateDoor` (`0041d530`) close eligible doors in order,
+without resetting the use cooldown. Changes send `0403`, low-byte door ID and
+open byte through the door's grid cell; a detached door changes state silently.
+
+`stMapWeather::Update` (`004290d0`) consumes random only at its unsigned deadline.
+`rand()%100 < rate` activates/continues weather with the active delay; failure
+after active byte exactly 1 clears weather with the none delay. Other inactive
+failures use the active delay. `UpdateWeather` (`0041d4d0`) broadcasts changes,
+while `SendWeather` (`004201b0`) also supports direct synchronization. Both send
+the five-byte `0451`: mode, low-byte type and power, with zeros when inactive.
+`MicrosoftRandom` matches the per-thread MSVCRT generator (`00504697`), retaining
+its wrapping state separately from the original mob drop generator.
+
+The oracle checks environment fields for all 77 staged maps and four synthetic
+maps, 384 door operations, 512 weather operations and five complete random
+sequences. Original MapInit calculations/constructors run with NPC, obelisk and
+door-cell insertion ports isolated. Native combined tests check ordered door
+closing, cooldown and repeated weather activation. Integration and the original
+loader CLI now prepare environment templates too. `RuntimeZone` can own this
+environment state, but actual world transport/object services and TCP admission
+remain pending.
+
 Attack-only rebuilding now follows `InitEquipment(bool)` (`00454ba0`),
 `ItemEquipmentAttackAdd` (`00456450`) and `GemEquipmentAttackAdd` (`004565b0`).
 It resets only item attack, variance, physical defense and magic defense;
