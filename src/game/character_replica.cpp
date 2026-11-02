@@ -14,7 +14,7 @@ InventoryReplicaResult CharacterReplica::apply(std::span<const std::uint8_t> pac
     if(op==0x609 || (op>=0xd00 && op<=0xdff)) return interface_.apply(packet);
     if(op>=0xa00 && op<=0xaff) return quests_.apply(packet);
     if(op>=0x800 && op<=0x9ff) return skills_.apply(packet);
-    if(op>=0x700 && op<=0x7ff) return inventory_.apply(packet);
+    if((op>=0x617 && op<=0x619) || (op>=0x700 && op<=0x7ff)) return inventory_.apply(packet);
     if(op==0x603) return inventory_.apply_money(packet)?InventoryReplicaResult::applied:InventoryReplicaResult::rejected;
     std::size_t size=0;
     switch(op) {

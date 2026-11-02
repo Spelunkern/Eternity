@@ -21,7 +21,7 @@ int main(int argc,char** argv) {
         require(rows.size()==3 && rows[0].rows[0]==storage::Row{storage::Cell{"82"},storage::Cell{"2024-02-29 23:59:58"}} && rows[1].rows[0][0]==storage::Cell{"0"},"Original insert/count/time/quality normalization changed");
         require(rows[2].rows[0]==storage::Row{storage::Cell{"-2"},storage::Cell{"239"},storage::Cell{"12'34"},storage::Cell{"10"}},"Bank UID bits/last slot/bound craft did not persist");
         // Existing rows update by UID, with bank Count before Craftname in the original signature.
-        require(cache.apply(packet(0x707,{1,0,7}))==InventoryReplicaResult::applied,"Cannot mutate inventory count");
+        require(cache.apply(packet(0x617,{1,0,7}))==InventoryReplicaResult::applied,"Cannot mutate inventory count");
         require(cache.apply(packet(0x706,{239,6,238,4}))==InventoryReplicaResult::applied,"Cannot move bank row");
         db.begin();store.save_in_transaction(cache,810001);db.commit();cache.inventory_save_success();
         rows=db.query("SELECT [Count],Craftname FROM "+prefix+"CharItems WHERE CharID=810001 AND Bag=1 AND Slot=0; SELECT Slot,[Count],Craftname FROM "+prefix+"UserStoredItems WHERE UserUID=9001;");
@@ -48,6 +48,17 @@ int main(int argc,char** argv) {
         db.begin();store.save_in_transaction(fallback,810001);db.commit();fallback.inventory_save_success();
         rows=db.query("SELECT CharID,[Count] FROM "+prefix+"CharItems WHERE ItemUID=-2; SELECT ServerID,UserUID,Slot,[Count] FROM "+prefix+"UserStoredItems WHERE ItemUID=123456789;");
         require(rows[0].rows==std::vector<storage::Row>{{storage::Cell{"810001"},storage::Cell{"19"}}} && rows[1].rows==std::vector<storage::Row>{{storage::Cell{"1"},storage::Cell{"9001"},storage::Cell{"239"},storage::Cell{"23"}}},"Original global UID fallback/retry failed");
+        require(fallback.apply(packet(0x618,{239,0}))==InventoryReplicaResult::applied,"Cannot set bank quantity to zero");
+        db.begin();store.save_in_transaction(fallback,810001);db.commit();fallback.inventory_save_success();
+        rows=db.query("SELECT [Count] FROM "+prefix+"UserStoredItems WHERE ItemUID=123456789;");
+        require(rows[0].rows==std::vector<storage::Row>{{storage::Cell{"0"}}},"Zero-count bank status deleted its row");
+        require(fallback.apply(packet(0x619,{239}))==InventoryReplicaResult::applied,"Cannot delete bank row by status");
+        db.begin();store.save_in_transaction(fallback,810001);db.rollback();
+        rows=db.query("SELECT COUNT(*) FROM "+prefix+"UserStoredItems WHERE ItemUID=123456789;");
+        require(rows[0].rows[0][0]==storage::Cell{"1"} && fallback.deleted_bank()==std::vector<std::uint64_t>{123456789},"Rollback cleared bank status deletion journal");
+        db.begin();store.save_in_transaction(fallback,810001);db.commit();fallback.inventory_save_success();
+        rows=db.query("SELECT COUNT(*) FROM "+prefix+"UserStoredItems WHERE ItemUID=123456789;");
+        require(rows[0].rows[0][0]==storage::Cell{"0"} && fallback.deleted_bank().empty(),"Retried bank status deletion did not persist");
         std::cout<<"Original inventory/bank SQL commit, dirty updates, batches, rollback and insert retry passed\n";
     }catch(const std::exception& error) {std::cerr<<error.what()<<'\n';return 1;}
 }

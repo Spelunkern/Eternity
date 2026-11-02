@@ -37,14 +37,16 @@ bool InventoryReplica::apply_money(std::span<const std::uint8_t> packet) {
     MoneyReplica status(account_id_,money_);if(!status.apply(packet)) return false;money_=status.money();return true;
 }
 InventoryReplicaResult InventoryReplica::apply(std::span<const std::uint8_t> p) {
-    // ps_dbAgent.exe PacketUserItem 00408480; AddDeleteItem/Bank 00405200/00405270.
+    // ps_dbAgent.exe PacketUserItem 00408480; status 0617..0619 at
+    // PacketUserSetStatus 00405f4e..00405fea; journals 00405200/00405270.
     // Validate the owning dispatcher envelope and memory domain before mutation.
     if(p.size()<6 || get(p,2,4)!=account_id_) return InventoryReplicaResult::rejected;
     const auto op=get(p,0,2);std::size_t size=0;
-    switch(op) {case 0x701:size=57;break;case 0x702:case 0x707:case 0x70c:size=9;break;case 0x703:size=12;break;case 0x704:case 0x705:size=11;break;case 0x706:size=10;break;case 0x708:case 0x709:case 0x70a:size=14;break;case 0x70b:if(p.size()<11) return InventoryReplicaResult::rejected;size=11+3U*p[10];break;case 0x70d:if(p.size()<7) return InventoryReplicaResult::rejected;size=7+3U*p[6];break;case 0x70e:case 0x70f:size=6;break;case 0x711:size=18;break;case 0x715:size=15;break;case 0x716:size=33;break;case 0x717:size=29;break;default:return InventoryReplicaResult::unsupported;}
+    switch(op) {case 0x617:size=9;break;case 0x618:size=8;break;case 0x619:size=7;break;case 0x701:size=57;break;case 0x702:case 0x707:case 0x70c:size=9;break;case 0x703:size=12;break;case 0x704:case 0x705:size=11;break;case 0x706:size=10;break;case 0x708:case 0x709:case 0x70a:size=14;break;case 0x70b:if(p.size()<11) return InventoryReplicaResult::rejected;size=11+3U*p[10];break;case 0x70d:if(p.size()<7) return InventoryReplicaResult::rejected;size=7+3U*p[6];break;case 0x70e:case 0x70f:size=6;break;case 0x711:size=18;break;case 0x715:size=15;break;case 0x716:size=33;break;case 0x717:size=29;break;default:return InventoryReplicaResult::unsupported;}
     if(p.size()!=size) return InventoryReplicaResult::rejected;
     const auto inv_valid=[&](std::size_t offset){return p[offset]<6 && p[offset+1]<24;};const auto bank_valid=[&](std::size_t offset){return p[offset]<240;};
     switch(op) {
+        case 0x618:case 0x619:if(!bank_valid(6)) return InventoryReplicaResult::rejected;break;
         case 0x701:if(!inv_valid(18)) return InventoryReplicaResult::rejected;break;
         case 0x703:if(!inv_valid(6) || !inv_valid(9)) return InventoryReplicaResult::rejected;break;
         case 0x704:if(!inv_valid(6) || !bank_valid(9)) return InventoryReplicaResult::rejected;break;
@@ -64,6 +66,8 @@ InventoryReplicaResult InventoryReplica::apply(std::span<const std::uint8_t> p) 
         if(source->item.count==0) {journal(source,bank);pool_.release(std::move(source));}
     };
     switch(op) {
+        case 0x617:case 0x618:{auto& item=op==0x617?inv(6):bank_[p[6]];if(!item) break;dirty(*item);item->item.count=p[op==0x617?8:7];break;}
+        case 0x619:{auto& item=bank_[p[6]];if(!item) break;journal(item,true);pool_.release(std::move(item));break;}
         case 0x701:{auto& target=inv(18);if(target) {if(target->item.type!=p[20] || target->item.type_id!=p[21]) return InventoryReplicaResult::disconnect;target->item.count=static_cast<std::uint8_t>(target->item.count+p[22]);dirty(*target);break;}
             auto item=pool_.allocate();if(!item) break;auto& value=item->item;value.uid=get(p,6,8);value.id=static_cast<std::uint32_t>(get(p,14,4));value.type=p[20];value.type_id=p[21];value.count=p[22];value.quality=static_cast<std::uint16_t>(get(p,23,2));std::copy_n(p.begin()+25,6,value.gems.begin());craft(*item,p.subspan(31,21));value.made_at=static_cast<std::uint32_t>(get(p,52,4));value.make_type=p[56]?std::string(1,static_cast<char>(p[56])):std::string{};item->save_type=1;target=std::move(item);break;}
         case 0x702:{auto& item=inv(6);if(!item) break;if(p[8]>=item->item.count) {journal(item,false);pool_.release(std::move(item));}else {dirty(*item);item->item.count=static_cast<std::uint8_t>(item->item.count-p[8]);}break;}

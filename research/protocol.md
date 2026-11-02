@@ -1579,3 +1579,17 @@ isolation. It also verifies unlocks surviving character rollback and failed
 unlocks retaining cache changes. Billing, file fallback, scheduling and the
 complete runtime transaction owner remain pending; market gameplay and TCP
 delivery are still separate work.
+
+
+Inventory status messages `0617..0619` now route through the same inventory/bank
+cache as item commands. `ps_dbAgent.exe`, `CUser::PacketUserSetStatus`
+(`00405f4e..00405fea`) replaces the count for `0617` (bag/slot) or `0618`
+(bank slot), changing save state 0 to 2 while preserving other states. Quantity
+zero retains the item. `0619` journals a bank UID unless its state is 1, clears
+the slot and returns the item to the shared pool. Empty slots return success
+without mutation. Native envelopes validate owner, length and indices before
+these writes. A separate 2,048-operation original-code fixture mixes the three
+statuses with allocation, bank transfers and item updates, comparing both caches,
+FIFO journals and pool reuse after every message. SQL verifies dirty counts,
+zero-count retention, deletion rollback and retry. Character dispatch uses these
+same caches; live gameplay dispatch remains pending.
