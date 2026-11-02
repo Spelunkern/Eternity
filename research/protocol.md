@@ -747,3 +747,29 @@ using real actors and the native user grid. Cases include boundary/NaN distances
 neutral countries, dead/hidden/transformed/admin-filtered players, scalar/empty/
 active mob FSMs, clock wrap and changes to state or deadlines during sampling.
 Full mob objects, guard attacks and the live world dispatcher remain pending.
+
+Scalar HP damage reconstructs `ps_game.exe` `CUser::Damage(int,DWORD,int)`
+(`0044c120`). Dead mode 1 or zero HP returns false without side effects. Source
+kind 3 with nonzero protection (`CUser+12fc`) and signed damage at least half
+signed maximum HP subtracts one damage with DWORD wrapping, then sends `0525`
+with the protection's low WORD. Defense wear precedes damage attribution. The
+signed HP/damage comparison determines lethality: lethal damage zeros HP, sends
+group HP and returns true; otherwise subtraction wraps, positive damage sends
+group HP, and the low-HP ability check runs even for zero/negative damage.
+This routine does not itself change the actor's life mode or execute death.
+
+`SendEnergyHPToParty` (`004824b0`) sends nine bytes: `0c01` for party or `0c0a`
+for raid, character DWORD, zero resource byte and current HP WORD. The actor is
+excluded. There is no zone requirement, proximity broadcast or reset of damage
+attribution in this path. Required observer operations retain equipment wear,
+attribution and low-HP activation order; full actor integration remains pending.
+
+`CDamage::Add` (`004b8b60`), `Reset` (`004b8aa0`) and `GetMax` (`004b8c40`)
+are implemented as an owned ledger. Records merge by stored BYTE kind compared
+against the full input int and source DWORD; amounts wrap as DWORDs. Input kinds
+outside 0..255 therefore create another truncated-kind entry instead of merging.
+Traversal preserves first insertion order; maximum uses signed comparisons and
+ties keep the oldest entry, including all-negative records. Reset empties the
+list. The native vector retains capacity; original pooled allocation identity is
+not exposed. The instruction oracle compares 1,000 scalar damage cases with
+ordered callbacks/packets and 2,048 persistent list operations, plus empty reset.

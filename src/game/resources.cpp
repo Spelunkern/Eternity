@@ -25,6 +25,30 @@ void ActorResources::party_energy() {
         sink_.send_party(packet);
     }
 }
+bool ActorResources::damage(ScalarDamageState state,std::int32_t kind,std::uint32_t source,std::int32_t amount,DamageObserver& observer) {
+    // ps_game.exe CUser::Damage(int,DWORD,int) 0044c120. The other damage
+    // overload also handles SP/MP and absorption and is reconstructed separately.
+    if(state.attack_mode==1 || current_.hp==0) return false;
+    if(kind==3 && state.protection_value!=0 && amount>=signed_value(state.maximum_hp)/2) {
+        amount=signed_value(static_cast<std::uint32_t>(amount)-1U);
+        net::Packet packet(4,0);put(packet,0,0x525,2);put(packet,2,state.protection_value,2);sink_.send_self(packet);
+    }
+    observer.defense_wear();
+    observer.record_damage(kind,source,amount);
+    const auto notify_hp=[this] {
+        // CUser::SendEnergyHPToParty 004824b0 excludes the damaged actor.
+        if(const auto raid=sink_.party_kind()) {
+            auto packet=identified(*raid?0xc0a:0xc01,id_,9);put(packet,7,current_.hp,2);sink_.send_party(packet);
+        }
+    };
+    if(signed_value(current_.hp)<=amount) {
+        current_.hp=0;notify_hp();return true;
+    }
+    current_.hp-=static_cast<std::uint32_t>(amount);
+    if(amount>0) notify_hp();
+    observer.check_hp_ability();
+    return false;
+}
 std::array<std::int32_t,3> ActorResources::heal(PlayerResources maximum,std::array<std::int32_t,3> amounts) {
     // CUser::Heal 004505a0, ps_game.exe. Signed comparisons, DWORD addition and no lower clamp.
     const auto before=current_;

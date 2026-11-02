@@ -1,5 +1,6 @@
 #pragma once
 #include "eternity/game/player_packets.hpp"
+#include "eternity/game/damage.hpp"
 #include <array>
 #include <optional>
 
@@ -23,6 +24,7 @@ public:
     std::array<std::int32_t,3> heal(PlayerResources maximum,std::array<std::int32_t,3> amounts);
     void recover(PlayerResources maximum,std::array<std::int32_t,3> amounts,bool send_set = false,std::int32_t attack_mode = 0,bool recovering = false);
     void maximum_changed(PlayerResources maximum,std::uint8_t resource,bool initializing); // HP=0, MP=1, SP=2.
+    bool damage(ScalarDamageState state,std::int32_t kind,std::uint32_t source,std::int32_t amount,DamageObserver& observer);
 private:
     void party_energy();
     std::uint32_t id_;

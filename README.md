@@ -24,6 +24,8 @@ Base statistics, equipment modifiers, faction blessing initialization, passive
 skills and active-effect state are reconstructed. Effect restoration, expiry and SQL snapshots are tested
 independently. Resource recovery and its ordered view/self/group notifications
 are reconstructed; live world operations and gameplay remain pending.
+Scalar HP damage, its protection/group notifications and the attacker damage ledger
+are reconstructed; equipment wear, low-HP activation and death still need actor integration.
 Actor preparation connects these stages, including effect-driven resource clamps
 and cleanup. Equipment/transformation attack rebuilding and elemental-effect
 replacement run natively in the actor. User appearance packets include visible
