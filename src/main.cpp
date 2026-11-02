@@ -2,12 +2,25 @@
 #include "eternity/game/definitions.hpp"
 #include "eternity/auth/sql_authenticator.hpp"
 #include "eternity/net/login_server.hpp"
+#include "eternity/net/world_server.hpp"
 #include <asio.hpp>
 #include <charconv>
 #include <csignal>
 #include <cstdlib>
 #include <iostream>
 #include <string_view>
+
+namespace {
+unsigned int environment_number(const char* name,unsigned int fallback,unsigned int maximum) {
+    const char* raw=std::getenv(name);
+    if(!raw) return fallback;
+    const std::string_view value(raw);unsigned int number=0;
+    const auto parsed=std::from_chars(value.data(),value.data()+value.size(),number);
+    if(parsed.ec!=std::errc{} || parsed.ptr!=value.data()+value.size() || number>maximum)
+        throw std::invalid_argument(std::string(name)+" must be in 0.."+std::to_string(maximum));
+    return number;
+}
+}
 
 int main(int argc, char** argv) {
     if (argc == 2 && std::string_view(argv[1]) == "--version") {
@@ -16,33 +29,52 @@ int main(int argc, char** argv) {
     }
     if (argc != 2 || (std::string_view(argv[1]) != "--check-database" &&
                       std::string_view(argv[1]) != "--check-original-loaders" &&
+                      std::string_view(argv[1]) != "--serve" &&
                       std::string_view(argv[1]) != "--serve-login")) {
-        std::cerr << "Usage: eternity-server --version | --check-database | --check-original-loaders | --serve-login\n"
-                     "World endpoints and gameplay are not implemented yet.\n";
+        std::cerr << "Usage: eternity-server --version | --check-database | --check-original-loaders | --serve-login | --serve\n"
+                     "Game TCP currently reaches character listings; gameplay remains incomplete.\n";
         return 2;
     }
     try {
         const auto database_config = eternity::storage::SqlServerConfig::from_environment();
         eternity::storage::SqlServer database(database_config);
-        if (std::string_view(argv[1]) == "--serve-login") {
+        if (std::string_view(argv[1]) == "--serve-login" || std::string_view(argv[1]) == "--serve") {
             (void)database.query("SELECT 1;");
             eternity::net::LoginServerOptions options;
             if (const char* address=std::getenv("ETERNITY_LOGIN_BIND")) options.address=address;
-            if (const char* raw=std::getenv("ETERNITY_LOGIN_PORT")) {
-                const std::string_view value(raw);
-                unsigned int port=0;
-                const auto parsed=std::from_chars(value.data(),value.data()+value.size(),port);
-                if (parsed.ec!=std::errc{} || parsed.ptr!=value.data()+value.size() || port>65535)
-                    throw std::invalid_argument("ETERNITY_LOGIN_PORT must be in 0..65535");
-                options.port=static_cast<std::uint16_t>(port);
-            }
+            options.port=static_cast<std::uint16_t>(environment_number("ETERNITY_LOGIN_PORT",options.port,65535));
             asio::io_context io;
-            eternity::net::LoginServer server(io,options,eternity::auth::SqlAuthenticator(database_config));
+            auto sessions=std::make_shared<eternity::session::Registry>();
+            auto realms=std::make_shared<eternity::auth::RealmDirectory>(options.realms);
+            std::unique_ptr<eternity::net::WorldServer> world;
+            if(std::string_view(argv[1])=="--serve") {
+                eternity::net::WorldServerOptions game_options;
+                if(const char* address=std::getenv("ETERNITY_WORLD_BIND")) game_options.address=address;
+                game_options.port=static_cast<std::uint16_t>(environment_number("ETERNITY_WORLD_PORT",game_options.port,65535));
+                game_options.realm=static_cast<std::uint8_t>(environment_number("ETERNITY_WORLD_REALM",0,253));
+                const auto database_id=static_cast<std::uint8_t>(environment_number("ETERNITY_WORLD_DATABASE_ID",1,255));
+                auto advertised=asio::ip::make_address_v4("127.0.0.1");
+                if(const char* address=std::getenv("ETERNITY_WORLD_ADVERTISE")) advertised=asio::ip::make_address_v4(address);
+                const auto base=eternity::game::load_world_base(database);
+                world=std::make_unique<eternity::net::WorldServer>(io,game_options,sessions,
+                    [database_config,database_id,base](const eternity::session::LoginSession& account) {
+                        eternity::storage::SqlServer connection(database_config);
+                        return eternity::game::Characters(connection,database_id,base).load(account.user_id);
+                    });
+                eternity::auth::Realm realm{game_options.realm,0,0,128,"Eternity"};realm.address=advertised.to_bytes();
+                realms->replace({realm});
+                std::cout<<"Game listening on "<<game_options.address<<":"<<world->port()
+                         <<" (character listings; character commands and gameplay incomplete)."<<std::endl;
+            }
+            eternity::net::LoginServer server(io,options,eternity::auth::SqlAuthenticator(database_config),sessions,realms);
             asio::signal_set signals(io,SIGINT,SIGTERM);
-            signals.async_wait([&server](const asio::error_code& error,int) { if(!error) server.stop(); });
+            signals.async_wait([&server,&world](const asio::error_code& error,int) {
+                if(!error) {server.stop();if(world) world->stop();}
+            });
             server.start();
+            if(world) world->start();
             std::cout<<"Login listening on "<<options.address<<":"<<server.port()
-                     <<" (legacy SQL path; worlds offline)."<<std::endl;
+                     <<(world ? " (legacy SQL path; character listings available)." : " (legacy SQL path; worlds offline).")<<std::endl;
             io.run();
             return 0;
         }

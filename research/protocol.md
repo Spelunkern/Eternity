@@ -20,9 +20,8 @@ Source: `originals/ps_login/ps_login.exe`, matching PDB, Ghidra 12.1.4.
 Native framing, cryptography and asynchronous TCP login are implemented and
 tested with a generated protocol peer and SQL Server. Realm selection validates
 availability, capacity and version, and reserves a single-use session handoff.
-The standalone login command still advertises its world offline. Integration
-tests run both TCP listeners with a shared session registry. Actual client work
-is deferred.
+`--serve` runs both TCP listeners with a shared session registry; `--serve-login`
+advertises its world offline. Actual client work is deferred.
 
 `CUser::OnDispatchDB` (`00404a10`) hashes the submitted password and calls
 `GetUserMD5` (`00406e50`), which expects `usp_try_gamelogin_korea` and three
@@ -78,5 +77,19 @@ Native roster loading/serialization is implemented and tested against the origin
 procedures, including a rolled-back populated fixture. Native TCP tests cover
 login-to-world transfer, encrypted roster, ordered asynchronous dispatch, replay
 and account replacement while connected to the world. Map normalization, legacy
-wire name encoding, pending deletions, billing-item delivery, standalone world
-startup, character commands and gameplay remain pending.
+wire name encoding, pending deletions, billing-item delivery, character commands
+and gameplay remain pending. `CWorld::DBWorldDayLoad` / `DBWorldDaySave`
+(`ps_dbAgent.exe` `0040ef40` / `0040f070`) retain a nonzero packed base from
+`usp_Read_WorldInfo_E`; a missing/zero value is initialized through
+`usp_Save_WorldInfo_E`. Native startup implements this using the SQL Server local
+calendar, matching the timezone of character RegDate. SQL tests cover initialization,
+stable reload, fixed persisted dates and rollback without identity changes.
+
+Creation research: `ChkCharName` (`ps_game.exe` `0046bf00`) only checks at least
+two nonzero bytes; `TrimString` (`0046c250`) terminates the bounded buffer and
+removes ASCII spaces. `CUser::ProcessCharacterCreate` (`00480e90`) applies class
+stats, mode multipliers (1, 1.1, 1.5), racial bonuses, configured random start
+positions and base equipment. `DBCharacter::CreateCharacter` (`ps_dbAgent.exe`
+`00420270`) wraps `usp_Create_Char_R` and every `usp_Save_Char_Item_Add_E` call
+in an outer transaction. The available create procedure overrides SkillPoint to
+5. These creation commands are not yet implemented.

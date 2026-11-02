@@ -1,5 +1,6 @@
 #include "eternity/game/characters.hpp"
 #include <algorithm>
+#include <bit>
 #include <charconv>
 #include <limits>
 
@@ -52,6 +53,28 @@ std::uint32_t pack_world_time(std::chrono::sys_seconds time) {
     return (static_cast<std::uint32_t>(year-2000)<<26) | (static_cast<unsigned int>(date.month())<<22) |
         (static_cast<unsigned int>(date.day())<<17) | (static_cast<std::uint32_t>(clock.hours().count())<<12) |
         (static_cast<std::uint32_t>(clock.minutes().count())<<6) | static_cast<std::uint32_t>(clock.seconds().count());
+}
+
+std::chrono::sys_seconds load_world_base(storage::SqlServer& database) {
+    const auto saved=result(database.query("EXEC PS_GameData.dbo.usp_Read_WorldInfo_E;"),1);
+    if(!saved.rows.empty()) {
+        const auto packed=integer(saved.rows[0],0);
+        if(packed<std::numeric_limits<std::int32_t>::min() || packed>std::numeric_limits<std::uint32_t>::max())
+            throw std::runtime_error("Stored world calendar does not fit the original format");
+        if(packed!=0) return unpack_world_time(static_cast<std::uint32_t>(packed));
+    }
+    // Use the database's local calendar so SQL RegDate and the base share one timezone.
+    const auto now=result(database.query("DECLARE @Now datetime=GETDATE(); "
+        "SELECT DATEPART(year,@Now),DATEPART(month,@Now),DATEPART(day,@Now),"
+        "DATEPART(hour,@Now),DATEPART(minute,@Now),DATEPART(second,@Now);"),6);
+    if(now.rows.size()!=1) throw std::runtime_error("Cannot read SQL Server calendar");
+    const auto& row=now.rows[0];
+    const auto base=calendar(static_cast<int>(integer(row,0)),static_cast<unsigned int>(integer(row,1)),
+        static_cast<unsigned int>(integer(row,2)),static_cast<int>(integer(row,3)),
+        static_cast<int>(integer(row,4)),static_cast<int>(integer(row,5)));
+    const std::array<storage::Parameter,1> parameter={std::int64_t{std::bit_cast<std::int32_t>(pack_world_time(base))}};
+    database.query("EXEC PS_GameData.dbo.usp_Save_WorldInfo_E ?;",parameter);
+    return base;
 }
 
 CharacterRoster Characters::load(std::uint32_t user_id) {

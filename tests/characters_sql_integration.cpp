@@ -10,6 +10,7 @@ int main() {
             "SELECT COUNT(*) FROM PS_GameData.dbo.UserMaxGrow; SELECT IDENT_CURRENT('PS_GameData.dbo.Chars'); "
             "SELECT IDENT_CURRENT('PS_GameData.dbo.CharItems'); SELECT IDENT_CURRENT('PS_GameData.dbo.UserMaxGrow');";
         const auto before=database.query(snapshot);
+        const auto world_before=database.query("SET NOCOUNT ON; SELECT * FROM PS_GameData.dbo.WorldInfo; SELECT IDENT_CURRENT('PS_GameData.dbo.WorldInfo');");
         const auto base=std::chrono::sys_days{std::chrono::year{2024}/2/28};
         game::Characters characters(database,255,base);
         auto roster=characters.load(2147483000);
@@ -17,6 +18,18 @@ int main() {
         for(const auto& slot:roster.slots) require(!slot,"Synthetic account ID already has characters");
         database.begin();
         try {
+            database.query("SET NOCOUNT ON; IF (SELECT COUNT(*) FROM PS_GameData.dbo.WorldInfo)>1 "
+                "THROW 50003, 'World calendar fixture requires at most one row', 1; "
+                "IF NOT EXISTS (SELECT 1 FROM PS_GameData.dbo.WorldInfo) BEGIN "
+                "SET IDENTITY_INSERT PS_GameData.dbo.WorldInfo ON; "
+                "INSERT PS_GameData.dbo.WorldInfo(RowID,LastWorldTime,GodBless_Light,GodBless_Dark) VALUES(1,0,0,0); "
+                "SET IDENTITY_INSERT PS_GameData.dbo.WorldInfo OFF; END "
+                "ELSE UPDATE PS_GameData.dbo.WorldInfo SET LastWorldTime=0;");
+            const auto initialized=game::load_world_base(database);
+            require(game::load_world_base(database)==initialized,"World base was reset on repeated startup");
+            const std::array<storage::Parameter,1> fixed_base={std::int64_t{game::pack_world_time(base)}};
+            database.query("UPDATE PS_GameData.dbo.WorldInfo SET LastWorldTime=?;",fixed_base);
+            require(game::load_world_base(database)==base,"Persisted original world calendar was not used");
             // IDs stay below existing identity seeds: rollback preserves both rows and counters.
             database.query(
                 "SET NOCOUNT ON; "
@@ -69,6 +82,9 @@ int main() {
         const auto after=database.query(snapshot);
         require(before.size()==6 && after.size()==6,"Fixture rollback verification shape changed");
         for(std::size_t i=0;i<before.size();++i) require(before[i].rows==after[i].rows,"Character fixture changed rows or identity counters");
+        const auto world_after=database.query("SET NOCOUNT ON; SELECT * FROM PS_GameData.dbo.WorldInfo; SELECT IDENT_CURRENT('PS_GameData.dbo.WorldInfo');");
+        require(world_before.size()==world_after.size(),"World fixture verification shape changed");
+        for(std::size_t i=0;i<world_before.size();++i) require(world_before[i].rows==world_after[i].rows,"World calendar fixture survived rollback");
         std::cout<<"Original character roster, equipment and country SQL contracts passed with rollback.\n";
         return 0;
     } catch(const std::exception& error) {std::cerr<<error.what()<<'\n';return 1;}

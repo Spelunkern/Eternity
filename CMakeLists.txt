@@ -46,7 +46,7 @@ target_include_directories(eternity_login PUBLIC include ${ASIO_INCLUDE_DIR})
 target_compile_definitions(eternity_login PUBLIC ASIO_STANDALONE)
 target_link_libraries(eternity_login PUBLIC eternity_auth eternity_session Threads::Threads)
 target_compile_options(eternity_login PRIVATE -Wall -Wextra -Wpedantic -Wconversion)
-target_link_libraries(eternity-server PRIVATE eternity_game eternity_login Threads::Threads)
+target_link_libraries(eternity-server PRIVATE eternity_game eternity_login eternity_world Threads::Threads)
 target_compile_options(eternity-server PRIVATE -Wall -Wextra -Wpedantic -Wconversion)
 
 include(CTest)

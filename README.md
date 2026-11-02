@@ -13,8 +13,8 @@ its matching `ps_login.exe`. Database backups and deployment configuration are
 not included. Implemented: SQL access, original definition loaders, asynchronous
 encrypted TCP login on the available SQL path, account session replacement,
 realm handoff reservations, game TCP handshake/ciphers, and SQL-backed character
-listings. The game listener is exercised through integration tests; the standalone
-command still starts login only. Character creation/selection is pending.
+listings. `--serve` starts login and game listeners with shared sessions and the
+original persisted world calendar. Character creation/selection is pending.
 The active MD5 login
 path needs a missing procedure; see [research](research/protocol.md).
 
@@ -32,10 +32,16 @@ python3 tools/dev.py test
 python3 tools/dev.py integration
 python3 tools/dev.py run --check-original-loaders
 python3 tools/dev.py run --serve-login
+python3 tools/dev.py run --serve
 ```
 
 Reverse engineering uses Ghidra: set `GHIDRA_HOME` and `JAVA_HOME`, then run
 `python3 tools/reverse.py all`. Generated analysis stays in `work/`;
 database exports and credentials stay in `.local/`. Both directories are ignored.
-The login development endpoint uses the legacy SQL path and advertises its world
-offline. The runner shares the isolated SQL Server container's network namespace.
+`--serve-login` advertises its world offline; `--serve` makes character listings
+available through the legacy SQL login path. Ports default to 30800/30810;
+`ETERNITY_LOGIN_PORT` and `ETERNITY_WORLD_PORT` accept 0 for an ephemeral port.
+`ETERNITY_WORLD_DATABASE_ID` defaults to 1 and selects the original SQL ServerID.
+Bind/advertised addresses default to loopback (`ETERNITY_LOGIN_BIND`,
+`ETERNITY_WORLD_BIND`, `ETERNITY_WORLD_ADVERTISE`). The runner shares the isolated
+SQL Server container's network namespace.

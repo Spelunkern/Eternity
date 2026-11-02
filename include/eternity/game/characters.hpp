@@ -8,6 +8,8 @@ namespace eternity::game {
 // The original calendar is packed as year-2000:6, month:4, day:5, hour:5, minute:6, second:6.
 std::chrono::sys_seconds unpack_world_time(std::uint32_t packed);
 std::uint32_t pack_world_time(std::chrono::sys_seconds time);
+// CWorld::DBWorldDayLoad (ps_dbAgent.exe 0040ef40). Initializes a missing/zero base through the original save procedure.
+std::chrono::sys_seconds load_world_base(storage::SqlServer& database);
 
 struct CharacterSummary {
     std::uint32_t id = 0;
