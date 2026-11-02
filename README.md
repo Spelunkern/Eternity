@@ -91,6 +91,7 @@ Bank persistence preserves independent SQL writes, partial success and insert
 cleanup. NPC upgrades/resets retain insertion/update markers and persist each
 slot with partial-failure recovery. Complete guild save coordination writes
 metadata, retries timeouts and invokes bank/NPC persistence in original order.
+Guild remark packets and original SQL quote/error behavior are retained.
 Production startup/scheduling, character/guild transfers and guild gameplay
 remain pending.
 Zone selection/reuse and access rules are reconstructed; world object initialization

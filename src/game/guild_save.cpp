@@ -3,6 +3,15 @@
 #include <bit>
 
 namespace eternity::game {
+std::string guild_save_sql(const GuildSaveOperation& operation,std::string_view prefix) {
+    std::string query="EXEC "+std::string(prefix)+operation.procedure+' ';
+    for(std::size_t i=0;i<operation.parameters.size();++i) {
+        if(i) query+=',';
+        if(i==3) {const auto& value=std::get<std::string>(operation.parameters[i]);query+='\'';query+=value.substr(0,value.find('\0'));query+='\'';}
+        else query+=std::to_string(std::get<std::int64_t>(operation.parameters[i]));
+    }
+    query+=' ';return query;
+}
 bool save_guilds(std::span<GuildDbMetadata* const> ordered,GuildSavePorts& ports) {
     if(!ports.acquire || !ports.release || !ports.prepare || !ports.execute || !ports.bank || !ports.npcs || !ports.diagnostic) throw std::invalid_argument("Incomplete guild save services");
     if(!ports.acquire()) {ports.diagnostic({false,{},0});return false;}
@@ -13,7 +22,7 @@ bool save_guilds(std::span<GuildDbMetadata* const> ordered,GuildSavePorts& ports
         unsigned int timeouts=0;
         while(guild->save_type==2) {
             const auto& m=guild->metadata;const auto& g=m.listing;
-            const GuildSaveOperation operation{"usp_save_guildinfo_e2",{signed_value(g.id),signed_value(g.points),signed_value(m.etin),g.notice,std::int64_t{m.buy_house},signed_value(m.return_count),signed_value(m.keep_etin),std::int64_t{g.rank},std::int64_t{m.use_house}}};
+            const GuildSaveOperation operation{"usp_Save_GuildInfo_E2",{signed_value(g.id),signed_value(g.points),signed_value(m.etin),g.notice,std::int64_t{m.buy_house},signed_value(m.return_count),signed_value(m.keep_etin),std::int64_t{g.rank},std::int64_t{m.use_house}}};
             const auto result=ports.execute(operation);
             if(result.success) {guild->save_type=0;ports.prepare();break;}
             if(result.sqlstate=="HYT00") {

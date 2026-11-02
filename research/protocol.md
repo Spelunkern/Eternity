@@ -2329,6 +2329,18 @@ NPC retries preserve errors, later metadata success uses original argument order
 and a negative metadata procedure return is ignored. The storage integration also
 checks the native error code and its retention across successful operations.
 
-Original formatted-SQL apostrophe parsing for guild remarks remains to be matched:
-ordinary bound text currently differs for embedded SQL quotes. This edge is not
-covered by the coordinator fixture. Production save scheduling remains pending.
+Guild remark updates now follow `CConnection::PacketGuild` (`0b0a`, `0040ba00`)
+and `GuildMgrSave::UpdateGuildRemark` (`0040fdf0`): force the final field byte to
+NUL, copy at most 64 bytes through the first NUL and mark metadata dirty even
+when the text is unchanged. Unknown guilds are ignored. The SQL owner now uses
+the original formatted statement, including quote bytes, signed integer text and
+trailing space. It does not reinterpret the remark as a bound SQL parameter.
+
+A 128-case oracle executes original packet dispatch, lookup, forced termination,
+copying and save formatting. SQL text matches byte for byte for embedded quotes,
+doubled quotes, control characters, full fields and NUL tails. Disposable SQL
+verifies ordinary single quotes preserve error 102/dirty state, trailing quotes
+preserve error 105, doubled quotes are decoded by SQL Server, the recovered
+procedure trims stored text without changing the cache, and valid text recovers
+after syntax errors. Live save scheduling and client guild-management gameplay
+remain pending.

@@ -1,5 +1,6 @@
 #include "eternity/game/guild_sql.hpp"
 #include <fstream>
+#include <algorithm>
 #include <iomanip>
 #include <iostream>
 #include <sstream>
@@ -21,7 +22,7 @@ int main(int argc,char** argv) {
         std::map<std::uint32_t,GuildDbMetadata> guilds;std::map<std::uint32_t,unsigned int> indexes,queries;std::map<std::pair<std::string,std::uint32_t>,unsigned int> children;unsigned int scenario=0,mode=0;std::size_t cases=0,next=0;std::vector<std::string> trace;bool returned=false;std::string line;
         const auto child=[&](const std::string& kind,GuildDbMetadata& guild)->std::int32_t {const auto id=guild.metadata.listing.id;auto& attempt=children[{kind,id}];const auto profile=(scenario+indexes.at(id)+(kind=="NPC"))%3;const auto value=profile==0 || (profile==1 && attempt>0)?0:profile;++attempt;trace.push_back(kind+' '+std::to_string(id)+' '+std::to_string(value));return static_cast<std::int32_t>(value);};
         GuildSavePorts ports{[&]{const bool ok=mode!=1;trace.push_back("ACQUIRE "+std::to_string(ok));return ok;},[&]{trace.push_back("RELEASE");},[&]{trace.push_back("PREPARE");},[&](const GuildSaveOperation& operation){
-            const auto id=static_cast<std::uint32_t>(std::get<std::int64_t>(operation.parameters[0]));const auto value=result(mode,queries[id]++);std::string text="EXEC "+operation.procedure;
+            const auto id=static_cast<std::uint32_t>(std::get<std::int64_t>(operation.parameters[0]));const auto value=result(mode,queries[id]++);std::string procedure=operation.procedure;for(auto& c:procedure) if(c>='A' && c<='Z') c=static_cast<char>(c-'A'+'a');std::string text="EXEC "+procedure;
             for(const auto& p:operation.parameters) {if(const auto* n=std::get_if<std::int64_t>(&p)) text+=" i"+std::to_string(*n);else text+=" s"+hex(std::get<std::string>(p));}
             trace.push_back(text+" | "+std::to_string(value.success)+' '+(value.sqlstate.empty()?"-":value.sqlstate)+' '+std::to_string(value.native_error));return value;
         },[&](GuildDbMetadata& guild){return child("BANK",guild);},[&](GuildDbMetadata& guild){return child("NPC",guild);},[&](const GuildSaveResult&){trace.push_back("ERROR");}};

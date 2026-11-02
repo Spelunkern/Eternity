@@ -1,5 +1,6 @@
 #include "eternity/game/guild_sql.hpp"
 #include <bit>
+#include <algorithm>
 #include <charconv>
 #include <limits>
 
@@ -24,6 +25,9 @@ net::Packet packet(const GuildMetadata& data,const GuildMetadata& cached) {
     append(p,0);append(p,cached.return_count);return p;
 }
 }
+void GuildDbMetadata::set_remark(std::string_view value) {
+    metadata.listing.notice=std::string(value.substr(0,std::min(std::size_t{64},value.find('\0'))));save_type=2;
+}
 bool GuildDbMetadata::upgrade_npc(std::uint8_t slot,std::uint16_t type,std::uint8_t level,std::uint32_t etin,std::uint32_t keep) {
     if(!npcs.upgrade(slot,type,level)) return false;metadata.etin=etin;metadata.keep_etin=keep;save_type=2;return true;
 }
@@ -36,7 +40,7 @@ bool GuildSql::save() {
     if(main_.transaction_active() || auxiliary_.transaction_active()) throw std::logic_error("Guild saving requires independent connections in autocommit mode");
     std::vector<GuildDbMetadata*> ordered;for(auto& [id,guild]:replicas_) ordered.push_back(&guild);std::string diagnostic;
     GuildSavePorts ports{[]{return true;},[]{},[]{},[&](const GuildSaveOperation& operation) {
-        try {(void)main_.query("EXEC "+prefix_+operation.procedure+" ?,?,?,?,?,?,?,?,?;",operation.parameters);return GuildSaveResult{};}
+        try {(void)main_.query(guild_save_sql(operation,prefix_));return GuildSaveResult{};}
         catch(const storage::SqlError& error) {diagnostic=error.what();return GuildSaveResult{false,error.sqlstate,error.native_error};}
         catch(const std::exception& error) {diagnostic=error.what();return GuildSaveResult{false,{},0};}
     },[&](GuildDbMetadata& guild){return static_cast<std::int32_t>(bank_store_.save(guild.metadata.listing.id,*guild.bank));},[&](GuildDbMetadata& guild){return static_cast<std::int32_t>(npc_store_.save(guild.metadata.listing.id,guild.npcs));},[&](const GuildSaveResult&){ports_.diagnostic(diagnostic);}};
@@ -109,6 +113,12 @@ bool GuildSql::load_bank(std::uint32_t id,GuildBankReplica& bank) {
 InventoryReplicaResult GuildSql::apply(std::span<const std::uint8_t> p) {
     if(p.size()<6) return InventoryReplicaResult::rejected;
     const auto op=std::uint32_t{p[0]}|(std::uint32_t{p[1]}<<8);
+    if(op==0xb0a) {
+        if(p.size()!=71) return InventoryReplicaResult::rejected;
+        std::uint32_t id=0;for(unsigned int i=0;i<4;++i) id|=std::uint32_t{p[2+i]}<<(8*i);
+        const auto found=replicas_.find(id);if(found!=replicas_.end()) found->second.set_remark(std::string_view(reinterpret_cast<const char*>(p.data()+6),65));
+        return InventoryReplicaResult::applied;
+    }
     if(op==0xb0f || op==0xb17) {
         if(p.size()!=(op==0xb0f?18U:10U) || (op==0xb0f && p[9]>=8)) return InventoryReplicaResult::rejected;
         const auto dword=[&](std::size_t at){std::uint32_t value=0;for(unsigned int i=0;i<4;++i) value|=std::uint32_t{p[at+i]}<<(8*i);return value;};
