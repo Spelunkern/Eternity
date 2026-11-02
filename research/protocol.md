@@ -1816,6 +1816,44 @@ joins periodic, selection and disconnect jobs to actual composed saving, checkin
 exit packet account ownership/order, normal/shutdown failures, ignored purchases
 and the standalone leave no-op. Saving, full ResetData, roster reload, registry
 removal and transport are ports in the lifecycle instruction fixture; this does
-not prove their live service ownership. The threaded DB-job queue, manager sweep,
+not prove their live service ownership. Live DB-job ownership, manager sweep,
 social persistence, connection-pool ownership and live world-session wiring still
 require reconstruction/integration.
+
+`post_db_job` / `dispatch_db_jobs` reconstruct `ps_dbAgent.exe`
+`SDBDispatchClient::PostDispatchDB` (`00431a60`) and `DispatchDB` (`00431ac0`).
+Detached clients do nothing. Uncounted mode pushes a FIFO status and posts one
+completion; each dispatch pops at most one nonzero status. Synchronous mode
+pushes before incrementing the DWORD job counter, waking only when the new count
+is one. Dispatch snapshots that count as its batch limit, stops on a zero pop,
+and subtracts completed calls only when both their count and the current counter
+are signed-positive. A signed-positive *old* subtraction result posts another
+completion, even if the new count is zero. Zero statuses are consumed without
+calling the handler or reducing the job counter. Node allocation failure drops
+the pushed status but retains subsequent counter/wake behavior. Reset (`00403c30`)
+clears the FIFO, then exchanges the counter to zero.
+
+The native `DbJobDispatcher` replaces IOCP with completion tokens, condition
+variables and worker threads. It retains batch/wake/count rules and permits
+concurrent dispatches for a client; callers serialize owned state separately.
+Default worker selection follows `SDBDispatcher::Start` (`00431990`): four times
+processor count, capped at 256. The original DB-agent enables synchronous mode
+in `CServer::Start` (`0040c6e0`). Native shutdown closes admission, posts one null
+token per worker and joins, matching original sentinel ordering (`004319c0`);
+work requeued behind sentinels has no drain guarantee. Worker exceptions are
+recorded at the native boundary; source callbacks normally do not throw.
+
+A 2,304-sequence fixture executes 20,736 original post/dispatch/reset operations
+across detached/sync modes, zero/status FIFO entries, allocation failures, DWORD
+counter limits and injected producer/reset effects. A separate cooperative
+original instruction schedule pauses a producer after Push and overlaps two
+DispatchDB calls. Both statuses run, but one completion observes zero and skips
+its subtraction; the delayed producer increment leaves count one with an empty
+FIFO. Native control reproduces the same trace. Thus completion-idle does not
+prove all counted work drained. Concurrent native checks verify status
+conservation/at-most-once execution; uncounted mode also drains every posted
+status. Single-worker checks cover ordered lifecycle jobs, zero-counter stalls,
+reset, detached clients and shutdown admission. Disposable SQL now sends an
+actual deferred disconnect through a native worker, composed character saving,
+leave and ordered `0302`/`0303` notifications. Live server ownership, periodic
+manager sweep, social persistence and connection-pool integration remain pending.

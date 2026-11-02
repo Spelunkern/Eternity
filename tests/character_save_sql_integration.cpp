@@ -1,5 +1,6 @@
 #include "eternity/game/character_save.hpp"
 #include "eternity/game/user_lifecycle.hpp"
+#include "eternity/game/db_dispatch.hpp"
 #include "eternity/game/creation.hpp"
 #include <fstream>
 #include <iostream>
@@ -56,11 +57,20 @@ int main(int argc,char** argv) {
         require(!db.character_write_context_active() && !auxiliary.character_write_context_active(),"Exit save leaked its transaction");
         UserLifecycleState owner{9901,2,0,true};UserLifecycle* lifecycle=nullptr;
         CharacterSaveCallbacks owned_callbacks=callbacks;owned_callbacks.queue_exit=[&](){actions.push_back("POST9");};owned_callbacks.exit=[&](){lifecycle->exit();};
-        UserLifecyclePorts ports;ports.post=[&](std::uint32_t job){actions.push_back("POST"+std::to_string(job));};ports.send=[&](net::Packet p){require(p.size()==6 && p[1]==3 && p[2]==0xad && p[3]==0x26 && p[4]==0 && p[5]==0,"Lifecycle exit packet lost its account owner");actions.push_back("SEND"+std::to_string(p[0]));};ports.leave=[&](){actions.push_back("LEAVE");};ports.reset=[&](){actions.push_back("RESET");};ports.roster=[&](bool country){require(country,"Selection reload lost its country flag");actions.push_back("ROSTER");};ports.save=[&](bool periodic,bool quick){return store.save(cache,periodic,quick,true,"owner_user",owned_callbacks,diagnostic).legacy_success;};ports.save_exit=[&](bool shutdown){(void)store.save_exit(cache,shutdown,"owner_user",owned_callbacks,diagnostic);};UserLifecycle live(owner,std::move(ports));lifecycle=&live;
+        UserLifecyclePorts ports;ports.post=[&](std::uint32_t job){actions.push_back("POST"+std::to_string(job));};ports.send=[&](net::Packet p){require(p.size()==6 && p[1]==3 && p[2]==0xad && p[3]==0x26 && p[4]==0 && p[5]==0,"Lifecycle exit packet lost its account owner");actions.push_back("SEND"+std::to_string(p[0]));};ports.leave=[&](){actions.push_back("LEAVE");};ports.reset=[&](){actions.push_back("RESET");};ports.roster=[&](bool country){require(country,"Selection reload lost its country flag");actions.push_back("ROSTER");};ports.save=[&](bool periodic,bool quick){return store.save(cache,periodic,quick,true,"owner_user",owned_callbacks,diagnostic).legacy_success;};ports.save_exit=[&](bool shutdown){(void)store.save_exit(cache,shutdown,"owner_user",owned_callbacks,diagnostic);};auto worker_ports=ports;UserLifecycle live(owner,std::move(ports));lifecycle=&live;
         actions.clear();diagnostics.clear();std::uint32_t last=0;require(live.update_save(0,last) && owner.next_save_tick==900000 && last==900000 && actions==std::vector<std::string>{"POST8"},"Live save owner failed its first scheduled job");require(live.dispatch_save_job(8) && actions==std::vector<std::string>{"POST8","FRIENDS","BLOCKS"},"Periodic owner job did not run composed SQL saving");
         actions.clear();live.logout_select();require(actions==std::vector<std::string>{"POST10"},"Active selection logout was not deferred");require(live.dispatch_save_job(10) && actions==std::vector<std::string>{"POST10","FRIENDS","BLOCKS","SEND3","RESET","ROSTER"} && owner.status==1 && !owner.next_save_tick,"Selection job did not save, notify, reset and reload in source order");
         actions.clear();owner.status=2;live.disconnect_by_game_server();require(actions==std::vector<std::string>{"POST9"},"Game disconnect failed to defer exit saving");require(live.dispatch_save_job(9) && actions==std::vector<std::string>{"POST9","FRIENDS","BLOCKS","SEND2","SEND3","LEAVE"},"Deferred disconnect did not join SQL save with ordered account exit notifications");
         require(!db.character_write_context_active() && !auxiliary.character_write_context_active() && diagnostics.empty(),"Lifecycle SQL dispatch leaked transaction state or diagnostics");
-        std::cout<<"Complete character save SQL passed: all phases, independent purchases/growth, retry/recovery, normal/shutdown exits, periodic jobs, selection reset and deferred disconnect notifications\n";
+        // Real native completion worker, with one owner and one worker for
+        // deterministic SQL/notification order. Cache access shares its mutex.
+        actions.clear();diagnostics.clear();owner.status=2;DbJobDispatcher dispatcher(true,1);
+        const auto jobs=dispatcher.client([&](std::uint32_t job){std::lock_guard lock(mutex);require(lifecycle->dispatch_save_job(job),"Worker received an unreconstructed lifecycle job");});
+        owned_callbacks.queue_exit=[&](){actions.push_back("POST9");require(jobs->post(9),"Active completion queue rejected retry exit");};worker_ports.post=[&](std::uint32_t job){actions.push_back("POST"+std::to_string(job));require(jobs->post(job),"Active completion queue rejected lifecycle work");};
+        UserLifecycle threaded(owner,std::move(worker_ports));lifecycle=&threaded;
+        {std::lock_guard lock(mutex);threaded.disconnect_by_game_server();}dispatcher.wait_idle();
+        require(!dispatcher.failure() && !jobs->pending_count() && !jobs->queued_count() && actions==std::vector<std::string>{"POST9","FRIENDS","BLOCKS","SEND2","SEND3","LEAVE"},"Native worker did not complete queued SQL disconnect and ordered notifications");
+        require(!db.character_write_context_active() && !auxiliary.character_write_context_active() && diagnostics.empty(),"Threaded SQL save left diagnostics/transactions");
+        std::cout<<"Complete character save SQL passed: all phases, independent purchases/growth, retry/recovery, normal/shutdown exits, periodic jobs, selection reset and native-worker disconnect notifications\n";
     }catch(const std::exception& error) {std::cerr<<error.what()<<'\n';return 1;}
 }
