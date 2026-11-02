@@ -39,6 +39,10 @@ const MobRuntimeTemplate* MobRuntimeTemplates::find(std::uint32_t id) const noex
     if(id>65535) return nullptr;
     const auto at=records_.find(static_cast<std::uint16_t>(id));return at==records_.end() || at->second.id==0 || at->second.level==0 || at->second.hp==0?nullptr:&at->second;
 }
+void account_obelisk_mob_corpse(MobRespawn& respawn,const MobRuntimeTemplate& definition,std::uint32_t now) {
+    if(!respawn.obelisk) throw std::invalid_argument("Obelisk corpse accounting requires an obelisk respawn");
+    if(respawn.next<now || respawn.next==UINT32_MAX) respawn.next=now+definition.respawn_time;
+}
 void account_regular_mob_corpse(MobRespawn& respawn,const MobRuntimeTemplate& definition,std::uint32_t now,RandomSource& random) {
     if(respawn.obelisk || respawn.both) throw std::invalid_argument("Regular corpse accounting requires a regular/member respawn");
     if(respawn.current==respawn.count) {

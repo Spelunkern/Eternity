@@ -61,6 +61,8 @@ struct MobInitPorts {
     std::function<bool(MobRuntime&,std::uint8_t ai)> compiled_ai;
     std::function<void(MobRuntime&)> lua_ai;
 };
+// Obelisk corpse timer, UpdateMobDeath 00421bdd; count remains unchanged.
+void account_obelisk_mob_corpse(MobRespawn&,const MobRuntimeTemplate&,std::uint32_t now);
 // Regular (non-obelisk/non-principal) corpse accounting, UpdateMobDeath 00421d02.
 void account_regular_mob_corpse(MobRespawn&,const MobRuntimeTemplate&,std::uint32_t now,RandomSource&);
 // ps_game.exe CMob::SetAttack 004902f0, InitAttack 00490290, Init 00490040.

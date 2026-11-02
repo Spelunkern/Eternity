@@ -2704,3 +2704,28 @@ delay without consuming random. The 384-scenario full original loader fixture
 also compares the retained normalized selector directly, alongside its computed
 duration and the existing 1,152 initialization/attack snapshots. Zone corpse
 traversal remains pending.
+
+
+Linked principal corpse timers follow `UpdateMobDeath` (`ps_game.exe`,
+`00421c16` through `00421d62`). A deadline changes only when strictly below the
+supplied tick or equal to FFFFFFFF; equality otherwise preserves it. The default
+is now+live definition delay. Phase zero replaces this with the group's delay
+plus MS rand minute jitter, or the randomized leader's minimum minutes plus a
+window sampled from the dying mob's own SRandom. No count decrement occurs in
+this branch. Invalid group indices retain native bounds guards.
+
+The 256-case fixture executes these original instructions and actual SRandom
+seed/draw with only MS rand ported. It compares deadlines, unchanged counts,
+rand call counts and SRandom index/first word across phases, fixed/randomized
+leaders, zero windows, wrapped minima and deadlines. SQL integration drives
+the same helper with a restored and initialized principal and parsed group.
+This does not yet implement zone corpse traversal or principal death handling.
+
+
+Obelisk corpse deadlines follow `UpdateMobDeath` (`ps_game.exe`, `00421bdd`
+through `00421d62`): preserve next when >=now except FFFFFFFF; otherwise use
+now+live definition delay, with DWORD wrap and no count change or random draw.
+The 60-case instruction fixture uses no dependency ports and covers equality,
+sentinel, unsigned limits and zero/nonzero durations. It excludes traversal,
+status/death-time eligibility, unlinking and object recycling. The native helper
+requires the obelisk flag and does not substitute obelisk death/ownership logic.

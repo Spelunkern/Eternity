@@ -40,6 +40,8 @@ public:
     // BothMobDestroy 0041bad0 / BothMobRespawn 0041be50 / UpdateBothMobRespawn 0041b870.
     // Death accounting is owned by the caller. Required removal/portal owners
     // may inspect records but must not resize group storage.
+    // UpdateMobDeath principal timer branch 00421c16; no count decrement.
+    void account_principal_corpse(MobRuntime&,std::uint32_t now,RandomSource&);
     void destroyed(std::size_t,const MapDefinition&,ZoneMobs&,MobPool&,MobInitPorts&,LinkedMobWorld&);
     void respawn(std::size_t,const MapDefinition&,ZoneMobs&,MobPool&,MobInitPorts&,LinkedMobWorld&);
     void update(const MapDefinition&,ZoneMobs&,MobPool&,MobInitPorts&,std::uint32_t now,LinkedMobWorld&);

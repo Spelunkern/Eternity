@@ -75,6 +75,21 @@ void populate_companions(LinkedMobGroup& group,std::int32_t stage,const MapDefin
     }
 }
 }
+void LinkedMobPopulation::account_principal_corpse(MobRuntime& mob,std::uint32_t now,RandomSource& random) {
+    if(!mob.respawn || !mob.definition || !mob.respawn->both || mob.respawn->obelisk) throw std::invalid_argument("Linked principal corpse requires bound definition/respawn");
+    auto& respawn=*mob.respawn;if(respawn.next>=now && respawn.next!=UINT32_MAX) return;
+    respawn.next=now+mob.definition->respawn_time;
+    if(respawn.type<0 || static_cast<std::size_t>(respawn.type)>=groups_.size()) return;
+    const auto& group=groups_[static_cast<std::size_t>(respawn.type)];if(group.current_index!=0) return;
+    if(group.leader.randomized!=0) {
+        auto delay=group.leader.minimum_minutes*60000U;
+        if(group.leader.random_minutes!=0) {
+            const auto bound=group.leader.random_minutes*60U;if(bound==0) throw std::invalid_argument("Invalid linked corpse random timer");
+            delay+=mob.drop_random.next(bound)%bound*1000U;
+        }
+        respawn.next=now+delay;
+    } else respawn.next=now+group.respawn_time+static_cast<std::uint32_t>(random.next()%120-60)*60000U;
+}
 void LinkedMobPopulation::destroyed(std::size_t index,const MapDefinition& map,ZoneMobs& zone,MobPool& pool,MobInitPorts& ports,LinkedMobWorld& world) {
     auto& group=groups_.at(index);group.leader.members[0]=nullptr;remove_companions(group,world);
     group.current_index=std::bit_cast<std::int32_t>(static_cast<std::uint32_t>(group.current_index)+1U);

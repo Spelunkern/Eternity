@@ -80,6 +80,11 @@ void verify_mob_population(const eternity::game::MobRuntimeTemplates& definition
     } world(zone,pool,runtime,linked_maps);
     runtime_map.settings.create_type=3;runtime.linked_mobs->respawn(0,map,zone,pool,ports,world);
     require(zone.size()==3 && serial==112 && linked_maps[0].definition.portals[0].country==3 && runtime.instance_portal_country(1010)==3,"SQL linked respawn did not set shared/instance portal state");
+    auto* principal=groups[0].leader.members[0];require(principal && principal->respawn->both,"SQL linked principal lost timer binding");
+    principal->respawn->next=UINT32_MAX;auto expected_random=random;
+    const auto expected_deadline=1000U+groups[0].respawn_time+static_cast<std::uint32_t>(expected_random.next()%120-60)*60000U;
+    runtime.linked_mobs->account_principal_corpse(*principal,1000,random);
+    require(principal->respawn->next==expected_deadline && principal->respawn->current==1 && random.state()==expected_random.state(),"SQL linked principal corpse timer/count/random changed");
     auto* dead=groups[0].leader.members[0];require(dead && dead->id==110 && zone.leave(*dead),"SQL linked leader did not bind/release");pool.release(*dead);
     // The death owner supplies this accounting before invoking BothMobDestroy.
     groups[0].leader.respawn.current=0;groups[0].leader.respawn.next=5000;
