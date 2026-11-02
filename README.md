@@ -27,7 +27,8 @@ are reconstructed; live world operations and gameplay remain pending.
 Scalar HP damage, its protection/group notifications and the attacker damage ledger
 are reconstructed. Defense durability wear updates native actor equipment and defenses;
 scalar damage, attribution and low-HP passive activation now run through the actor.
-Death effect cleanup is reconstructed; corpse handling, combat dispatch and the live world remain pending.
+Death effect cleanup, corpse snapshots/cell visibility and the global corpse registry
+are reconstructed; death orchestration, combat dispatch and the live world remain pending.
 Actor preparation connects these stages, including effect-driven resource clamps
 and cleanup. Equipment/transformation attack rebuilding and elemental-effect
 replacement run natively in the actor. User appearance packets include visible

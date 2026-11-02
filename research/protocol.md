@@ -851,3 +851,34 @@ appearance and retains the derived presence of surviving defense-element skills.
 The oracle compares 728 single/multiple-effect cases against original linked-list,
 ability and element code. Actor checks cover persistent effects, passive removal,
 resource clamps, replica order and absence of ordinary expiry notices.
+
+Corpse handling reconstructs `ps_game.exe` `CUser::EnterDead` (`004584d0`),
+`CZone::FindDead/FindDeadWorld/EnterDead/LeaveDead`
+(`00417640`/`004176c0`/`00417720`/`00417820`), cell list operations
+(`00423910`/`00423960`/`004239c0`), `CWorld::LeaveDead` (`0040d520`) and the
+LIFO `CDead` heap (`0040aeb0`/`0040a6a0`). Capture stores character ID, position,
+direction, seven appearance bytes, occupied equipment slots 0..7 and the name
+through its NUL. Reuse preserves absent equipment and bytes beyond the new name.
+Original fresh appearance memory is unspecified; native fresh snapshots start zeroed.
+
+Entry validates truncated X/Z cells against the extra final cell extent, then
+checks a world-wide ID index. Duplicate IDs log and return true without replacing
+or attaching the new allocation. Entry emits no packet. Zone lookup logs/rejects
+cross-zone bodies; world lookup has no such filter. Removal erases the global ID,
+unlinks the cell, clears the zone, broadcasts `0406` (ID DWORD), clears coordinates
+and returns the body to the heap. Missing IDs log and return false. The native
+view rejects invalid negative/nonfinite cell indices that would access invalid
+original memory; fractional negative positions truncating to cell zero remain valid.
+
+`CCell::SendCellInfoEnter` (`00423aa0`, corpse block `00423ccb..00423e9e`)
+sends `0405`: ID DWORD, XYZ floats, direction WORD, country/family/hair/face/size/
+job/sex BYTEs, eight equipment types, eight equipment IDs and a NUL-terminated
+name (44+name-length bytes). `SendCellInfoLeave` (`00424130`) sends `0406`
+per body without removing it. Insertion order and a live shared cell cursor govern
+both streams and searches. Runtime zones now have a corpse registry attachment;
+concrete zone ownership, release scheduling and full death dispatch remain pending.
+The oracle compares 396 persistent operations across two zones, including real
+snapshot/list/packet/heap code, with global-map, transport and allocation ports.
+Every allocation's snapshot/binding, global ownership and ordered notifications
+are compared. Native checks also cover send-time unlink/reuse, shared-cursor
+mutation, allocation failure, invalid cells and duplicate heap release.

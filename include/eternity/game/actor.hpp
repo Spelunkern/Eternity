@@ -65,6 +65,7 @@ public:
     EffectCycle& effects() noexcept {return effects_;}
     const EffectReplica& replica() const noexcept {return replica_;}
     std::vector<PlayerItem>& inventory() noexcept {return inventory_;}
+    const std::vector<PlayerItem>& inventory() const noexcept {return inventory_;}
     void initializing(bool value) noexcept {initializing_=value;}
     void finish_loading_resources() {resources_.clamp(status_.skills.equipment.base.maximum);}
     std::array<std::int32_t,3> heal(std::array<std::int32_t,3> amounts);
