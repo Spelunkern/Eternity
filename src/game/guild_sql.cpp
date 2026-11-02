@@ -32,6 +32,16 @@ GuildSql::GuildSql(storage::SqlServer& main,storage::SqlServer& auxiliary,Invent
     if(&main==&auxiliary || !ports_.send || !ports_.allocate || !ports_.diagnostic) throw std::invalid_argument("Guild loading requires two SQL connections and replica services");
     if(catalog.empty() || catalog.find_first_not_of("ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789_")!=std::string::npos) throw std::invalid_argument("Invalid guild SQL catalog");prefix_="["+catalog+"].dbo.";
 }
+bool GuildSql::save() {
+    if(main_.transaction_active() || auxiliary_.transaction_active()) throw std::logic_error("Guild saving requires independent connections in autocommit mode");
+    std::vector<GuildDbMetadata*> ordered;for(auto& [id,guild]:replicas_) ordered.push_back(&guild);std::string diagnostic;
+    GuildSavePorts ports{[]{return true;},[]{},[]{},[&](const GuildSaveOperation& operation) {
+        try {(void)main_.query("EXEC "+prefix_+operation.procedure+" ?,?,?,?,?,?,?,?,?;",operation.parameters);return GuildSaveResult{};}
+        catch(const storage::SqlError& error) {diagnostic=error.what();return GuildSaveResult{false,error.sqlstate,error.native_error};}
+        catch(const std::exception& error) {diagnostic=error.what();return GuildSaveResult{false,{},0};}
+    },[&](GuildDbMetadata& guild){return static_cast<std::int32_t>(bank_store_.save(guild.metadata.listing.id,*guild.bank));},[&](GuildDbMetadata& guild){return static_cast<std::int32_t>(npc_store_.save(guild.metadata.listing.id,guild.npcs));},[&](const GuildSaveResult&){ports_.diagnostic(diagnostic);}};
+    return save_guilds(ordered,ports);
+}
 bool GuildSql::load_maximum() {
     try {const auto rows=main_.query("EXEC "+prefix_+"usp_Read_MaxGuildID_R;");const auto& data=result(rows);std::int64_t value=0;if(!data.rows.empty()) integer(data.rows.front(),0,value,INT32_MIN,INT32_MAX);net::Packet p{1,0x0b};append(p,static_cast<std::uint32_t>(value));ports_.send(std::move(p));return true;}
     catch(const std::exception& error) {ports_.diagnostic(error.what());return false;}

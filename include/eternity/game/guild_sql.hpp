@@ -2,6 +2,7 @@
 #include "eternity/game/guild_catalog.hpp"
 #include "eternity/game/guild_bank_save.hpp"
 #include "eternity/game/guild_npc_save.hpp"
+#include "eternity/game/guild_save.hpp"
 #include "eternity/storage/sql_server.hpp"
 
 namespace eternity::game {
@@ -22,8 +23,9 @@ public:
     GuildSql(storage::SqlServer&,storage::SqlServer&,InventoryReplicaPool&,GuildSqlPorts,std::string catalog="PS_GameData");
     bool load_maximum(); // LoadMaxID 00426a00.
     bool load(); // LoadGuildNUserList 004271a0 / LoadUserList 004275d0.
+    bool save(); // DBSave 00410190: metadata, bank/NPC passes and original retries.
     void send_npcs(); // SendGuildNpcLvList 00410cb0, after guild/bank loading.
-    InventoryReplicaResult apply(std::span<const std::uint8_t>); // Owned bank commands, PacketGuild 0040ba00.
+    InventoryReplicaResult apply(std::span<const std::uint8_t>); // Owned bank/NPC commands, PacketGuild 0040ba00.
     std::optional<std::uint32_t> save_bank(std::uint32_t guild); // One DBSaveItem pass; global scheduling is separate.
     std::optional<std::uint32_t> save_npcs(std::uint32_t guild); // One DBSaveNpcLv pass.
     void send_banks(); // SendGuildBankList 00410c20.

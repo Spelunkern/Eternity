@@ -13,7 +13,7 @@ def run(command,build_directory='build'):
         # The recovered procedure orders by G.Rank, absent from recovered Guilds.
         # Supply its expected column only in this disposable fixture.
         sql('ALTER TABLE dbo.Guilds ADD Rank int NOT NULL DEFAULT 0;',name)
-        for procedure in ('usp_Read_MaxGuildID_R','usp_Read_Guild2_R','usp_Read_GuildChar_R','usp_Read_GuildNpcLv_R','usp_Read_Guild_StoredItems_Detail_R','usp_Save_Guild_StoredItem_Add_E','usp_Save_Guild_StoredItem_Mod_E','usp_Save_Guild_StoredItem_Del_E','usp_Save_Guild_NpcLv_Add_E','usp_Save_Guild_NpcLv_Mod_E'):
+        for procedure in ('usp_Read_MaxGuildID_R','usp_Read_Guild2_R','usp_Read_GuildChar_R','usp_Read_GuildNpcLv_R','usp_Read_Guild_StoredItems_Detail_R','usp_Save_Guild_StoredItem_Add_E','usp_Save_Guild_StoredItem_Mod_E','usp_Save_Guild_StoredItem_Del_E','usp_Save_Guild_NpcLv_Add_E','usp_Save_Guild_NpcLv_Mod_E','usp_Save_GuildInfo_E2'):
             definition=sql('SELECT OBJECT_DEFINITION(OBJECT_ID('+literal('dbo.'+procedure)+')) AS definition FOR JSON PATH;','PS_GameData',json_output=True)[0]['definition']
             sql("GO\n"+definition,name)
         sql("INSERT dbo.Guilds(GuildID,GuildName,MasterUserID,MasterCharID,MasterName,Country,TotalCount,GuildPoint,Del,CreateDate,Rank) VALUES(10,'NativeGuild','native',1000,'Master',1,63,100,0,GETDATE(),3),(20,'EmptyGuild','native',2000,'Empty',0,0,200,0,GETDATE(),2),(30,'Deleted','native',3000,'Gone',0,0,0,1,GETDATE(),1); INSERT dbo.GuildDetails(GuildID,UseHouse,BuyHouse,Rank,Etin,EtinReturnCnt,KeepEtin,Remark) VALUES(10,1,1,2,300,7,9999,'Hello');",name)

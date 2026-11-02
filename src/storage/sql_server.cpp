@@ -21,13 +21,14 @@ void check(SQLRETURN result, SQLSMALLINT type, SQLHANDLE handle, std::string_vie
     std::array<SQLCHAR, 6> state{};
     std::array<SQLCHAR, 2048> detail{};
     SQLINTEGER native = 0;
-    SQLSMALLINT size = 0;
+    SQLSMALLINT size = 0;std::string first_state;SQLINTEGER first_native=0;
     for (SQLSMALLINT index = 1; SQL_SUCCEEDED(SQLGetDiagRec(type, handle, index,
          state.data(), &native, detail.data(), static_cast<SQLSMALLINT>(detail.size()), &size)); ++index) {
+        if(index==1) {first_state=reinterpret_cast<char*>(state.data());first_native=native;}
         message += " [" + std::string(reinterpret_cast<char*>(state.data())) + "] ";
         message += reinterpret_cast<char*>(detail.data());
     }
-    throw std::runtime_error(message);
+    throw SqlError(std::move(message),std::move(first_state),first_native);
 }
 
 struct Statement {
@@ -235,6 +236,8 @@ std::vector<ResultSet> SqlServer::query(std::string_view sql, std::span<const Pa
             if (result != SQL_NO_DATA) check(result, SQL_HANDLE_STMT, statement.handle, "advance result set");
         }
         return sets;
+    }catch(const SqlError& error) {
+        query_state_.fill(0);if(error.sqlstate.size()==5) std::copy(error.sqlstate.begin(),error.sqlstate.end(),query_state_.begin());query_native_error_=error.native_error;throw;
     }catch(const std::runtime_error& error) {observe_query_error(error.what());throw;}
 }
 void SqlServer::observe_query_error(std::string_view diagnostic) noexcept {

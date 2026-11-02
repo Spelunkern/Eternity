@@ -11,9 +11,18 @@
 #include <vector>
 #include <variant>
 #include <array>
+#include <utility>
 
 namespace eternity::game {class CharacterSaveStore;}
 namespace eternity::storage {
+
+// First ODBC diagnostic, corresponding to original SDatabase::GetErrorMsg.
+// Preserve all formatted diagnostics in what(); native codes remain structured.
+class SqlError:public std::runtime_error {
+public:
+    SqlError(std::string message,std::string state,std::int32_t native):std::runtime_error(std::move(message)),sqlstate(std::move(state)),native_error(native) {}
+    const std::string sqlstate;const std::int32_t native_error;
+};
 
 struct SqlServerConfig {
     std::string driver;
@@ -54,6 +63,7 @@ public:
     // SDatabase query diagnostics belong to the connection and survive successful
     // calls. Compatibility adapters can report equivalent pre-query SQL errors.
     std::string_view last_query_sqlstate() const noexcept {return {query_state_.data(),query_state_[0]?5U:0U};}
+    std::int32_t last_query_native_error() const noexcept {return query_native_error_;}
     void observe_query_error(std::string_view diagnostic) noexcept;
 private:
     friend class eternity::game::CharacterSaveStore;
@@ -62,6 +72,7 @@ private:
     bool transaction_active_ = false;
     bool legacy_character_save_ = false;
     std::array<char,5> query_state_{};
+    std::int32_t query_native_error_=0;
 };
 
 } // namespace eternity::storage

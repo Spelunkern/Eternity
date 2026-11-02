@@ -89,8 +89,10 @@ relocation, game item reconstruction and client bank packets are implemented.
 DB bank moves, count changes and deletions retain original save markers/journals.
 Bank persistence preserves independent SQL writes, partial success and insert
 cleanup. NPC upgrades/resets retain insertion/update markers and persist each
-slot with partial-failure recovery. Production startup/scheduling, character/guild
-transfers and guild gameplay remain pending.
+slot with partial-failure recovery. Complete guild save coordination writes
+metadata, retries timeouts and invokes bank/NPC persistence in original order.
+Production startup/scheduling, character/guild transfers and guild gameplay
+remain pending.
 Zone selection/reuse and access rules are reconstructed; world object initialization
 and zone queue services remain required dependencies.
 Door/region templates, door operation and weather transitions are reconstructed.

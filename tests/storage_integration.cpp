@@ -83,14 +83,15 @@ int main() {
         require(transaction.size() == 1 && transaction[0].rows[0][0] == Cell{"1"}, "Commit/rollback did not preserve state");
         bool failed = false;
         try { (void)database.query("SELECT * FROM dbo.EternityNonexistentTable;"); }
-        catch (const std::runtime_error&) { failed = true; }
+        catch (const SqlError& error) { failed = error.native_error==208 && error.sqlstate.size()==5; }
         require(failed, "SQL errors must propagate to the caller");
         const std::string query_state(database.last_query_sqlstate());
+        require(database.last_query_native_error()==208,"Connection did not retain the first native SQL query error");
         require(query_state.size()==5,"Connection did not retain original query SQLSTATE");
         const auto recovered = database.query("SELECT 1;");
-        require(database.last_query_sqlstate()==query_state,"Successful SQL query cleared original diagnostic state");
+        require(database.last_query_sqlstate()==query_state && database.last_query_native_error()==208,"Successful SQL query cleared original diagnostic state");
         database.begin();database.query("SELECT 1;");database.rollback();
-        require(database.last_query_sqlstate()==query_state,"Transaction cleanup cleared original query diagnostic state");
+        require(database.last_query_sqlstate()==query_state && database.last_query_native_error()==208,"Transaction cleanup cleared original query diagnostic state");
         require(recovered.size() == 1 && recovered[0].rows[0][0] == Cell{"1"}, "Connection unusable after query error");
         const auto definitions = eternity::game::Definitions::load(database);
         require(definitions.catalogs.size() == 8 && !definitions.catalogs.at("Mobs").rows.empty(),

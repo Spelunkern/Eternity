@@ -2275,8 +2275,8 @@ executes the original save owner with lease/ODBC failures and compares SQL
 arguments, marker changes, journal retention, prepare/release order and error
 counts. Disposable SQL proves insertion survives a later failing update, subsequent
 delete/update clears acknowledged state, and invalid packed-date insertion
-schedules cleanup before retry. Production guild save scheduling, metadata persistence and character/guild
-inventory transfers remain pending.
+schedules cleanup before retry. Production guild save scheduling and character/guild inventory transfers remain
+pending.
 
 
 NPC mutations follow `GuildMgrSave::UpdateNpcUpgrade` (`ps_dbAgent.exe`,
@@ -2294,13 +2294,41 @@ needed. Successful Query clears that marker. Failure retains it, increments the
 error count and continues other slots. Procedure returns are not read. Other
 markers and empty types remain untouched; SQL arguments retain full WORD values,
 including SMALLINT/TINYINT conversion failures. `GuildNpcStore` executes recovered
-procedures; `GuildSql::save_npcs` exposes one pass. The original caller's retry
-and global scheduling remain separate work.
+procedures; `GuildSql::save_npcs` exposes one pass. The original caller's retry is reconstructed by the save coordinator; live
+scheduling remains separate work.
 
 The 256-sequence oracle executes original tree lookup, upgrade/reset, metadata
 writes and 512 save passes, including lease failures, isolated and persistent
 query errors. Disposable SQL verifies cached packet routing, retained existing
 types, insertion markers, signed-type failures with later-slot success, reset
 persistence and ignored negative procedure returns. Defaults and procedures are
-copied only into the disposable test catalog. Production guild metadata saving,
-complete save coordination and NPC upgrade gameplay remain pending.
+copied only into the disposable test catalog. Production save scheduling and NPC upgrade gameplay remain pending.
+
+
+`save_guilds` reconstructs `GuildMgrSave::DBSave` (`ps_dbAgent.exe`, `00410190`).
+A primary database lease is acquired even for an empty registry. Guilds follow
+unsigned ID order. Metadata marker 2 invokes `usp_Save_GuildInfo_E2` with signed
+DWORD fields, remark, house flags, return count, keep-etin and rank. Successful
+Query immediately clears that marker; its procedure return is not read.
+`HYT00` retries up to three attempts for that guild, then aborts the pass. Other
+errors retain dirty metadata and continue to children; native error 105 terminates
+the remark at byte 64. Each bank/NPC owner is called in that order and retried once
+when its first result is positive. Persistent child failures do not make the
+outer result false. Live periodic scheduling remains separate.
+
+`GuildSql::save` connects these owners through separate metadata/child SQL
+connections with independent commits. `SqlError` retains the first ODBC diagnostic
+state/native code, matching `SDatabase::GetErrorMsg` (`0043ea40`); formatted error
+text still includes all records. Successful queries/transaction cleanup retain
+connection diagnostics. The 160-sequence oracle executes the real original ID
+tree and coordinator with verified child owners as ports, covering empty registries,
+lease errors, two-successful-retry/three-failure timeout cases, HYT01, other SQL
+failures, unsigned IDs, child ordering/retries and dirty-state retention.
+Disposable SQL verifies metadata constraint failure still permits bank deletion,
+NPC retries preserve errors, later metadata success uses original argument order,
+and a negative metadata procedure return is ignored. The storage integration also
+checks the native error code and its retention across successful operations.
+
+Original formatted-SQL apostrophe parsing for guild remarks remains to be matched:
+ordinary bound text currently differs for embedded SQL quotes. This edge is not
+covered by the coordinator fixture. Production save scheduling remains pending.
