@@ -124,6 +124,20 @@ int main(int argc,char** argv) {
         elemental.effects().initialize(elemental.status(),elemental);
         require(elemental.status().skills.equipment.base.maximum.hp==1002 && elemental.effects().size()==2 && elemental.replica().snapshot().size()==2 && elemental.replica().snapshot()[1].skill_id==202,"Concrete actor lost original shared-cursor element reinitialization behavior");
         require(elemental_scene.events==std::vector<std::string>{"S0e05e9030000","F1001"},"Concrete actor element replacement notifications changed");
-        std::cout<<count<<" original actor operations and concrete effect expiry passed\n";
+        Scene wear_scene;EffectStatus wear_status;wear_status.level=15;
+        auto worn=equipped_armor;worn.slot=1;worn.quality=501;worn.bag=0;
+        wear_status.skills.equipment=initialize_equipment({}, {worn},equipped_definitions,equipped_enchant);
+        recalculate_attack(wear_status);
+        Actor wearing(9001,wear_status,{100,100,100},{},wear_scene,{equipped_definitions,equipped_enchant,mob_templates},{worn});
+        wearing.wear_defense();
+        const auto& wear_equipment=wearing.status().skills.equipment;
+        require(wearing.inventory()[0].quality==500 && wear_equipment.quality[1]==1 && wearing.defense_wear_cursor()==3,"Actor wear did not select armor or cross durability threshold");
+        require(wear_equipment.attack.physical_defense==wear_status.skills.equipment.attack.physical_defense-502 && wear_equipment.attack.magic_defense==wear_status.skills.equipment.attack.magic_defense-502,"Actor wear did not update quality-dependent defenses");
+        const auto calculated=calculate_attack(wearing.status().level,wear_equipment.base.attributes,wear_equipment.attack);
+        for(std::size_t category=0;category<3;++category) require(wearing.status().calculated_attack[category].defense==calculated[category].defense,"Actor wear left final defense stale");
+        wearing.status().shape=13;wearing.wear_defense();require(wearing.defense_wear_cursor()==3,"Transformed actor advanced wear cursor");
+        wearing.status().shape=0;wearing.status().skills.benefits.no_durability_loss=1;wearing.wear_defense();
+        require(wearing.defense_wear_cursor()==3 && wearing.inventory()[0].quality==500 && wear_scene.events.empty(),"Durability protection mutated gear or emitted packets");
+        std::cout<<count<<" original actor operations, concrete effect expiry and durability integration passed\n";
     } catch(const std::exception& error) {std::cerr<<error.what()<<'\n';return 1;}
 }

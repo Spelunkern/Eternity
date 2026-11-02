@@ -773,3 +773,25 @@ ties keep the oldest entry, including all-negative records. Reset empties the
 list. The native vector retains capacity; original pooled allocation identity is
 not exposed. The instruction oracle compares 1,000 scalar damage cases with
 ordered callbacks/packets and 2,048 persistent list operations, plus empty reset.
+
+Equipment wear reconstructs `ps_game.exe` `CUser::QualityDec` (`0045b350`),
+`QualityByDefense` (`0045b290`) and `ItemEquipmentAttackRemQ/AddQ`
+(`004566d0`/`00456620`). Null/zero-quality items return false. Other items use
+wrapping DWORD subtraction, clamp on the resulting sign bit, then store a WORD;
+negative decrements can increase quality. Thresholds select cached tiers 2/1/0.
+A changed tier replaces only quality-dependent attack/variance/defense/magic
+defense accumulators and recalculates final attack. Accessories use full effects
+at every tier; their cache can still change. Craft attack cancels during removal
+and addition, and gems, attributes, resource maxima and other modifiers remain.
+There is no wear packet in these routines.
+
+Defense wear skips nonzero no-durability-loss benefits or shape, then scans the
+remaining suffix of slot order `6,0,1,3,2,4`. Every attempt advances the saved
+cursor, including absent/broken items; the first eligible item stops the scan.
+The cursor wraps for the next invocation, without revisiting earlier slots in
+the current scan. Values >=6 do nothing; negative cursors are invalid runtime
+state. `CUser::CUser` (`004499d0`, write at `00449bb1`) initializes this cursor to
+zero; `ResetCharacter` (`0044a050`) preserves it, so future connection reuse must
+retain it. The native actor owns an accessible cursor and recalculates final
+defenses after a tier change. The oracle compares 1,136 direct decrements and
+1,536 defense scans, with a concrete actor integration check and suffix/wrap tests.

@@ -60,6 +60,13 @@ void rebuild_equipment_attack(EquipmentStatus& status,const std::vector<PlayerIt
 void rebuild_transformed_attack(EquipmentStatus& status,const MobAttackTemplate* mob);
 // Applies the original stat/element changes at initialization, without broadcasting equipment changes.
 void add_equipment(EquipmentStatus& status,std::uint8_t slot,const PlayerItem& item,const ItemDefinitions& definitions,const EnchantValues& enchant);
+struct EquipmentWear {
+    bool applied=false,attack_changed=false;
+};
+// Caller recalculates final attack when attack_changed is true.
+EquipmentWear decrease_equipment_quality(EquipmentStatus& status,std::uint8_t slot,PlayerItem* item,std::int32_t amount,const ItemDefinitions& definitions);
+EquipmentWear wear_defense(EquipmentStatus& status,std::vector<PlayerItem>& items,const ItemDefinitions& definitions,
+    std::int32_t& cursor,std::int32_t no_durability_loss,std::uint8_t shape);
 std::uint32_t item_attribute(const PlayerItem& item,const ItemDefinitions& definitions);
 EquipmentStatus initialize_equipment(BaseStatus base,const std::vector<PlayerItem>& items,const ItemDefinitions& definitions,const EnchantValues& enchant);
 }

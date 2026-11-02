@@ -12,6 +12,10 @@ Actor::Actor(std::uint32_t id,EffectStatus status,PlayerResources current,std::v
 Actor::~Actor() {effects_.release_all(*this);}
 std::array<std::int32_t,3> Actor::heal(std::array<std::int32_t,3> amounts) {return resources_.heal(status_.skills.equipment.base.maximum,amounts);}
 void Actor::recover(std::array<std::int32_t,3> amounts,bool send_set,bool recovering) {resources_.recover(status_.skills.equipment.base.maximum,amounts,send_set,attack_.mode,recovering);}
+void Actor::wear_defense() {
+    const auto result=game::wear_defense(status_.skills.equipment,inventory_,equipment_.items,defense_wear_cursor_,status_.skills.benefits.no_durability_loss,status_.shape);
+    if(result.attack_changed) recalculate_attack(status_);
+}
 void Actor::maximum_changed(EffectStatus& status,std::uint8_t resource) {resources_.maximum_changed(status.skills.equipment.base.maximum,resource,initializing_);}
 void Actor::speed_changed(EffectStatus& status) {
     // CUser::SendSpeed 004827b0: suppressed during initialization, proximity view only.

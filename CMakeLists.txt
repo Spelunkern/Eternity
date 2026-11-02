@@ -69,6 +69,9 @@ target_compile_options(eternity-server PRIVATE -Wall -Wextra -Wpedantic -Wconver
 
 include(CTest)
 if(BUILD_TESTING)
+    add_executable(durability-unit tests/durability_unit.cpp)
+    target_link_libraries(durability-unit PRIVATE eternity_game)
+    add_test(NAME durability-unit COMMAND durability-unit ${CMAKE_CURRENT_SOURCE_DIR}/tests/data/durability-oracle.tsv)
     add_executable(damage-unit tests/damage_unit.cpp)
     target_link_libraries(damage-unit PRIVATE eternity_game)
     add_test(NAME damage-unit COMMAND damage-unit ${CMAKE_CURRENT_SOURCE_DIR}/tests/data/damage-oracle.tsv)

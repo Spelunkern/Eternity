@@ -69,6 +69,9 @@ public:
     void finish_loading_resources() {resources_.clamp(status_.skills.equipment.base.maximum);}
     std::array<std::int32_t,3> heal(std::array<std::int32_t,3> amounts);
     void recover(std::array<std::int32_t,3> amounts,bool send_set=false,bool recovering=false);
+    void wear_defense();
+    std::int32_t& defense_wear_cursor() noexcept {return defense_wear_cursor_;}
+    std::int32_t defense_wear_cursor() const noexcept {return defense_wear_cursor_;}
     void send_shape_self();
     void send_vehicle_partner();
     bool reveal();
@@ -102,6 +105,7 @@ private:
     ActorAppearance appearance_;
     ActorAttackState attack_;
     std::uint32_t guard_target_after_=0;
+    std::int32_t defense_wear_cursor_=0;
     UserRelations relations_;
     ActorScene& scene_;
     ActorResources resources_;

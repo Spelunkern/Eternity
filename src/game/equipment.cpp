@@ -141,6 +141,49 @@ std::uint32_t item_attribute(const PlayerItem& item,const ItemDefinitions& defin
     if(!definition) throw std::runtime_error("Missing original element item definition");
     return attribute(*definition,item,definitions);
 }
+EquipmentWear decrease_equipment_quality(EquipmentStatus& status,std::uint8_t slot,PlayerItem* item,std::int32_t amount,const ItemDefinitions& definitions) {
+    // ps_game.exe CUser::QualityDec 0045b350. WORD storage follows a wrapping
+    // DWORD subtraction and sign-bit clamp; negative decrements can raise quality.
+    if(!item || item->quality==0) return {};
+    if(slot>=status.quality.size()) throw std::invalid_argument("Invalid original durability slot");
+    const auto* info=definitions.find(item->type,item->type_id);
+    if(!info) throw std::runtime_error("Missing original durability item definition");
+    const auto remaining=std::bit_cast<std::int32_t>(static_cast<std::uint32_t>(item->quality)-static_cast<std::uint32_t>(amount));
+    item->quality=remaining<0?0:static_cast<std::uint16_t>(remaining);
+    const std::uint8_t next=item->quality<=info->quality[2]?2:item->quality<=info->quality[1]?1:0;
+    const auto previous=status.quality[slot];
+    if(next==previous) return {true,false};
+    if(previous>2) throw std::invalid_argument("Invalid cached original durability tier");
+    // ItemEquipmentAttackRemQ/AddQ 004566d0/00456620 affect only these four
+    // accumulators. Craft attack is removed and added unchanged, so cancels.
+    const auto old_index=slot>=8?0:previous,new_index=slot>=8?0:next;
+    const auto change=[&](std::int32_t& value,std::size_t effect) {
+        value=add(value,static_cast<std::int32_t>(info->effects[effect][new_index])-info->effects[effect][old_index]);
+    };
+    if(slot==5 || slot>=8) {change(status.attack.item_attack,0);change(status.variance,1);}
+    if(slot!=5) {change(status.attack.physical_defense,2);change(status.attack.magic_defense,3);}
+    status.quality[slot]=next;
+    return {true,true};
+}
+EquipmentWear wear_defense(EquipmentStatus& status,std::vector<PlayerItem>& items,const ItemDefinitions& definitions,
+    std::int32_t& cursor,std::int32_t no_durability_loss,std::uint8_t shape) {
+    // QualityByDefense 0045b290 scans only the remaining suffix this invocation;
+    // wrapping the saved cursor does not restart this scan at the first slot.
+    if(no_durability_loss!=0 || shape!=0 || cursor>=6) return {};
+    if(cursor<0) throw std::invalid_argument("Invalid original defense durability cursor");
+    constexpr std::array<std::uint8_t,6> order{6,0,1,3,2,4};
+    for(auto index=cursor;index<6;++index) {
+        const auto slot=order[static_cast<std::size_t>(index)];PlayerItem* equipped=nullptr;
+        for(auto& item:items) if(item.bag==0 && item.slot==slot) {
+            if(equipped) throw std::invalid_argument("Unresolved duplicate equipment during durability wear");
+            equipped=&item;
+        }
+        const auto result=decrease_equipment_quality(status,slot,equipped,1,definitions);
+        if(++cursor>=6) cursor=0;
+        if(result.applied) return result;
+    }
+    return {};
+}
 void add_equipment(EquipmentStatus& status,std::uint8_t slot,const PlayerItem& item,const ItemDefinitions& definitions,const EnchantValues& enchant) {
     // CUser::ItemEquipmentAdd 00454c70, ps_game.exe. Called for equipped slots 0..12.
     if(slot>=13) throw std::invalid_argument("Invalid original equipment slot");
