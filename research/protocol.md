@@ -258,3 +258,16 @@ Initialization suppresses both clamping and max-resource messages. Required
 future actor runtime. `tools/resources_oracle.py` checks 1,008 original executions
 including packet bytes, call order, wrapping, negative recovery, group kinds and
 initialization. Live actor integration remains pending.
+
+Faction blessing initialization follows `ps_game.exe` `CGameData::LoadKCStatus`
+(`004bf4a0`), `CUser::InitKCStatus` (`0048be90`) and `SendKCStatus` (`00481920`).
+`KillStatus.SData` holds 25-byte records with six type/value pairs. Each country
+starts with a zero level; later levels retain each modifier's prior maximum,
+while duplicate types within one record keep the last value. Initialization
+preserves signed DWORD product wrapping, float spills and the original order:
+resource percentages, recovery/defense percentages, then direct stat additions.
+Dexterity's blessing bonus adds MP in this executable (`0048c268`..`0048c277`).
+The `0211` notification retains signed wrapped deadline subtraction. The oracle
+executes three full original data loads (including the staged distribution),
+240 actor initializations and 14 notifications. Runtime blessing changes,
+world kill-count progression and integration with actor creation remain pending.
