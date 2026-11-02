@@ -9,6 +9,8 @@
 namespace eternity::game {
 class MoneyWorld;
 class GroundItemPool;
+class InventoryWorld;
+enum class InventoryReceipt;
 // Required scene/transport services. Implementations own zone binding, combat
 // and connection queues; none default to no-op.
 class ActorScene {
@@ -54,7 +56,7 @@ class Actor final:public EffectRemovalWorld,public EffectActivationObserver,priv
 public:
     Actor(std::uint32_t id,EffectStatus status,PlayerResources current,std::vector<PersistedEffect> replica,ActorScene& scene,
         ActorEquipmentRules equipment,std::vector<PlayerItem> inventory = {});
-    ~Actor(); // Bound scene must outlive this actor.
+    ~Actor(); // Bound scene and pools owning retained inventory must outlive this actor.
     EffectStatus& status() noexcept {return status_;}
     const EffectStatus& status() const noexcept {return status_;}
     ActorAppearance& appearance() noexcept {return appearance_;}
@@ -67,6 +69,7 @@ public:
     void send_money_database(MoneyWorld&);
     std::uint32_t receive_money(std::uint32_t amount,MoneyWorld&);
     std::uint32_t receive_money_item(GroundItem&,MoneyWorld&,GroundItemPool&);
+    InventoryReceipt receive_item(GroundItem&,InventoryWorld&,GroundItemPool&);
     UserRelations& relations() noexcept {return relations_;}
     const UserRelations& relations() const noexcept {return relations_;}
     ActorAttackState& attack_state() noexcept {return attack_;}
@@ -147,6 +150,8 @@ private:
     EffectReplica replica_;
     ActorEquipmentRules equipment_;
     std::vector<PlayerItem> inventory_;
+    struct RetainedInventory {std::uint8_t bag;std::uint16_t slot;GroundItem* item;GroundItemPool* pool;};
+    std::vector<RetainedInventory> retained_inventory_; // Bound pools must outlive the actor.
     bool initializing_=false;
 };
 }

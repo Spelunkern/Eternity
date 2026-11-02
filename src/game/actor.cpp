@@ -1,5 +1,6 @@
 #include "eternity/game/actor.hpp"
 #include "eternity/game/entry_packets.hpp"
+#include "eternity/game/item_pool.hpp"
 #include <stdexcept>
 
 namespace eternity::game {
@@ -9,7 +10,7 @@ void append(net::Packet& packet,std::uint32_t value,unsigned int bytes) {for(uns
 Actor::Actor(std::uint32_t id,EffectStatus status,PlayerResources current,std::vector<PersistedEffect> replica,ActorScene& scene,
     ActorEquipmentRules equipment,std::vector<PlayerItem> inventory)
     :id_(id),status_(std::move(status)),scene_(scene),resources_(id,current,*this),effects_(id),replica_(std::move(replica)),equipment_(equipment),inventory_(std::move(inventory)) {}
-Actor::~Actor() {effects_.release_all(*this);}
+Actor::~Actor() {effects_.release_all(*this);for(auto& held:retained_inventory_) held.pool->release(*held.item);}
 std::array<std::int32_t,3> Actor::heal(std::array<std::int32_t,3> amounts) {return resources_.heal(status_.skills.equipment.base.maximum,amounts);}
 void Actor::recover(std::array<std::int32_t,3> amounts,bool send_set,bool recovering) {resources_.recover(status_.skills.equipment.base.maximum,amounts,send_set,attack_.mode,recovering);}
 void Actor::wear_defense() {

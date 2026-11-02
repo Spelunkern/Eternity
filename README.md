@@ -37,7 +37,9 @@ handlers still require integration.
 Ground-item zone/cell indexes, visibility and expiry are reconstructed, including
 native wager placement, expiry and pool recycling. The item pool preserves reused
 IDs and partial initialization. Pickup permissions and item/quest links are
-reconstructed; inventory transfers and TCP pickup dispatch remain pending.
+reconstructed. Detached-item admission now stacks, stores or returns remainders
+with original DB/client/group/log messages; TCP pickup and shared loot dispatch
+remain pending.
 Actor money credits preserve unsigned limits and ordered DB-status/client/log
 messages, with money-item release to the pool. Periodic money saving and shared
 loot dispatch still require integration.

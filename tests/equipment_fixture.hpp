@@ -11,5 +11,5 @@ inline eternity::storage::ResultSet item_definitions() {
     table.rows.push_back({"30002","30","2","0","0","0","0","0","16","0","0","0","0","0","0","0","1","2","3","4","5","6","7","9","8"});
     table.rows.push_back({"30003","30","3","0","0","0","0","2","1","0","0","0","0","0","0","0","0","0","0","0","0","0","0","0","0"});
     table.rows.push_back({"30004","30","4","0","0","0","0","1","0","0","0","0","0","0","0","0","0","0","0","0","0","0","0","0","0"});
-    return table;
+    table.columns.push_back("Count");for(auto& row:table.rows) row.push_back("1");return table;
 }

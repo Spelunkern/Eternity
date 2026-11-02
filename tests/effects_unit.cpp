@@ -36,7 +36,7 @@ ItemDefinitions items() {
         eternity::storage::Row row(table.columns.size(),eternity::storage::Cell{"0"});row[0]=std::to_string(type*1000+1);row[1]=std::to_string(type);row[2]="1";
         row[7]=type==5?"1":type==16?"2":"3";table.rows.push_back(std::move(row));
     }
-    return ItemDefinitions::load(table);
+    table.columns.push_back("Count");for(auto& row:table.rows) row.push_back("1");return ItemDefinitions::load(table);
 }
 std::vector<std::int64_t> fields(const EffectStatus& status) {
     const auto& equipment=status.skills.equipment;const auto& a=equipment.base.attributes;const auto& r=equipment.base.maximum;

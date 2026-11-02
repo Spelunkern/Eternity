@@ -1123,7 +1123,8 @@ current balance after the common header, matching the original order.
 `CUser::PacketUserSetStatus` (`00405b00`, case `0603`) with owned account binding.
 This status update does not itself write SQL. Full character saving through
 `DBCharacter::SaveCharacter` (`00423190`) remains pending, as do party loot
-distribution, normal inventory admission and live pickup command dispatch.
+distribution and live pickup command dispatch; detached inventory admission is
+described below.
 `MoneyWorld` requires ordered DB-status and log transport/calendar services.
 
 The oracle compares 1,792 original bounds/saturation/receipt/log/free operations,
@@ -1131,3 +1132,47 @@ including zero, exact capacity, full DWORD values and calendar wrap. Native
 checks apply each status packet to the owned money replica, reject other-account
 or truncated updates, and join actual zone pickup, capped actor credit and pool
 release. Actor-load checks retain distinct account identity and unsigned balance.
+
+Detached item admission reconstructs the complete `ps_game.exe`
+`CUser::ItemGet(CItem*)` (`0045df40`). Money delegates to its reconstructed path.
+Other items capture the current party lock, fill matching partial stacks in bag
+1..max-bags/slot 0..23 order, then seek the first empty slot in the same order.
+Bag zero is never a destination. Matching uses type/type-ID only, ignoring UID,
+quality, gems and craft. Each stack change sends `0707` (account UID, bag, slot,
+count) before the 16-byte `0205` self receipt. Full merge leaves the input's final
+chunk count intact; after group/log notices, the allocation returns to the pool.
+
+Empty-slot admission retains the input allocation and projects its payload into
+the actor's inventory, sends fixed 57-byte `0701`, then `0205`. Nonstackable
+receipts retain quality/gems and the NUL craft string (16+strlen bytes); stackable
+receipts zero those fields. The remaining count is stored whole in the empty
+slot, even above the stack maximum. Definition loading now retains original
+`Count` as `stack_count`. Later changes to a newly retained stack update both its
+inventory row and pooled allocation. Bound pools must outlive the actor; teardown
+returns newly retained allocations. Full loaded-inventory runtime ownership and
+explicit equip/remove/disconnect orchestration still require integration.
+
+Successful admission sends current group `0b08`/raid `0c14` with actor ID and
+item type/type-ID through the original radius-100 party route. Membership is
+sampled live; the initially captured lock is released at the end even if notices
+use a changed group. Drop types 1/2 emit 151-byte `0401` loot logs; type 3 emits
+174-byte `0408` with drop ID/name. Both carry common header, UID, definition ID,
+item name, gems, creation time and craft. Type 1/2 logs use the input's current
+remaining count, rather than the sum transferred across earlier stacks. Other
+drop types omit the log. The type-3 success path uses raw zone lookup; partial
+fallback uses `FindUser`, preserving that distinction in the required adapter.
+
+When no empty slot exists, changed stacks stay changed. A reduced remainder gets
+group/log notices, then `EnterItem` appearance 1 with the default lifetime; an
+unchanged input is simply returned to the ground. Failed readmission is ignored
+without freeing it, matching the original. No inventory-full self packet is
+invented for this overload. `InventoryWorld` requires actual party lock/transport,
+DB status, original name bytes, lookup and ground-admission services.
+
+The oracle compares 640 complete original operations, including bag 9, zero/
+negative active-bag counts, dense/empty inventories, oversized input, craft/gem
+payloads, group changes during DB sends, all drop types, lookup variants, failed
+ground return and actual default expiry/visibility. Native consecutive admissions
+verify retained identity, later stack synchronization, pool reuse and teardown.
+The ID-based pickup/distribution overload (`0045d2e0`), durable inventory saving
+and live TCP commands remain pending.
