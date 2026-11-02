@@ -2,6 +2,7 @@
 #include "eternity/auth/accounts.hpp"
 #include "eternity/game/definitions.hpp"
 #include "eternity/game/characters.hpp"
+#include "eternity/game/stats.hpp"
 #include <chrono>
 #include <iostream>
 #include <stdexcept>
@@ -74,6 +75,14 @@ int main() {
         require(definitions.catalogs.size() == 8 && !definitions.catalogs.at("Mobs").rows.empty(),
                 "Original definition procedures did not load");
         require(definitions.catalogs.at("Mobs").columns.size() == 69, "Original mob definition contract changed");
+        const auto statuses=eternity::game::StatusRules::load(definitions.catalogs.at("StatusDefs"));
+        eternity::game::CharacterSummary fighter;fighter.level=1;fighter.family=0;fighter.grow=1;
+        fighter.strength=14;fighter.dexterity=12;fighter.recovery=9;fighter.intelligence=8;fighter.wisdom=7;fighter.luck=15;
+        const auto fighter_status=statuses.base(fighter);
+        require(fighter_status.maximum.hp==250 && fighter_status.maximum.mp==85 && fighter_status.maximum.sp==195,
+                "Restored status definitions disagree with original fighter resources");
+        const auto experience=eternity::game::Experience::load(definitions.catalogs.at("ExpDefs"));
+        require(experience.bounds(1,1).previous==0 && experience.bounds(1,1).next>0,"Restored experience curve did not load");
         eternity::game::Characters characters(database,255,std::chrono::sys_days{std::chrono::year{2024}/1/1});
         const auto empty_roster=characters.load(2147483000);
         require(empty_roster.new_account && empty_roster.country==2 && empty_roster.max_grow==2,

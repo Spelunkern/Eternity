@@ -148,3 +148,15 @@ cover these layouts and preserve single-precision coordinates. This component
 is not connected to selection yet: maximum resources must first be calculated
 from definitions, equipment, honor, passives and effects, rather than copied from
 persisted current HP/MP/SP. World entry and gameplay remain pending.
+
+Native base status initialization follows `CUser::InitEquipment` (`00454560`),
+before equipment and effects: persisted attributes, per-job/level StatusDefs,
+mode scaling, racial resources and stat contributions. Out-of-range job/level
+uses job 0, level 60. `CUser::SetAttack` (`00454280`) now calculates the three
+attack categories, retaining x87 float spills, truncation and 32-bit wrap.
+The critical formula uses the original float constant `0x3e428f5c` (0.19).
+`tools/attack_oracle.py` executes that original function with Unicorn and
+regenerates 84 committed regression vectors; regular CTests need no emulator.
+Equipment, blessing, passives, effects, damage resolution and world integration
+are separate pending stages. Ghidra's `EternityOffsets.java` gives anonymous
+PDB padding fields unique offset names without inferring their meaning.
