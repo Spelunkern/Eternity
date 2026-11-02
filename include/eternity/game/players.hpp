@@ -29,10 +29,16 @@ struct PlayerSkill {
     std::uint16_t id = 0,delay = 0;
     std::uint8_t level = 0,number = 0,persisted_number = 0;
 };
+struct PersistedEffect {
+    std::uint16_t skill_id = 0;
+    std::uint8_t level = 0;
+    std::uint32_t remaining = 0;
+};
 struct PlayerSnapshot {
     PlayerCore core;
     std::vector<PlayerItem> items,bank,overflow_items,overflow_bank;
     std::vector<PlayerSkill> skills;
+    std::vector<PersistedEffect> effects;
     std::uint32_t cash_points = 0;
     std::int32_t guild_rejoin_hours = 0;
     // Preserve original rows for effects, quests, quick slots, save points, point log/items, social and market data.

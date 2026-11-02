@@ -188,7 +188,7 @@ the effect overrides for detail 93/122. `GetSkillInfo` (`00402770`) requires a
 level-one definition. Original SQL definitions and loaded player skills pass
 integration tests; `tools/skill_oracle.py` regenerates 1,152 ability and 144 passive
 vectors by executing original code with state-initialization broadcasts disabled.
-Effect lifetimes, low-HP activation, billing-service lookup and world integration
+Low-HP activation, billing-service lookup and world integration
 remain pending.
 
 Active effect dispatch now follows `AddApplySkillBuff` (`00484cf0`) and
@@ -202,4 +202,18 @@ implemented by the live world yet, so selection remains disconnected from this
 stage. `tools/effect_oracle.py` verifies 296 original state/call-order vectors;
 world operations are intercepted and recorded, including one supplied element
 replacement. The vectors do not verify the delegated operations themselves.
-Expiry/removal, periodic damage/healing and persisted effect timing remain pending.
+Live expiry/removal and periodic damage/healing remain pending.
+
+Persisted effect timers follow `CUser::AddApplySkill` (`00487ce0`). Ordinary
+effects use millisecond deadlines; FixRange=1 effects use seconds and consume
+disconnected time. Restore adds ten seconds, capped by KeepTime, with the
+original unsigned deadline comparison and wrap behavior. FixRange=1 converts
+definition KeepTime hours to seconds. Signed SQL KeepTime values retain their
+DWORD bits; the restored kit contains two negative values. Already-spent offline
+effects produce explicit SQL deletion requests; missing definitions and map
+restrictions only skip loading. `EnableApplySkillByMap` (`004845f0`) retains
+map 18's skill/level exceptions. `ChkEndTimeSkill` (`004865b0`) supplies the
+expiry predicate. `tools/effect_timer_oracle.py` verifies 178 restoration vectors
+and expiry branches, stopping before removal/notification operations. Player SQL
+snapshots now retain typed persisted effects. Live actor allocation, deletion
+requests and expiry side effects still need world integration.

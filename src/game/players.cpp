@@ -157,6 +157,10 @@ std::optional<PlayerSnapshot> Players::load(std::uint32_t uid,std::uint32_t cid,
         {"PointLog","usp_Read_Chars_PointLog_R",3,false},{"PointItems","usp_Read_User_StoredPointItems",3,true}};
     for(const auto& loader:loaders) snapshot.catalogs[loader.name]=result(database_.query(
         "EXEC "+prefix_+loader.procedure+" ?;",loader.user?user:character),loader.columns);
+    for(const auto& row:snapshot.catalogs.at("AppliedSkills").rows) {
+        if(row.size()!=3) throw std::runtime_error("Original applied skill row changed");
+        snapshot.effects.push_back({word(row,0),byte(row,1),dword(row,2)});
+    }
     const std::array<storage::Parameter,2> cash={std::int64_t{uid},username};
     snapshot.catalogs["Cash"]=result(database_.query("DECLARE @Code int,@Cash int=0; EXEC @Code="+prefix_+
         "usp_Read_User_CashPoint_NCash @Cash OUTPUT,?,?; SELECT @Code,@Cash;",cash),2);

@@ -94,6 +94,8 @@ int main(int argc,char** argv) {
                 snapshot->skills[1].id==11 && snapshot->skills[1].number==1 && snapshot->skills[1].delay==13,"Original player skill ordering changed");
         require(snapshot->cash_points==321 && snapshot->guild_rejoin_hours>=71 && snapshot->guild_rejoin_hours<=72,
                 "Original cash/guild output parameters were not captured");
+        require(snapshot->effects.size()==1 && snapshot->effects[0].skill_id==10 && snapshot->effects[0].level==1 && snapshot->effects[0].remaining==31,
+                "Original persisted effect identity/remaining time was not decoded");
         for(const auto name:{"AppliedSkills","Quests","FinishedQuests","QuickSlots","SavePoints","PointLog","PointItems","ConcernMarket","Friends","Blocked","GiftNotifications"})
             require(snapshot->catalogs.at(name).rows.size()==1,"Original ancillary player procedure did not load its fixture row");
         require(snapshot->catalogs.at("Quests").rows[0][0]==storage::Cell{"23"} && snapshot->catalogs.at("FinishedQuests").rows[0][0]==storage::Cell{"24"},

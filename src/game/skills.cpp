@@ -21,6 +21,14 @@ unsigned int number(const storage::Row& row,std::size_t index,unsigned int maxim
         throw std::runtime_error("Invalid original skill definition value");
     return value;
 }
+std::uint32_t dword(const storage::Row& row,std::size_t index) {
+    if(index>=row.size() || !row[index]) throw std::runtime_error("Missing original skill DWORD");
+    const auto& text=*row[index];std::int64_t value=0;
+    const auto parsed=std::from_chars(text.data(),text.data()+text.size(),value);
+    if(parsed.ec!=std::errc{} || parsed.ptr!=text.data()+text.size() || value<INT32_MIN || value>UINT32_MAX)
+        throw std::runtime_error("Invalid original skill DWORD");
+    return static_cast<std::uint32_t>(value);
+}
 }
 SkillDefinitions SkillDefinitions::load(const storage::ResultSet& table) {
     // CGameData::LoadConstSkill 004bffe0: only three skill levels have runtime tables.
@@ -37,6 +45,8 @@ SkillDefinitions SkillDefinitions::load(const storage::ResultSet& table) {
         skill.defense_type=static_cast<std::uint8_t>(std::clamp(n("DefenceType"),1U,3U)-1);
         skill.defense_value=static_cast<std::uint8_t>(n("DefenceValue"));skill.apply_range=static_cast<std::uint8_t>(n("ApplyRange"));
         skill.aggro=static_cast<std::uint16_t>(n("Arrow",65535));skill.change_type=static_cast<std::uint16_t>(n("ChangeType",65535));skill.change_level=static_cast<std::uint16_t>(n("ChangeLevel",65535));
+        skill.offline_countdown=n("FixRange")==1;skill.keep_time_seconds=dword(row,column(table,"KeepTime"));
+        if(skill.offline_countdown) skill.keep_time_seconds*=3600U;
         for(std::size_t i=0;i<3;++i) {
             auto& ability=skill.abilities[i];ability.type=static_cast<std::uint8_t>(n("AbilityType"+std::to_string(i+1)));
             ability.value=static_cast<std::uint16_t>(n("AbilityValue"+std::to_string(i+1),65535));
