@@ -9,106 +9,21 @@ SQLite migration is deferred. Gameplay is not implemented yet.
 All pairs have matching CodeView GUID and age. `ps_gamewar` is out of scope.
 
 Source: the EP4.5 `PSM_Server/ShaiyaServerPatch/Server` distribution, including
-its matching `ps_login.exe`. Database backups and deployment configuration are
-not included. Implemented: SQL access, original definition loaders, asynchronous
-encrypted TCP login on the available SQL path, account session replacement,
-realm handoff reservations, game TCP handshake/ciphers, and SQL-backed character
-listings. `--serve` starts login and game listeners with shared sessions and the
-original persisted world calendar. Faction selection and character creation work
-over TCP with original SQL persistence and starter items. Each authenticated game
-connection now owns an application with ordered worker calls, asynchronous output
-and serialized cleanup. World entry is pending.
-Character detail loading and initial data/item/bank/skill/effect/quest/quick-slot
-packets are implemented and tested separately; selection does not enter the world yet.
-Quest definitions, saved quest timers, learned-skill cooldowns and quick slots
-load with original reconstruction rules; quest gameplay remains pending.
-Base statistics, equipment modifiers, faction blessing initialization, passive
-skills and active-effect state are reconstructed. Effect restoration, expiry and SQL snapshots are tested
-independently. Resource recovery and its ordered view/self/group notifications
-are reconstructed; live world operations and gameplay remain pending.
-Scalar HP damage, its protection/group notifications and the attacker damage ledger
-are reconstructed. Equipment removal reverses cached durability, gems and craft modifiers, cancels weapon
-elements and sends original speed/resource updates. Inventory removal now connects these updates, offer cleanup, DB/log/client messages
-and pool release. Whole and partial ground drops preserve identities, offer
-cleanup and original DB/log/client ordering; movement and TCP dispatch remain pending. Defense durability wear updates native actor equipment and defenses;
-scalar damage, attribution and low-HP passive activation now run through the actor.
-Death effect cleanup, corpse snapshots/cell visibility and the global corpse registry
-are reconstructed; death orchestration, combat dispatch and the live world remain pending.
-Attack-triggered effect, vehicle and pending-move cancellation run through native actors;
-live actor lookup and ordinary ranged broadcasts remain required world services.
-Trade/duel offer reference cleanup and readiness cancellation run through native
-actors; transfer, acceptance, persistence and TCP handlers remain pending.
-Duel cleanup, attack-triggered exit, wager-drop sequencing and result/log packets
-run through actors; live transport, inventory transfers and the remaining duel
-handlers still require integration.
-Ground-item zone/cell indexes, visibility and expiry are reconstructed, including
-native wager placement, expiry and pool recycling. The item pool preserves reused
-IDs and partial initialization. Pickup permissions and item/quest links are
-reconstructed. Detached-item admission now stacks, stores or returns remainders
-with original DB/client/group/log messages. ID-based pickup connects zone
-permissions, money bonuses, capacity errors and inventory admission; TCP world
-dispatch and shared loot distribution remain pending.
-The DB-agent inventory/bank replica applies owned item updates, moves and save/delete
-markers, sharing money status with item commands. Its inventory/bank SQL phase
-preserves ordered deletions, insert recovery and commit-only acknowledgment.
-A shared character replica handles core status and appearance changes; core/body
-SQL can commit with inventory, learned/applied skills and quest changes in the
-same transaction. Quick slots, save points and market watch lists retain original
-save/error behavior; difficulty unlocks write separately before character saving.
-Product and stored-point receipts preserve SQL transactions and commit acknowledgments.
-Point purchases preserve separate item/charge commits and original error behavior.
-Recovery journals retain original file output and save markers, including legacy SQL
-signatures. Character saving coordinates these phases, timeout retries, recovery,
-exit/shutdown and selection jobs. Gifts, live session integration, guild transfers
-and live scheduling remain pending.
-Actor money credits preserve unsigned limits and ordered DB-status/client/log
-messages, with money-item release to the pool. Periodic money saving and shared
-loot dispatch still require integration.
-Actor preparation connects these stages, including effect-driven resource clamps
-and cleanup. Selection/initial-data coordination preserves the original initialization
-and packet order. Native delivery includes social, UI, history and point catalogs;
-live session and world admission still require integration.
-A supplied inventory pool materializes resolved SQL rows and owns
-their allocations through removal or actor teardown. Equipment/transformation attack rebuilding and elemental-effect
-replacement run natively in the actor. User appearance packets include visible
-equipment, enchantments, cloak and social fields, with a copied-user snapshot path.
-Native user-cell queries now reveal hidden enemies using original duel, guild
-and map rules. Server map files/configuration, collision/line checks, A* paths, entry bounds and movement cell resolution are
-reconstructed. Waiting/zone admission connects native actor membership, shape/speed,
-weather and movement/effect initialization; complete world delivery, combat and TCP
-world entry remain pending.
-World ID/name indexes preserve original duplicate and zone/logout lookup rules.
-World entry/leave coordination includes original log packets, offline money checks
-and social departure notices; full guild/party/admin services remain pending.
-Native guild membership moves accepted members between online/offline indexes,
-retains rank-map stamps and sends original roster/application packets. Core guild
-metadata/member SQL loading now feeds the game catalog. The restored Guild2
-procedure references a missing `Guilds.Rank` column. NPC levels now load through
-SQL and reach original DB/client packets. Guild bank SQL loading, duplicate
-relocation, game item reconstruction and client bank packets are implemented.
-DB bank moves, count changes and deletions retain original save markers/journals.
-Bank persistence preserves independent SQL writes, partial success and insert
-cleanup. NPC upgrades/resets retain insertion/update markers and persist each
-slot with partial-failure recovery. Complete guild save coordination writes
-metadata, retries timeouts and invokes bank/NPC persistence in original order.
-Guild remark packets and original SQL quote/error behavior are retained.
-Production startup/scheduling, character/guild transfers and guild gameplay
-remain pending.
-Zone selection/reuse and access rules are reconstructed; world object initialization
-and zone queue services remain required dependencies.
-Door/region templates, door operation and weather transitions are reconstructed.
-NPC definitions, populations, patrols, guard navigation/target queries and visibility
-packets are reconstructed. Mob runtime initialization and attack-table rebuilding
-now preserve original reset/reuse rules and load their SQL definition projection.
-Mob zone/cell membership, cell snapshots and movement packets preserve original
-ordering and visibility rules. The mob pool preserves LIFO reuse, new IDs on
-every allocation, original drop-random streams and AI/Lua release ordering.
-Regular map populations now connect placement/collision checks, allocation, runtime
-initialization and zone entry. Bulk zone release preserves retained mob bindings,
-cleans AI/Lua, recycles in original order and resets instance portals. Linked
-bosses, obelisks, full AI/combat and the running world remain pending.
-The active MD5 login
-path needs a missing procedure; see [research](research/protocol.md).
+its matching `ps_login.exe`. Database backups, configuration, credentials and
+runtime assets stay local.
+
+Implemented and independently tested: SQL contracts, encrypted login/game TCP
+handshakes, account sessions, character lists/creation, actor preparation and
+persistence, map/zone/entity ownership, regular/linked mob initialization, guild
+persistence and several inventory/combat primitives. See the
+[reconstruction notes](research/protocol.md) for evidence and remaining work.
+
+`--serve` starts login/game listeners with shared sessions and the persisted
+calendar. Faction selection and character creation work over TCP. Character
+selection still does not enter the world. Live world integration, complete AI,
+combat and gameplay remain unfinished; the server is not playable. Client work
+is deferred. The active MD5 login path requires a missing original procedure;
+the available legacy SQL path is tested.
 
 Verify original files with `sha256sum -c SHA256SUMS`.
 

@@ -3,6 +3,19 @@
 #include <stdexcept>
 
 namespace eternity::game {
+std::int32_t RuntimeZone::instance_portal_country(std::int32_t portal_id) const noexcept {
+    // GetInsZonePortalCountry 004179e0 scans all ten slots, including ID zero.
+    for(const auto& portal:instance_portals) if(portal.id==portal_id) return portal.country;
+    return 3;
+}
+void RuntimeZone::update_instance_portal_country(std::int32_t portal_id,std::int32_t country) {
+    // UpdateInsZonePortalCountry 00417a10 stops at the first matching OR empty slot.
+    if(portal_id<=1000) return;
+    if(!map) throw std::logic_error("Zone map is not initialized");
+    if(map->settings.create_type==0) return;
+    for(auto& portal:instance_portals) if(portal.id==0 || portal.id==portal_id) {portal={portal_id,country};return;}
+}
+
 void RuntimeZone::release_mob_population(MobPool& pool) {
     if(!mobs) throw std::logic_error("Zone mob registry is not initialized");
     mobs->release_to_pool(pool);instance_portals.fill({});

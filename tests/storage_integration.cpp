@@ -46,6 +46,18 @@ void verify_mob_population(const eternity::game::MobRuntimeTemplates& definition
         require(zone.leave(*mob),"Cannot detach SQL fixture mob");pool.release(*mob);
     }
     require(zone.size()==0 && pool.available()==2 && services.releases==4,"SQL mob pool/zone cleanup changed");
+    std::array<LinkedMobGroup,2> linked_groups{};
+    auto& immediate=linked_groups[0];immediate.spawn_count=1;immediate.leader.center={1.25F,9,0.75F};immediate.leader.count=1;immediate.leader.definitions[0]=definitions.find(1);immediate.leader.respawn.definition=definitions.find(1);immediate.leader.respawn.both=true;
+    auto& companions=immediate.spawns[0];companions.center={3.25F,9,3.75F};companions.radius=0.25F;companions.radius_twice=1;companions.count=2;companions.definitions[0]=definitions.find(1);companions.respawn.definition=definitions.find(1);companions.respawn.both=true;
+    auto& deferred=linked_groups[1].leader;deferred.randomized=1;deferred.minimum_minutes=1;deferred.count=1;deferred.definitions[0]=definitions.find(1);deferred.respawn.definition=definitions.find(1);deferred.respawn.both=true;
+    runtime.linked_mobs=std::make_unique<LinkedMobPopulation>(linked_groups);
+    require(runtime.linked_mobs->initialize(map,zone,pool,ports,[&]{return services.unix_time();}),"Restored SQL linked population failed");
+    auto groups=runtime.linked_mobs->groups();
+    require(zone.size()==3 && services.views==7 && serial==107 && groups[0].leader.members[0]==zone.find(105) && groups[0].spawns[0].members[0]==zone.find(106) && groups[0].spawns[0].members[1]==zone.find(107) && groups[1].leader.respawn.current==0 && groups[1].leader.respawn.next==59984,"SQL linked leader/companions/deferred timer changed");
+    require(groups[0].spawns[0].members[0]->position.x==3 && groups[0].spawns[0].members[0]->position.z==3.5F,"SQL linked companion placement changed");
+    for(auto* mob:zone.all()) require(mob->hp==2765 && mob->sp==874 && mob->mp==1578 && mob->respawn->both && mob->respawn->both_source!=nullptr,"SQL linked resources/respawn binding changed");
+    runtime.release_mob_population(pool);require(zone.size()==0 && pool.available()==3 && services.releases==7 && groups[0].leader.members[0]->zone==&zone && groups[0].leader.respawn.current==1 && groups[0].spawns[0].respawn.current==2,"SQL linked population release changed retained records");
+
 }
 
 int main() {

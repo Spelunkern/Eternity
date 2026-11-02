@@ -2452,8 +2452,8 @@ truncate to tile zero.
 
 The native path connects actual `MobPool`, `initialize_mob`, drop randomness,
 `ZoneMobs` and entry packets. Required linked-group initialization follows every
-regular pass; its return value is ignored, as in the source. Linked bosses and
-obelisks still require their own implementation. `RuntimeZone` owns the population
+regular pass; its return value is ignored, as in the source. Linked-group
+configuration/ticks and obelisks remain required work. `RuntimeZone` owns the population
 so active respawn pointers remain valid. The 128-population/256-call fixture
 executes original regular spawning, real construction/pool allocation, runtime and
 attack initialization, random seeding, ID tree/cell insertion and entry formatting.
@@ -2492,3 +2492,49 @@ wrapped IDs and the complete portal arrays. SQL integration now releases and
 recreates the restored mob population using the same allocations and then checks
 ordinary per-mob leave/recycle. Complete world teardown and live AI resources
 remain part of production integration.
+
+
+Instance portal ownership follows `CZone::GetInsZonePortalCountry` (`ps_game.exe`,
+`004179e0`) and `UpdateInsZonePortalCountry` (`00417a10`). Lookup scans all ten
+slots, returns the first matching signed ID (including zero) and defaults to 3.
+Updates require ID >1000 and a nonzero map CreateType; they replace the first
+matching or empty slot, stopping at an earlier empty slot even when a duplicate
+exists later. A full table drops unknown IDs. Arbitrary country DWORDs survive
+without normalization. The 8,192 original update/query fixture compares all
+80 table bytes with holes, duplicate IDs, signed boundaries and full tables.
+
+Linked-group initialization follows `CZone::MapInitBothMob` (`0041b470`) and
+`stMapBothMob::Reset/AddMob/RemoveMob` (`0041b3d0`, `0041b3f0`, `0041d730`). The
+native population copies prepared group definitions and repairs respawn self
+pointers as `MapInit` (`0041c8a0`) does. Every group resets its current stage to 0;
+a missing first leader definition preserves the remaining group state. Immediate
+leaders set current=1/deadline=0, allocate and initialize before position/member
+assignment and entry. Allocation failure skips all companions. Leader placement
+does not check tiles; a failed entry still permits companion processing.
+Companions use the first definition, set configured current counts, clear only
+the active member prefix, consume separate X/Z random draws, and skip blocked or
+out-of-map tiles without decrementing counts. Float spills and radius subtraction
+retain the source precision. Member addition permits duplicates and removal
+clears only the first matching pointer; inactive tail slots survive reset.
+
+Randomized leaders defer all spawning, retaining member slots and scheduling
+current=0/deadline from the tick. The minimum delay is minutes*60000; the original
+maximum field is an additional minutes*60 random window, sampled in seconds and
+multiplied by 1000. The temporary `SRandom` samples Unix time even with no groups;
+window sampling reseeds it with time XOR definition ID, independently of movement
+and drop randomness. DWORD timing wraps. Map/SQL preparation, group transitions,
+death/respawn ticks and portal propagation remain required integration work.
+
+The 128-group-set fixture executes 256 original initialization passes through
+actual allocation, construction, attack/runtime initialization, SRandom timing,
+cell/ID insertion and entry formatting, followed by 1,280 original member helper
+operations. AI/Lua, allocation failure, clock/random and transport are ports;
+linked initialization itself executes. It compares event order, timer/current
+state, all member slots, respawn bindings and allocated/entered objects, including
+missing definitions, partial failure, wrap, radius precision and guarded
+nonfinite companion positions. Leader positions avoid the original unchecked
+negative cell-index domain; native cell memory guards still apply. SQL integration
+also constructs immediate leader/companion and deferred groups from the restored
+mob definition, checks reused allocations/resources/placement and bulk release.
+`RuntimeZone` owns these records, while configuration loading, live AI and world
+scheduling remain pending.

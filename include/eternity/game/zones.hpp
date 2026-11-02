@@ -4,6 +4,7 @@
 #include "eternity/game/zone_npcs.hpp"
 #include "eternity/game/zone_mobs.hpp"
 #include "eternity/game/mob_population.hpp"
+#include "eternity/game/linked_mobs.hpp"
 #include "eternity/game/corpses.hpp"
 #include "eternity/game/ground_items.hpp"
 #include <memory>
@@ -30,11 +31,14 @@ struct RuntimeZone {
     std::unique_ptr<ZoneUsers> users;
     std::unique_ptr<ZoneNpcs> npcs;
     std::unique_ptr<MobPopulation> mob_population;
+    std::unique_ptr<LinkedMobPopulation> linked_mobs;
     std::unique_ptr<ZoneMobs> mobs;
     std::unique_ptr<ZoneCorpses> corpses;
     std::unique_ptr<ZoneItems> items;
     std::optional<ZoneEnvironment> environment;
     std::array<InstanceZonePortal,10> instance_portals{};
+    std::int32_t instance_portal_country(std::int32_t portal_id) const noexcept;
+    void update_instance_portal_country(std::int32_t portal_id,std::int32_t country);
     void release_mob_population(MobPool&); // MapReleaseObject 0041c3b0.
 };
 class ZoneServices {
