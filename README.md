@@ -83,8 +83,9 @@ and social departure notices; full guild/party/admin services remain pending.
 Native guild membership moves accepted members between online/offline indexes,
 retains rank-map stamps and sends original roster/application packets. Core guild
 metadata/member SQL loading now feeds the game catalog. The restored Guild2
-procedure references a missing `Guilds.Rank` column; production startup, bank/NPC
-replicas and guild gameplay remain pending.
+procedure references a missing `Guilds.Rank` column. NPC levels now load through
+SQL and reach original DB/client packets; production startup, bank replicas and
+guild gameplay remain pending.
 Zone selection/reuse and access rules are reconstructed; world object initialization
 and zone queue services remain required dependencies.
 Door/region templates, door operation and weather transitions are reconstructed.

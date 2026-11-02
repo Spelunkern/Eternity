@@ -2186,3 +2186,32 @@ new-replica bank/NPC callback order and conversion-failure batches. The fixture
 does not settle the intended ordering field for a production compatibility fix.
 Production bootstrap retry semantics, actual bank/NPC replicas, SQL cursor-error
 streaming, the restored schema incompatibility and live TCP startup remain open.
+
+`GuildNpcReplica` reconstructs the eight three-WORD DB slots written by
+`DBGuild::LoadNpcLvList` (`ps_dbAgent.exe`, `00427f40`). The actual SQL owner
+executes `usp_Read_GuildNpcLv_R`: signed SHORT type, unsigned BYTE level and
+unsigned BYTE slot. Slots >=8 are ignored; valid rows overwrite only that slot,
+zero its third WORD and leave untouched slots intact. Duplicate rows overwrite
+in fetch order. Query/conversion failure retains successful previous rows and is
+ignored by the enclosing new-guild load. Existing guild replicas skip NPC reload.
+The old NPC callback is replaced by this native SQL owner; bank loading remains
+a required separate owner.
+
+`GuildSql::send_npcs` follows `GuildMgrSave::SendGuildNpcLvList` (`00410cb0`)
+in unsigned guild-ID order. `GuildInfo::SendGuildNpcLv` (`0040f660`) emits `0b0e`
+only for nonzero types, retaining slot order and the low byte of each level.
+Game `PacketGuild` (`00408e00`, `0b0e`) resolves the guild and overwrites the
+corresponding two-WORD slots without clearing absent entries. Unknown guilds are
+ignored. Native game input rejects out-of-range slots instead of reproducing the
+source's out-of-bounds writes. `CGuild::SendNpcLvList` (`ps_game.exe`, `0042f0e0`)
+uses the same records in client `0d24`, omitting empty lists.
+
+The 512-sequence fixture executes the original DB SQL owner, DB serialization,
+game update and client serialization in both original binaries. ODBC, pool, OS,
+guild lookup and transport are ports. It covers retained slots, duplicate rows,
+NULL conversion buffers, partial/query failures and WORD-to-BYTE truncation.
+Disposable SQL now loads the actual original NPC procedure and table through the
+whole DB/game/client path, preserves cached levels after SQL changes and verifies
+partial NPC conversion failure without aborting metadata/member loading. Bank
+SQL/replicas, NPC upgrade gameplay, native world spawning and production TCP
+entry remain required for the full service.

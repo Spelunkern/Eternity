@@ -25,7 +25,7 @@ net::Packet packet(const GuildMetadata& data,const GuildMetadata& cached) {
 }
 }
 GuildSql::GuildSql(storage::SqlServer& main,storage::SqlServer& auxiliary,GuildSqlPorts ports,std::string catalog):main_(main),auxiliary_(auxiliary),ports_(std::move(ports)) {
-    if(&main==&auxiliary || !ports_.send || !ports_.allocate || !ports_.load_bank || !ports_.load_npcs || !ports_.diagnostic) throw std::invalid_argument("Guild loading requires two SQL connections and replica services");
+    if(&main==&auxiliary || !ports_.send || !ports_.allocate || !ports_.load_bank || !ports_.diagnostic) throw std::invalid_argument("Guild loading requires two SQL connections and replica services");
     if(catalog.empty() || catalog.find_first_not_of("ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789_")!=std::string::npos) throw std::invalid_argument("Invalid guild SQL catalog");prefix_="["+catalog+"].dbo.";
 }
 bool GuildSql::load_maximum() {
@@ -53,8 +53,9 @@ bool GuildSql::load() {
             GuildMetadata metadata;metadata.listing={static_cast<std::uint32_t>(values[0]),static_cast<std::uint32_t>(values[1]),static_cast<std::uint32_t>(values[2]),static_cast<std::uint8_t>(values[3]),name,master,notice};metadata.etin=static_cast<std::uint32_t>(values[4]);metadata.use_house=static_cast<std::uint8_t>(values[5]);metadata.buy_house=static_cast<std::uint8_t>(values[6]);metadata.return_count=static_cast<std::uint32_t>(values[7]);metadata.keep_etin=static_cast<std::uint32_t>(values[8]);
             auto found=replicas_.find(metadata.listing.id);
             if(found==replicas_.end()) {
-                if(!ports_.allocate()) continue;found=replicas_.emplace(metadata.listing.id,GuildDbMetadata{metadata}).first;
-                ports_.load_bank(metadata.listing.id);ports_.load_npcs(metadata.listing.id);
+                if(!ports_.allocate()) continue;
+                found=replicas_.emplace(metadata.listing.id,GuildDbMetadata{metadata,{}}).first;
+                ports_.load_bank(metadata.listing.id);(void)load_npcs(metadata.listing.id,found->second.npcs);
             }
             ports_.send(packet(metadata,found->second.metadata));
             // Original caller ignores the member loader's result and continues.
@@ -63,4 +64,13 @@ bool GuildSql::load() {
         return true;
     } catch(const std::exception& error) {ports_.diagnostic(error.what());return false;}
 }
+bool GuildSql::load_npcs(std::uint32_t id,GuildNpcReplica& npcs) {
+    try {
+        const std::array<storage::Parameter,1> parameters={std::int64_t{std::bit_cast<std::int32_t>(id)}};
+        const auto rows=auxiliary_.query("EXEC "+prefix_+"usp_Read_GuildNpcLv_R ?;",parameters);const auto& data=result(rows);std::array<std::int64_t,3> values{};
+        for(const auto& row:data.rows) {integer(row,0,values[0],INT16_MIN,INT16_MAX);integer(row,1,values[1],0,255);integer(row,2,values[2],0,255);npcs.load(static_cast<std::uint8_t>(values[2]),static_cast<std::uint16_t>(values[0]),static_cast<std::uint8_t>(values[1]));}
+        return true;
+    } catch(const std::exception& error) {ports_.diagnostic(error.what());return false;}
+}
+void GuildSql::send_npcs() {for(const auto& [id,replica]:replicas_) if(auto p=replica.npcs.packet(id)) ports_.send(std::move(*p));}
 }

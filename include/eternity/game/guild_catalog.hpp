@@ -1,6 +1,7 @@
 #pragma once
 #include "eternity/game/guild_membership.hpp"
 #include "eternity/game/entry_catalogs.hpp"
+#include "eternity/game/guild_npcs.hpp"
 #include <vector>
 
 namespace eternity::game {
@@ -12,6 +13,7 @@ struct GuildMetadata {
 struct LoadedGuild {
     GuildMetadata metadata;
     GuildMembership membership;
+    GuildNpcs npcs;
     LoadedGuild(GuildMetadata value,GuildMemberPorts port):metadata(std::move(value)),membership(metadata.listing.id,std::move(port)) {}
 };
 struct GuildCatalogPorts {
@@ -20,8 +22,8 @@ struct GuildCatalogPorts {
 };
 // Game-side 0b01/0b02/0b03 load owners, ps_game.exe PacketGuild 00408e00,
 // InitAddGuild 00431870 and InitAddUser 0042cf70. One world executor owns this
-// catalog; all live users must leave before it is destroyed. Bank/NPC packets
-// are handled separately, not accepted as completed guild initialization here.
+// catalog; all live users must leave before it is destroyed. Guild bank packets
+// remain separate required initialization; 0b0e NPC updates are applied here.
 class GuildCatalog {
 public:
     explicit GuildCatalog(GuildCatalogPorts);

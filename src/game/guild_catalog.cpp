@@ -14,6 +14,7 @@ std::map<std::uint32_t,GuildListing> GuildCatalog::listings() const {std::map<st
 EntryCatalogUpdate GuildCatalog::apply(std::span<const std::uint8_t> p) {
     if(p.size()<2) return EntryCatalogUpdate::rejected;const auto op=get(p,0,2);
     if(op==0xb01) {if(p.size()<6) return EntryCatalogUpdate::rejected;maximum_=get(p,2);return EntryCatalogUpdate::applied;}
+    if(op==0xb0e) {if(p.size()<7) return EntryCatalogUpdate::rejected;auto* guild=find(get(p,2));if(!guild) return EntryCatalogUpdate::applied;return guild->npcs.apply(p)?EntryCatalogUpdate::applied:EntryCatalogUpdate::rejected;}
     if(op!=0xb02 && op!=0xb03) return EntryCatalogUpdate::unsupported;
     const auto header=op==0xb02?3U:7U;if(p.size()<header) return EntryCatalogUpdate::rejected;
     LoadedGuild* guild=op==0xb03?find(get(p,2)):nullptr;if(op==0xb03 && !guild) return EntryCatalogUpdate::applied;
