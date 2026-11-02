@@ -24,7 +24,11 @@ net::Packet packet(const GuildMetadata& data,const GuildMetadata& cached) {
     append(p,0);append(p,cached.return_count);return p;
 }
 }
-GuildSql::GuildSql(storage::SqlServer& main,storage::SqlServer& auxiliary,InventoryReplicaPool& pool,GuildSqlPorts ports,std::string catalog):main_(main),auxiliary_(auxiliary),pool_(pool),bank_store_(auxiliary,ports.diagnostic,catalog),ports_(std::move(ports)) {
+bool GuildDbMetadata::upgrade_npc(std::uint8_t slot,std::uint16_t type,std::uint8_t level,std::uint32_t etin,std::uint32_t keep) {
+    if(!npcs.upgrade(slot,type,level)) return false;metadata.etin=etin;metadata.keep_etin=keep;save_type=2;return true;
+}
+void GuildDbMetadata::reset_npcs(std::uint32_t keep) {npcs.reset();metadata.keep_etin=keep;save_type=2;}
+GuildSql::GuildSql(storage::SqlServer& main,storage::SqlServer& auxiliary,InventoryReplicaPool& pool,GuildSqlPorts ports,std::string catalog):main_(main),auxiliary_(auxiliary),pool_(pool),bank_store_(auxiliary,ports.diagnostic,catalog),npc_store_(auxiliary,ports.diagnostic,catalog),ports_(std::move(ports)) {
     if(&main==&auxiliary || !ports_.send || !ports_.allocate || !ports_.diagnostic) throw std::invalid_argument("Guild loading requires two SQL connections and replica services");
     if(catalog.empty() || catalog.find_first_not_of("ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789_")!=std::string::npos) throw std::invalid_argument("Invalid guild SQL catalog");prefix_="["+catalog+"].dbo.";
 }
@@ -94,7 +98,15 @@ bool GuildSql::load_bank(std::uint32_t id,GuildBankReplica& bank) {
 }
 InventoryReplicaResult GuildSql::apply(std::span<const std::uint8_t> p) {
     if(p.size()<6) return InventoryReplicaResult::rejected;
-    const auto op=std::uint32_t{p[0]}|(std::uint32_t{p[1]}<<8);const std::size_t size=op==0xb11?10:op==0xb14?8:op==0xb15?7:0;
+    const auto op=std::uint32_t{p[0]}|(std::uint32_t{p[1]}<<8);
+    if(op==0xb0f || op==0xb17) {
+        if(p.size()!=(op==0xb0f?18U:10U) || (op==0xb0f && p[9]>=8)) return InventoryReplicaResult::rejected;
+        const auto dword=[&](std::size_t at){std::uint32_t value=0;for(unsigned int i=0;i<4;++i) value|=std::uint32_t{p[at+i]}<<(8*i);return value;};
+        const auto found=replicas_.find(dword(2));if(found==replicas_.end()) return InventoryReplicaResult::applied;
+        if(op==0xb0f) found->second.upgrade_npc(p[9],static_cast<std::uint16_t>(p[6]|(std::uint16_t{p[7]}<<8)),p[8],dword(10),dword(14));
+        else found->second.reset_npcs(dword(6));return InventoryReplicaResult::applied;
+    }
+    const std::size_t size=op==0xb11?10:op==0xb14?8:op==0xb15?7:0;
     if(size==0) return InventoryReplicaResult::unsupported;
     if(p.size()!=size || p[6]>=240 || (op==0xb11 && p[8]>=240)) return InventoryReplicaResult::rejected;
     std::uint32_t id=0;for(unsigned int i=0;i<4;++i) id|=std::uint32_t{p[2+i]}<<(8*i);
@@ -105,6 +117,10 @@ InventoryReplicaResult GuildSql::apply(std::span<const std::uint8_t> p) {
 std::optional<std::uint32_t> GuildSql::save_bank(std::uint32_t guild) {
     const auto found=replicas_.find(guild);if(found==replicas_.end()) return std::nullopt;
     return bank_store_.save(guild,*found->second.bank);
+}
+std::optional<std::uint32_t> GuildSql::save_npcs(std::uint32_t guild) {
+    const auto found=replicas_.find(guild);if(found==replicas_.end()) return std::nullopt;
+    return npc_store_.save(guild,found->second.npcs);
 }
 void GuildSql::send_banks() {for(const auto& [id,replica]:replicas_) for(auto& p:replica.bank->packets(id)) ports_.send(std::move(p));}
 

@@ -10,6 +10,15 @@ template<class Slots> bool records(net::Packet& p,std::size_t count,const Slots&
 }
 }
 void GuildNpcReplica::load(std::uint8_t slot,std::uint16_t type,std::uint8_t level) {if(slot<8) slots[slot]={{type,level},0};}
+bool GuildNpcReplica::upgrade(std::uint8_t slot,std::uint16_t type,std::uint8_t level) {
+    // GuildMgrSave::UpdateNpcUpgrade, ps_dbAgent.exe 00410010.
+    if(slot>=slots.size()) return false;auto& npc=slots[slot];
+    if(npc.type==0) {npc.type=type;npc.marker=1;}else if(npc.marker!=1) npc.marker=2;npc.level=level;return true;
+}
+void GuildNpcReplica::reset() {
+    // ResetNpcLevel 004100f0 leaves empty slots and pending inserts intact.
+    for(auto& npc:slots) if(npc.type!=0) {npc.level=0;if(npc.marker!=1) npc.marker=2;}
+}
 std::optional<net::Packet> GuildNpcReplica::packet(std::uint32_t guild) const {net::Packet p{0x0e,0x0b};append(p,guild);p.push_back(0);if(!records(p,6,slots)) return {};return p;}
 bool GuildNpcs::apply(std::span<const std::uint8_t> p) {
     if(p.size()<7 || word(p,0)!=0xb0e || p.size()<7+std::size_t{p[6]}*4) return false;

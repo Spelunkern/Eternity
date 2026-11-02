@@ -11,6 +11,8 @@ public:
     std::array<GuildDbNpcLevel,8> slots{};
     // DBGuild::LoadNpcLvList 00427f40: valid slot overwrites only its row.
     void load(std::uint8_t slot,std::uint16_t type,std::uint8_t level);
+    bool upgrade(std::uint8_t slot,std::uint16_t type,std::uint8_t level);
+    void reset();
     // GuildInfo::SendGuildNpcLv, ps_dbAgent.exe 0040f660, 0b0e.
     std::optional<net::Packet> packet(std::uint32_t guild) const;
 };

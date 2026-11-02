@@ -2275,5 +2275,32 @@ executes the original save owner with lease/ODBC failures and compares SQL
 arguments, marker changes, journal retention, prepare/release order and error
 counts. Disposable SQL proves insertion survives a later failing update, subsequent
 delete/update clears acknowledged state, and invalid packed-date insertion
-schedules cleanup before retry. Production guild save scheduling, metadata/NPC
-persistence and character/guild inventory transfers remain pending.
+schedules cleanup before retry. Production guild save scheduling, metadata persistence and character/guild
+inventory transfers remain pending.
+
+
+NPC mutations follow `GuildMgrSave::UpdateNpcUpgrade` (`ps_dbAgent.exe`,
+`00410010`) and `ResetNpcLevel` (`004100f0`). Upgrade fills an empty type and
+marks it for insertion; an existing type remains unchanged. Level is a BYTE,
+stored as WORD. Existing insertion markers remain 1; other occupied markers
+become 2. Reset zeroes occupied levels and preserves pending inserts, leaving
+empty slots untouched. Upgrade writes etin/keep-etin; reset writes keep-etin.
+Both mark guild metadata dirty. DB `PacketGuild` (`0040ba00`) routes `0b0f/0b17`;
+unknown guilds are silent no-ops, while native code rejects out-of-range slots.
+
+`save_guild_npcs` follows `GuildMgrSave::DBSaveNpcLv` (`004103e0`): nonzero types
+with marker 1/2 issue Add/Mod in slot order, acquiring a database lease only when
+needed. Successful Query clears that marker. Failure retains it, increments the
+error count and continues other slots. Procedure returns are not read. Other
+markers and empty types remain untouched; SQL arguments retain full WORD values,
+including SMALLINT/TINYINT conversion failures. `GuildNpcStore` executes recovered
+procedures; `GuildSql::save_npcs` exposes one pass. The original caller's retry
+and global scheduling remain separate work.
+
+The 256-sequence oracle executes original tree lookup, upgrade/reset, metadata
+writes and 512 save passes, including lease failures, isolated and persistent
+query errors. Disposable SQL verifies cached packet routing, retained existing
+types, insertion markers, signed-type failures with later-slot success, reset
+persistence and ignored negative procedure returns. Defaults and procedures are
+copied only into the disposable test catalog. Production guild metadata saving,
+complete save coordination and NPC upgrade gameplay remain pending.
