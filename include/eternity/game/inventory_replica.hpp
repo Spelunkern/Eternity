@@ -46,6 +46,7 @@ public:
     // call this only after its successful commit. Rollback leaves this untouched.
     void inventory_save_success() noexcept;
 private:
+    friend class PointItemReplica;
     using Item=std::unique_ptr<CachedInventoryItem>;
     void journal(const Item&,bool bank);
     std::uint32_t account_id_,money_;InventoryReplicaPool& pool_;

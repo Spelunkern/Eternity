@@ -131,6 +131,14 @@ Players::Players(storage::SqlServer& database,std::uint8_t server_id,std::string
     })) throw std::invalid_argument("Invalid player SQL catalog identifier");
     prefix_="["+catalog+"].dbo.";
 }
+std::vector<PlayerPointItem> decode_point_items(const storage::ResultSet& data) {
+    std::vector<PlayerPointItem> result;
+    for(const auto& row:data.rows) {
+        if(row.size()!=3) throw std::runtime_error("Original point item row changed");
+        result.push_back({byte(row,0),dword(row,1),byte(row,2)});
+    }
+    return result;
+}
 void decode_player_auxiliary(PlayerSnapshot& player) {
     // ps_dbAgent DBCharacter::LoadCharacter 00420610: WORD IDs/delays, BYTE counters, ordered quick slots.
     player.effects.clear();player.quests.clear();player.finished_quests.clear();player.quick_slots.clear();player.save_points.clear();
@@ -157,6 +165,7 @@ void decode_player_auxiliary(PlayerSnapshot& player) {
         const auto slot=byte(row,0);if(slot>=4) continue;
         player.save_points.push_back({slot,word(row,1),real(row,2),real(row,3),real(row,4)});
     }
+    player.point_items=decode_point_items(player.catalogs.at("PointItems"));
 }
 std::optional<PlayerSnapshot> Players::load(std::uint32_t uid,std::uint32_t cid,const std::string& username) {
     if(uid==0 || uid>2147483647 || cid==0 || cid>2147483647 || username.empty() || username.size()>12)

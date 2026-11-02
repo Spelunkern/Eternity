@@ -16,11 +16,12 @@ def run(command, build_directory="build"):
     try:
         tables = ("Chars", "CharItems", "UserMaxGrow", "GuildChars", "_DeletedChars", "UserStoredMoney", "CharEvents",
                   "UserStoredItems", "CharSkills", "CharApplySkills", "CharQuests", "CharQuickSlots", "CharSavePoint",
-                  "PointLog", "UserStoredPointItems", "MarketCharConcern", "FriendChars", "BanChars", "PointGiftNotify")
+                  "PointLog", "ProductLog", "UserStoredPointItems", "MarketCharConcern", "FriendChars", "BanChars", "PointGiftNotify")
         for table in tables:
             sql(f"SELECT TOP (0) * INTO dbo.{identifier(table)} FROM PS_GameData.dbo.{identifier(table)};", name)
+        sql("SELECT TOP (0) * INTO dbo.Users_Product FROM PS_Billing.dbo.Users_Product;", name)
         sql("SELECT TOP (0) * INTO dbo.Users_Master FROM PS_UserData.dbo.Users_Master;", name)
-        for source_database, source_tables in (("PS_GameData", tables), ("PS_UserData", ("Users_Master",))):
+        for source_database, source_tables in (("PS_GameData", tables), ("PS_UserData", ("Users_Master",)), ("PS_Billing", ("Users_Product",))):
             names = ",".join(literal(table) for table in source_tables)
             defaults = sql("""SELECT t.name AS [table],c.name AS [column],d.definition
             FROM sys.default_constraints d JOIN sys.tables t ON t.object_id=d.parent_object_id
@@ -44,7 +45,8 @@ def run(command, build_directory="build"):
                       "usp_Save_Char_Quest_Add_E", "usp_Save_Char_Quest_Mod_E", "usp_Save_Char_Quest_Del_E",
                       "usp_Save_Char_FinishedQuest_E", "usp_Save_Char_QuickSlot_Del_E", "usp_Save_Char_QuickSlot_Add_E",
                       "usp_Create_Char_SavePoint", "usp_Save_Char_SavePoint", "usp_Save_Char_ConcernMarket_Add_E",
-                      "usp_Save_Char_ConcernMarket_Del_E", "usp_Save_Char_Maxgrow_E")
+                      "usp_Save_Char_ConcernMarket_Del_E", "usp_Save_Char_Maxgrow_E",
+                      "usp_Read_Char_Product_Item_E", "usp_Save_Char_Product_Item_E", "usp_Save_User_StoredPointItems")
         names = ",".join(literal(procedure) for procedure in procedures)
         modules = sql("""SELECT p.name,m.definition FROM sys.sql_modules m
             JOIN sys.procedures p ON p.object_id=m.object_id
@@ -59,6 +61,13 @@ def run(command, build_directory="build"):
                     raise ValueError("Original cash procedure dependency changed")
                 # Only the fixture redirects its cross-database account reference to the scratch account table.
                 definition = definition.replace(dependency, "dbo.Users_Master")
+            if module["name"].lower() in ("usp_read_char_product_item_e", "usp_save_char_product_item_e"):
+                dependency = "PS_USERDB01.PS_Billing.dbo.Users_Product"
+                if dependency not in definition:
+                    raise ValueError("Original product procedure dependency changed")
+                # Only this disposable fixture redirects the recovered linked-server table.
+                # Keep BEGIN DISTRIBUTED TRANSACTION and all original save branches intact.
+                definition = definition.replace(dependency, "dbo.Users_Product")
             sql(f"EXEC({literal(definition)});", name)
         # A failure on the second starter item proves the outer character transaction rolls back.
         sql("ALTER TABLE dbo.CharItems ADD CONSTRAINT EternityRejectFixtureItem CHECK(ItemID<>2147483000); "
@@ -83,6 +92,7 @@ def run(command, build_directory="build"):
         subprocess.run(command + [f"{build_directory}/quest-sql-integration", name], check=True)
         subprocess.run(command + [f"{build_directory}/interface-sql-integration", name], check=True)
         subprocess.run(command + [f"{build_directory}/account-state-sql-integration", name], check=True)
+        subprocess.run(command + [f"{build_directory}/point-items-sql-integration", name], check=True)
     finally:
         # Only the fresh, randomly named fixture catalog is removed.
         sql(f"ALTER DATABASE {catalog} SET SINGLE_USER WITH ROLLBACK IMMEDIATE; DROP DATABASE {catalog};")

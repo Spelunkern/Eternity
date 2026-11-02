@@ -1593,3 +1593,45 @@ statuses with allocation, bank transfers and item updates, comparing both caches
 FIFO journals and pool reuse after every message. SQL verifies dirty counts,
 zero-count retention, deletion rollback and retry. Character dispatch uses these
 same caches; live gameplay dispatch remains pending.
+
+
+`PointItemReplica` reconstructs product and stored-point receipts in
+`ps_dbAgent.exe`: `LoadBillingItem` (`0041ead0`), stored-point loading in
+`LoadCharacter` (`0042293a..00422a97`), `PacketUserItem` `0710`
+(`00408f55..00409081`), and `PacketUserPoint` `0e05`
+(`004070d5..00407254`). Both caches have 240 slots. Product loading fills slots
+with zero count; stored loading fills null pointers, so a zero-count stored row
+still owns its slot. IDs are divided unsigned by 1000 and truncated into BYTE
+type/type-ID fields. Invalid slots are skipped; stored allocation failures skip
+the row. Pooled payload not overwritten by loading is retained.
+
+Receipts allocate a normal inventory item with state 0 and copy its SQL metadata
+into the source cache, marking that source 3 unless it was 1. Product availability
+count becomes zero; stored count becomes the received count. Occupied inventory
+targets disconnect. Native envelopes additionally reject invalid owners, lengths,
+indices and missing stored pointers before mutation. Full inventory gems and
+craft data are retained in memory, but receipt metadata has no such fields.
+`040c` emits products with nonzero count; `0e04` emits every stored pointer,
+including count zero or pending receipts. Empty lists emit no packet.
+
+`PointItemStore` reconstructs the receipt phases of `SaveCharacter`
+(`00423483..0042366d`), after core/body and before inventory. It saves products
+then stored points in slot order through the recovered procedures, with zero
+gems and empty craft, signed UID/ID bits, unsigned quality/count and the original
+packed timestamp. Failures and negative returns are fatal, with no item-insert
+fallback. Both original procedures retain `BEGIN DISTRIBUTED TRANSACTION`;
+outer rollback also restores source rows, product metadata logs and inventory.
+`SaveSuccess` clears all product flags (`00409620..00409638`) and recycles only
+state-3 stored pointers (`00409916..0040996f`), retaining other payload.
+
+An original-code fixture compares 1,024 states, 2,912 planned calls, 2,350
+attempts, 495 fatal boundaries and 64 complete acknowledgments. It executes
+original loads, transfer handlers, CRT formatting, packets and SaveSuccess,
+including duplicate/invalid slots, zero counts, allocation failure and pool reuse.
+Disposable SQL redirects only the recovered billing linked-table dependency to
+a cloned fixture table, preserving procedure transaction logic. It verifies
+late-phase rollback/retry, product logs, receipt defaults, subsequent inventory
+updates, commit acknowledgments, owner isolation and zero-source deletion
+rollback. Original zero/quote MakeType SQL errors remain failures with bound
+native parameters. New purchases (`0e02`/`SaveBuyPointItem`), gifts, the complete
+transaction/retry/file owner, scheduling and live TCP delivery remain pending.

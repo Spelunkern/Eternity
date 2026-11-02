@@ -40,6 +40,7 @@ struct QuickSlot {std::uint8_t bar=0,slot=0,bag=0;std::uint16_t number=0;};
 struct PersistedQuest {std::uint16_t id=0,delay=0;std::array<std::uint8_t,3> counters{};};
 struct FinishedQuest {std::uint16_t id=0;std::uint8_t success=0;};
 struct PlayerSavePoint {std::uint8_t slot=0;std::uint16_t map=65535;float x=0,y=0,z=0;};
+struct PlayerPointItem {std::uint8_t slot=0;std::uint32_t id=0;std::uint8_t count=0;};
 struct PlayerSnapshot {
     PlayerCore core;
     std::vector<PlayerItem> items,bank,overflow_items,overflow_bank;
@@ -50,6 +51,7 @@ struct PlayerSnapshot {
     std::vector<QuickSlot> quick_slots;
     std::vector<PlayerSavePoint> save_points;
     std::vector<std::uint32_t> concern_market;
+    std::vector<PlayerPointItem> point_items;
     std::uint32_t cash_points = 0;
     std::int32_t guild_rejoin_hours = 0;
     // Preserve original rows for effects, quests, quick slots, save points, point log/items, social and market data.
@@ -60,6 +62,7 @@ struct PlayerSnapshot {
 PlayerCore decode_player_core(const storage::Row& row);
 void decode_player_inventory(PlayerSnapshot& player);
 void decode_player_auxiliary(PlayerSnapshot& player);
+std::vector<PlayerPointItem> decode_point_items(const storage::ResultSet&);
 
 class Players {
 public:
