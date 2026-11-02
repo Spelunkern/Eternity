@@ -5,6 +5,9 @@
 namespace eternity::game {
 struct ItemDefinition;
 class ZoneItems;
+class Actor;
+class ItemQuestLinks;
+class ItemPickWorld;
 struct GroundItem {
     PlayerItem item;
     const ItemDefinition* definition=nullptr;
@@ -43,6 +46,7 @@ public:
     bool leave(GroundItem&);
     GroundItem* find(std::uint32_t id) const noexcept;
     GroundItem* find_cell(CellCoordinates,std::uint32_t id);
+    GroundItem* pick(Actor&,std::uint32_t id,std::int32_t& error,bool checks,const ItemQuestLinks&,ItemPickWorld&);
     void update(std::uint32_t tick);
     void send_enter(CellCoordinates,ItemViewer&);
     void send_leave(CellCoordinates,ItemViewer&);

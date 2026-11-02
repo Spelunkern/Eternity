@@ -1,4 +1,5 @@
 #include "eternity/game/equipment.hpp"
+#include "eternity/game/item_quests.hpp"
 #include <algorithm>
 #include <bit>
 #include <charconv>
@@ -97,6 +98,10 @@ ItemDefinitions ItemDefinitions::load(const storage::ResultSet& table) {
 const ItemDefinition* ItemDefinitions::find(std::uint8_t type,std::uint8_t id) const {
     if(type==0 || id==0) return nullptr;
     const auto found=items_.find({type,id});return found==items_.end()?nullptr:&found->second;
+}
+void ItemDefinitions::initialize_quest_flags(const ItemQuestLinks& links) {
+    // CGameData::CalcQuestItem 004bf400: clear each flag, then test countStart.
+    for(auto& [key,item]:items_) {const auto* link=links.find(key.first,key.second);item.quest_start=link && !link->start.empty();}
 }
 EnchantValues EnchantValues::read(const std::filesystem::path& path) {
     std::ifstream input(path,std::ios::binary);if(!input) throw std::runtime_error("Cannot open original enchant configuration");

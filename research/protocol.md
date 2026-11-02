@@ -1029,8 +1029,8 @@ release timing, including duplicate keys, edge cells, explicit/default lifetime,
 equality and DWORD wrap. Native checks cover removal/insertion during streaming,
 nested shared-cursor lookup and release-time removal of the next item. A concrete
 wager integration places money and two existing items in the actual zone view,
-checks metadata/notices and expires all three through that view. Pickup and the
-running world's tick/transport adapter remain pending.
+checks metadata/notices and expires all three through that view. Pickup permission
+is described below; the running world's tick/transport adapter remains pending.
 
 The item pool reconstructs `CObjectMgr::CreateItem/FreeItem`
 (`0040a510`/`0040a590`), `SSyncHeap<CItem>::Alloc` (`0040adb0`), the item
@@ -1058,5 +1058,43 @@ The oracle compares 640 persistent allocation/free/mutation/initialization cases
 with original pool and reset code, including allocation failure, ID wrap and
 retained craft tails. Native integration returns expired zone items to the actual
 pool and checks their subsequent reuse; four concurrent batches hold 256 distinct
-live IDs before release. Inventory transfers, pickup and runtime transport/tick
+live IDs before release. Inventory transfers, pickup dispatch and runtime transport/tick
 ownership remain pending.
+
+Item/quest links reconstruct `CItemQuestData::Load/GetQuestLink`
+(`004c9d90`/`004152f0`): all 256x256 slots contain ordered start/end WORD lists,
+including duplicates and zero IDs. Lookup accepts only type/type-ID 1..255 but
+returns a nonnull empty record for valid empty slots. Native loading retains the
+complete matrix and consumed offset, rejects truncation and reads it after the
+NPC definitions in `NpcQuest.SData`. `CGameData::CalcQuestItem` (`004bf400`)
+clears each definition's quest-start flag, then sets it for a nonzero start count.
+The loader check now loads all 505 linked slots and initializes native item flags
+against the SQL item catalog.
+
+Pickup reconstructs `CItem::PickEnable` (`004ba240`) and
+`CZone::GetPickItem` (`004174a0`). No owner, matching user, or a matching nonzero
+party with checking enabled grants ownership without a clock read. Otherwise,
+unsigned `expires_at - 30000 < tick` grants access; equality remains protected,
+including the original DWORD subtraction wrap. Full zone pickup first resolves
+the item, then unconditionally resolves the caller's party when found. Missing
+items set error 3; ownership rejection sets 0. With checking enabled, horizontal
+distance greater than 10 sets 4. Float differences round before double square/sum,
+sqrt and final float rounding; Y is ignored and unordered comparison preserves
+the original behavior. Disabling checking also skips distance/quest checks and
+disables shared party access, while ownership protection still applies.
+
+After distance, runtime type 26 bypasses the quest gate. Other items with a
+definition of real type 27 and no quest-start flag require a linked end quest
+active on the caller. Links are queried in order until the first match, with no
+deduplication; invalid/empty links or no match set error 2. Success uses ordinary
+zone removal and returns the allocation without freeing it or changing the
+caller's existing error word. `ItemPickWorld` requires live party, position,
+active-quest and clock services; inventory admission remains a separate operation.
+
+The oracle compares 1,536 permission/full-zone cases using original party lookup,
+quest-list search, distance/CRT math and removal code. It also compares a complete
+synthetic link matrix, flag initialization and the supplied distribution's link
+hash/consumed offset. Cases include missing items, owner/group combinations,
+deadline equality/wrap, exact/near distance boundaries, duplicate links and all
+failure codes. SQL integration now runs the complete supplied link distribution
+check. Inventory transfers and live TCP pickup dispatch remain pending.

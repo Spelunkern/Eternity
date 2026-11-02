@@ -36,7 +36,8 @@ run through actors; live transport, inventory transfers and the remaining duel
 handlers still require integration.
 Ground-item zone/cell indexes, visibility and expiry are reconstructed, including
 native wager placement, expiry and pool recycling. The item pool preserves reused
-IDs and partial initialization; pickup and inventory transfers remain pending.
+IDs and partial initialization. Pickup permissions and item/quest links are
+reconstructed; inventory transfers and TCP pickup dispatch remain pending.
 Actor preparation connects these stages, including effect-driven resource clamps
 and cleanup. Equipment/transformation attack rebuilding and elemental-effect
 replacement run natively in the actor. User appearance packets include visible

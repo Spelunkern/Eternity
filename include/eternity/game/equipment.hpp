@@ -3,6 +3,7 @@
 #include <filesystem>
 
 namespace eternity::game {
+class ItemQuestLinks;
 struct ItemDefinition {
     std::uint32_t id = 0;
     std::uint8_t type = 0,type_id = 0,attribute = 0,special = 0,attack_time = 0,speed = 0,experience = 0,server = 0,real_type = 0;
@@ -11,11 +12,13 @@ struct ItemDefinition {
     std::array<std::array<std::uint16_t,3>,4> effects{};
     Attributes attributes;
     PlayerResources resources{};
+    bool quest_start=false; // stItemInfo+9c, initialized by CalcQuestItem.
 };
 class ItemDefinitions {
 public:
     static ItemDefinitions load(const storage::ResultSet& definitions);
     const ItemDefinition* find(std::uint8_t type,std::uint8_t id) const;
+    void initialize_quest_flags(const ItemQuestLinks&);
 private:
     std::map<std::pair<std::uint8_t,std::uint8_t>,ItemDefinition> items_;
 };

@@ -4,6 +4,8 @@
 #include "eternity/game/zone_environment.hpp"
 #include "eternity/game/npcs.hpp"
 #include "eternity/game/quests.hpp"
+#include "eternity/game/item_quests.hpp"
+#include "eternity/game/equipment.hpp"
 #include "eternity/auth/sql_authenticator.hpp"
 #include "eternity/net/login_server.hpp"
 #include "eternity/net/world_server.hpp"
@@ -108,8 +110,12 @@ int main(int argc, char** argv) {
             const eternity::net::Packet npc_data((std::istreambuf_iterator<char>(npc_file)),{});
             const auto npcs=eternity::game::NpcDefinitions::decode(npc_data);
             const auto quests=eternity::game::QuestDefinitions::npc_quest(npc_data);
+            const auto item_links=eternity::game::ItemQuestLinks::npc_quest(npc_data);
+            auto items=eternity::game::ItemDefinitions::load(definitions.catalogs.at("Items"));items.initialize_quest_flags(item_links);
+            std::size_t linked_items=0;for(const auto& link:item_links.records()) if(!link.start.empty() || !link.end.empty()) ++linked_items;
             std::size_t npc_count=0;for(int type=1;type<=13;++type) npc_count+=npcs.count(type);
             std::cout << "Original NPC/quest definitions loaded: " << npc_count << " NPCs, " << quests.size() << " quests (object runtime not started).\n";
+            std::cout << "Original item quest links loaded: " << linked_items << " linked slots; native quest-start flags initialized.\n";
             const auto maps=eternity::game::ServerMaps::load(eternity::game::MapConfiguration::load(map_ini),map_ini.parent_path()/"Map");
             std::cout << "Original map configuration and files loaded: " << maps.size() << " maps (runtime zones not initialized).\n";
             std::size_t doors=0,regions=0;
