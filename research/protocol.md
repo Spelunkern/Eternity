@@ -2749,3 +2749,38 @@ status, all timer branches and delivery before unlinking. SQL integration drives
 regular population through corpse eligibility, cleanup, fixed-delay accounting,
 reused allocation and replenishment. This does not implement CMob::Death reward,
 quest/drop, effect teardown or production world scheduling.
+
+
+Mob damage winner queries follow `CDamageMob::GetMaxDamage` (`ps_game.exe`,
+`004b8ef0`) and `GetMaxAggro` (`004b9000`). Both compare signed accumulated
+values and retain the first record on ties. A type-5 damage winner resolves
+through the first type-1 record, then considers later non-type-5 records whose
+party equals the aggregate winner's ID. The initial user is not filtered by
+party. A missing initial user is an unsafe source dereference; native code
+rejects this invalid state. Damage selection writes type/ID/damage/party and
+preserves aggro; aggro selection writes type/ID/damage/aggro and preserves party.
+Empty input returns false without changing output.
+
+The 128-list/256-query fixture executes the complete original queries on
+explicit intrusive records with only locks ported. It compares returned flags
+and all 28 output bytes, including untouched sentinels, signed boundaries,
+ties, group resolution and empty lists. This establishes selection, not the
+shared damage heap, accumulation/reset, combat ownership or death rewards.
+
+
+`MobDamagePool` and `MobDamageLedger` now reconstruct shared damage-record
+allocation/reuse and per-mob accumulation/reset (`CDamageMob::Add`, `004b8dd0`;
+`Reset`, `004b8d10`). Matching type/ID accumulates DWORD-wrapped damage/aggro,
+updates party and preserves list position. Type 5 ignores aggro increments and
+starts new aggro at zero. New records append; allocation failure preserves the
+list while incrementing allocation attempts. Reset returns records in list order
+to the shared LIFO heap, then restores fair_combat=true. Queries operate directly
+on ledger records without copying them.
+
+The two-owner fixture compares 832 original mutations and 1,664 interleaved
+aggro queries across 64 shared heaps, including retained record payloads, free
+order, owner order/count/fair flags, failed allocations, cross-owner reuse and
+signed overflow. Original list/heap operations and queries execute; allocator
+failure and locks are ports. Explicit initial fair flags are false to verify
+reset restoration; the native constructor defaults to the source's true flag.
+Production mob ownership, combat dispatch and death rewards remain pending.
