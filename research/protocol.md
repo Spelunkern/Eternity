@@ -1940,3 +1940,51 @@ loaded actor, waiting lists, failed-position requeue, successful location 4, act
 cell membership and view/shape/speed/weather delivery. It does not supply live TCP
 ownership, entity snapshots, obelisks, world indexes/logging or EnterZone services;
 those remain required integration/reconstruction work before a playable entry.
+
+`SocialCatalog` reconstructs the game-side `CFriend` append/find behavior
+(`ps_game.exe`, `004b97f0`, `004b9bb0`, `004b96f0`) and DB friend/block decoding
+(`0046e770`, `0c01`/`0c05`). Each list retains insertion order and duplicate IDs,
+caps at 100, and appends rather than replacing on another load packet. Original
+Add returns false even after appending; the native append API has no success
+return. `InitFriend` (`004756d0`) notifies every present nonzero friend with `2207`,
+including one-way relationships. `SendCharacterFriend` (`00483ac0`) queries every
+friend, including ID zero, and sets `2201` online only if the peer's friend list
+contains this character. Friends and blocks (`2208`) send batches of 25, no empty
+packets, fixed NUL-terminated name fields and variable memo bytes. The memo length
+excludes the copied NUL; that NUL is outside the transmitted record. Live streaming
+preserves lookup/send interleaving at each batch boundary. Wire bytes after a
+name's first NUL are unspecified in the original and zeroed natively.
+
+`EntryCatalogs` reconstructs game DB catalog updates and initial client output.
+`PacketUserDBSavePoint` (`0046e810`, `0d01`) overwrites valid slots 0..3 without
+clearing others. `SendSavePoint` (`00483d60`) checks DWORD map sentinel 65535,
+then sends `0225` slots 1..4 with WORD map IDs and raw XYZ, omitting an empty set.
+`PacketUserDBPoint` (`0046e880`) loads `0e01` cash/history and `0e04` fixed stored
+items. Empty/partial history retains old trailing entries; `strncpy(21)` pads
+codes after NUL and does not force a terminator for 21-byte codes. `SendPointLog`
+(`00483ed0`) always sends `2601`, cash and nonempty-code rows, including an empty
+history header. Stored updates preserve untouched slots and ignore >=240;
+`SendCharacterStoredPointItem` (`00483f80`) sends `2606` in slot order, skipping
+zero counts. `SendCharacterHonor` (`00483ea0`) sends CUser+`0x168` as `0230`;
+this is the HG WORD loaded from DB `0501` offset `0x47` / DB-agent CUser+`0xa8`,
+represented by `PlayerCore::hunger`. `SendKCStatus` (`00481920`) sends `0211`, raw
+country/points and signed-positive wrapped expiry-minus-tick milliseconds, or zero.
+
+`guild_listings` reconstructs `CGuildMgr::SendGuildList` (`00432000`): `0d0d`
+begin, country-DWORD-filtered records in map key order, 14 fixed 120-byte rows per
+`0d2f`, then `0d0e` end even for an empty result. Name/master/notice limits are
+24/20/64 wire bytes; original fixed-string padding is normalized after NUL only.
+The fixture executes 240 social decode/notification cases, 96 stateful four-round
+catalog update sequences, 180 kill-count clocks, five honor values and 36 guild
+lists. Social append/find, DB decoders, packet code and guild-tree iteration run
+unchanged; world lookups, transport, clock, OS and CRT boundaries are ports.
+
+`EntryDelivery` connects the restored actor, skills/effects/quests, social cache,
+UI/history/points and existing serializers to the 0407 owner's actual delivery
+steps, including InitFriend, speed and quick slots. Actor money is authoritative
+for `0105`; unsupported lifecycle/guild steps remain explicit services. A native
+composition verifies packet order and ownership. Disposable SQL now follows real
+UI/history/stored-point replica packets into game caches and client packets, plus
+ASCII friend/block rows into original layouts. This does not provide the complete
+live TCP owner, global guild loader, social persistence or legacy wire text
+encoding; those remain required for the original-client service goal.
