@@ -1,0 +1,66 @@
+#include "eternity/game/guild_sql.hpp"
+#include <bit>
+#include <charconv>
+#include <limits>
+
+namespace eternity::game {
+namespace {
+void append(net::Packet& p,std::uint32_t value,unsigned int n=4) {for(unsigned int i=0;i<n;++i) p.push_back(static_cast<std::uint8_t>(value>>(8*i)));}
+void fixed(net::Packet& p,const std::string& value,std::size_t n) {p.insert(p.end(),value.begin(),value.end());p.insert(p.end(),n-value.size(),0);}
+void integer(const storage::Row& row,std::size_t at,std::int64_t& value,std::int64_t low,std::int64_t high) {
+    if(at>=row.size()) throw std::runtime_error("Missing guild SQL field");if(!row[at]) return;
+    const auto& raw=*row[at];std::int64_t parsed=0;const auto result=std::from_chars(raw.data(),raw.data()+raw.size(),parsed);
+    if(result.ec!=std::errc{} || result.ptr!=raw.data()+raw.size() || parsed<low || parsed>high) throw std::runtime_error("Guild SQL numeric conversion failed");value=parsed;
+}
+void string(const storage::Row& row,std::size_t at,std::string& value,std::size_t maximum) {
+    if(at>=row.size()) throw std::runtime_error("Missing guild SQL text");if(!row[at]) return;auto raw=row[at]->substr(0,row[at]->find('\0'));if(raw.size()>maximum) throw std::runtime_error("Guild SQL string truncation");value=std::move(raw);
+}
+const storage::ResultSet& result(const std::vector<storage::ResultSet>& rows) {if(rows.size()!=1) throw std::runtime_error("Unexpected guild SQL result count");return rows.front();}
+net::Packet packet(const GuildMetadata& data,const GuildMetadata& cached) {
+    net::Packet p{2,0x0b,1};const auto& info=data.listing;const auto& keep=cached.listing;
+    append(p,info.id);fixed(p,info.name,25);fixed(p,info.master,21);p.push_back(static_cast<std::uint8_t>(info.country));append(p,keep.points);p.push_back(keep.rank);append(p,cached.etin);p.push_back(cached.use_house);fixed(p,keep.notice,65);p.push_back(cached.buy_house);
+    // LoadGuildNUserList never writes this DWORD. Normalize undefined stack data
+    // to zero; do not invent a copy of the SQL KeepEtin value here.
+    append(p,0);append(p,cached.return_count);return p;
+}
+}
+GuildSql::GuildSql(storage::SqlServer& main,storage::SqlServer& auxiliary,GuildSqlPorts ports,std::string catalog):main_(main),auxiliary_(auxiliary),ports_(std::move(ports)) {
+    if(&main==&auxiliary || !ports_.send || !ports_.allocate || !ports_.load_bank || !ports_.load_npcs || !ports_.diagnostic) throw std::invalid_argument("Guild loading requires two SQL connections and replica services");
+    if(catalog.empty() || catalog.find_first_not_of("ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789_")!=std::string::npos) throw std::invalid_argument("Invalid guild SQL catalog");prefix_="["+catalog+"].dbo.";
+}
+bool GuildSql::load_maximum() {
+    try {const auto rows=main_.query("EXEC "+prefix_+"usp_Read_MaxGuildID_R;");const auto& data=result(rows);std::int64_t value=0;if(!data.rows.empty()) integer(data.rows.front(),0,value,INT32_MIN,INT32_MAX);net::Packet p{1,0x0b};append(p,static_cast<std::uint32_t>(value));ports_.send(std::move(p));return true;}
+    catch(const std::exception& error) {ports_.diagnostic(error.what());return false;}
+}
+bool GuildSql::members(std::uint32_t id) {
+    try {
+        const std::array<storage::Parameter,1> parameters={std::int64_t{std::bit_cast<std::int32_t>(id)}};
+        const auto rows=auxiliary_.query("EXEC "+prefix_+"usp_Read_GuildChar_R ?;",parameters);const auto& data=result(rows);std::array<std::int64_t,5> values{};std::string name;
+        net::Packet p{3,0x0b};append(p,id);p.push_back(0);
+        const auto flush=[&]{if(p[6]) ports_.send(std::move(p));p={3,0x0b};append(p,id);p.push_back(0);};
+        for(const auto& row:data.rows) {
+            integer(row,0,values[0],INT32_MIN,INT32_MAX);string(row,1,name,20);integer(row,2,values[1],INT16_MIN,INT16_MAX);integer(row,3,values[2],0,255);integer(row,4,values[3],INT32_MIN,INT32_MAX);integer(row,5,values[4],0,255);
+            append(p,static_cast<std::uint32_t>(values[0]));append(p,static_cast<std::uint32_t>(values[1]),2);p.push_back(static_cast<std::uint8_t>(values[2]));p.push_back(static_cast<std::uint8_t>(values[4]));fixed(p,name,21);if(++p[6]==60) flush();
+        }
+        flush();return true;
+    } catch(const std::exception& error) {ports_.diagnostic(error.what());return false;}
+}
+bool GuildSql::load() {
+    try {
+        const auto rows=main_.query("EXEC "+prefix_+"usp_Read_Guild2_R;");const auto& data=result(rows);std::array<std::int64_t,9> values{};std::string name,master,notice;
+        for(const auto& row:data.rows) {
+            integer(row,0,values[0],INT32_MIN,INT32_MAX);string(row,1,name,24);string(row,2,master,20);integer(row,3,values[1],0,255);integer(row,4,values[2],INT32_MIN,INT32_MAX);integer(row,5,values[3],0,255);integer(row,6,values[4],INT32_MIN,INT32_MAX);integer(row,7,values[5],0,255);string(row,8,notice,63);integer(row,9,values[6],0,255);integer(row,10,values[7],INT32_MIN,INT32_MAX);integer(row,11,values[8],INT32_MIN,INT32_MAX);
+            GuildMetadata metadata;metadata.listing={static_cast<std::uint32_t>(values[0]),static_cast<std::uint32_t>(values[1]),static_cast<std::uint32_t>(values[2]),static_cast<std::uint8_t>(values[3]),name,master,notice};metadata.etin=static_cast<std::uint32_t>(values[4]);metadata.use_house=static_cast<std::uint8_t>(values[5]);metadata.buy_house=static_cast<std::uint8_t>(values[6]);metadata.return_count=static_cast<std::uint32_t>(values[7]);metadata.keep_etin=static_cast<std::uint32_t>(values[8]);
+            auto found=replicas_.find(metadata.listing.id);
+            if(found==replicas_.end()) {
+                if(!ports_.allocate()) continue;found=replicas_.emplace(metadata.listing.id,GuildDbMetadata{metadata}).first;
+                ports_.load_bank(metadata.listing.id);ports_.load_npcs(metadata.listing.id);
+            }
+            ports_.send(packet(metadata,found->second.metadata));
+            // Original caller ignores the member loader's result and continues.
+            (void)members(metadata.listing.id);
+        }
+        return true;
+    } catch(const std::exception& error) {ports_.diagnostic(error.what());return false;}
+}
+}

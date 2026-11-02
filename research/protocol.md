@@ -2142,3 +2142,47 @@ selection InitGuild, world entry guild listings and world-leave ReleaseGuild,
 preserving ranking state and officer cleanup. Global SQL guild loading, ownership,
 applications/rank-management gameplay, bank/NPC delivery and live TCP integration
 remain required before a playable service.
+
+`GuildCatalog` reconstructs game `PacketGuild` (`00408e00`) for `0b01` maximum
+ID, `0b02` 135-byte guild records and `0b03` 29-byte member records.
+`InitAddGuild` (`00431870`) retains independent first-key ID/name indexes and
+updates the maximum only after successful allocation; a later `0b01` overwrites
+it directly. `InitAddUser` (`0042cf70`) corrects a member's stored rank to 1 when
+its name equals the current master. The original input rank still determines
+application rank 0 versus accepted membership, master-name replacement at rank 1,
+and the rank-1/2 officer counter. Duplicate insertions still perform these side
+effects. Member billing/ranking state starts zero and character-to-guild routing
+uses first insertion. Unknown-guild member packets are ignored. A 96-sequence
+fixture executes 768 original packet owners, real ID/member trees and master/rank
+logic; guild/member pool allocation, reset, name-index insertion and OS are ports.
+
+`GuildSql` connects actual original procedures to these game packets:
+`DBGuild::LoadMaxID` (`ps_dbAgent.exe`, `00426a00`) uses
+`usp_Read_MaxGuildID_R`; `LoadGuildNUserList` (`004271a0`) uses
+`usp_Read_Guild2_R`, then `LoadUserList` (`004275d0`) calls
+`usp_Read_GuildChar_R` on a separate connection. Each guild packet precedes its
+member batches of 60, omitting empty sets. Member conversion failure discards
+only the unfinished batch; the outer guild loader ignores that failure and
+continues. Metadata conversion failure stops the outer loader. Original signed
+LONG/SHORT and unsigned BYTE ranges and string-buffer truncation are retained.
+SQL NULL leaves prior conversion storage unchanged; initially undefined storage
+is zeroed natively. Wire text remains tested with ASCII; legacy encoding is pending.
+
+`GuildMgrSave::AddFromDB` (`0040fc10`) keeps an existing replica unchanged.
+Reloaded SQL guild name/master/country remain current while points, rank, etin,
+remark, house flags and return count come from the retained replica. New replicas
+require bank/NPC loader callbacks, called in that order, before sending metadata.
+Those bank/NPC owners remain separate required work. The combined loader never
+writes record DWORD `0x7f` (KeepEtin), unlike the standalone guild-list loader;
+the native packet normalizes these undefined bytes to zero while retaining the
+actual SQL KeepEtin in the DB replica. Return count at `0x83` is defined.
+
+The restored `usp_Read_Guild2_R` fails with SQL error 207: it orders by `G.Rank`
+although restored `dbo.Guilds` has no Rank column. Integration records that real
+failure without modifying original databases, then clones tables/procedures into
+a disposable catalog with the missing column supplied only there. It verifies
+SQL-to-game-to-client membership, missing-detail defaults, reload retention,
+new-replica bank/NPC callback order and conversion-failure batches. The fixture
+does not settle the intended ordering field for a production compatibility fix.
+Production bootstrap retry semantics, actual bank/NPC replicas, SQL cursor-error
+streaming, the restored schema incompatibility and live TCP startup remain open.

@@ -47,6 +47,10 @@ def main():
         subprocess.run(admin_command, cwd=ROOT, check=True)
         from creation_integration import run
         run(command)
+        from guild_integration import run as run_guild
+        guild_command = command[:-1] + ["--env-file", str(ROOT / ".local" / "sqlserver.env"), IMAGE,
+            "sh", "-c", 'ETERNITY_DB_USER=sa ETERNITY_DB_PASSWORD="$MSSQL_SA_PASSWORD" exec "$@"', "guild-integration"]
+        run_guild(guild_command)
         return
     else:
         command += ["build/eternity-server", *args.arguments]
