@@ -2374,7 +2374,7 @@ AI/random/clock calls, overflow/NaN behavior and respawn/zone bindings. SQL,
 allocation, verified path reset implementations, AI providers and OS are ports.
 Native tests also clear actual allocated path/trail state. SQL integration loads
 the recovered distribution and verifies the first mob's runtime projection.
-Population placement/pooling, linked bosses, obelisks and the complete
+Production population/pool integration, linked bosses, obelisks and the complete
 world application are still required before production TCP world entry.
 
 
@@ -2434,4 +2434,34 @@ empty compiled/stack FSM cleanup and random seeding across 128 pools and 1,920
 operations. Allocator failure, locking, clock, atomic increment and Lua close
 are ports. Native providers supply constructor/AI resources; tests verify retained
 runtime state, cleanup order, failed allocations, wrap, new/reused IDs and seeded
-random words. Population placement and live world ownership remain pending.
+random words. Live world ownership remains pending.
+
+
+Regular zone populations follow `CZone::MapInitObject` (`ps_game.exe`, `0041c5f0`).
+`MobPopulation` owns per-zone respawn copies, binding map types to valid SQL mob
+projections as in `CMap::LoadMap` (`00425780`), then skipping empty areas as
+`stMapMob::Copy` (`0041c280`) does. Missing definitions preserve their existing
+current/deadline fields. Valid definitions set deadline zero and current to the
+configured count before placement; blocked/out-of-range tiles and failed
+allocations do not decrement it. Each attempt consumes X then Z random values;
+successful initialization consumes its separate movement delay and clocks before
+position assignment and zone entry. Position uses float spills, truncated tile
+coordinates and the area's minimum Y, including subzero fractional X/Z that
+truncate to tile zero.
+
+The native path connects actual `MobPool`, `initialize_mob`, drop randomness,
+`ZoneMobs` and entry packets. Required linked-group initialization follows every
+regular pass; its return value is ignored, as in the source. Linked bosses and
+obelisks still require their own implementation. `RuntimeZone` owns the population
+so active respawn pointers remain valid. The 128-population/256-call fixture
+executes original regular spawning, real construction/pool allocation, runtime and
+attack initialization, random seeding, ID tree/cell insertion and entry formatting.
+AI/Lua providers, linked groups, allocation failure, clocks/random and transport
+are ports. It compares interleaved events, configured/current/deadline state,
+retained memberships and bindings across two calls per population, including
+memory failure, negative/zero counts, unknown definitions, blocked tiles,
+boundaries/NaN and wrapped IDs/ticks. Isolated SQL also drives a restored mob
+through preparation, allocation, runtime initialization, cell entry and recycling,
+verifying original resources, respawn binding and deferred linked initialization.
+Production scheduling, full population release, AI and TCP world entry remain
+pending.

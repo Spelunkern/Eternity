@@ -2,6 +2,7 @@
 #include "eternity/auth/accounts.hpp"
 #include "eternity/game/definitions.hpp"
 #include "eternity/game/mobs.hpp"
+#include "eternity/game/mob_population.hpp"
 #include "eternity/game/characters.hpp"
 #include "eternity/game/stats.hpp"
 #include "eternity/game/equipment.hpp"
@@ -13,6 +14,32 @@
 
 void require(bool condition, const char* message) {
     if (!condition) throw std::runtime_error(message);
+}
+
+void verify_mob_population(const eternity::game::MobRuntimeTemplates& definitions) {
+    using namespace eternity::game;
+    struct Services final:MobPoolServices,ZoneMobServices {
+        unsigned int views=0,releases=0;
+        std::unique_ptr<MobRuntime> construct() override {auto mob=std::make_unique<MobRuntime>();mob->drop_random=ServerRandom(unix_time());return mob;}
+        std::uint32_t unix_time() override {return 1700000000;}
+        std::uint32_t tick_ms() override {return 0xfffffff0;}
+        void release_compiled_ai(MobRuntime& mob) override {require(!mob.use_pais,"Unexpected compiled AI resource in SQL spawn fixture");++releases;}
+        void release_stack_ai(MobRuntime&) override {throw std::runtime_error("Unexpected stack AI in SQL spawn fixture");}
+        void close_lua(void*) override {throw std::runtime_error("Unexpected Lua resource in SQL spawn fixture");}
+        void lua_init(MobRuntime&) override {throw std::runtime_error("Unexpected Lua entry in SQL spawn fixture");}
+        void send_cell_view(CellCoordinates cell,const eternity::net::Packet& packet) override {require(cell.x==0 && cell.z==0 && packet.size()==17 && packet[0]==1 && packet[1]==6 && packet[6]==1,"SQL mob entry packet/cell changed");++views;}
+        std::unique_ptr<MobBroadcast> allocate_broadcast(const eternity::net::Packet&,std::optional<std::uint8_t>) override {throw std::runtime_error("Unexpected SQL mob movement");}
+    } services;
+    MapDefinition map;map.size=81;map.tiles.resize((81*81+7)/8);MapMobArea area;area.box.minimum={-0.25F,7,0.75F};area.spawns={{1,2},{0,3}};map.mobs.push_back(area);
+    MobPopulation population(map,definitions);std::uint32_t serial=100;MobPool pool(serial,services);ZoneMobs zone(map.geometry(),services);MicrosoftRandom random;
+    MobInitPorts ports{random,[&]{return services.tick_ms();},[](MobRuntime&,std::uint8_t)->bool {throw std::runtime_error("Unexpected compiled AI creation in SQL spawn fixture");},[](MobRuntime&) {throw std::runtime_error("Unexpected Lua creation in SQL spawn fixture");}};
+    unsigned int linked=0;require(population.initialize(zone,pool,ports,[&]{++linked;require(zone.size()==2,"Linked groups initialized before regular SQL mobs");return false;}),"Linked-group failure changed original regular spawn result");
+    require(linked==1 && services.views==2 && serial==102 && population.areas()[0].spawns[0].current==2 && population.areas()[0].spawns[1].current==0,"SQL population counts/bindings changed");
+    for(auto* mob:zone.all()) {
+        require(mob->definition==definitions.find(1) && mob->respawn==&population.areas()[0].spawns[0] && mob->hp==2765 && mob->sp==874 && mob->mp==1578 && mob->dexterity==60 && mob->wisdom==40 && mob->status==0 && mob->next_new_target==4984 && mob->position.x==-0.25F && mob->position.y==7 && mob->respawn_position.z==0.75F && mob->drop_random.seed()==(1700000000U^mob->id),"Restored SQL mob did not survive allocation, initialization and zone entry");
+        require(zone.leave(*mob),"Cannot detach SQL fixture mob");pool.release(*mob);
+    }
+    require(zone.size()==0 && pool.available()==2 && services.releases==2,"SQL mob pool/zone cleanup changed");
 }
 
 int main() {
@@ -113,6 +140,7 @@ int main() {
                 mobs.find(1)->variance==83 && mobs.find(1)->physical_defense==38 && mobs.find(1)->magic_defense==31,"Restored mob transformation attack projection changed");
         const auto runtime_mobs=eternity::game::MobRuntimeTemplates::load(definitions.catalogs.at("Mobs"));const auto* first_mob=runtime_mobs.find(1);
         require(first_mob && first_mob->level==38 && first_mob->ai==1 && first_mob->hp==2765 && first_mob->sp==874 && first_mob->mp==1578 && first_mob->dexterity==60 && first_mob->wisdom==40 && first_mob->luck==53 && first_mob->attribute==4 && first_mob->physical_defense==38 && first_mob->magic_defense==31 && first_mob->shield_defense==0,"Original runtime mob projection differs from restored SQL");
+        verify_mob_population(runtime_mobs);
         const auto skills=eternity::game::SkillDefinitions::load(definitions.catalogs.at("Skills"));
         require(skills.find(1,1) && !skills.find(1,4),"Restored original three-level skill definitions did not load");
         eternity::game::Characters characters(database,255,std::chrono::sys_days{std::chrono::year{2024}/1/1});
