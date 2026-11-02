@@ -25,6 +25,7 @@ struct StarterItem {
     std::uint8_t type = 0,type_id = 0,count = 0,bag = 0,slot = 0;
     std::uint16_t quality = 0;
     std::uint64_t uid = 0;
+    std::optional<std::chrono::sys_seconds> made_at = std::nullopt;
 };
 struct CharacterDraft {
     CreateRequest request;

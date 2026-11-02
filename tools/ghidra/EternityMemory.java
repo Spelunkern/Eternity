@@ -14,7 +14,9 @@ public class EternityMemory extends GhidraScript {
     @Override
     public void run() throws Exception {
         String[] args=getScriptArgs();
-        if(args.length!=3) throw new IllegalArgumentException("Expected output directory, hexadecimal address, byte length");
+        if(args.length<3 || args.length>4 || (args.length==4 && !args[3].equals("writes")))
+            throw new IllegalArgumentException("Expected output directory, hexadecimal address, byte length, optional writes filter");
+        boolean writesOnly=args.length==4;
         File output=new File(args[0]); output.mkdirs();
         Address start=toAddr(args[1]);
         int length=Integer.parseInt(args[2]);
@@ -29,7 +31,7 @@ public class EternityMemory extends GhidraScript {
                     Function function=getFunctionContaining(reference.getFromAddress());
                     references.println(reference.getFromAddress()+"\t"+address+"\t"+reference.getReferenceType()+"\t"+
                         (function==null?"":function.getName(true)));
-                    if(function!=null) functions.add(function);
+                    if(function!=null && (!writesOnly || reference.getReferenceType().isWrite())) functions.add(function);
                 }
             }
             SymbolIterator iterator=currentProgram.getSymbolTable().getAllSymbols(true);

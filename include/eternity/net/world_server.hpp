@@ -1,6 +1,7 @@
 #pragma once
 #include "eternity/net/world_protocol.hpp"
 #include "eternity/game/characters.hpp"
+#include "eternity/game/character_commands.hpp"
 #include <asio/io_context.hpp>
 
 namespace eternity::net {
@@ -12,7 +13,7 @@ struct WorldServerOptions {
     std::size_t database_workers = 2;
 };
 using LoadCharacters = std::function<game::CharacterRoster(const session::LoginSession&)>;
-using DispatchCharacter = std::function<std::vector<Packet>(const session::LoginSession&,const Packet&)>;
+using DispatchCharacter = std::function<game::CharacterReply(const session::LoginSession&,game::CharacterRoster&,const Packet&)>;
 
 // Native game TCP endpoint. SQL callbacks run outside the socket strand, in per-connection order.
 class WorldServer {

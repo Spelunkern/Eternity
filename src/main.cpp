@@ -7,6 +7,7 @@
 #include <charconv>
 #include <csignal>
 #include <cstdlib>
+#include <filesystem>
 #include <iostream>
 #include <string_view>
 
@@ -32,7 +33,7 @@ int main(int argc, char** argv) {
                       std::string_view(argv[1]) != "--serve" &&
                       std::string_view(argv[1]) != "--serve-login")) {
         std::cerr << "Usage: eternity-server --version | --check-database | --check-original-loaders | --serve-login | --serve\n"
-                     "Game TCP currently reaches character listings; gameplay remains incomplete.\n";
+                     "Game TCP currently supports character listings/creation; world entry and gameplay remain incomplete.\n";
         return 2;
     }
     try {
@@ -56,15 +57,26 @@ int main(int argc, char** argv) {
                 auto advertised=asio::ip::make_address_v4("127.0.0.1");
                 if(const char* address=std::getenv("ETERNITY_WORLD_ADVERTISE")) advertised=asio::ip::make_address_v4(address);
                 const auto base=eternity::game::load_world_base(database);
+                auto starts=eternity::game::original_start_positions();
+                const char* configured_map=std::getenv("ETERNITY_MAP_INI");
+                const std::filesystem::path map_path=configured_map ? configured_map : ".local/server-data/Map.ini";
+                if(configured_map || std::filesystem::is_regular_file(map_path)) starts=eternity::game::read_start_positions(map_path);
+                auto rules=std::make_shared<eternity::game::CreationRules>(eternity::game::CreationRules::load(
+                    eternity::game::Definitions::load(database),std::move(starts)));
+                auto commands=std::make_shared<eternity::game::CharacterCommands>(database_config,
+                    eternity::game::CharacterCommandOptions{database_id,base,"PS_GameData"},rules,
+                    std::make_shared<eternity::game::ItemIds>(game_options.realm));
                 world=std::make_unique<eternity::net::WorldServer>(io,game_options,sessions,
                     [database_config,database_id,base](const eternity::session::LoginSession& account) {
                         eternity::storage::SqlServer connection(database_config);
                         return eternity::game::Characters(connection,database_id,base).load(account.user_id);
+                    },[commands](const eternity::session::LoginSession& account,eternity::game::CharacterRoster& roster,const eternity::net::Packet& packet) {
+                        return commands->execute(account.user_id,account.username,roster,packet);
                     });
                 eternity::auth::Realm realm{game_options.realm,0,0,128,"Eternity"};realm.address=advertised.to_bytes();
                 realms->replace({realm});
                 std::cout<<"Game listening on "<<game_options.address<<":"<<world->port()
-                         <<" (character listings; character commands and gameplay incomplete)."<<std::endl;
+                         <<" (character listings/creation; world entry and gameplay incomplete)."<<std::endl;
             }
             eternity::net::LoginServer server(io,options,eternity::auth::SqlAuthenticator(database_config),sessions,realms);
             asio::signal_set signals(io,SIGINT,SIGTERM);

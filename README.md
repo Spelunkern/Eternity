@@ -14,8 +14,8 @@ not included. Implemented: SQL access, original definition loaders, asynchronous
 encrypted TCP login on the available SQL path, account session replacement,
 realm handoff reservations, game TCP handshake/ciphers, and SQL-backed character
 listings. `--serve` starts login and game listeners with shared sessions and the
-original persisted world calendar. Creation rules and transactional SQL persistence
-are implemented; their TCP command dispatch and world entry are pending.
+original persisted world calendar. Faction selection and character creation work
+over TCP with original SQL persistence and starter items. World entry is pending.
 The active MD5 login
 path needs a missing procedure; see [research](research/protocol.md).
 
@@ -27,6 +27,7 @@ python3 tools/database.py restore
 python3 tools/database.py provision
 python3 tools/database.py compatibility
 python3 tools/database.py prepare-logs
+python3 tools/data.py /path/to/ep4.5/PSM_Client/Bin/Data
 python3 tools/dev.py image
 python3 tools/dev.py build
 python3 tools/dev.py test
@@ -39,10 +40,12 @@ python3 tools/dev.py run --serve
 Reverse engineering uses Ghidra: set `GHIDRA_HOME` and `JAVA_HOME`, then run
 `python3 tools/reverse.py all`. Generated analysis stays in `work/`;
 database exports and credentials stay in `.local/`. Both directories are ignored.
-`--serve-login` advertises its world offline; `--serve` makes character listings
+`--serve-login` advertises its world offline; `--serve` makes character creation
 available through the legacy SQL login path. Ports default to 30800/30810;
 `ETERNITY_LOGIN_PORT` and `ETERNITY_WORLD_PORT` accept 0 for an ephemeral port.
 `ETERNITY_WORLD_DATABASE_ID` defaults to 1 and selects the original SQL ServerID.
 Bind/advertised addresses default to loopback (`ETERNITY_LOGIN_BIND`,
 `ETERNITY_WORLD_BIND`, `ETERNITY_WORLD_ADVERTISE`). The runner shares the isolated
 SQL Server container's network namespace.
+Server assets remain in ignored `.local/server-data`; staged `Map.ini` supplies
+racial start positions. `ETERNITY_MAP_INI` overrides that path inside the container.

@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Build and exercise the native Linux runtime in an isolated development container."""
 import argparse
+import os
 from pathlib import Path
 import subprocess
 
@@ -22,6 +23,10 @@ def main():
         if not env.is_file():
             parser.error("Run tools/database.py provision first")
         command += ["--network", "container:eternity-sqlserver", "--env-file", str(env)]
+    if args.action == "run":
+        for name in sorted(os.environ):
+            if name.startswith(("ETERNITY_LOGIN_", "ETERNITY_WORLD_")) or name == "ETERNITY_MAP_INI":
+                command += ["--env", name]
     command += [IMAGE]
     if args.action == "build":
         command += ["sh", "-c", "cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Debug && cmake --build build -j4"]

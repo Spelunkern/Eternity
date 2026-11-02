@@ -42,6 +42,15 @@ std::chrono::sys_seconds calendar(int year,unsigned int month,unsigned int day,i
         throw std::runtime_error("Invalid original calendar value");
     return std::chrono::sys_days{date}+std::chrono::hours{hour}+std::chrono::minutes{minute}+std::chrono::seconds{second};
 }
+std::string creation_timestamp(std::chrono::sys_seconds made_at) {
+    const auto day=std::chrono::floor<std::chrono::days>(made_at);
+    const std::chrono::year_month_day date{day};const std::chrono::hh_mm_ss time{made_at-day};
+    std::ostringstream timestamp;
+    timestamp<<std::setfill('0')<<std::setw(4)<<static_cast<int>(date.year())<<'-'<<std::setw(2)<<static_cast<unsigned int>(date.month())
+        <<'-'<<std::setw(2)<<static_cast<unsigned int>(date.day())<<' '<<std::setw(2)<<time.hours().count()<<':'
+        <<std::setw(2)<<time.minutes().count()<<':'<<std::setw(2)<<time.seconds().count();
+    return timestamp.str();
+}
 }
 
 Characters::Characters(storage::SqlServer& database,std::uint8_t server_id,std::chrono::sys_seconds base,std::string catalog)
@@ -145,12 +154,6 @@ CreateResult Characters::create(std::uint32_t user_id,const std::string& usernam
     std::set<std::uint64_t> identifiers;
     for(const auto& item:draft.items)
         if(item.uid==0 || !identifiers.insert(item.uid).second) throw std::invalid_argument("Starter items require unique nonzero identifiers");
-    const auto day=std::chrono::floor<std::chrono::days>(made_at);
-    const std::chrono::year_month_day date{day};const std::chrono::hh_mm_ss time{made_at-day};
-    std::ostringstream timestamp;
-    timestamp<<std::setfill('0')<<std::setw(4)<<static_cast<int>(date.year())<<'-'<<std::setw(2)<<static_cast<unsigned int>(date.month())
-        <<'-'<<std::setw(2)<<static_cast<unsigned int>(date.day())<<' '<<std::setw(2)<<time.hours().count()<<':'
-        <<std::setw(2)<<time.minutes().count()<<':'<<std::setw(2)<<time.seconds().count();
     const auto& c=draft.character;const auto& request=draft.request;
     const std::array<storage::Parameter,36> parameters={std::int64_t{server_id_},username,std::int64_t{user_id},request.name,
         std::int64_t{request.slot},std::int64_t{request.family},std::int64_t{request.grow},std::int64_t{request.hair},
@@ -179,7 +182,7 @@ CreateResult Characters::create(std::uint32_t user_id,const std::string& usernam
         for(const auto& item:draft.items) {
             const std::array<storage::Parameter,11> values={id,std::bit_cast<std::int64_t>(item.uid),std::int64_t{item.bag},std::int64_t{item.slot},
                 std::int64_t{item.item_id},std::int64_t{item.type},std::int64_t{item.type_id},std::int64_t{item.quality},
-                std::string{"기본아이템"},std::int64_t{item.count},timestamp.str()}; // Original CP949 literal at 00467e70.
+                std::string{"기본아이템"},std::int64_t{item.count},creation_timestamp(item.made_at.value_or(made_at))}; // Original CP949 literal at 00467e70.
             const auto saved=result(database_.query("DECLARE @Saved int; EXEC @Saved="+prefix_+
                 "usp_Save_Char_Item_Add_E ?,?,?,?,?,?,?,?,0,0,0,0,0,0,?,?,?,'S'; SELECT @Saved;",values),1);
             if(saved.rows.size()!=1 || integer(saved.rows[0],0)<0) throw std::runtime_error("Original starter item save failed");
@@ -196,6 +199,17 @@ bool Characters::save_country(std::uint32_t user_id,std::uint8_t country,bool ne
     const std::array<storage::Parameter,4> parameters={std::int64_t{server_id_},std::int64_t{user_id},std::int64_t{country},std::int64_t{new_account}};
     const auto saved=result(database_.query("DECLARE @Saved int; EXEC @Saved="+prefix_+"usp_Save_Char_Country_E ?,?,?,?; SELECT @Saved;",parameters),1);
     return saved.rows.size()==1 && integer(saved.rows[0],0)>=0;
+}
+
+bool Characters::erase(std::uint32_t uid,std::uint32_t character_id) {
+    if(uid==0 || uid>2147483647 || character_id==0 || character_id>2147483647)
+        throw std::invalid_argument("Invalid original character deletion identity");
+    const std::array<storage::Parameter,3> identity={std::int64_t{server_id_},std::int64_t{uid},std::int64_t{character_id}};
+    const auto owned=result(database_.query("SELECT CharID FROM "+prefix_+"Chars WHERE ServerID=? AND UserUID=? AND CharID=? AND Del=0;",identity),1);
+    if(owned.rows.empty()) return false;
+    const std::array<storage::Parameter,2> parameters={std::int64_t{server_id_},std::int64_t{character_id}};
+    const auto deleted=result(database_.query("DECLARE @Deleted int; EXEC @Deleted="+prefix_+"usp_Delete_Char_E ?,?; SELECT @Deleted;",parameters),1);
+    return deleted.rows.size()==1 && integer(deleted.rows[0],0)>=0;
 }
 
 std::vector<net::Packet> character_list(const CharacterRoster& roster,bool include_country) {

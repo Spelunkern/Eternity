@@ -23,10 +23,10 @@ struct Fixture {
         eternity::game::CharacterRoster roster;roster.country=1;
         eternity::game::CharacterSummary character;character.id=7;character.slot=3;character.name="NativeHero";
         roster.slots[3]=character;return roster;
-    },[this](const eternity::session::LoginSession& owner,const Packet& packet) {
+    },[this](const eternity::session::LoginSession& owner,eternity::game::CharacterRoster&,const Packet& packet) {
         ++requests;require(owner.user_id==42 && packet==Packet({9,1,0}),"World command lost decrypted identity/payload");
         // Synthetic dispatcher reply checks ordering and persistent AES; country persistence is tested separately.
-        return std::vector<Packet>{{9,1,0,2}};
+        return eternity::game::CharacterReply{{{9,1,0,2}},false};
     }),login(io,login_options(),[](const eternity::auth::Credentials&,std::uint64_t,const std::string&) {
         return eternity::auth::LoginResult{0,42};
     },registry) {

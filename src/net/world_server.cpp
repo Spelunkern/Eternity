@@ -58,6 +58,7 @@ struct WorldServer::Impl::Connection : std::enable_shared_from_this<Connection> 
     std::array<std::uint8_t,8192> input{};
     std::deque<std::shared_ptr<Packet>> output;
     std::deque<Packet> pending;
+    std::shared_ptr<game::CharacterRoster> roster = std::make_shared<game::CharacterRoster>();
     std::size_t queued_bytes = 0;
     std::atomic_bool closed{false};
     bool working = false,loaded = false;
@@ -101,21 +102,21 @@ struct WorldServer::Impl::Connection : std::enable_shared_from_this<Connection> 
         const auto account=*protocol->owner();const bool initial=!loaded;
         Packet request;if(!initial) {request=std::move(pending.front());pending.pop_front();}
         const auto executor=socket.get_executor();const auto weak=weak_from_this();
-        asio::post(server->database,[weak,executor,account,initial,request=std::move(request),load=server->load,dispatch=server->dispatch] {
+        asio::post(server->database,[weak,executor,account,initial,roster=roster,request=std::move(request),load=server->load,dispatch=server->dispatch] {
             const auto current=weak.lock();if(!current || current->closed) return;
-            bool failed=false;std::vector<Packet> replies;
+            bool failed=false;game::CharacterReply reply;
             try {
-                if(initial) replies=game::character_list(load(account));
-                else if(dispatch) replies=dispatch(account,request);
+                if(initial) {*roster=load(account);reply.packets=game::character_list(*roster);}
+                else if(dispatch) reply=dispatch(account,*roster,request);
                 else failed=true; // Unreconstructed commands must not report fabricated success.
             } catch(const std::exception&) {failed=true;}
-            asio::post(executor,[weak,initial,failed,replies=std::move(replies)]() mutable {
+            asio::post(executor,[weak,initial,failed,reply=std::move(reply)]() mutable {
                 const auto connection=weak.lock();if(!connection || connection->closed) return;
-                if(failed) return connection->close();
+                if(failed || reply.close) return connection->close();
                 connection->working=false;if(initial) connection->loaded=true;
                 try {
-                    for(auto& reply:replies) {
-                        connection->send(connection->protocol->outgoing(std::move(reply)));
+                    for(auto& packet:reply.packets) {
+                        connection->send(connection->protocol->outgoing(std::move(packet)));
                         if(connection->closed) return;
                     }
                     connection->schedule();

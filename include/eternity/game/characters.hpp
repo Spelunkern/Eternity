@@ -45,6 +45,7 @@ public:
     CreateResult create(std::uint32_t user_id,const std::string& username,const CharacterDraft& draft,
         std::chrono::sys_seconds made_at);
     bool save_country(std::uint32_t user_id,std::uint8_t country,bool new_account);
+    bool erase(std::uint32_t user_id,std::uint32_t character_id);
 private:
     storage::SqlServer& database_;
     std::uint8_t server_id_;

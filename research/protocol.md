@@ -77,7 +77,7 @@ Native roster loading/serialization is implemented and tested against the origin
 procedures, including a rolled-back populated fixture. Native TCP tests cover
 login-to-world transfer, encrypted roster, ordered asynchronous dispatch, replay
 and account replacement while connected to the world. Map normalization, legacy
-wire name encoding, pending deletions, billing-item delivery, character commands
+wire name encoding, timed deletions, billing-item delivery, remaining character commands
 and gameplay remain pending. `CWorld::DBWorldDayLoad` / `DBWorldDaySave`
 (`ps_dbAgent.exe` `0040ef40` / `0040f070`) retain a nonzero packed base from
 `usp_Read_WorldInfo_E`; a missing/zero value is initialized through
@@ -100,13 +100,29 @@ definition's Slot/Quality: it takes quality from Items, equips the first type
 1..19 in slot 5 and puts other items into consecutive inventory slots. SQL
 creation uses a transaction-scoped catalog lock because the recovered procedure
 returns `IDENT_CURRENT`, shared across accounts. Country save retains the original
-`usp_Save_Char_Country_E` contract. TCP creation/country dispatch, native item ID
-generation and legacy wire name decoding remain pending.
+`usp_Save_Char_Country_E` contract. Native TCP now dispatches creation (`0102`),
+country (`0109`) and close (`0107`) sequentially using per-connection roster state.
+Creation replies with the original three-byte result, followed by the refreshed
+five-slot list on success. Country save only updates internal state; game
+`PacketUserDBChar` case `402` emits no client reply. Country change runs pending
+deletions first (`ps_dbAgent.exe` `CUser::ProcessDelReqNoTimeCheck`, `004043e0`)
+through `usp_Delete_Char_E`, retaining SQL guild/deleted-character side effects.
+The current session's maximum grow mode stays cached across creation; reconnecting
+reloads it from the available procedure. Legacy wire name decoding remains pending.
+
+Item IDs follow `SUniqueIDGen::GenID` (`ps_game.exe` `004cbe60`) and the creation
+caller's server-ID addition (`00481750`): packed local calendar in the high 32 bits,
+counter in bits 16..31 and server ID in the low bits. The constructor (`00402550`)
+sets the counter/start to zero. Calendar/counter refresh every 2000 milliseconds;
+item MakeTime is sampled independently. Native IDs serialize concurrent callers
+and refuse counter wrap within an interval. `tools/data.py` stages the original
+server Data files locally; standalone creation reads their racial start positions.
 
 Creation integration copies the original tables, defaults, database collation
-and six procedures into a disposable catalog. It verifies valid creation,
+and seven procedures into a disposable catalog. It verifies valid creation,
 occupied/duplicate names, concurrent names and rollback after failure on the
-second starter item, then drops that catalog. Existing account/character data
+second starter item, plus encrypted TCP faction/create, roster refresh, mode caching,
+relogin and pending deletion, then drops that catalog. Existing account/character data
 and identity counters are preserved. The original starter craft label at
 `ps_dbAgent.exe` `00467e70` is CP949 text. Native UTF-8 parameters bind as Unicode;
 the restored database's Chinese varchar procedure collation converts that label
