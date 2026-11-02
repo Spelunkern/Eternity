@@ -55,7 +55,7 @@ InventoryStore::InventoryStore(storage::SqlServer& database,std::uint8_t server,
     prefix_="["+catalog+"].dbo.";
 }
 void InventoryStore::save_in_transaction(const InventoryReplica& replica,std::uint32_t character) {
-    if(!database_.transaction_active()) throw std::logic_error("Inventory save requires the complete character transaction");
+    if(!database_.character_write_context_active()) throw std::logic_error("Inventory save requires the complete character transaction");
     const auto plan=inventory_save_plan(replica,server_id_,character);
     const auto execute=[&](const std::string& procedure,const Parameters& parameters) {
         std::string query="DECLARE @Saved int; EXEC @Saved="+prefix_+procedure+" ";

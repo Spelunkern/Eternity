@@ -24,7 +24,7 @@ InterfaceStore::InterfaceStore(storage::SqlServer& database,std::string catalog)
     prefix_="["+catalog+"].dbo.";
 }
 InterfaceSaveResult InterfaceStore::save_in_transaction(const InterfaceReplica& replica,std::uint32_t character,bool save_quick,const std::function<void(std::string_view)>& diagnostic) {
-    if(!database_.transaction_active()) throw std::logic_error("Interface save requires the complete character transaction");
+    if(!database_.character_write_context_active()) throw std::logic_error("Interface save requires the complete character transaction");
     const auto plan=interface_save_plan(replica,character,save_quick);
     return execute_interface_save_plan(plan,[&](const auto& op){
         const bool point=!op.quick;

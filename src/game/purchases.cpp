@@ -90,18 +90,18 @@ PurchaseStore::PurchaseStore(storage::SqlServer& items,storage::SqlServer& point
     prefix_="["+catalog+"].dbo.";
 }
 PurchaseSaveResult PurchaseStore::save(PurchaseReplica& replica,std::uint32_t character,const std::function<void(std::string_view)>& diagnostic) {
-    if(items_.transaction_active() || points_.transaction_active()) throw std::logic_error("Purchase saving must precede the complete character transaction");
-    const auto index=[](PurchaseConnection connection){return connection==PurchaseConnection::items?0U:1U;};const auto db=[&](PurchaseConnection connection)->storage::SqlServer&{return connection==PurchaseConnection::items?items_:points_;};
+    if(items_.character_write_context_active() || points_.character_write_context_active()) throw std::logic_error("Purchase saving must precede the complete character transaction");
+    const auto db=[&](PurchaseConnection connection)->storage::SqlServer&{return connection==PurchaseConnection::items?items_:points_;};
     const auto transaction=[&](PurchaseConnection connection,auto operation){if(operation!=&storage::SqlServer::begin && !db(connection).transaction_active()) return false;try{(db(connection).*operation)();return true;}catch(const std::runtime_error&){return false;}};
-    PurchaseSavePort port;port.acquire=[](PurchaseConnection){return true;};port.begin=[&](auto connection){return transaction(connection,&storage::SqlServer::begin);};port.commit=[&](auto connection){return transaction(connection,&storage::SqlServer::commit);};port.rollback=[&](auto connection){return transaction(connection,&storage::SqlServer::rollback);};port.timeout=[&](auto connection){return timeout_[index(connection)];};
+    PurchaseSavePort port;port.acquire=[](PurchaseConnection){return true;};port.begin=[&](auto connection){return transaction(connection,&storage::SqlServer::begin);};port.commit=[&](auto connection){return transaction(connection,&storage::SqlServer::commit);};port.rollback=[&](auto connection){return transaction(connection,&storage::SqlServer::rollback);};port.timeout=[&](auto connection){return db(connection).last_query_sqlstate()=="HYT00";};
     port.release=[&](auto connection){if(db(connection).transaction_active()) (void)transaction(connection,&storage::SqlServer::rollback);};port.diagnostic=diagnostic;
     port.query=[&](PurchaseConnection connection,const PointSaveOperation& op)->std::int64_t {
         const bool charge=connection==PurchaseConnection::points;std::string query=charge?"DECLARE @Saved int; EXEC @Saved=":"EXEC ";query+=prefix_+op.procedure+" ";for(std::size_t i=0;i<op.parameters.size();++i) query+=(i?",?":"?");
-        if(!charge) {const auto& make=std::get<std::string>(op.parameters.back());if(make.empty() || make=="'") {timeout_[index(connection)]=false;throw std::runtime_error("Original purchase item SQL literal is truncated or unclosed");}}
+        if(!charge) {const auto& make=std::get<std::string>(op.parameters.back());if(make.empty() || make=="'") {db(connection).observe_query_error("[42000] Original purchase item SQL literal is truncated or unclosed");throw std::runtime_error("[42000] Original purchase item SQL literal is truncated or unclosed");}}
         try {const auto sets=db(connection).query(query+(charge?"; SELECT @Saved;":";"),op.parameters);if(!charge) return 0;
             if(sets.size()!=1 || sets[0].rows.size()!=1 || sets[0].rows[0].size()!=1 || !sets[0].rows[0][0]) throw std::runtime_error("Original purchase charge result changed");
             const auto& cell=*sets[0].rows[0][0];std::size_t consumed=0;const auto value=std::stoll(cell,&consumed);if(consumed!=cell.size()) throw std::runtime_error("Invalid purchase charge result");return value;
-        }catch(const std::runtime_error& error) {const std::string_view message=error.what();const auto at=message.find('[');if(at!=std::string_view::npos && at+6<message.size() && message[at+6]==']') timeout_[index(connection)]=message.substr(at+1,5)=="HYT00";throw;}
+        }catch(const std::runtime_error& error) {db(connection).observe_query_error(error.what());throw;}
     };
     return execute_purchase_save(replica,character,port);
 }

@@ -85,13 +85,13 @@ void execute_point_save(std::span<const PointSaveOperation> plan,const std::func
     for(const auto& operation:plan) if(execute(operation)<0) throw std::runtime_error("Original point item save procedure failed");
 }
 void PointItemStore::save_in_transaction(const PointItemReplica& replica,std::uint32_t character) {
-    if(!database_.transaction_active()) throw std::logic_error("Point item save requires the complete character transaction");
+    if(!database_.character_write_context_active()) throw std::logic_error("Point item save requires the complete character transaction");
     execute_point_save(point_save_plan(replica,server_,character),[&](const auto& op)->std::int64_t {
         // Original sprintf puts MakeType inside a quoted %c literal. Zero ends
         // the SQL string early; a quote leaves the literal unclosed. Bound values
         // must not turn those original query errors into successful deliveries.
         const auto& make=std::get<std::string>(op.parameters.back());
-        if(make.empty() || make=="'") throw std::runtime_error("Original point item SQL literal is truncated or unclosed");
+        if(make.empty() || make=="'") {database_.observe_query_error("[42000] Original point item SQL literal is truncated or unclosed");throw std::runtime_error("[42000] Original point item SQL literal is truncated or unclosed");}
         std::string query="DECLARE @Saved int; EXEC @Saved="+prefix_+op.procedure+" ";for(std::size_t i=0;i<op.parameters.size();++i) query+=(i?",?":"?");
         const auto sets=database_.query(query+"; SELECT @Saved;",op.parameters);
         if(sets.size()!=1 || sets[0].rows.size()!=1 || sets[0].rows[0].size()!=1 || !sets[0].rows[0][0]) throw std::runtime_error("Original point item save result changed");

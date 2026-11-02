@@ -41,7 +41,7 @@ MarketSaveResult execute_market_save(MarketReplica& replica,std::uint32_t charac
 }
 MarketStore::MarketStore(storage::SqlServer& database,std::string catalog):database_(database),prefix_(prefix(std::move(catalog))) {}
 MarketSaveResult MarketStore::save_in_transaction(MarketReplica& replica,std::uint32_t character,const std::function<void(std::string_view)>& diagnostic) {
-    if(!database_.transaction_active()) throw std::logic_error("Market save requires the complete character transaction");
+    if(!database_.character_write_context_active()) throw std::logic_error("Market save requires the complete character transaction");
     return execute_market_save(replica,character,[&](const auto& op){(void)database_.query(sql(op,prefix_,false),op.parameters);},diagnostic);
 }
 bool GrowthReplica::advance(std::uint8_t grow,std::uint16_t level) noexcept {
@@ -62,7 +62,7 @@ GrowthSaveResult execute_growth_save(GrowthReplica* replica,std::uint8_t server,
 }
 GrowthStore::GrowthStore(storage::SqlServer& database,std::uint8_t server,std::string catalog):database_(database),server_(server),prefix_(prefix(std::move(catalog))) {}
 GrowthSaveResult GrowthStore::save(GrowthReplica& replica,std::uint32_t account,std::uint8_t grow,std::uint16_t level,const std::function<void(std::string_view)>& diagnostic) {
-    if(database_.transaction_active()) throw std::logic_error("Growth save must precede the complete character transaction");
+    if(database_.character_write_context_active()) throw std::logic_error("Growth save must precede the complete character transaction");
     return execute_growth_save(&replica,server_,account,grow,level,[&](const auto& op)->std::optional<std::int64_t>{
         const auto sets=database_.query(sql(op,prefix_,true),op.parameters);
         if(sets.size()!=1 || sets[0].rows.size()!=1 || sets[0].rows[0].size()!=1 || !sets[0].rows[0][0]) throw std::runtime_error("Original growth save result changed");

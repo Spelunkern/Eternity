@@ -90,6 +90,13 @@ def run(command, build_directory="build"):
             "ALTER TABLE dbo.UserMaxGrow ADD CONSTRAINT EternityRejectFixtureGrow CHECK(UserUID<>9502 OR MaxGrow<>3); "
             "CREATE USER [eternity] FOR LOGIN [eternity]; "
             "GRANT SELECT,INSERT,UPDATE,DELETE,EXECUTE ON SCHEMA::dbo TO [eternity];", name)
+        # Administrative fixture DDL remains outside the runtime account's grants.
+        sql("CREATE SEQUENCE dbo.EternitySaveRetry AS int START WITH 1 INCREMENT BY 1 NO CACHE;", name)
+        trigger = ("CREATE TRIGGER dbo.EternityFailFirstCore ON dbo.Chars AFTER UPDATE AS BEGIN SET NOCOUNT ON; "
+            "IF UPDATE(PosX) AND EXISTS(SELECT 1 FROM inserted WHERE UserUID=9901) BEGIN "
+            "DECLARE @Attempt int=NEXT VALUE FOR dbo.EternitySaveRetry; "
+            "IF @Attempt=1 BEGIN THROW 50001,'Eternity first core save fixture failure',1; END; END; END;")
+        sql(f"EXEC({literal(trigger)});", name)
         subprocess.run(command + [f"{build_directory}/creation-sql-integration", name], check=True)
         subprocess.run(command + [f"{build_directory}/creation-network-integration", name], check=True)
         subprocess.run(command + [f"{build_directory}/players-sql-integration", name], check=True)
@@ -107,6 +114,7 @@ def run(command, build_directory="build"):
         subprocess.run(command + [f"{build_directory}/point-items-sql-integration", name], check=True)
         subprocess.run(command + [f"{build_directory}/purchases-sql-integration", name], check=True)
         subprocess.run(command + [f"{build_directory}/character-recovery-sql-integration", name], check=True)
+        subprocess.run(command + [f"{build_directory}/character-save-sql-integration", name], check=True)
     finally:
         # Only the fresh, randomly named fixture catalog is removed.
         sql(f"ALTER DATABASE {catalog} SET SINGLE_USER WITH ROLLBACK IMMEDIATE; DROP DATABASE {catalog};")

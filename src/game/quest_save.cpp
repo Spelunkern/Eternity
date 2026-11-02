@@ -17,7 +17,7 @@ QuestStore::QuestStore(storage::SqlServer& database,std::string catalog):databas
     prefix_="["+catalog+"].dbo.";
 }
 void QuestStore::save_in_transaction(const QuestReplica& replica,std::uint32_t character) {
-    if(!database_.transaction_active()) throw std::logic_error("Quest save requires the complete character transaction");
+    if(!database_.character_write_context_active()) throw std::logic_error("Quest save requires the complete character transaction");
     for(const auto& op:quest_save_plan(replica,character)) {
         std::string query="DECLARE @Saved int; EXEC @Saved="+prefix_+op.procedure+" ";for(std::size_t i=0;i<op.parameters.size();++i) query+=(i?",?":"?");
         const auto sets=database_.query(query+"; SELECT @Saved;",op.parameters);

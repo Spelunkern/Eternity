@@ -27,7 +27,7 @@ CharacterCoreStore::CharacterCoreStore(storage::SqlServer& database,std::string 
     prefix_="["+catalog+"].dbo.";
 }
 void CharacterCoreStore::save_in_transaction(const CharacterReplica& replica) {
-    if(!database_.transaction_active()) throw std::logic_error("Core save requires the complete character transaction");
+    if(!database_.character_write_context_active()) throw std::logic_error("Core save requires the complete character transaction");
     for(const auto& op:character_core_save_plan(replica)) {
         const bool info=op.procedure=="usp_Save_Char_Info_E";
         // SQL EXEC accepts variables, not CAST expressions. Decimal locals match

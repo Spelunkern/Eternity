@@ -54,6 +54,5 @@ public:
     PurchaseSaveResult save(PurchaseReplica&,std::uint32_t character,const std::function<void(std::string_view)>& diagnostic={});
 private:
     storage::SqlServer& items_;storage::SqlServer& points_;std::string prefix_;
-    std::array<bool,2> timeout_{}; // Original successful calls do not clear SQLSTATE.
 };
 }

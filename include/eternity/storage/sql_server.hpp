@@ -10,7 +10,9 @@
 #include <string_view>
 #include <vector>
 #include <variant>
+#include <array>
 
+namespace eternity::game {class CharacterSaveStore;}
 namespace eternity::storage {
 
 struct SqlServerConfig {
@@ -46,10 +48,20 @@ public:
     void commit();
     void rollback();
     bool transaction_active() const noexcept { return transaction_active_; }
+    // Original SaveCharacter ignores BeginTrans failure and still executes its
+    // phases. Only its coordinator can open that legacy write context.
+    bool character_write_context_active() const noexcept {return transaction_active_ || legacy_character_save_;}
+    // SDatabase query diagnostics belong to the connection and survive successful
+    // calls. Compatibility adapters can report equivalent pre-query SQL errors.
+    std::string_view last_query_sqlstate() const noexcept {return {query_state_.data(),query_state_[0]?5U:0U};}
+    void observe_query_error(std::string_view diagnostic) noexcept;
 private:
+    friend class eternity::game::CharacterSaveStore;
     SQLHENV environment_ = SQL_NULL_HENV;
     SQLHDBC connection_ = SQL_NULL_HDBC;
     bool transaction_active_ = false;
+    bool legacy_character_save_ = false;
+    std::array<char,5> query_state_{};
 };
 
 } // namespace eternity::storage

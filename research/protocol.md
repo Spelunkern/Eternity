@@ -1121,10 +1121,10 @@ current balance after the common header, matching the original order.
 
 `MoneyReplica` reconstructs the cached DWORD assigned by `ps_dbAgent.exe`
 `CUser::PacketUserSetStatus` (`00405b00`, case `0603`) with owned account binding.
-This status update does not itself write SQL. Full character saving through
-`DBCharacter::SaveCharacter` (`00423190`) remains pending, as do party loot
-distribution and live pickup command dispatch; detached inventory admission is
-described below.
+This status update does not itself write SQL. Character saving through
+`DBCharacter::SaveCharacter` (`00423190`) persists this replica as described below.
+Party loot distribution and live pickup command dispatch remain pending;
+detached inventory admission is described below.
 `MoneyWorld` requires ordered DB-status and log transport/calendar services.
 
 The oracle compares 1,792 original bounds/saturation/receipt/log/free operations,
@@ -1726,5 +1726,61 @@ checks verify failed opens, repeated appends and concurrent noninterleaved
 records. Disposable SQL confirms legacy envelope failures and replays compatible
 statements with rollback/commit, including global UID replacement, consumed
 quests, zero-time effects, truncated stored money, stored-point delivery and UI.
-The complete SaveCharacter transaction, retry/file trigger policy, user/DB-job
-owner and periodic scheduling still require integration.
+User/DB-job lifecycle, social persistence, connection pool/reconnect ownership
+and periodic scheduling still require integration.
+
+
+`execute_character_save` reconstructs `ps_dbAgent.exe`
+`DBCharacter::SaveCharacter` (`00423190..00424abe`) around the recovered SQL
+phases. Maximum-grow saving precedes allocation and the character lock. Its
+nonzero legacy result logs but does not stop saving. Missing allocation returns
+false, with a locked file capture only when recovery is requested. BeginTrans
+status is ignored. On fatal phase error the owner logs, records HYT00 only while
+the shared timeout flag is still zero, rolls back, and conditionally captures
+recovery before unlocking/freeing the connection. The first observed timeout
+suppresses that attempt's file capture. A subsequent failure with an already-set
+flag writes the file when recovery is requested, regardless of its current state.
+Commit status is also ignored: original SaveSuccess still runs, then unlock/free.
+FreeDB/End attempts rollback of an unfinished transaction.
+
+`execute_user_character_save` reconstructs explicit `CUser::SaveCharacter`
+(`00404f30`) and periodic `SaveCharacterTick` (`00405000`). Pending point purchases
+save first. A purchase failure requests job 9 for an active game user, otherwise
+ExitUser, then still proceeds with character saving. The first character attempt
+has recovery disabled; the second attempt enables it and shares the timeout
+flag. Explicit saves preserve the quick-slot argument. Periodic saves force it
+false. A successful attempt invokes friend saving then block saving. Two failed
+explicit attempts return false and request job 9 only for an active user with a
+timeout; other explicit failures exit. Two failed periodic attempts with a timeout
+return true without social saving or a new exit request. Other periodic failures
+exit and return false.
+
+`CharacterSaveStore` composes core/body, product/stored-point receipts,
+inventory/bank, learned/applied skills, quests, quick/save points and market state
+in their original order, then performs the full cache acknowledgment. Growth and
+purchase charges use the separate auxiliary connection outside that transaction.
+Point failures emit the additional original diagnostic before the general error;
+quick/market failures retain their nonfatal behavior. A private legacy write
+context lets phases execute when BeginTrans fails, matching the original ignored
+status; ordinary phase callers still require an active transaction. The scope
+cannot escape success or exception cleanup. The dedicated-connection adapter uses
+the caller's recursive cache mutex and required recovery writer. SQLSTATE history
+belongs to each SQL connection, surviving successful calls and shared use by
+purchases, growth and character saving. User callbacks
+for social saving and deferred exit/job dispatch are explicit integration ports.
+
+A 5,120-case fixture executes original DB/user control branches with SQL/cache/recovery/
+purchase/social bodies substituted as ports: 3,072
+standalone and 2,048 explicit/periodic cases. It compares return values, sticky
+timeout flags, attempt counts and complete owner effect order across null users,
+allocation/growth/phase/transaction failures, stale SQLSTATE, purchases and exits.
+Disposable SQL composes all phases, fails the first core update with a scratch
+sequence/trigger to prove retry, and then exercises a permanent late save-point
+failure, rollback and one file capture. Subsequent saves preserve the original
+file-cleared item/skill/quest marker consequences, resume pending market/points,
+and distinguish periodic versus explicit quick slots. Purchase failure still
+queues exit before successful character/social saving. Shared-connection checks
+retain a purchase after injected stale HYT00 plus a real negative charge return,
+then discard it after a real later SQL error replaces that state. Live session/DB-job
+lifecycle, social cache persistence, connection pool/reconnect ownership and
+periodic scheduling remain pending.

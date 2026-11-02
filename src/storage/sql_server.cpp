@@ -137,102 +137,109 @@ void SqlServer::rollback() {
 }
 
 std::vector<ResultSet> SqlServer::query(std::string_view sql, std::span<const Parameter> parameters) {
-    if (sql.size() > static_cast<std::size_t>(std::numeric_limits<SQLINTEGER>::max()))
-        throw std::invalid_argument("SQL query is too long");
-    Statement statement(connection_);
-    if (parameters.size() > std::numeric_limits<SQLUSMALLINT>::max())
-        throw std::invalid_argument("Too many SQL parameters");
-    SQLRETURN result = SQL_SUCCESS;
-    std::vector<SQLLEN> indicators(parameters.size());
-    std::vector<std::vector<SQLWCHAR>> wide_parameters(parameters.size());
-    if (parameters.empty()) {
-        result = SQLExecDirect(statement.handle,
-            reinterpret_cast<SQLCHAR*>(const_cast<char*>(sql.data())), static_cast<SQLINTEGER>(sql.size()));
-    } else {
-        result = SQLPrepare(statement.handle,
-            reinterpret_cast<SQLCHAR*>(const_cast<char*>(sql.data())), static_cast<SQLINTEGER>(sql.size()));
-        check(result, SQL_HANDLE_STMT, statement.handle, "prepare query");
-        for (std::size_t index = 0; index < parameters.size(); ++index) {
-            SQLSMALLINT c_type = SQL_C_CHAR, sql_type = SQL_VARCHAR;
-            SQLULEN column_size = 1;
-            SQLLEN buffer_size = 0;
-            SQLPOINTER value = nullptr;
-            const Parameter& parameter = parameters[index];
-            if (const auto* text = std::get_if<std::string>(&parameter)) {
-                // Bind Unicode explicitly. SQL_VARCHAR can interpret UTF-8 bytes using the server's ANSI collation.
-                std::wstring_convert<std::codecvt_utf8_utf16<char16_t>,char16_t> converter;
-                const auto utf16=converter.from_bytes(*text);
-                if(converter.converted()!=text->size()) throw std::invalid_argument("SQL text parameter is not complete UTF-8");
-                auto& wide=wide_parameters[index];wide.assign(utf16.begin(),utf16.end());
-                if (wide.size() > static_cast<std::size_t>(std::numeric_limits<SQLLEN>::max())/sizeof(SQLWCHAR))
-                    throw std::invalid_argument("SQL parameter is too long");
-                c_type=SQL_C_WCHAR;sql_type=SQL_WVARCHAR;
-                column_size = std::max<SQLULEN>(1, wide.size());
-                buffer_size = static_cast<SQLLEN>(wide.size()*sizeof(SQLWCHAR));
-                indicators[index] = buffer_size;
-                wide.push_back(0);
-                value = wide.data();
-            } else if (const auto* integer = std::get_if<std::int64_t>(&parameter)) {
-                c_type = SQL_C_SBIGINT;
-                sql_type = SQL_BIGINT;
-                column_size = 19;
-                buffer_size = sizeof(*integer);
-                value = const_cast<std::int64_t*>(integer);
-            } else if (const auto* real = std::get_if<double>(&parameter)) {
-                c_type = SQL_C_DOUBLE;
-                sql_type = SQL_DOUBLE;
-                column_size = 15;
-                buffer_size = sizeof(*real);
-                value = const_cast<double*>(real);
-            } else {
-                indicators[index] = SQL_NULL_DATA;
-            }
-            check(SQLBindParameter(statement.handle, static_cast<SQLUSMALLINT>(index + 1), SQL_PARAM_INPUT,
-                  c_type, sql_type, column_size, 0, value, buffer_size, &indicators[index]),
-                  SQL_HANDLE_STMT, statement.handle, "bind query parameter");
-        }
-        result = SQLExecute(statement.handle);
-    }
-    if (result != SQL_NO_DATA) check(result, SQL_HANDLE_STMT, statement.handle, "execute query");
-    std::vector<ResultSet> sets;
-    while (result != SQL_NO_DATA) {
-        SQLSMALLINT count = 0;
-        check(SQLNumResultCols(statement.handle, &count), SQL_HANDLE_STMT, statement.handle, "read columns");
-        if (count > 0) {
-            ResultSet set;
-            for (SQLUSMALLINT column = 1; column <= static_cast<SQLUSMALLINT>(count); ++column) {
-                std::array<SQLCHAR, 256> name{};
-                SQLSMALLINT length = 0, type = 0, decimals = 0, nullable = 0;
-                SQLULEN precision = 0;
-                check(SQLDescribeCol(statement.handle, column, name.data(), static_cast<SQLSMALLINT>(name.size()),
-                    &length, &type, &precision, &decimals, &nullable), SQL_HANDLE_STMT, statement.handle, "describe column");
-                set.columns.emplace_back(reinterpret_cast<char*>(name.data()));
-            }
-            while ((result = SQLFetch(statement.handle)) != SQL_NO_DATA) {
-                check(result, SQL_HANDLE_STMT, statement.handle, "fetch row");
-                Row row;
-                for (SQLUSMALLINT column = 1; column <= static_cast<SQLUSMALLINT>(count); ++column) {
-                    Cell cell = std::string{};
-                    for (;;) {
-                        std::array<char, 4096> buffer{};
-                        SQLLEN indicator = 0;
-                        const auto fetched = SQLGetData(statement.handle, column, SQL_C_CHAR,
-                            buffer.data(), static_cast<SQLLEN>(buffer.size()), &indicator);
-                        if (fetched == SQL_NO_DATA) break;
-                        check(fetched, SQL_HANDLE_STMT, statement.handle, "read cell");
-                        if (indicator == SQL_NULL_DATA) { cell.reset(); break; }
-                        *cell += buffer.data();
-                        if (fetched == SQL_SUCCESS) break;
-                    }
-                    row.push_back(std::move(cell));
+    try {
+        if (sql.size() > static_cast<std::size_t>(std::numeric_limits<SQLINTEGER>::max()))
+            throw std::invalid_argument("SQL query is too long");
+        Statement statement(connection_);
+        if (parameters.size() > std::numeric_limits<SQLUSMALLINT>::max())
+            throw std::invalid_argument("Too many SQL parameters");
+        SQLRETURN result = SQL_SUCCESS;
+        std::vector<SQLLEN> indicators(parameters.size());
+        std::vector<std::vector<SQLWCHAR>> wide_parameters(parameters.size());
+        if (parameters.empty()) {
+            result = SQLExecDirect(statement.handle,
+                reinterpret_cast<SQLCHAR*>(const_cast<char*>(sql.data())), static_cast<SQLINTEGER>(sql.size()));
+        } else {
+            result = SQLPrepare(statement.handle,
+                reinterpret_cast<SQLCHAR*>(const_cast<char*>(sql.data())), static_cast<SQLINTEGER>(sql.size()));
+            check(result, SQL_HANDLE_STMT, statement.handle, "prepare query");
+            for (std::size_t index = 0; index < parameters.size(); ++index) {
+                SQLSMALLINT c_type = SQL_C_CHAR, sql_type = SQL_VARCHAR;
+                SQLULEN column_size = 1;
+                SQLLEN buffer_size = 0;
+                SQLPOINTER value = nullptr;
+                const Parameter& parameter = parameters[index];
+                if (const auto* text = std::get_if<std::string>(&parameter)) {
+                    // Bind Unicode explicitly. SQL_VARCHAR can interpret UTF-8 bytes using the server's ANSI collation.
+                    std::wstring_convert<std::codecvt_utf8_utf16<char16_t>,char16_t> converter;
+                    const auto utf16=converter.from_bytes(*text);
+                    if(converter.converted()!=text->size()) throw std::invalid_argument("SQL text parameter is not complete UTF-8");
+                    auto& wide=wide_parameters[index];wide.assign(utf16.begin(),utf16.end());
+                    if (wide.size() > static_cast<std::size_t>(std::numeric_limits<SQLLEN>::max())/sizeof(SQLWCHAR))
+                        throw std::invalid_argument("SQL parameter is too long");
+                    c_type=SQL_C_WCHAR;sql_type=SQL_WVARCHAR;
+                    column_size = std::max<SQLULEN>(1, wide.size());
+                    buffer_size = static_cast<SQLLEN>(wide.size()*sizeof(SQLWCHAR));
+                    indicators[index] = buffer_size;
+                    wide.push_back(0);
+                    value = wide.data();
+                } else if (const auto* integer = std::get_if<std::int64_t>(&parameter)) {
+                    c_type = SQL_C_SBIGINT;
+                    sql_type = SQL_BIGINT;
+                    column_size = 19;
+                    buffer_size = sizeof(*integer);
+                    value = const_cast<std::int64_t*>(integer);
+                } else if (const auto* real = std::get_if<double>(&parameter)) {
+                    c_type = SQL_C_DOUBLE;
+                    sql_type = SQL_DOUBLE;
+                    column_size = 15;
+                    buffer_size = sizeof(*real);
+                    value = const_cast<double*>(real);
+                } else {
+                    indicators[index] = SQL_NULL_DATA;
                 }
-                set.rows.push_back(std::move(row));
+                check(SQLBindParameter(statement.handle, static_cast<SQLUSMALLINT>(index + 1), SQL_PARAM_INPUT,
+                      c_type, sql_type, column_size, 0, value, buffer_size, &indicators[index]),
+                      SQL_HANDLE_STMT, statement.handle, "bind query parameter");
             }
-            sets.push_back(std::move(set));
+            result = SQLExecute(statement.handle);
         }
-        result = SQLMoreResults(statement.handle);
-        if (result != SQL_NO_DATA) check(result, SQL_HANDLE_STMT, statement.handle, "advance result set");
-    }
-    return sets;
+        if (result != SQL_NO_DATA) check(result, SQL_HANDLE_STMT, statement.handle, "execute query");
+        std::vector<ResultSet> sets;
+        while (result != SQL_NO_DATA) {
+            SQLSMALLINT count = 0;
+            check(SQLNumResultCols(statement.handle, &count), SQL_HANDLE_STMT, statement.handle, "read columns");
+            if (count > 0) {
+                ResultSet set;
+                for (SQLUSMALLINT column = 1; column <= static_cast<SQLUSMALLINT>(count); ++column) {
+                    std::array<SQLCHAR, 256> name{};
+                    SQLSMALLINT length = 0, type = 0, decimals = 0, nullable = 0;
+                    SQLULEN precision = 0;
+                    check(SQLDescribeCol(statement.handle, column, name.data(), static_cast<SQLSMALLINT>(name.size()),
+                        &length, &type, &precision, &decimals, &nullable), SQL_HANDLE_STMT, statement.handle, "describe column");
+                    set.columns.emplace_back(reinterpret_cast<char*>(name.data()));
+                }
+                while ((result = SQLFetch(statement.handle)) != SQL_NO_DATA) {
+                    check(result, SQL_HANDLE_STMT, statement.handle, "fetch row");
+                    Row row;
+                    for (SQLUSMALLINT column = 1; column <= static_cast<SQLUSMALLINT>(count); ++column) {
+                        Cell cell = std::string{};
+                        for (;;) {
+                            std::array<char, 4096> buffer{};
+                            SQLLEN indicator = 0;
+                            const auto fetched = SQLGetData(statement.handle, column, SQL_C_CHAR,
+                                buffer.data(), static_cast<SQLLEN>(buffer.size()), &indicator);
+                            if (fetched == SQL_NO_DATA) break;
+                            check(fetched, SQL_HANDLE_STMT, statement.handle, "read cell");
+                            if (indicator == SQL_NULL_DATA) { cell.reset(); break; }
+                            *cell += buffer.data();
+                            if (fetched == SQL_SUCCESS) break;
+                        }
+                        row.push_back(std::move(cell));
+                    }
+                    set.rows.push_back(std::move(row));
+                }
+                sets.push_back(std::move(set));
+            }
+            result = SQLMoreResults(statement.handle);
+            if (result != SQL_NO_DATA) check(result, SQL_HANDLE_STMT, statement.handle, "advance result set");
+        }
+        return sets;
+    }catch(const std::runtime_error& error) {observe_query_error(error.what());throw;}
+}
+void SqlServer::observe_query_error(std::string_view diagnostic) noexcept {
+    const auto at=diagnostic.find('[');if(at==std::string_view::npos || at+6>=diagnostic.size() || diagnostic[at+6]!=']') return;
+    const auto state=diagnostic.substr(at+1,5);if(std::any_of(state.begin(),state.end(),[](unsigned char c){return !((c>='0'&&c<='9') || (c>='A'&&c<='Z'));})) return;
+    std::copy(state.begin(),state.end(),query_state_.begin());
 }
 } // namespace eternity::storage

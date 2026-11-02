@@ -85,7 +85,12 @@ int main() {
         try { (void)database.query("SELECT * FROM dbo.EternityNonexistentTable;"); }
         catch (const std::runtime_error&) { failed = true; }
         require(failed, "SQL errors must propagate to the caller");
+        const std::string query_state(database.last_query_sqlstate());
+        require(query_state.size()==5,"Connection did not retain original query SQLSTATE");
         const auto recovered = database.query("SELECT 1;");
+        require(database.last_query_sqlstate()==query_state,"Successful SQL query cleared original diagnostic state");
+        database.begin();database.query("SELECT 1;");database.rollback();
+        require(database.last_query_sqlstate()==query_state,"Transaction cleanup cleared original query diagnostic state");
         require(recovered.size() == 1 && recovered[0].rows[0][0] == Cell{"1"}, "Connection unusable after query error");
         const auto definitions = eternity::game::Definitions::load(database);
         require(definitions.catalogs.size() == 8 && !definitions.catalogs.at("Mobs").rows.empty(),
