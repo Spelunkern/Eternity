@@ -271,3 +271,19 @@ The `0211` notification retains signed wrapped deadline subtraction. The oracle
 executes three full original data loads (including the staged distribution),
 240 actor initializations and 14 notifications. Runtime blessing changes,
 world kill-count progression and integration with actor creation remain pending.
+
+Initial character packets follow `ps_game.exe` `SendCharacterItem` (`004832b0`),
+`Bank` (`00483410`), `Skill` (`00483540`), `SetSkill` (`00483890`), `Quick`
+(`00483800`), `Quest` (`004835f0`), `QuestFinish` (`00483730`) and `SendSpeedMe`
+(`00482730`). Inventory traverses visible bags/slots and batches 50 records;
+bank batches 50 with the low DWORD of stored money. Empty inventory/bank,
+effects and quests send nothing; learned skills and quick slots send empty
+headers. Effects batch 128; quests and finished quests batch 255. Cooldowns use
+signed wrapped subtraction and truncating division; negative effect seconds
+become one, while zero stays zero. `EffectCycle::initial_packets` serializes
+live instances in insertion order using their current definition's countdown
+mode. The oracle verifies 321 full original serialization scenarios. Original
+item `strcpy` leaves unused bytes after the craft NUL unspecified; native packets
+zero those bytes and oracle comparison normalizes only that padding. Typed quest
+runtime restoration, complete initialization sequencing, remaining entry packets
+and live character selection integration are still pending.

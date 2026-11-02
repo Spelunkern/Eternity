@@ -1,4 +1,5 @@
 #include "eternity/game/effect_cycle.hpp"
+#include "eternity/game/entry_packets.hpp"
 #include <algorithm>
 #include <bit>
 #include <limits>
@@ -42,6 +43,14 @@ void EffectCycle::initialize(EffectStatus& status,EffectWorld& world) {
         cursor=entry->first;const auto active=entry->second;
         apply_active_effect(status,*active.definition,active.timer.attacker_id,world);
     }
+}
+std::vector<net::Packet> EffectCycle::initial_packets(std::uint32_t tick) const {
+    std::vector<ActiveEffectPacketEntry> entries;entries.reserve(effects_.size());
+    for(const auto& [sequence,active]:effects_) {
+        (void)sequence;
+        entries.push_back({active.id,active.timer.effect.skill_id,active.timer.effect.level,active.timer.end,active.definition->offline_countdown});
+    }
+    return character_effects(entries,tick);
 }
 void EffectCycle::expire(std::uint32_t tick,EffectStatus& status,EffectEquipment equipment,const ItemDefinitions& definitions,
     EffectRemovalWorld& world,EffectObserver& observer) {
