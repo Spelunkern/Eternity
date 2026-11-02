@@ -14,7 +14,8 @@ runtime assets stay local.
 
 Implemented and independently tested: SQL contracts, encrypted login/game TCP
 handshakes, account sessions, character lists/creation, actor preparation and
-persistence, map/zone/entity ownership, regular/linked mob initialization, guild
+persistence, map/zone/entity ownership, regular/linked mob initialization and
+configuration, guild
 persistence and several inventory/combat primitives. See the
 [reconstruction notes](research/protocol.md) for evidence and remaining work.
 
@@ -55,5 +56,5 @@ Bind/advertised addresses default to loopback (`ETERNITY_LOGIN_BIND`,
 SQL Server container's network namespace.
 Server assets remain in ignored `.local/server-data`; staged `Map.ini` supplies
 racial start positions and map rules. `--check-original-loaders` checks SQL definitions
-and loads every configured map file. `ETERNITY_MAP_INI` overrides the INI path;
+and loads every configured map file and linked groups from `Obelisk.ini`. `ETERNITY_MAP_INI` overrides the INI path;
 map files are read from its adjacent `Map` directory inside the container.

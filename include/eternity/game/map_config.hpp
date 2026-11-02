@@ -35,6 +35,7 @@ public:
     static ServerMaps load(const MapConfiguration&,const std::filesystem::path& directory);
     const ConfiguredMap* find(std::uint16_t id) const noexcept;
     std::size_t size() const noexcept {return maps_.size();}
+    std::span<const ConfiguredMap> all() const noexcept {return maps_;}
 private:
     std::vector<ConfiguredMap> maps_;
 };

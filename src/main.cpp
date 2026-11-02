@@ -1,6 +1,7 @@
 #include "eternity/storage/sql_server.hpp"
 #include "eternity/game/definitions.hpp"
 #include "eternity/game/map_config.hpp"
+#include "eternity/game/linked_mob_config.hpp"
 #include "eternity/game/zone_environment.hpp"
 #include "eternity/game/npcs.hpp"
 #include "eternity/game/quests.hpp"
@@ -118,6 +119,10 @@ int main(int argc, char** argv) {
             std::cout << "Original item quest links loaded: " << linked_items << " linked slots; native quest-start flags initialized.\n";
             const auto maps=eternity::game::ServerMaps::load(eternity::game::MapConfiguration::load(map_ini),map_ini.parent_path()/"Map");
             std::cout << "Original map configuration and files loaded: " << maps.size() << " maps (runtime zones not initialized).\n";
+            const auto mobs=eternity::game::MobRuntimeTemplates::load(definitions.catalogs.at("Mobs"));
+            const auto linked=eternity::game::LinkedMobConfiguration::load(map_ini.parent_path()/"Obelisk.ini",maps.all(),mobs);
+            std::size_t linked_groups=0;for(std::size_t id=0;id<maps.size();++id) linked_groups+=linked.for_map(static_cast<std::uint16_t>(id)).size();
+            std::cout << "Original linked mob configuration loaded: " << linked_groups << " groups (object runtime not started).\n";
             std::size_t doors=0,regions=0;
             for(std::size_t id=0;id<maps.size();++id) {
                 const auto environment=eternity::game::ZoneEnvironment::prepare(*maps.find(static_cast<std::uint16_t>(id)));

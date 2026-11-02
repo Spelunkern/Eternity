@@ -4,6 +4,7 @@
 #include "eternity/game/mobs.hpp"
 #include "eternity/game/mob_population.hpp"
 #include "eternity/game/zones.hpp"
+#include "eternity/game/linked_mob_config.hpp"
 #include "eternity/game/characters.hpp"
 #include "eternity/game/stats.hpp"
 #include "eternity/game/equipment.hpp"
@@ -46,16 +47,17 @@ void verify_mob_population(const eternity::game::MobRuntimeTemplates& definition
         require(zone.leave(*mob),"Cannot detach SQL fixture mob");pool.release(*mob);
     }
     require(zone.size()==0 && pool.available()==2 && services.releases==4,"SQL mob pool/zone cleanup changed");
-    std::array<LinkedMobGroup,2> linked_groups{};
-    auto& immediate=linked_groups[0];immediate.spawn_count=1;immediate.leader.center={1.25F,9,0.75F};immediate.leader.count=1;immediate.leader.definitions[0]=definitions.find(1);immediate.leader.respawn.definition=definitions.find(1);immediate.leader.respawn.both=true;
-    auto& companions=immediate.spawns[0];companions.center={3.25F,9,3.75F};companions.radius=0.25F;companions.radius_twice=1;companions.count=2;companions.definitions[0]=definitions.find(1);companions.respawn.definition=definitions.find(1);companions.respawn.both=true;
-    auto& deferred=linked_groups[1].leader;deferred.randomized=1;deferred.minimum_minutes=1;deferred.count=1;deferred.definitions[0]=definitions.find(1);deferred.respawn.definition=definitions.find(1);deferred.respawn.both=true;
-    runtime.linked_mobs=std::make_unique<LinkedMobPopulation>(linked_groups);
+    std::array<ConfiguredMap,1> linked_maps{};for(int id:{1010,1011}) {MapPortal portal;portal.id=id;linked_maps[0].definition.portals.push_back(portal);}
+    const auto linked_configuration=LinkedMobConfiguration::decode(
+        "[bothmob_1,0,1,10,0,1010]=(1.25,9,0.75),1\n[Mob]=(3.5,9,4,0.5),(1,1),2\n"
+        "[bothmob_2,0,1,10,0,1011]=(8,9,10),1\n[RandomRespawn]=1,0,(8,9,10)\n",linked_maps,definitions);
+    require(linked_configuration.for_map(0).size()==2 && linked_configuration.for_map(0)[0].portal==&linked_maps[0].definition.portals[0],"SQL linked configuration/portal binding changed");
+    runtime.linked_mobs=std::make_unique<LinkedMobPopulation>(linked_configuration.for_map(0));
     require(runtime.linked_mobs->initialize(map,zone,pool,ports,[&]{return services.unix_time();}),"Restored SQL linked population failed");
     auto groups=runtime.linked_mobs->groups();
     require(zone.size()==3 && services.views==7 && serial==107 && groups[0].leader.members[0]==zone.find(105) && groups[0].spawns[0].members[0]==zone.find(106) && groups[0].spawns[0].members[1]==zone.find(107) && groups[1].leader.respawn.current==0 && groups[1].leader.respawn.next==59984,"SQL linked leader/companions/deferred timer changed");
     require(groups[0].spawns[0].members[0]->position.x==3 && groups[0].spawns[0].members[0]->position.z==3.5F,"SQL linked companion placement changed");
-    for(auto* mob:zone.all()) require(mob->hp==2765 && mob->sp==874 && mob->mp==1578 && mob->respawn->both && mob->respawn->both_source!=nullptr,"SQL linked resources/respawn binding changed");
+    for(auto* mob:zone.all()) require(mob->hp==2765 && mob->sp==874 && mob->mp==1578 && mob->respawn->both_source!=nullptr,"SQL linked resources/respawn binding changed");
     runtime.release_mob_population(pool);require(zone.size()==0 && pool.available()==3 && services.releases==7 && groups[0].leader.members[0]->zone==&zone && groups[0].leader.respawn.current==1 && groups[0].spawns[0].respawn.current==2,"SQL linked population release changed retained records");
 
 }
@@ -159,6 +161,15 @@ int main() {
         const auto runtime_mobs=eternity::game::MobRuntimeTemplates::load(definitions.catalogs.at("Mobs"));const auto* first_mob=runtime_mobs.find(1);
         require(first_mob && first_mob->level==38 && first_mob->ai==1 && first_mob->hp==2765 && first_mob->sp==874 && first_mob->mp==1578 && first_mob->dexterity==60 && first_mob->wisdom==40 && first_mob->luck==53 && first_mob->attribute==4 && first_mob->physical_defense==38 && first_mob->magic_defense==31 && first_mob->shield_defense==0,"Original runtime mob projection differs from restored SQL");
         verify_mob_population(runtime_mobs);
+        const auto map_config=eternity::game::MapConfiguration::load(".local/server-data/Map.ini");
+        const auto server_maps=eternity::game::ServerMaps::load(map_config,".local/server-data/Map");
+        const auto linked_config=eternity::game::LinkedMobConfiguration::load(".local/server-data/Obelisk.ini",server_maps.all(),runtime_mobs);
+        const std::array<std::pair<std::uint16_t,std::size_t>,9> linked_counts={{{14,2},{17,2},{19,1},{20,1},{48,7},{49,7},{50,3},{64,1},{67,1}}};
+        std::size_t linked_total=0,linked_bound=0;
+        for(std::size_t id=0;id<server_maps.size();++id) {const auto groups=linked_config.for_map(static_cast<std::uint16_t>(id));linked_total+=groups.size();for(const auto& group:groups) if(group.leader.definitions[0]) ++linked_bound;}
+        for(auto [id,count]:linked_counts) require(linked_config.for_map(id).size()==count,"Restored linked configuration map/group distribution changed");
+        require(linked_total==25 && linked_bound!=0,"Restored linked configuration lost all SQL mob bindings");
+
         const auto skills=eternity::game::SkillDefinitions::load(definitions.catalogs.at("Skills"));
         require(skills.find(1,1) && !skills.find(1,4),"Restored original three-level skill definitions did not load");
         eternity::game::Characters characters(database,255,std::chrono::sys_days{std::chrono::year{2024}/1/1});

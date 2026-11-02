@@ -2453,7 +2453,7 @@ truncate to tile zero.
 The native path connects actual `MobPool`, `initialize_mob`, drop randomness,
 `ZoneMobs` and entry packets. Required linked-group initialization follows every
 regular pass; its return value is ignored, as in the source. Linked-group
-configuration/ticks and obelisks remain required work. `RuntimeZone` owns the population
+ticks and obelisks remain required work. `RuntimeZone` owns the population
 so active respawn pointers remain valid. The 128-population/256-call fixture
 executes original regular spawning, real construction/pool allocation, runtime and
 attack initialization, random seeding, ID tree/cell insertion and entry formatting.
@@ -2522,7 +2522,7 @@ current=0/deadline from the tick. The minimum delay is minutes*60000; the origin
 maximum field is an additional minutes*60 random window, sampled in seconds and
 multiplied by 1000. The temporary `SRandom` samples Unix time even with no groups;
 window sampling reseeds it with time XOR definition ID, independently of movement
-and drop randomness. DWORD timing wraps. Map/SQL preparation, group transitions,
+and drop randomness. DWORD timing wraps. Group transitions,
 death/respawn ticks and portal propagation remain required integration work.
 
 The 128-group-set fixture executes 256 original initialization passes through
@@ -2536,5 +2536,43 @@ nonfinite companion positions. Leader positions avoid the original unchecked
 negative cell-index domain; native cell memory guards still apply. SQL integration
 also constructs immediate leader/companion and deferred groups from the restored
 mob definition, checks reused allocations/resources/placement and bulk release.
-`RuntimeZone` owns these records, while configuration loading, live AI and world
-scheduling remain pending.
+`RuntimeZone` owns these records, while live AI and world scheduling remain
+pending.
+
+
+Linked-group configuration now follows the linked portion of the complete
+`CMap::LoadObelisk` parser (`ps_game.exe`, `00427300`). `LinkedMobConfiguration`
+reads binary `Obelisk.ini`, preserving section context, case-insensitive labels,
+Windows text-mode CRLF/Ctrl-Z and the 8,191-byte fgets limit. Incomplete headers,
+companions and random-center tuples retain their partial writes to the same
+uncommitted slot. Only complete records advance counts. Repeated map sections
+append to their existing group bucket; unknown sections preserve parser context.
+Leader change counts cap at 15, companion counts at 16, and further companion
+records are ignored after 32. Integer parsing wraps like MSVCRT atoi; real
+parsing preserves its decimal D/d exponent support and maps hex/inf/nan to zero.
+
+Prepared groups retain input order, convert group respawn seconds to wrapped
+milliseconds and resolve the first matching destination portal only for IDs
+>1000. Leader candidates use change-count IDs; companions use one additional
+candidate. Invalid SQL mob definitions clear both the definition pointer and
+stored type ID, retaining their array positions. Leader spawn count remains zero
+while its respawn count is 1, type is the group index and the linked flag is set.
+Companions keep the source's separate flags/respawn fields and template self
+pointers; zone copies repair these addresses before initialization. Negative
+map references and capacity-overflow writes retain native memory guards.
+Obelisk and portal-link sections are not materialized by this owner.
+
+The 44-case fixture executes the complete original parser, CRT numeric/token
+conversion, copy/binding and constructors. File I/O, zeroed allocation, TLS/CRT
+locks, cookie and exact temporary-array zeroing are ports. Canonical bytes cover
+all active group fields, candidate IDs/pointers, respawn state, random centers
+and portal/self bindings, including malformed/repeated input, overflow, comments,
+section changes, buffer boundaries and partial writes. The full distribution also
+matches its canonical length/fingerprint: 25 groups across maps 14, 17, 19, 20,
+48, 49, 50, 64 and 67. The integration runner now checks this asset fixture.
+SQL integration loads the actual 68 configured maps and recovered mob catalog,
+resolves the distribution, and drives a parsed immediate/deferred configuration
+through allocation, entry and recycling. `--check-original-loaders` also loads
+this configuration and reports its group count; it does not start object runtime.
+Group transitions, death/respawn ticks, obelisks, live AI and complete world
+integration remain pending.
