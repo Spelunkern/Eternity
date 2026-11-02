@@ -56,8 +56,9 @@ save/error behavior; difficulty unlocks write separately before character saving
 Product and stored-point receipts preserve SQL transactions and commit acknowledgments.
 Point purchases preserve separate item/charge commits and original error behavior.
 Recovery journals retain original file output and save markers, including legacy SQL
-signatures. Character saving coordinates these phases, timeout retries and recovery.
-Gifts, live session integration, guild transfers and scheduling remain pending.
+signatures. Character saving coordinates these phases, timeout retries, recovery,
+exit/shutdown and selection jobs. Gifts, live session integration, guild transfers
+and threaded scheduling remain pending.
 Actor money credits preserve unsigned limits and ordered DB-status/client/log
 messages, with money-item release to the pool. Periodic money saving and shared
 loot dispatch still require integration.

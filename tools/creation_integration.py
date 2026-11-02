@@ -47,7 +47,7 @@ def run(command, build_directory="build"):
                       "usp_Create_Char_SavePoint", "usp_Save_Char_SavePoint", "usp_Save_Char_ConcernMarket_Add_E",
                       "usp_Save_Char_ConcernMarket_Del_E", "usp_Save_Char_Maxgrow_E",
                       "usp_Read_Char_Product_Item_E", "usp_Save_Char_Product_Item_E", "usp_Save_User_StoredPointItems",
-                      "usp_Save_User_BuyPointItems_NCash", "usp_Save_User_StoredMoney_E")
+                      "usp_Save_User_BuyPointItems_NCash", "usp_Save_User_StoredMoney_E", "usp_Save_Char_LeaveDate_R")
         names = ",".join(literal(procedure) for procedure in procedures)
         modules = sql("""SELECT p.name,m.definition FROM sys.sql_modules m
             JOIN sys.procedures p ON p.object_id=m.object_id

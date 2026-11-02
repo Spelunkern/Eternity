@@ -26,7 +26,21 @@ UserCharacterSaveResult execute_user_character_save(bool periodic,bool quick,boo
     else port.exit();
     return result;
 }
-CharacterSaveStore::CharacterSaveStore(storage::SqlServer& main,storage::SqlServer& auxiliary,std::uint8_t server,std::recursive_mutex& mutex,CharacterRecoveryFile& recovery,std::string catalog):main_(main),auxiliary_(auxiliary),server_(server),cache_mutex_(mutex),recovery_(recovery),core_(main,catalog),receipts_(main,server,catalog),inventory_(main,server,catalog),skills_(main,catalog),quests_(main,catalog),interface_(main,catalog),market_(main,catalog),growth_(auxiliary,server,catalog),purchases_(main,auxiliary,std::move(catalog)) {}
+UserCharacterSaveResult execute_user_character_exit(bool shutdown,const UserCharacterExitPort& port) {
+    if(!port.purchases_pending || !port.save_purchases || !port.attempt || !port.save_friends || !port.save_blocks || !port.queue_exit || !port.exit || !port.save_leave) throw std::invalid_argument("Incomplete user exit ports");
+    if(port.purchases_pending()) (void)port.save_purchases();
+    UserCharacterSaveResult result;result.timeout_seen=shutdown;
+    for(unsigned int i=0;i<2;++i) {++result.attempts;if(port.attempt(true,i==1,result.timeout_seen)) {port.save_friends();port.save_blocks();result.legacy_success=true;break;}}
+    if(!shutdown && !result.legacy_success && result.timeout_seen) port.queue_exit();
+    else {port.save_leave();port.exit();}
+    return result;
+}
+bool update_character_save_tick(std::uint32_t status,std::uint32_t now,std::uint32_t& next,std::uint32_t& last,const std::function<void(std::uint32_t)>& post) {
+    if(status!=2 || next>now) return false;
+    if(!post) throw std::invalid_argument("Missing DB save job transport");
+    next=now+900000U;if(last<=now) last=next;post(8);return true;
+}
+CharacterSaveStore::CharacterSaveStore(storage::SqlServer& main,storage::SqlServer& auxiliary,std::uint8_t server,std::recursive_mutex& mutex,CharacterRecoveryFile& recovery,std::string catalog):main_(main),auxiliary_(auxiliary),server_(server),cache_mutex_(mutex),recovery_(recovery),prefix_("["+catalog+"].dbo."),core_(main,catalog),receipts_(main,server,catalog),inventory_(main,server,catalog),skills_(main,catalog),quests_(main,catalog),interface_(main,catalog),market_(main,catalog),growth_(auxiliary,server,catalog),purchases_(main,auxiliary,std::move(catalog)) {}
 void CharacterSaveStore::observe(std::string_view message) {main_.observe_query_error(message);}
 void CharacterSaveStore::phases(CharacterReplica& cache,bool quick,const std::function<void(std::string_view)>& diagnostic) {
     const auto log=[&](std::string_view message){observe(message);if(diagnostic) diagnostic(message);};
@@ -49,5 +63,14 @@ bool CharacterSaveStore::attempt(CharacterReplica& cache,bool quick,bool recover
 }
 UserCharacterSaveResult CharacterSaveStore::save(CharacterReplica& cache,bool periodic,bool quick,bool in_game,std::string_view username,const CharacterSaveCallbacks& callbacks,const std::function<void(std::string_view)>& diagnostic) {
     UserCharacterSavePort port;port.purchases_pending=[&](){std::lock_guard lock(cache_mutex_);return cache.purchases().pending_count()!=0;};port.save_purchases=[&](){std::lock_guard lock(cache_mutex_);return purchases_.save(cache.purchases(),cache.core().character.id,diagnostic).legacy_success;};port.attempt=[&](bool slots,bool fallback,bool& timeout){return attempt(cache,slots,fallback,timeout,username,diagnostic);};port.save_friends=callbacks.save_friends;port.save_blocks=callbacks.save_blocks;port.queue_exit=callbacks.queue_exit;port.exit=callbacks.exit;return execute_user_character_save(periodic,quick,in_game,port);
+}
+bool CharacterSaveStore::save_leave(std::uint32_t character_id,const std::function<void(std::string_view)>& diagnostic) {
+    if(main_.character_write_context_active()) throw std::logic_error("Character leave must run outside the character transaction");
+    const std::array<storage::Parameter,1> args{std::int64_t{static_cast<std::int32_t>(character_id)}};
+    try {main_.query("EXEC "+prefix_+"usp_Save_Char_LeaveDate_R ?;",args);return true;}
+    catch(const std::runtime_error& error) {if(diagnostic) diagnostic(error.what());return false;}
+}
+UserCharacterSaveResult CharacterSaveStore::save_exit(CharacterReplica& cache,bool shutdown,std::string_view username,const CharacterSaveCallbacks& callbacks,const std::function<void(std::string_view)>& diagnostic) {
+    UserCharacterExitPort port;port.purchases_pending=[&](){std::lock_guard lock(cache_mutex_);return cache.purchases().pending_count()!=0;};port.save_purchases=[&](){std::lock_guard lock(cache_mutex_);return purchases_.save(cache.purchases(),cache.core().character.id,diagnostic).legacy_success;};port.attempt=[&](bool slots,bool fallback,bool& timeout){return attempt(cache,slots,fallback,timeout,username,diagnostic);};port.save_friends=callbacks.save_friends;port.save_blocks=callbacks.save_blocks;port.queue_exit=callbacks.queue_exit;port.exit=callbacks.exit;port.save_leave=[&](){(void)save_leave(cache.core().character.id,diagnostic);};return execute_user_character_exit(shutdown,port);
 }
 }

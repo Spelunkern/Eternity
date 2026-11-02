@@ -1727,7 +1727,7 @@ records. Disposable SQL confirms legacy envelope failures and replays compatible
 statements with rollback/commit, including global UID replacement, consumed
 quests, zero-time effects, truncated stored money, stored-point delivery and UI.
 User/DB-job lifecycle, social persistence, connection pool/reconnect ownership
-and periodic scheduling still require integration.
+and live periodic dispatch still require integration.
 
 
 `execute_character_save` reconstructs `ps_dbAgent.exe`
@@ -1783,4 +1783,39 @@ queues exit before successful character/social saving. Shared-connection checks
 retain a purchase after injected stale HYT00 plus a real negative charge return,
 then discard it after a real later SQL error replaces that state. Live session/DB-job
 lifecycle, social cache persistence, connection pool/reconnect ownership and
-periodic scheduling remain pending.
+live periodic dispatch remain pending.
+
+`execute_user_character_exit` reconstructs `ps_dbAgent.exe`
+`CUser::SaveExitCharacter` (`004050b0`) and `SaveExitCharacterShutdown`
+(`00405140`). Both ignore a pending purchase save's result, request quick slots,
+retry once with file recovery, and save friends/blocks only after a successful
+character attempt. Normal exit starts with timeout flag zero; two failed attempts
+with that flag set enqueue job 9 and skip leave/exit. Shutdown starts with the flag
+set and always proceeds to `DBCharacter::SaveCharLeave` (`004230b0`) and ExitUser,
+even after two failures. Leave is a separate autocommit call; its return never
+blocks exit. The recovered `usp_Save_Char_LeaveDate_R` contains a commented UPDATE
+and therefore changes no date. `usp_Save_Char_Info_E` still sets LeaveDate during
+the preceding core save. `CharacterSaveStore::save_exit` composes these paths.
+
+`UserLifecycle` reconstructs `CUser::ExitUser` (`00402f70`), game disconnect
+(`00402fe0`), selection logout (`00403010`), and save jobs 8/9/10/22 of
+`OnDispatchDB` (`00403dd0`). Active game disconnect posts job 9; selection logout
+posts job 10. Successful selection saving sends DB-agent `0303` with the account
+UID, resets character state and reloads the roster with country. Exit sends `0302`
+then, for status 2, `0303`, and removes the owner; absent connections suppress only
+sends. These opcodes belong to the DB-agent link, not the public client protocol.
+`UpdateDBSave` (`00403d90`, also inlined at `0041d252`) compares unsigned absolute
+DWORD ticks, advances the per-user deadline by 900,000 ms, updates the shared last
+deadline only if it is due, and posts job 8. It deliberately retains rollover
+behavior. Successful `LoadCharacter` (`00404b51..00404b81`) staggers the first save
+at shared last deadline plus `(save_time_id % 900) * 1000` and enters status 2.
+
+Original execution fixtures cover 2,048 additional exit/shutdown paths, 5,024 save
+ticks, 560 lifecycle/dispatch cases and 54 initial clocks. Native SQL integration
+joins periodic, selection and disconnect jobs to actual composed saving, checking
+exit packet account ownership/order, normal/shutdown failures, ignored purchases
+and the standalone leave no-op. Saving, full ResetData, roster reload, registry
+removal and transport are ports in the lifecycle instruction fixture; this does
+not prove their live service ownership. The threaded DB-job queue, manager sweep,
+social persistence, connection-pool ownership and live world-session wiring still
+require reconstruction/integration.
