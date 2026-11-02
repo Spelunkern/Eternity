@@ -1,4 +1,5 @@
 #include "eternity/game/actor.hpp"
+#include "eternity/game/maps.hpp"
 #include <algorithm>
 #include <cmath>
 #include <fstream>
@@ -95,6 +96,20 @@ int main(int argc,char** argv) {
             require(same_team(*actors[0],*actors[0],0),"Self stopped being same team");
         }
         require(!actors[0]->status().in_zone && !actors[1]->status().in_zone,"Zone teardown retained actor membership");
+        revealed.clear();for(auto& scene:scenes) scene.on_reveal={};
+        EffectStatus hidden;hidden.shape=13;hidden.skills.equipment.transformed=true;
+        actors[1]=std::make_unique<Actor>(9002,hidden,PlayerResources{0,0,0},std::vector<PersistedEffect>{{200,1,30}},scenes[1],ActorEquipmentRules{items,enchant,mobs});
+        actors[1]->appearance().identity.country=1;actors[1]->effects().append(2001,{{200,1,30},10000,12000,false},hide);
+        {
+            ZoneUsers zone(MapGeometry(121),0);for(auto& scene:scenes) scene.zone=&zone;
+            require(zone.attach_at_position(*actors[0],{39,0,0}) && zone.attach_at_position(*actors[1],{120,0,0}),"Resolved-position attachment failed");
+            require(!zone.attach_at_position(*actors[2],{121,0,0}) && !actors[2]->status().in_zone,"Map boundary admitted an actor");
+            require(zone.move_at_position(9002,{90,0,0}) && zone.move_at_position(9002,{79,0,0}),"Valid map movement failed");
+            zone.detect_hidden(9001,255);require(revealed.empty(),"Movement ignored the original cell view overlap");
+            require(zone.move_at_position(9002,{69,0,0}),"Movement did not cross the old view boundary");zone.detect_hidden(9001,255);
+            require(revealed==std::vector<std::uint32_t>{9002},"Resolved movement did not change query membership");
+            require(!zone.move_at_position(9002,{-1,999,0}) && zone.position(9002)->x==69 && zone.position(9002)->y==0,"Rejected movement changed stored position");
+        }
         std::cout<<checked<<" original hidden-user queries plus native movement and live unlink passed\n";
     } catch(const std::exception& error) {std::cerr<<error.what()<<'\n';return 1;}
 }

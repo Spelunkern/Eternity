@@ -383,9 +383,38 @@ queries its required scene zone and reveals actual actors, updating their replic
 An oracle checks 128 original queries, including the real CRT sqrt (only Windows
 thread-local storage is replaced), boundary/nonfinite coordinates, cell clipping,
 guild duels and query order. Native tests also exercise cell moves and live unlink.
-Map admission, position-to-cell resolution, movement validation, zone broadcasts,
-mob/NPC membership and live TCP ownership are still pending; the membership API
-accepts already resolved cell coordinates and requires actors to outlive the grid.
+The membership API accepts resolved cell coordinates or original map geometry;
+actors must outlive the grid. World admission, movement authorization, zone
+broadcasts, mob/NPC membership and live TCP ownership remain pending.
+
+`MapDefinition` loads complete `.svmap` files using `CMap::LoadMap` (`00425780`):
+square extent, packed tile bits (`CBitArray::Create`, `00425250`), doors, ladders,
+mob areas/spawn counts, NPC positions/angles, portals, bind boxes and other areas.
+Mob-area deltas truncate the double-precision endpoint difference and clamp to
+one; NPC radians use the original float degree factor, spill to float, then add
+360 once if negative. Portal country values below 1001 produce ID -1; the country
+is retained in both base/current fields. Runtime-only pointers are omitted;
+mob/NPC definition binding and spawning remain separate. Only the initialized
+byte/byte/WORD fields of other-area attributes are retained. Native loading
+rejects truncated/invalid counts. The oracle runs original constructors and field
+calculations, replacing allocation/file I/O, and checks four synthetic files and
+all 77 staged maps through canonical field fingerprints. Full distribution checks
+are part of integration, including sanitizer validation.
+
+`MapGeometry` reconstructs `CZone::Create` (`00415c40`), `CMap::IsSafePos`
+(`00415360`), `CCell::IsInnerCellView` (`004153c0`) and the coordinate phases of
+`EnterUser` (`00415fa8`) / `MoveUserLocal` (`00416370`). Grid dimensions are
+`size / 40 + 1`; view bounds for cell n are `40*n - 10` through `40*n + 50`,
+inclusive. Entry uses an exclusive map-size bound, ignores Y, divides X/Z by 40
+at double precision and truncates. Movement keeps its previous cell while inside
+that cell's overlapping view. Original x87 comparison tests allow NaN through the
+map/view helpers; entry subsequently rejects its integer-indefinite cell, while
+movement can retain the existing cell. These helper quirks are tested explicitly.
+`ZoneUsers` now applies these rules to positional attachment/movement, retaining
+the original position-write order. Movement authorization and connection closure
+remain the future world owner's responsibility. The oracle verifies 4,440 grid,
+bounds, view and movement cases; a combined test checks the effect on detection
+across overlapping cell windows and rejected-position preservation.
 
 Attack-only rebuilding now follows `InitEquipment(bool)` (`00454ba0`),
 `ItemEquipmentAttackAdd` (`00456450`) and `GemEquipmentAttackAdd` (`004565b0`).

@@ -29,7 +29,8 @@ and cleanup. Equipment/transformation attack rebuilding and elemental-effect
 replacement run natively in the actor. User appearance packets include visible
 equipment, enchantments, cloak and social fields, with a copied-user snapshot path.
 Native user-cell queries now reveal hidden enemies using original duel, guild
-and map rules. Map admission, world broadcasts, combat and TCP world entry remain pending.
+and map rules. Server map files, entry bounds and movement cell resolution are
+reconstructed; world admission, broadcasts, combat and TCP world entry remain pending.
 The active MD5 login
 path needs a missing procedure; see [research](research/protocol.md).
 

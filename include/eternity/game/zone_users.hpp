@@ -1,10 +1,12 @@
 #pragma once
 #include <cstdint>
 #include <map>
+#include <optional>
 #include <vector>
 
 namespace eternity::game {
 class Actor;
+class MapGeometry;
 struct UserRelations {
     std::int32_t duel_state=0;
     std::uint32_t duel_opponent=0;
@@ -13,18 +15,22 @@ struct UserRelations {
 };
 struct UserPosition {float x=0,y=0,z=0;};
 bool same_team(const Actor& subject,const Actor& other,std::int32_t map_team_mode);
-// Cell membership and hidden-user queries only. Map admission, movement validation,
-// cell broadcasts and NPC/mob membership are separate world responsibilities.
+// User cell membership, position bounds and hidden-user queries. World admission,
+// movement authorization, cell broadcasts and NPC/mob membership remain separate.
 // One executor must serialize all operations; attached actors must outlive this grid.
 class ZoneUsers {
 public:
     ZoneUsers(std::int32_t width,std::int32_t height,std::int32_t map_team_mode);
+    ZoneUsers(const MapGeometry&,std::int32_t map_team_mode);
     ~ZoneUsers();
     ZoneUsers(const ZoneUsers&) = delete;
     ZoneUsers& operator=(const ZoneUsers&) = delete;
     void attach(Actor&,std::int32_t cell_x,std::int32_t cell_z,UserPosition);
+    bool attach_at_position(Actor&,UserPosition);
     bool detach(std::uint32_t id);
     void move(std::uint32_t id,std::int32_t cell_x,std::int32_t cell_z,UserPosition);
+    bool move_at_position(std::uint32_t id,UserPosition);
+    std::optional<UserPosition> position(std::uint32_t id) const;
     void detect_hidden(std::uint32_t source,std::uint8_t range);
     std::size_t size() const noexcept {return users_.size();}
 private:
@@ -33,6 +39,7 @@ private:
     std::size_t index(std::int32_t x,std::int32_t z) const;
     void unlink(const Member&);
     std::int32_t width_,height_,team_mode_;
+    std::optional<std::int32_t> map_size_;
     std::uint64_t sequence_=0;
     std::vector<Cell> cells_;
     std::map<std::uint32_t,Member> users_;

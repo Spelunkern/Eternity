@@ -1,5 +1,6 @@
 #include "eternity/game/zone_users.hpp"
 #include "eternity/game/actor.hpp"
+#include "eternity/game/maps.hpp"
 #include <algorithm>
 #include <cmath>
 #include <limits>
@@ -21,6 +22,7 @@ ZoneUsers::ZoneUsers(std::int32_t width,std::int32_t height,std::int32_t mode):w
     cells_.resize(static_cast<std::size_t>(width)*static_cast<std::size_t>(height));
 }
 ZoneUsers::~ZoneUsers() {for(auto& [id,user]:users_) {static_cast<void>(id);user.actor->status().in_zone=false;}}
+ZoneUsers::ZoneUsers(const MapGeometry& geometry,std::int32_t mode):ZoneUsers(geometry.cell_count(),geometry.cell_count(),mode) {map_size_=geometry.size();}
 std::size_t ZoneUsers::index(std::int32_t x,std::int32_t z) const {
     if(x<0 || x>=width_ || z<0 || z>=height_) throw std::out_of_range("User cell outside zone grid");
     return static_cast<std::size_t>(z)*static_cast<std::size_t>(width_)+static_cast<std::size_t>(x);
@@ -37,6 +39,23 @@ void ZoneUsers::unlink(const Member& member) {
     auto& cell=cells_[member.cell];const auto entry=cell.members.find(member.ordinal);
     if(cell.cursor==member.ordinal) cell.cursor=entry==cell.members.begin()?0:std::prev(entry)->first;
     cell.members.erase(entry);
+}
+bool ZoneUsers::attach_at_position(Actor& actor,UserPosition position) {
+    if(!map_size_) throw std::logic_error("Position attachment requires original map geometry");
+    const auto cell=MapGeometry(*map_size_).cell(position.x,position.z);if(!cell) return false;
+    attach(actor,cell->x,cell->z,position);return true;
+}
+bool ZoneUsers::move_at_position(std::uint32_t id,UserPosition position) {
+    if(!map_size_) throw std::logic_error("Position movement requires original map geometry");
+    const MapGeometry geometry(*map_size_);auto& member=users_.at(id);
+    if(!geometry.safe_position(position.x,position.z)) return false;
+    member.position=position; // Original stores position before validating a changed cell.
+    const CellCoordinates previous{static_cast<std::int32_t>(member.cell%static_cast<std::size_t>(width_)),static_cast<std::int32_t>(member.cell/static_cast<std::size_t>(width_))};
+    const auto cell=geometry.cell_after_move(previous,position.x,position.z);if(!cell) return false;
+    move(id,cell->x,cell->z,position);return true;
+}
+std::optional<UserPosition> ZoneUsers::position(std::uint32_t id) const {
+    const auto member=users_.find(id);if(member==users_.end()) return {};return member->second.position;
 }
 bool ZoneUsers::detach(std::uint32_t id) {
     const auto entry=users_.find(id);if(entry==users_.end()) return false;
