@@ -342,7 +342,7 @@ passive initialization suppresses them. A combined test retains the resulting
 partially filled MP after a later MP-max buff. Destruction follows
 `ResetCharacter` (`0044a050`): free active instances without reversal packets or
 replica deletion, including failed preparation. Required `ActorScene` services
-still own spatial queries, combat and party/guild lookups. The live world does not implement
+still own the current user-zone binding, combat and party/guild lookups. The live world does not implement
 those services yet; TCP character selection still does not enter the world.
 
 `SendUserShape` (`ps_game.exe`, `00482ad0`) now serializes native `0303` grid-view
@@ -360,6 +360,32 @@ receives current party/guild state through a required scene port. Loading copies
 the persisted identity; the owner supplies account country. Snapshot capture and
 live social/zone ownership remain pending. The oracle checks 256 original calls,
 including arbitrary legacy name bytes, craft edge cases, cloak and copied fields.
+
+`RemApplySkillHide` (`00489290`) is now native: a nonzero shape permits an ordered
+search for the first detail-88 node, regardless of effect category. Only that node
+is unlinked. Replica deletion and self `050e` precede clearing shape, grid-view
+`051d`, self run-mode command `0210/1` and instance release; a group notification
+follows, using the current group type. Transformation template/form fields remain
+unchanged. Shape zero or no matching node leaves the actor untouched. The oracle
+checks 256 full original calls, including multiple hide nodes and group changes.
+
+`ZoneUsers` implements ordered cell membership and `ChkFindHide` (`00486e00`).
+The query visits the clipped 3x3 cells in row order and users in insertion order
+(`CCell::EnterUser`, `00423560`); unlinking the current user preserves iteration
+(`CCell::LeaveUser`, `004235a0`). Dead users (life mode 1), allies and administrators
+with visibility/attackability disabled are skipped. Distance ignores Y and includes
+the range boundary, retaining original float spills around double square/sum/sqrt.
+`IsTeam(CUser*)` (`0044bdf0`) checks self, the candidate's active duel opponent,
+reciprocal guild-duel IDs/readiness, then country on map war type zero; other map
+war types treat remaining users as allies. These are regular gameplay rules,
+independent of the excluded `ps_gamewar` service. The actor's detail-93 effect now
+queries its required scene zone and reveals actual actors, updating their replicas.
+An oracle checks 128 original queries, including the real CRT sqrt (only Windows
+thread-local storage is replaced), boundary/nonfinite coordinates, cell clipping,
+guild duels and query order. Native tests also exercise cell moves and live unlink.
+Map admission, position-to-cell resolution, movement validation, zone broadcasts,
+mob/NPC membership and live TCP ownership are still pending; the membership API
+accepts already resolved cell coordinates and requires actors to outlive the grid.
 
 Attack-only rebuilding now follows `InitEquipment(bool)` (`00454ba0`),
 `ItemEquipmentAttackAdd` (`00456450`) and `GemEquipmentAttackAdd` (`004565b0`).

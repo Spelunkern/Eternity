@@ -2,9 +2,10 @@
 #include "eternity/game/effect_cycle.hpp"
 #include "eternity/game/resources.hpp"
 #include "eternity/game/user_shape.hpp"
+#include "eternity/game/zone_users.hpp"
 
 namespace eternity::game {
-// Required scene/transport services. Implementations own spatial queries, combat
+// Required scene/transport services. Implementations own zone binding, combat
 // and connection queues; none default to no-op.
 class ActorScene {
 public:
@@ -20,7 +21,7 @@ public:
     virtual std::uint32_t tick_ms() const noexcept = 0;
     virtual void stop_target_mob(std::uint32_t id) = 0;
     virtual void taunt(std::uint16_t aggro,float range) = 0;
-    virtual void detect_hidden(const SkillDefinition&) = 0;
+    virtual ZoneUsers* user_zone() = 0;
     virtual UserShapeSocial user_shape_social() = 0;
     virtual void finish_periodic_damage(EffectStatus&,const SkillDefinition&,const EffectSource&,std::uint32_t elapsed) = 0;
 };
@@ -30,6 +31,7 @@ struct ActorAppearance {
     std::uint32_t vehicle_partner=0;
     UserShapeIdentity identity;
     std::optional<CopiedUserShape> copied_user;
+    bool attackable=true;
 };
 struct ActorAttackState {
     std::int32_t mode=0,recovery=1;
@@ -51,7 +53,12 @@ public:
     EffectStatus& status() noexcept {return status_;}
     const EffectStatus& status() const noexcept {return status_;}
     ActorAppearance& appearance() noexcept {return appearance_;}
+    const ActorAppearance& appearance() const noexcept {return appearance_;}
+    std::uint32_t id() const noexcept {return id_;}
+    UserRelations& relations() noexcept {return relations_;}
+    const UserRelations& relations() const noexcept {return relations_;}
     ActorAttackState& attack_state() noexcept {return attack_;}
+    const ActorAttackState& attack_state() const noexcept {return attack_;}
     const PlayerResources& resources() const noexcept {return resources_.current();}
     EffectCycle& effects() noexcept {return effects_;}
     const EffectReplica& replica() const noexcept {return replica_;}
@@ -62,6 +69,7 @@ public:
     void recover(std::array<std::int32_t,3> amounts,bool send_set=false,bool recovering=false);
     void send_shape_self();
     void send_vehicle_partner();
+    bool reveal();
     void maximum_changed(EffectStatus&,std::uint8_t resource) override;
     void speed_changed(EffectStatus&) override;
     void shape_changed(EffectStatus&) override;
@@ -91,6 +99,7 @@ private:
     EffectStatus status_;
     ActorAppearance appearance_;
     ActorAttackState attack_;
+    UserRelations relations_;
     ActorScene& scene_;
     ActorResources resources_;
     EffectCycle effects_;

@@ -61,6 +61,24 @@ void EffectCycle::initialize(EffectStatus& status,EffectWorld& world) {
         shared_cursor_=next==effects_.end()?0:next->first;
     }
 }
+bool EffectCycle::remove_hide(EffectStatus& status,EffectWorld& world,EffectObserver& observer) {
+    // RemApplySkillHide 00489290 removes only the first detail-88 node, without generic unapply.
+    if(status.shape==0) return false;
+    shared_cursor_=0;
+    for(auto entry=effects_.begin();entry!=effects_.end();++entry) {
+        shared_cursor_=entry->first;
+        if(entry->second.definition->detail!=88) continue;
+        shared_cursor_=entry==effects_.begin()?0:std::prev(entry)->first;
+        auto removed=effects_.extract(entry);const auto& active=removed.mapped();
+        observer.erase_persisted(active.timer.effect);observer.send_self(effect_removed_packet(active.id));
+        const bool notify_party=observer.party_kind().has_value();
+        status.shape=0;status.skills.equipment.transformed=false;world.shape_changed(status);
+        world.run_mode_changed(status,true);observer.release_id(active.id);
+        if(notify_party) if(const auto raid=observer.party_kind()) observer.send_party(party_effect_removed_packet(character_id_,active.timer.effect.skill_id,active.timer.effect.level,*raid));
+        return true;
+    }
+    shared_cursor_=0;return false;
+}
 void EffectCycle::replace_attack_elements(std::uint8_t attribute,EffectStatus& status,EffectEquipment equipment,
     const ItemDefinitions& definitions,EffectRemovalWorld& world,EffectObserver& observer) {
     // AddApplySkillBuff 00484f86..004850a2: all conflicting detail-94 nodes, regardless of category/countdown.

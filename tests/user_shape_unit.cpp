@@ -21,7 +21,7 @@ struct Scene final:ActorScene {
     std::uint32_t tick_ms() const noexcept override {return 0;}
     void stop_target_mob(std::uint32_t) override {unexpected();}
     void taunt(std::uint16_t,float) override {unexpected();}
-    void detect_hidden(const SkillDefinition&) override {unexpected();}
+    ZoneUsers* user_zone() override {unexpected();return nullptr;}
     UserShapeSocial user_shape_social() override {++lookups;return social;}
     void finish_periodic_damage(EffectStatus&,const SkillDefinition&,const EffectSource&,std::uint32_t) override {unexpected();}
 };

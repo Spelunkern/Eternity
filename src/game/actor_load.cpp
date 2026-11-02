@@ -11,6 +11,7 @@ LoadedActor load_actor(const PlayerSnapshot& player,const ActorLoadRules& rules,
         ActorEquipmentRules{rules.items,rules.enchant,rules.mobs},player.items);
     auto& actor=*result.actor;auto& status=actor.status();
     actor.appearance().identity=user_shape_identity(player.core,options.country);
+    actor.relations().guild_id=player.core.guild_id;
     actor.effects().restore(player.effects,rules.skills,player.core.character.map,options.disconnected_seconds,options.tick_ms,actor);
     result.quests=restore_quests(player,rules.quests,options.tick_ms);
     // InitEquipment 00454560 applies equipped slots, then blessing and SetAttack.

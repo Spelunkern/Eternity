@@ -28,6 +28,7 @@ public:
     void restore(const std::vector<PersistedEffect>& effects,const SkillDefinitions& definitions,std::uint16_t map,
         std::uint32_t disconnected_seconds,std::uint32_t tick_ms,EffectObserver& observer);
     void initialize(EffectStatus& status,EffectWorld& world);
+    bool remove_hide(EffectStatus& status,EffectWorld& world,EffectObserver& observer);
     void replace_attack_elements(std::uint8_t attribute,EffectStatus& status,EffectEquipment equipment,
         const ItemDefinitions& definitions,EffectRemovalWorld& world,EffectObserver& observer);
     std::vector<net::Packet> initial_packets(std::uint32_t tick_ms) const;

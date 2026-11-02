@@ -28,7 +28,8 @@ Actor preparation connects these stages, including effect-driven resource clamps
 and cleanup. Equipment/transformation attack rebuilding and elemental-effect
 replacement run natively in the actor. User appearance packets include visible
 equipment, enchantments, cloak and social fields, with a copied-user snapshot path.
-Spatial/combat scene services and TCP world entry remain pending.
+Native user-cell queries now reveal hidden enemies using original duel, guild
+and map rules. Map admission, world broadcasts, combat and TCP world entry remain pending.
 The active MD5 login
 path needs a missing procedure; see [research](research/protocol.md).
 

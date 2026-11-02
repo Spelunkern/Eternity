@@ -49,7 +49,8 @@ void Actor::stop_attack(EffectStatus& status) {
 }
 void Actor::stop_target_mob(EffectStatus&,std::uint32_t id) {scene_.stop_target_mob(id);}
 void Actor::taunt(EffectStatus&,std::uint16_t aggro,float range) {scene_.taunt(aggro,range);}
-void Actor::detect_hidden(EffectStatus&,const SkillDefinition& skill) {scene_.detect_hidden(skill);}
+void Actor::detect_hidden(EffectStatus&,const SkillDefinition& skill) {if(auto* zone=scene_.user_zone()) zone->detect_hidden(id_,skill.apply_range);}
+bool Actor::reveal() {return effects_.remove_hide(status_,*this,*this);}
 void Actor::rebuild_attack(EffectStatus& status,bool equipment) {
     if(equipment) rebuild_equipment_attack(status.skills.equipment,inventory_,equipment_.items,equipment_.enchant);
     else rebuild_transformed_attack(status.skills.equipment,equipment_.mobs.find(status.shape_template));
