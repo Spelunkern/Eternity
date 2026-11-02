@@ -31,8 +31,9 @@ Death effect cleanup, corpse snapshots/cell visibility and the global corpse reg
 are reconstructed; death orchestration, combat dispatch and the live world remain pending.
 Attack-triggered effect, vehicle and pending-move cancellation run through native actors;
 live actor lookup and ordinary ranged broadcasts remain required world services.
-Duel-end debuff cleanup and damage-ledger reset run through actors; duel dispatch,
-wagers and result notifications remain pending.
+Duel cleanup, attack-triggered exit, wager-drop sequencing and result/log packets
+run through actors; item-pool ownership, world admission and the remaining duel
+handlers still require integration.
 Actor preparation connects these stages, including effect-driven resource clamps
 and cleanup. Equipment/transformation attack rebuilding and elemental-effect
 replacement run natively in the actor. User appearance packets include visible

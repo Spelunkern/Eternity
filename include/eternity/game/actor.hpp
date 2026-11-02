@@ -4,6 +4,7 @@
 #include "eternity/game/user_shape.hpp"
 #include "eternity/game/zone_users.hpp"
 #include "eternity/game/actor_actions.hpp"
+#include "eternity/game/duel.hpp"
 
 namespace eternity::game {
 // Required scene/transport services. Implementations own zone binding, combat
@@ -91,6 +92,9 @@ public:
     void stop_casting(ActorActionWorld&);
     void clear_duel_debuffs();
     void end_duel();
+    void leave_duel_on_attack(DuelWorld&);
+    DuelWager& duel_wager() noexcept {return duel_wager_;}
+    const DuelWager& duel_wager() const noexcept {return duel_wager_;}
     void maximum_changed(EffectStatus&,std::uint8_t resource) override;
     void speed_changed(EffectStatus&) override;
     void shape_changed(EffectStatus&) override;
@@ -122,6 +126,7 @@ private:
     ActorAppearance appearance_;
     ActorAttackState attack_;
     ActorActionState actions_;
+    DuelWager duel_wager_;
     std::uint32_t guard_target_after_=0;
     std::int32_t defense_wear_cursor_=0;
     UserRelations relations_;

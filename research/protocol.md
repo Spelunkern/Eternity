@@ -960,4 +960,38 @@ zero. Opponent and target IDs survive. The oracle compares 868 direct-helper,
 multi-effect-list and duel-end cases using original ability/element/list/ledger
 code, including counter wrap and repeated skill identities. An actor integration
 case combines negative effects, a surviving buff, replica erasure and damage
-reset. This is cleanup only; duel result dispatch and wagers remain pending.
+reset. Duel cleanup does not itself dispatch results or return wagers.
+
+Attack-triggered duel exit reconstructs `PvPChkLeaveByAttack` (`0047c750`). State
+zero skips lookup; other states resolve the opponent in the requester's zone,
+and missing opponents preserve local state. Unknown states still perform lookup.
+States 1/2 end the peer then caller and send both `2402`, reason 3, naming the
+peer/caller respectively. States 3/4 return each player's own wager, peer first,
+end both, send both `2406` naming the caller, then emit two `0e03` game logs,
+peer first. State 5 ends both and sends caller `2408` reason 2, peer reason 3.
+Self-opponents follow the same ordered calls, including two damage resets.
+
+`ItemDropPvP` (`0047c990`) allocates a type-26 money item for a nonzero stake,
+sets count 1, quality 0, make type `U`, null definition and drop metadata, then
+enters the owner's zone with notification. Allocation failure skips only money.
+Each of eight nonnull item pointers gets recipient user ID, party zero, drop
+type 3 and owner drop ID. The original draws two positions per existing item,
+overwriting the first; money draws once. All wager fields clear even if admission
+fails. Other existing item fields survive. `GetDropPosRand` (`0048a270`) draws
+X then Z offsets `(rand % 1000)/1000 - 0.5`, rounds each to float before adding
+the owner's coordinates, and preserves Y. Required `DuelWorld` services supply
+the shared random stream, pool allocation, zone admission, lookup and log transport;
+no successful no-op world implementation is provided.
+
+`SetGameLogMain` (`0045b0d0`) fills the 74-byte header with account ID/name,
+character ID/name, level, experience, map, XYZ and packed local calendar.
+`GetSystemTime` (`004cb8e0`) actually calls `GetLocalTime`; the native writer
+preserves its DWORD year wrap. Name writes stop at NUL, retaining buffer tails.
+Duel logs add the other character ID/name at 74/78 and reason 3 at 99. They reuse
+one 100-byte buffer, preserving earlier name tails on the second write; native
+fresh buffers start zeroed where original stack bytes are unspecified.
+The oracle compares 768 header/drop/attack-exit cases with original nested
+cleanup, float positioning, header/calendar and packet code. It covers every
+duel state, absent/self peers, money allocation/admission failure, all eight
+slots, repeated pointers, signed random inputs and calendar wrap. Full duel
+request/accept/tick/death handlers and live item ownership remain pending.
