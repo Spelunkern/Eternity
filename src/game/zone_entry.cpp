@@ -20,12 +20,12 @@ bool enter_zone(ZoneEntryState& state,const ZoneEntryMap& map,const ZoneEntryPor
 bool enter_zone_actor(RuntimeZone& zone,Actor& actor,ZoneEntryState& state,const ZoneActorEntryServices& services) {
     if(!zone.map || !zone.users || !zone.environment) throw std::logic_error("Zone entry requires initialized map, user grid and environment");
     if(state.character_id!=actor.id()) throw std::invalid_argument("Zone entry actor identity differs");
-    if(!services.send_view || !services.cell_info || !services.obelisks || !services.entered || !services.diagnostic || !services.close) throw std::invalid_argument("Incomplete actor zone entry services");
+    if(!services.send_view || !services.cell_info || !services.obelisks || !services.nprotect || !services.diagnostic || !services.close) throw std::invalid_argument("Incomplete actor zone entry services");
     state.vehicle_mode=actor.appearance().vehicle_mode;state.vehicle_partner=actor.appearance().vehicle_partner;
     const auto& map=*zone.map;const auto geometry=map.definition.geometry();ZoneEntryPorts port;
     port.attach=[&](CellCoordinates cell){actor.appearance().vehicle_mode=state.vehicle_mode;zone.users->attach(actor,cell.x,cell.z,state.position);};port.send_view=services.send_view;port.cell_info=services.cell_info;
     port.shape=[&](){return actor.effective_shape();};port.send_shape=[&](){actor.shape_changed(actor.status());};port.send_speed=[&](){actor.speed_changed(actor.status());};port.weather=[&](){actor.send_self(zone.environment->weather_packet(0));};
-    port.obelisks=services.obelisks;port.entered=services.entered;port.diagnostic=services.diagnostic;port.close=services.close;
+    port.obelisks=services.obelisks;port.entered=[&]{actor.enter_zone_lifecycle(state.position,state.map,services.nprotect);};port.diagnostic=services.diagnostic;port.close=services.close;
     return enter_zone(state,{map.definition.size,geometry.cell_count(),geometry.cell_count(),static_cast<std::uint16_t>(map.settings.id),map.settings.dungeon?1U:0U},port);
 }
 }

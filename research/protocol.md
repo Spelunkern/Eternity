@@ -2014,3 +2014,30 @@ remote close/relogin/shutdown during blocked work, failure cleanup and catalog
 bursts above 16 KiB. They use a synthetic application and do not enable playable
 0104 selection. Global world ownership, account save/load exclusion on relogin,
 full leave/save integration and live gameplay routing remain required.
+
+`enter_zone_lifecycle` reconstructs `ps_game.exe` `CUser::EnterZone`
+(`0044ae30`): clear motion/current-target-kind, sample the clock for both
+movement anchors, set the wrapped five-second check deadline and zero accumulated
+distance/speed. A separate clock sample feeds `ResetKeepTick` (`00486230`), which
+updates active detail-61/81 previous ticks regardless of effect type. Map checks
+and NProtect follow in that order. `enter_zone_actor` invokes this lifecycle
+directly; `Actor` binds it to actual combat state, effects and equipped items.
+
+`EffectCycle::check_map` reconstructs `ChkApplySkillByMap` (`00484680`) using
+the existing map-18 restrictions: unlink each rejected instance, erase its DB
+replica, send `050e`, reverse its effects and release its ID. Deferred party
+notifications include offline effects and cap at 48; traversal uses the shared
+list cursor. `send_nprotect_query` reconstructs
+`CUser::NProtectCSASend` (`0044b700`): disabled/missing/not-ready sessions do
+nothing; provider error logs and closes reason 111 without changing receive
+state. Success clears readiness, samples a new clock, sets the wrapped 900000-ms
+deadline and sends `a302` with four query DWORDs. CCSAuth2 query generation remains
+an external required provider; its algorithm is not reconstructed.
+
+A 320-case fixture executes the original entry/reset/map-check/NProtect bodies,
+including real intrusive removal and pool release, raw XYZ bits, clock wrapping,
+queries/errors and more than 48 restricted effects. OS/auth/unapply/party/transport
+are ports. Native composition additionally reverses a periodic heal after its
+keep-tick reset and runs the lifecycle on the actual loaded actor after zone
+membership/weather delivery. This still leaves entity snapshots, obelisks, full
+live world ownership and TCP gameplay entry unfinished.

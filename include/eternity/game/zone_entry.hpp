@@ -32,10 +32,11 @@ bool enter_zone(ZoneEntryState&,const ZoneEntryMap&,const ZoneEntryPorts&);
 struct ZoneActorEntryServices {
     std::function<void(CellCoordinates,net::Packet)> send_view;
     std::function<void(CellCoordinates)> cell_info;
-    std::function<void()> obelisks,entered,diagnostic;
+    std::function<void()> obelisks,nprotect,diagnostic;
     std::function<void(std::uint32_t)> close;
 };
 // Binds actual actor membership, shape/speed and zone weather. Scene/transport,
-// cell entity snapshots, obelisks and EnterZone lifecycle remain caller services.
+// cell entity snapshots, obelisks and NProtect provider remain caller services.
+// The actual actor EnterZone movement/effect lifecycle runs after those snapshots.
 bool enter_zone_actor(RuntimeZone&,Actor&,ZoneEntryState&,const ZoneActorEntryServices&);
 }

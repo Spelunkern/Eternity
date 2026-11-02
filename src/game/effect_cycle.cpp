@@ -221,6 +221,36 @@ void EffectCycle::expire(std::uint32_t tick,EffectStatus& status,EffectEquipment
     }
     for(const auto& notice:party) if(const auto raid=observer.party_kind()) observer.send_party(party_effect_removed_packet(character_id_,notice.id,notice.level,*raid));
 }
+void EffectCycle::reset_keep_tick(std::uint32_t tick) {
+    // ps_game.exe CUser::ResetKeepTick 00486230: detail alone selects timers.
+    for(auto& [ordinal,active]:effects_) {
+        shared_cursor_=ordinal;
+        if(active.definition->detail==61 || active.definition->detail==81) active.timer.previous_tick=tick;
+    }
+    shared_cursor_=0;
+}
+void EffectCycle::check_map(std::uint16_t map,EffectStatus& status,EffectEquipment equipment,const ItemDefinitions& definitions,
+    EffectRemovalWorld& world,EffectObserver& observer) {
+    // ps_game.exe ChkApplySkillByMap 00484680. Unlike expiry, offline effects
+    // participate in the deferred (maximum 48) party notifications as well.
+    struct Notice {std::uint16_t id;std::uint8_t level;};std::vector<Notice> party;
+    shared_cursor_=effects_.empty()?0:effects_.begin()->first;
+    while(shared_cursor_!=0) {
+        auto entry=effects_.find(shared_cursor_);const auto active=entry->second;
+        if(effect_map_result(map,active.timer.effect.skill_id,active.timer.effect.level)==2) {
+            shared_cursor_=entry==effects_.begin()?0:std::prev(entry)->first;effects_.erase(entry);
+            observer.erase_persisted(active.timer.effect);observer.send_self(effect_removed_packet(active.id));
+            if(observer.party_kind().has_value() && party.size()<48) party.push_back({active.timer.effect.skill_id,active.timer.effect.level});
+            const auto& skill=*active.definition;
+            const EffectSource source{active.id,active.timer.attacker_id,active.timer.previous_tick,active.timer.attacker_kind};
+            const bool samples_clock=(skill.effect==4 && skill.detail==81) || (skill.effect==3 && skill.detail==61);
+            remove_active_effect(status,skill,source,samples_clock?observer.tick_ms():0,equipment,definitions,world);
+            observer.release_id(active.id);
+        }
+        const auto next=effects_.upper_bound(shared_cursor_);shared_cursor_=next==effects_.end()?0:next->first;
+    }
+    for(const auto& notice:party) if(const auto raid=observer.party_kind()) observer.send_party(party_effect_removed_packet(character_id_,notice.id,notice.level,*raid));
+}
 EffectStore::EffectStore(storage::SqlServer& database,std::uint8_t server_id,std::string catalog):database_(database),server_id_(server_id) {
     if(catalog.empty() || catalog.size()>128 || std::any_of(catalog.begin(),catalog.end(),[](unsigned char c){return !(c>='a'&&c<='z') && !(c>='A'&&c<='Z') && !(c>='0'&&c<='9') && c!='_';}))
         throw std::invalid_argument("Invalid effect database catalog");

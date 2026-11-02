@@ -42,6 +42,8 @@ public:
     void replace_attack_elements(std::uint8_t attribute,EffectStatus& status,EffectEquipment equipment,
         const ItemDefinitions& definitions,EffectRemovalWorld& world,EffectObserver& observer);
     std::vector<net::Packet> initial_packets(std::uint32_t tick_ms) const;
+    void reset_keep_tick(std::uint32_t tick_ms);
+    void check_map(std::uint16_t map,EffectStatus&,EffectEquipment,const ItemDefinitions&,EffectRemovalWorld&,EffectObserver&);
     void release_all(EffectObserver& observer) noexcept;
     void expire(std::uint32_t tick_ms,EffectStatus& status,EffectEquipment equipment,const ItemDefinitions& definitions,
         EffectRemovalWorld& world,EffectObserver& observer);

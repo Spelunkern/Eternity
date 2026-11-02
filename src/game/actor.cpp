@@ -43,6 +43,19 @@ void Actor::clear_duel_debuffs() {
     for(const auto& item:inventory_) if(item.bag==0) {if(item.slot==5) equipped.weapon=&item;else if(item.slot==1) equipped.armor=&item;}
     effects_.clear_duel_debuffs(status_,equipped,equipment_.items,*this,*this);
 }
+void Actor::enter_zone_lifecycle(UserPosition position,std::uint16_t map,const std::function<void()>& nprotect) {
+    if(!nprotect) throw std::invalid_argument("Zone lifecycle requires NProtect service");
+    // Current target kind is shared with combat; clear before the first clock.
+    attack_.motion=0;status_.current_target_type=0;zone_lifecycle_.position=position;
+    ZoneLifecyclePorts port;port.tick=[&]{return scene_.tick_ms();};
+    port.reset_keep_tick=[&](std::uint32_t tick){effects_.reset_keep_tick(tick);};
+    port.check_map=[&]{
+        EffectEquipment equipped;
+        for(const auto& item:inventory_) if(item.bag==0) {if(item.slot==5) equipped.weapon=&item;else if(item.slot==1) equipped.armor=&item;}
+        effects_.check_map(map,status_,equipped,equipment_.items,*this,*this);
+    };
+    port.nprotect=nprotect;game::enter_zone_lifecycle(zone_lifecycle_,port);
+}
 void Actor::end_duel() {
     // PvPModeEnd 0047b200 runs even if the stored duel state is already zero.
     clear_duel_debuffs();reset_damage();relations_.duel_state=0;relations_.duel_type=-1;status_.current_target_type=0;

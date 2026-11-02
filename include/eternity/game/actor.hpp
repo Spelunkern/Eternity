@@ -6,6 +6,7 @@
 #include "eternity/game/actor_actions.hpp"
 #include "eternity/game/duel.hpp"
 #include "eternity/game/item_exchange.hpp"
+#include "eternity/game/zone_lifecycle.hpp"
 
 namespace eternity::game {
 class MoneyWorld;
@@ -117,6 +118,8 @@ public:
     void cancel_vehicle(ActorActionWorld&);
     void stop_casting(ActorActionWorld&);
     void clear_duel_debuffs();
+    void enter_zone_lifecycle(UserPosition,std::uint16_t map,const std::function<void()>& nprotect);
+    const ZoneMovementCheck& movement_check() const noexcept {return zone_lifecycle_.movement;}
     void end_duel();
     void leave_duel_on_attack(DuelWorld&);
     ItemExchangeState& exchange() noexcept {return exchange_;}
@@ -163,6 +166,7 @@ private:
     ActorAppearance appearance_;
     ActorAttackState attack_;
     ActorActionState actions_;
+    ZoneLifecycleState zone_lifecycle_;
     DuelWager duel_wager_;
     ItemExchangeState exchange_,duel_exchange_;
     std::uint32_t guard_target_after_=0;
