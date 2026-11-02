@@ -12,6 +12,7 @@ void number(Bytes& bytes,std::uint32_t value,unsigned int size=4) {for(unsigned 
 Bytes unhex(const std::string& text) {Bytes result;for(std::size_t i=0;i<text.size();i+=2) result.push_back(static_cast<std::uint8_t>(std::stoul(text.substr(i,2),nullptr,16)));return result;}
 UserPosition position(std::istringstream& row) {std::uint32_t x=0,y=0,z=0;row>>x>>y>>z;return {std::bit_cast<float>(x),std::bit_cast<float>(y),std::bit_cast<float>(z)};}
 struct Services final:ZoneNpcServices {
+    std::uint32_t tick_ms() const noexcept override {return 0;}
     struct Buffer final:NpcBroadcast {
         Services& owner;Bytes packet;std::uint8_t priority;
         Buffer(Services& services,Bytes bytes,std::uint8_t rank):owner(services),packet(std::move(bytes)),priority(rank) {}

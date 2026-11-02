@@ -1,5 +1,6 @@
 #pragma once
 #include "eternity/game/npcs.hpp"
+#include "eternity/game/pathfinding.hpp"
 #include "eternity/net/framing.hpp"
 #include <map>
 #include <memory>
@@ -18,11 +19,19 @@ struct Npc {
     std::int32_t users_using=0,next_position=0;
     bool forward=true;
     std::uint32_t next_move=0;
+    std::int32_t status=0,target_kind=0;
+    std::uint32_t target_id=0,next_chase=0;
+    AStarPath path;
+    ChaseTrail trail;
 };
 class NpcMovementWorld {
 public:
     virtual ~NpcMovementWorld() = default;
     virtual bool move(Npc&,UserPosition,std::uint8_t mode) = 0;
+};
+class NpcNavigationWorld:public NpcMovementWorld {
+public:
+    virtual std::uint32_t tick_ms() const noexcept = 0;
 };
 // Original SSyncHeap<CNpc> uses a LIFO free list and preserves IDs/object state.
 // The owner must detach an NPC before returning it; reset is a separate operation.
@@ -44,6 +53,7 @@ public:
     virtual ~ZoneNpcServices() = default;
     virtual Npc* allocate() = 0;
     virtual std::uint32_t next_id() = 0;
+    virtual std::uint32_t tick_ms() const noexcept = 0;
     virtual void invalid_guard_position(const MapNpc&) = 0;
     virtual void send_cell_view(CellCoordinates,const net::Packet&) = 0;
     // A null buffer drops that broadcast. Priority 6 follows PSendAll with both
@@ -53,7 +63,7 @@ public:
 net::Packet npc_appearance(const Npc&);
 // One world executor serializes operations. Maps/definitions, services and all
 // allocated NPCs must outlive the registry. Patrol ticks/guard AI remain separate.
-class ZoneNpcs:public NpcMovementWorld {
+class ZoneNpcs:public NpcNavigationWorld {
 public:
     ZoneNpcs(const MapGeometry&,ZoneNpcServices&);
     ~ZoneNpcs();
@@ -63,6 +73,7 @@ public:
     bool enter(Npc&);
     bool leave(Npc&);
     bool move(Npc&,UserPosition destination,std::uint8_t mode) override;
+    std::uint32_t tick_ms() const noexcept override {return services_.tick_ms();}
     Npc* find(std::uint32_t) const noexcept;
     std::span<Npc* const> all() const noexcept {return members_;}
     std::span<Npc* const> in_cell(CellCoordinates) const noexcept;

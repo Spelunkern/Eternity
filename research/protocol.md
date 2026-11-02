@@ -640,8 +640,8 @@ its output untouched for invalid endpoints, initializes it to the start for vali
 ones, and only changes it on collision. A collision returns the preceding major
 coordinate plus truncation of the current accumulator minus the slope. On success
 the output remains the start. It is not the last point traversed. Both overloads
-produce the same boolean result. Native A* search is described below; guard
-chase/return integration remains pending.
+produce the same boolean result. Native A* search and guard navigation are
+described below; target selection and combat remain pending.
 
 The line oracle executes both original overloads, safe/unchecked collision and bit
 queries without replacing any function. Native validation covers 4,096 queries
@@ -667,9 +667,47 @@ A coincident start/goal immediately returns true while preserving previous path,
 cursor, found flag and scan bounds. `ResetPath` (`0048ec70`) clears path pointers
 without clearing the found flag; `Reset` (`0048ec60`) also clears it. Advancing past
 the final node clears both. `SetPath` (`004a6b20`) installs a single current node.
-The native owner must serialize these operations; guard chase/return integration
-remains pending. The oracle executes original tree operations, node recycling,
+The native owner must serialize these operations; target selection and combat
+remain pending. The oracle executes original tree operations, node recycling,
 successors, collision queries and compression, isolating allocation and locks. It
 compares 1,536 searches, 416 operations across persistent paths (including cursor,
 reset and single-point replacement), plus eight local searches on each of all 77
 staged maps. Both complete compressed paths and cursor/flag/bounds are compared.
+
+Guard navigation reconstructs `ps_game.exe` `CNpc::Chase` (`004bca00`) and
+`ReturnHome` (`004bcf30`) using native collision/line queries, A* and `ZoneNpcs`
+movement. Each NPC owns its path, reverse breadcrumb trail, status, target and
+navigation deadlines. Chase waits on its unsigned deadline, stops when its current
+tile is blocked, and reports attack proximity only at distance strictly below
+`float(range)+1`. Targets beyond 30 units from either the guard or its current
+route point trigger return mode. Obstructed unblocked targets use A*; blocked
+targets distinguish no progress from a partial clear line. Status 2 guards status
+writes, while target field clearing follows each individual original branch.
+A failed A* search separately samples the clock and sets the disable deadline to
+that value plus 3000 ms.
+
+Chase movement subtracts one from the waypoint distance before choosing a step.
+A near step broadcasts `position + integer_delta - normalized_direction*0.3f`.
+After a successful move, the NPC's stored position becomes the full integer-delta
+endpoint. This preserves the original difference between announced and internal
+positions. Near steps scale the truncated `nMoveSpeed/4` interval by remaining
+waypoint distance; far steps use the whole quarter interval. The timer conversion
+preserves float spills and signed x87 DWORD integer-indefinite behavior, including
+large unsigned ticks. Line coordinates instead use the low DWORD of `_ftol2`
+(`0051c424`), whose QWORD conversion differs for nonfinite/overflow inputs.
+
+`ChaseTrail` follows `ChasePathList::AddPath` (`0048f660`): when a line to the node
+after the head is clear, replace the head position; otherwise suppress duplicate
+heads or push a new head. Return navigation can pop these breadcrumbs into a
+single-point A* cursor when its direct line is blocked. It stops within strictly
+1.5 units of home, clears its path/trail on arrival or blocked/unreachable home,
+and uses mode-1 native zone movement for both short and full steps. Target
+selection, attacks and the live idle/guard dispatcher remain pending.
+
+The navigation oracle runs original chase/return, breadcrumb, A*, collision,
+vector and CRT routines with allocation/movement/clock/lock/TLS ports isolated.
+It compares 1,544 states and three persistent routes totaling 108 updates through
+real native zone movement. An address-based coverage check verifies 21 navigation
+branches, including both blocked-target outcomes, A* failure, breadcrumbs, near
+and far steps, proximity, leash and deadline checks. Native and sanitizer tests
+compare complete NPC/path/trail/deadline state, clock calls and movement arguments.

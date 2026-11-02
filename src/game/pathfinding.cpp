@@ -68,6 +68,8 @@ struct AStarPath::Impl {
 };
 AStarPath::AStarPath():impl_(std::make_unique<Impl>()) {}
 AStarPath::~AStarPath()=default;
+AStarPath::AStarPath(AStarPath&&) noexcept=default;
+AStarPath& AStarPath::operator=(AStarPath&&) noexcept=default;
 void AStarPath::reset_path() {impl_->reset_path();}
 void AStarPath::reset() {reset_path();impl_->found=false;}
 void AStarPath::set_path(MapTile point) {auto& state=*impl_;auto* node=state.allocate(point);node->child=nullptr;state.start=state.goal=state.cursor=node;state.found=true;}
@@ -109,4 +111,11 @@ bool AStarPath::find(const MapDefinition& map,MapTile from,MapTile to) {
     }
     state.release(state.goal);state.clear_tree(state.open,false);state.clear_tree(state.closed,false);state.open=state.closed=state.start=state.goal=state.cursor=nullptr;state.found=false;return false;
 }
+void ChaseTrail::add(const MapDefinition& map,MapTile point) {
+    // ChasePathList::AddPath 0048f660 checks the node AFTER the head.
+    if(nodes_.size()>1 && map.enable_line(point,nodes_[nodes_.size()-2])) {nodes_.back()=point;return;}
+    if(!nodes_.empty() && equal(nodes_.back(),point)) return;
+    nodes_.push_back(point);
+}
+std::optional<MapTile> ChaseTrail::pop() {const auto point=current();if(point) nodes_.pop_back();return point;}
 }

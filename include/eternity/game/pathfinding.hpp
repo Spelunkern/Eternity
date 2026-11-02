@@ -10,6 +10,8 @@ class AStarPath {
 public:
     AStarPath();
     ~AStarPath();
+    AStarPath(AStarPath&&) noexcept;
+    AStarPath& operator=(AStarPath&&) noexcept;
     AStarPath(const AStarPath&)=delete;
     AStarPath& operator=(const AStarPath&)=delete;
     bool find(const MapDefinition&,MapTile start,MapTile goal);
@@ -24,5 +26,15 @@ public:
     std::vector<MapTile> nodes() const; // Full compressed chain, including its start.
 private:
     struct Impl;std::unique_ptr<Impl> impl_;
+};
+class ChaseTrail {
+public:
+    void add(const MapDefinition&,MapTile);
+    void clear() noexcept {nodes_.clear();}
+    std::optional<MapTile> current() const noexcept {return nodes_.empty()?std::nullopt:std::optional<MapTile>(nodes_.back());}
+    std::optional<MapTile> pop();
+    std::span<const MapTile> nodes() const noexcept {return nodes_;} // Oldest first.
+private:
+    std::vector<MapTile> nodes_;
 };
 }

@@ -13,6 +13,7 @@ Bytes unhex(const std::string& text) {Bytes result;for(std::size_t i=0;i<text.si
 UserPosition position(std::istringstream& row) {std::uint32_t x=0,y=0,z=0;row>>x>>y>>z;return {std::bit_cast<float>(x),std::bit_cast<float>(y),std::bit_cast<float>(z)};}
 struct Random final:RandomSource {std::int32_t value=0;std::uint32_t calls=0;std::int32_t next() override {++calls;return value;}};
 struct Services final:ZoneNpcServices {
+    std::uint32_t tick_ms() const noexcept override {return 0;}
     struct Buffer final:NpcBroadcast {std::size_t& deliveries;explicit Buffer(std::size_t& count):deliveries(count) {}void send_cell(CellCoordinates) override {++deliveries;}};
     std::size_t deliveries=0;
     Npc* allocate() override {throw std::logic_error("Unexpected NPC pool allocation during patrol");}
