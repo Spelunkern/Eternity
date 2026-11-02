@@ -38,7 +38,8 @@ def run(command, build_directory="build"):
                       "usp_Read_Char_ConcernMarket_R", "usp_Read_FriendChar_R", "usp_Read_BanChar_R", "usp_Read_User_GiftPointItemNotify",
                       "usp_Save_Char_ApplySkill_Del_E", "usp_Save_Char_ApplySkill_Add_E2",
                       "usp_Save_Char_Item_Mod_E", "usp_Save_Char_Item_Del_E", "usp_Save_User_StoredItem_Add_E",
-                      "usp_Save_User_StoredItem_Mod_E", "usp_Save_User_StoredItem_Del_E")
+                      "usp_Save_User_StoredItem_Mod_E", "usp_Save_User_StoredItem_Del_E",
+                      "usp_Save_Char_Info_E", "usp_Save_Char_BodyChg_E")
         names = ",".join(literal(procedure) for procedure in procedures)
         modules = sql("""SELECT p.name,m.definition FROM sys.sql_modules m
             JOIN sys.procedures p ON p.object_id=m.object_id
@@ -68,6 +69,7 @@ def run(command, build_directory="build"):
             "CREATE UNIQUE INDEX EternityFixtureInventoryUID ON dbo.CharItems(ItemUID); "
             "CREATE UNIQUE INDEX EternityFixtureBankUID ON dbo.UserStoredItems(ItemUID);", name)
         subprocess.run(command + [f"{build_directory}/inventory-sql-integration", name], check=True)
+        subprocess.run(command + [f"{build_directory}/character-core-sql-integration", name], check=True)
     finally:
         # Only the fresh, randomly named fixture catalog is removed.
         sql(f"ALTER DATABASE {catalog} SET SINGLE_USER WITH ROLLBACK IMMEDIATE; DROP DATABASE {catalog};")

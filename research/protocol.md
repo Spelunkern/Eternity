@@ -1377,3 +1377,45 @@ Disposable original-procedure SQL checks cover inserts, modifications, bank
 transfers, global-UID recovery, rollback across other character writes and
 retry without losing pending changes. The remaining character save phases,
 file fallback, save scheduling and runtime transaction owner are pending.
+
+
+Character core persistence reconstructs `ps_dbAgent.exe`,
+`CUser::PacketUserSetStatus` (`00405b00`), owned core commands `0601`..`0608`,
+`060a`..`0610`, and body `0615`. Level-up, stat allocation, hunger/vigor,
+resources, map/position, bank balance, kills, grow and separate point/stat
+writes retain their original widths. Unknown extended-stat selectors succeed
+without changes. Kill index 0..3 writes counters; 4..5 writes complete DWORD
+kill-used fields, now retained in `PlayerCore` rather than truncated to BYTEs.
+Native envelopes reject other identities, incomplete packets and kill indices
+that would overwrite unrelated original memory. Quick slots, reset dispatch,
+rename, inventory-status and market-list commands still have separate pending
+owners. `CharacterReplica` owns the inventory cache and projects its money
+into the core view, including item-command money updates.
+
+`CharacterCoreStore` reconstructs the first Info/optional BodyChg portion of
+`DBCharacter::SaveCharacter` (`0042328e..00423483`). Level is zero-extended;
+points, stats, resources, map and direction use signed WORDs. Hunger stays
+unsigned, vigor signed, experience/money/kills preserve signed DWORD bits.
+Kill-used fields are read as signed low WORDs and then printed unsigned, even
+though SQL accepts TINYINTs. Positions format the promoted float through the original CRT
+`_fltout2` (`00450877`, 17 significant digits), `_fptostr` (`00450746`,
+round decimal ties upward in magnitude), and `_cftof` (`0044b6c7`, six decimal
+places). Exact negative zero formats positive; negative values rounded to zero
+keep a minus sign. This differs from Linux printf, including `0.0078125`
+becoming `0.007813`. Bound strings pass through DECIMAL(38,6) locals before REAL conversion
+to match original numeric literals, including positive zero for `-0.000000`
+and rejection beyond SQL's literal precision. Original procedures update
+LeaveDate; BodyChg executes only while dirty. Its flag clears only on the
+explicit core acknowledgment corresponding to `SaveSuccess` `004097b8`.
+
+A 2,048-operation original-code fixture compares complete core bytes, 2,798
+generated SQL calls and 160 body acknowledgments. It executes the original
+`sprintf` (`0044447f`) and floating-point conversion code after the original
+`_cfltcvt_init` (`00445779`), including decimal ties and large magnitudes. Disposable SQL checks compose
+core/body and inventory phases in one caller-owned transaction, verifying signed
+values, coordinate rounding, shared money, dirty retries, rollback after later
+item failures, missing characters and SQL conversion errors. Connection rollback
+now also recovers when an early error occurs before SQL Server opens a transaction
+or the server already ended it; autocommit is restored only after rollback
+completes. Billing, skills, quest/quick-slot/save-point phases, max-grow saving,
+file fallback, scheduling and the complete runtime transaction owner remain pending.

@@ -125,6 +125,11 @@ void SqlServer::commit() {
 
 void SqlServer::rollback() {
     if (!transaction_active_) throw std::logic_error("No transaction is active");
+    // FreeTDS needs a successful server rollback before restoring autocommit.
+    // An early conversion failure may precede its implicit BEGIN, and server
+    // errors may already have ended the transaction. An empty BEGIN makes
+    // those cases rollback normally without risking a commit of pending work.
+    query("IF @@TRANCOUNT=0 BEGIN TRANSACTION;");
     check(SQLEndTran(SQL_HANDLE_DBC, connection_, SQL_ROLLBACK), SQL_HANDLE_DBC, connection_, "rollback transaction");
     check(SQLSetConnectAttr(connection_, SQL_ATTR_AUTOCOMMIT,
           reinterpret_cast<SQLPOINTER>(SQL_AUTOCOMMIT_ON), 0), SQL_HANDLE_DBC, connection_, "restore autocommit");

@@ -65,6 +65,20 @@ int main() {
         database.begin();
         database.query("INSERT INTO #EternityTest VALUES(2);");
         database.rollback();
+        database.begin();
+        bool conversion_failed=false;
+        try {database.query("DECLARE @Value int; SELECT @Value=CAST(N'invalid' AS int);");}
+        catch(const std::runtime_error&) {conversion_failed=true;}
+        require(conversion_failed,"Pre-transaction SQL conversion was accepted");
+        database.rollback();
+        require(!database.transaction_active(),"Rollback after early SQL error did not restore connection mode");
+        database.begin();
+        database.query("INSERT INTO #EternityTest VALUES(3);");
+        database.rollback();
+        database.begin();
+        database.query("INSERT INTO #EternityTest VALUES(4); ROLLBACK TRANSACTION;");
+        database.rollback();
+        require(!database.transaction_active(),"Rollback after server-ended transaction did not restore connection mode");
         const auto transaction = database.query("SELECT COUNT(*) FROM #EternityTest; DROP TABLE #EternityTest;");
         require(transaction.size() == 1 && transaction[0].rows[0][0] == Cell{"1"}, "Commit/rollback did not preserve state");
         bool failed = false;

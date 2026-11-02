@@ -8,7 +8,9 @@ struct PlayerCore {
     CharacterSummary character;
     std::uint16_t stat_points = 0,skill_points = 0,direction = 0,hunger = 0;
     std::int16_t vigor = 0;
-    std::uint8_t cg = 0,og = 0,ig = 0,guild_rank = 0,kill_level = 0,dead_level = 0;
+    std::uint8_t cg = 0,og = 0,ig = 0,guild_rank = 0;
+    // SQL loads tinyints; DB-agent status 060c retains DWORDs at CUser+90/+94.
+    std::uint32_t kill_level = 0,dead_level = 0;
     std::uint32_t experience = 0,money = 0,guild_id = 0;
     std::uint64_t stored_money = 0;
     float x = 0,y = 0,z = 0;
