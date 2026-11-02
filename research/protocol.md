@@ -2408,3 +2408,30 @@ original execution. The source cell operations, geometry and math execute; the
 zone ID index is a port in this movement fixture and verified separately above.
 The registry is owned by `RuntimeZone`; actual population/pool/AI initialization
 and production world transport remain required integration work.
+
+
+The mob pool follows `CObjectMgr::CreateMob` (`ps_game.exe`, `0040a5e0`),
+`FreeMob` (`0040a630`) and `SSyncHeap<CMob>::Alloc` (`0040ab80`). Free objects
+are reused LIFO without runtime reset. Every successful allocation, including
+reuse, increments the shared mob counter with DWORD wrap, overwrites the ID,
+then seeds drop randomness from Unix time XOR that ID. Failed fresh allocation
+increments the construction-attempt counter without consuming an ID or time.
+Release invokes the required compiled-FSM cleanup, active stack-FSM cleanup,
+conditional Lua flag reset and Lua close, then makes the object reusable. Stack
+release disables the stack FSM. Position, status, target and other unassigned
+fields survive. Zone detachment is required before recycling. Actual AI/state
+handlers, Lua ownership/initialization and final world teardown remain required
+services; this pool does not substitute no-op gameplay providers.
+
+`ServerRandom` follows `SRandom` construction (`004a8840`), `Random` (`004a8860`)
+and `SetRandomSeed` (`004a8980`): lazy first seeding, the original 69069 recurrence,
+624-word twist/tempering and unsigned remainder. Bound zero returns without
+advancing or seeding. The source uses an earlier seeding algorithm than
+`std::mt19937`. The random fixture compares 166,400 original draws and all final
+state words across 128 streams, including reseeding and multiple twist cycles.
+The pool fixture executes the real original constructor, heap/list operations,
+empty compiled/stack FSM cleanup and random seeding across 128 pools and 1,920
+operations. Allocator failure, locking, clock, atomic increment and Lua close
+are ports. Native providers supply constructor/AI resources; tests verify retained
+runtime state, cleanup order, failed allocations, wrap, new/reused IDs and seeded
+random words. Population placement and live world ownership remain pending.

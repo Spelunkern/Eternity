@@ -48,6 +48,7 @@ struct MobRuntime {
     std::int32_t lua_ai=0,only_lua_attack=0,hold_position=0,move_mode=0;
     std::uint32_t combat_timeout=0,retarget_time=0,lua_attacked_count=0,lua_order_time=0,function_type=0,current_time=0;
     UserPosition move_target;
+    ServerRandom drop_random;void* lua_state=nullptr;
 };
 struct MobInitPorts {
     RandomSource& random;

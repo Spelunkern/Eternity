@@ -101,8 +101,9 @@ NPC definitions, populations, patrols, guard navigation/target queries and visib
 packets are reconstructed. Mob runtime initialization and attack-table rebuilding
 now preserve original reset/reuse rules and load their SQL definition projection.
 Mob zone/cell membership, cell snapshots and movement packets preserve original
-ordering and visibility rules. Mob spawning/pooling, full AI/combat and the running
-world remain pending.
+ordering and visibility rules. The mob pool preserves LIFO reuse, new IDs on
+every allocation, original drop-random streams and AI/Lua release ordering.
+Mob spawning, full AI/combat and the running world remain pending.
 The active MD5 login
 path needs a missing procedure; see [research](research/protocol.md).
 
