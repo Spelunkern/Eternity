@@ -33,6 +33,7 @@ def main():
     elif args.action == "test":
         command += ["ctest", "--test-dir", "build", "--output-on-failure"]
     elif args.action == "integration":
+        subprocess.run(command + ["build/zone-npcs-unit", "tests/data/zone-npcs-oracle.tsv", ".local/server-data/Map", ".local/server-data/NpcQuest.SData"], cwd=ROOT, check=True)
         subprocess.run(command + ["build/npcs-unit", "tests/data/npcs-oracle.tsv", ".local/server-data/NpcQuest.SData"], cwd=ROOT, check=True)
         subprocess.run(command + ["build/zone-environment-unit", "tests/data/zone-environment-oracle.tsv", ".local/server-data/Map"], cwd=ROOT, check=True)
         subprocess.run(command + ["build/map-config-unit", "tests/data/map-config-oracle.tsv", ".local/server-data"], cwd=ROOT, check=True)

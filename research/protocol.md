@@ -437,9 +437,9 @@ The oracle executes original constructors, parsers, numeric conversion and strin
 formatting; Windows profile/TLS and single-thread CRT lock ports are isolated.
 It checks 19 synthetic configurations and the staged INI's complete field
 fingerprint. Integration loads its 68 configured maps and verifies shared creation
-coordinates. Runtime zone selection/creation, schedules, weather transitions,
-obelisk binding and spawns remain pending; loading the map registry does not enter
-the world or implement these services.
+coordinates. Zone selection, access schedules, weather transitions and initial NPC
+populations are reconstructed below. Obelisk binding, mob spawns and the running
+world executor remain pending; loading the map registry does not enter the world.
 
 `ZoneRegistry` reconstructs `CWorld::InitZones` (`00414870`), `ChkZoneID`
 (`004146f0`) and `GetZoneByMapID` (`00413df0`). Startup prepares one zone per map;
@@ -541,7 +541,33 @@ other values map to 2. Name bytes 29/30 become a space/NUL. Gate destination Y
 adds the original single-precision 0.9 constant before spilling to float.
 `GetNpc` (`0041d640`) accepts types 1..13 and one-based row positions, ignoring
 embedded type/ID fields. The quest decoder now uses this NPC decoder to locate
-the item-link/quest blocks. NPC movement, combat and world object creation remain
-pending. The oracle executes the original loader and 85 positional lookups per
+the item-link/quest blocks. NPC movement and combat remain pending. The oracle
+executes the original loader and 85 positional lookups per
 input: six synthetic files plus the complete staged distribution. Integration
 compares every normalized NPC field, shop item, gate and quest link.
+
+`ZoneNpcs` reconstructs `CMap::InitNPC` (`00429130`), `CZone::EnterNpc`
+(`00416d70`) and `LeaveNpc` (`00416e90`). Initialization skips type 5, unresolved
+positional definitions, missing paths and positions outside the map. It uses only
+the first position/angle, truncating angles to signed DWORDs with the x87 integer
+indefinite on overflow/nonfinite input. A blocked type-8 guard logs the invalid
+position, still allocates/enters, and sets its disable deadline to `FFFFFFFF`.
+Unblocked NPCs preserve the allocator's existing deadline. Existing nonzero object
+IDs survive reuse; only zero IDs consume the shared counter, including DWORD wrap.
+
+Entry uses truncated X/Z divided by 40 and the zone's cell extent, allowing its
+last extra cell beyond the nominal map boundary. Ordered cell membership, zone
+membership and ID lookup update before the packed 23-byte `0E01` announcement.
+Removal unlinks both registries before the six-byte `0E02` announcement; the zone
+pointer clears before sending, and cell coordinates clear afterward. The native
+pool follows `SSyncHeap<CNpc>::Alloc` (`0040acc0`) / `Free` (`0040ad30`): LIFO reuse
+without implicit state reset. Pool/ID/log/transport services are required;
+connection to the world executor, path movement and AI are not implemented here.
+
+The NPC runtime oracle runs original lookup, geometry, tile tests and intrusive
+cell insertion/removal for all 77 staged maps plus four synthetic populations.
+Synthetic cases cover excluded/unknown NPC types, positional ID failure, empty
+paths, boundaries, blocked guards, allocator failure, retained IDs/deadlines,
+ID overflow, multiple path positions and angle overflow. Native integration
+compares every initialized NPC and all ordered arrival/removal packets, with
+sanitizers covering the same complete populations.

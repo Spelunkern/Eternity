@@ -1,6 +1,7 @@
 #pragma once
 #include "eternity/game/map_config.hpp"
 #include "eternity/game/zone_environment.hpp"
+#include "eternity/game/zone_npcs.hpp"
 #include <memory>
 
 namespace eternity::game {
@@ -22,6 +23,7 @@ struct RuntimeZone {
     std::uint32_t id=0,owner=0,expiry_tick=0;
     const ConfiguredMap* map=nullptr;
     std::unique_ptr<ZoneUsers> users;
+    std::unique_ptr<ZoneNpcs> npcs;
     std::optional<ZoneEnvironment> environment;
 };
 class ZoneServices {
