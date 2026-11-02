@@ -1,0 +1,26 @@
+# ps_game.exe SHA256 0fb7c9f13b5bcf186118f8bfe73ab214226b93e8aa502b8e6fded4a8312bc547; complete MobRemoveByID 0041e910. Ports: FindMob, global/cell unlink, SendView, obelisk/linked callbacks, FreeMob, clock. Container implementation and callback bodies are not executed.
+# branch found full returned events current deadline
+0	0	0	0	F	0	123
+0	0	1	0	F	3	123
+0	1	0	1	FGCVP	0	123
+0	1	1	1	FGCVP	3	123
+1	0	0	0	F	0	123
+1	0	1	0	F	3	123
+1	1	0	1	FGCVOP	4294967295	123
+1	1	1	1	FGCVTOP	2	16
+2	0	0	0	F	0	123
+2	0	1	0	F	3	123
+2	1	0	1	FGCVoP	4294967295	123
+2	1	1	1	FGCVToP	2	16
+3	0	0	0	F	0	123
+3	0	1	0	F	3	123
+3	1	0	1	FGCVBP	4294967295	123
+3	1	1	1	FGCVTBP	2	16
+4	0	0	0	F	0	123
+4	0	1	0	F	3	123
+4	1	0	1	FGCVbP	4294967295	123
+4	1	1	1	FGCVTbP	2	16
+5	0	0	0	F	0	123
+5	0	1	0	F	3	123
+5	1	0	1	FGCVP	4294967295	123
+5	1	1	1	FGCVTP	2	16

@@ -2677,5 +2677,12 @@ fixture establishes accounting only, not complete original-method equivalence.
 SQL integration now uses this removal path for companion replacement with
 parsed linked configuration and restored definitions, including tolerated stale
 IDs after bulk recycling and four actual disappearance sends.
-Production obelisk/group owners, complete-method differential execution and
-natural death/corpse processing remain pending.
+An additional 24-case fixture executes the complete original MobRemoveByID
+coordinator with FindMob, global/cell unlink, SendView, owner callbacks, FreeMob
+and clock ported. It compares return values, observable send/clock/owner/recycle
+order and final accounting for missing IDs, unbound respawns, every dispatch
+branch, full/underfilled records and deadline wrap. Packet bytes and raw binding
+state are checked at source delivery; native observers check actual registry
+unlinking and retained cell coordinates. Source container/callback bodies are
+not exercised by this fixture. Production obelisk/group owners and natural
+death/corpse processing remain pending.
