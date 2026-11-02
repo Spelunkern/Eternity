@@ -3,6 +3,7 @@
 #include "eternity/game/resources.hpp"
 #include "eternity/game/user_shape.hpp"
 #include "eternity/game/zone_users.hpp"
+#include "eternity/game/actor_actions.hpp"
 
 namespace eternity::game {
 // Required scene/transport services. Implementations own zone binding, combat
@@ -37,6 +38,7 @@ struct ActorAttackState {
     std::int32_t mode=0,recovery=1;
     std::uint32_t previous_tick=0,next_tick=0;
     std::uint8_t motion=0;
+    std::uint32_t resume_tick=0; // CUser+1450.
 };
 struct ActorEquipmentRules {
     // Immutable definition/enchant sources must outlive the actor; its inventory is owned separately.
@@ -59,6 +61,8 @@ public:
     const UserRelations& relations() const noexcept {return relations_;}
     ActorAttackState& attack_state() noexcept {return attack_;}
     const ActorAttackState& attack_state() const noexcept {return attack_;}
+    ActorActionState& actions() noexcept {return actions_;}
+    const ActorActionState& actions() const noexcept {return actions_;}
     std::uint32_t& guard_target_after() noexcept {return guard_target_after_;}
     std::uint32_t guard_target_after() const noexcept {return guard_target_after_;}
     const PlayerResources& resources() const noexcept {return resources_.current();}
@@ -82,6 +86,9 @@ public:
     bool reveal();
     bool cancel_shape_on_attack();
     void remove_sleep();
+    void cancel_move(ActorActionWorld&);
+    void cancel_vehicle(ActorActionWorld&);
+    void stop_casting(ActorActionWorld&);
     void maximum_changed(EffectStatus&,std::uint8_t resource) override;
     void speed_changed(EffectStatus&) override;
     void shape_changed(EffectStatus&) override;
@@ -112,6 +119,7 @@ private:
     EffectStatus status_;
     ActorAppearance appearance_;
     ActorAttackState attack_;
+    ActorActionState actions_;
     std::uint32_t guard_target_after_=0;
     std::int32_t defense_wear_cursor_=0;
     UserRelations relations_;

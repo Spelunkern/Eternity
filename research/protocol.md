@@ -906,4 +906,39 @@ The oracle compares 2,304 scenarios with original lists, frees and packet builde
 including 70 simultaneous sleep effects, protected transforms, empty/missing
 matches, categories, and group changes during release/speed. Actor checks exercise
 the concrete attack rebuild, shape/speed/run packets, replica deletion and cached
-profile retention. Full casting/vehicle/pending-move cancellation is still pending.
+profile retention. The full actor cancellation sequence is described below.
+
+Actor action cancellation reconstructs `ps_game.exe` `CancleActionVehicle`
+(`0044b2c0`), `CancleMove` (`0048a010`) and `StatusCastingStop` (`00489f10`).
+Vehicle cancellation applies only to mode 2: resolve a nonzero partner, clear
+the peer's partner/mode and send its `021c` vehicle message, then clear the
+caller's partner. Resolve a nonzero invitation next, clear the peer invitation,
+then the caller invitation/expiry. Standalone cancellation does not clear the
+caller mode or other vehicle fields. Self, missing and zone-filtered peers retain
+the same operation order.
+
+Casting-stop handles mode 1 by clearing its request and mode; mode 2 uses the
+vehicle routine, clears mode and sends ordinary shape. Mode 3 clears mode, sends
+the caller's vehicle message, resolves its partner even for ID zero, clears the
+peer partner/mode and sends peer shape, then clears the caller partner. Next it
+cancels pending movement, attack-sensitive shapes and sleep in that order.
+If attack mode remains 3, a self-user target restores the saved target pair.
+A zero previous attack tick follows `StatusAttackStop` (`00489ed0`); otherwise
+mode becomes 2, the next field becomes 1, and the clock sample writes `+1450`.
+The stop path preserves that field. Saved target fields remain intact.
+
+Pending move zero does nothing. Type zero clears only the pending field; type
+1 or negative preserves it. Type >=2 clears pending, zeros a slot only for an
+unsigned index <=10, then sends seven-byte `0222` (character DWORD, zero BYTE)
+through ordinary radius-60 `SendView` (`004209a0`) when bound to a zone. This
+route is separate from prioritized radius-60 speed/resource messages. Required
+`ActorActionWorld` operations provide requester-aware user lookup/diagnostics
+and this ordinary route; no default no-op implementation is supplied.
+
+The oracle compares 1,536 two-actor operations, executing the original nested
+shape/vehicle/speed/effect/attack-stop code with lookup, transport and clock ports
+isolated. It checks both actors' 38-field snapshots and ordered notices, including
+self/absent peers, vehicle modes, invalid slot indices, pending-move types,
+target restoration, recovery clamps and clock wrap. A concrete active-effect
+case verifies the complete vehicle/move/transform/sleep/resume sequence with
+replica deletion. Live world adapters and guard combat dispatch remain pending.
