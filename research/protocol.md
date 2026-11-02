@@ -640,10 +640,36 @@ its output untouched for invalid endpoints, initializes it to the start for vali
 ones, and only changes it on collision. A collision returns the preceding major
 coordinate plus truncation of the current accumulator minus the slope. On success
 the output remains the start. It is not the last point traversed. Both overloads
-produce the same boolean result; A* search and guard chase/return remain pending.
+produce the same boolean result. Native A* search is described below; guard
+chase/return integration remains pending.
 
 The line oracle executes both original overloads, safe/unchecked collision and bit
 queries without replacing any function. Native validation covers 4,096 queries
 across sixteen synthetic collision maps and 128 queries on each of all 77 staged
 maps, including invalid endpoints, zero-length rays, blocked starts, cardinal and
 diagonal rays, reversals, single-tile maps and float accumulation near obstacles.
+
+Native A* reconstruction follows `ps_game.exe` `AStar::FindPath` (`0048eda0`),
+`GetSuccessorList` (`0048ecf0`), priority-tree operations (`0048e810`/`0048e850`)
+and `PathToLine` (`0048f4a0`). It preserves eight neighbors in NW/N/NE/E/SE/S/SW/W
+order and permits diagonal corner crossing. Step costs are squared displacement
+(1 cardinal, 2 diagonal); the heuristic is squared distance to the goal, with the
+original float spills. Equal total costs insert on the right of the priority tree.
+Reopening a node reinserts its left/right subtrees before recycling it. Candidate
+nodes are allocated as a group before processing, using original LIFO recycling.
+
+The scan rectangle extends each endpoint range by half that axis's difference,
+capped at 20 and clipped to the map. The rectangle controls expansion of the
+current node, while generated neighbors only check map bounds and tile collision.
+The start tile may be blocked. Success links a path to the separate goal node,
+removes intermediate nodes of straight runs and starts the cursor after the start.
+A coincident start/goal immediately returns true while preserving previous path,
+cursor, found flag and scan bounds. `ResetPath` (`0048ec70`) clears path pointers
+without clearing the found flag; `Reset` (`0048ec60`) also clears it. Advancing past
+the final node clears both. `SetPath` (`004a6b20`) installs a single current node.
+The native owner must serialize these operations; guard chase/return integration
+remains pending. The oracle executes original tree operations, node recycling,
+successors, collision queries and compression, isolating allocation and locks. It
+compares 1,536 searches, 416 operations across persistent paths (including cursor,
+reset and single-point replacement), plus eight local searches on each of all 77
+staged maps. Both complete compressed paths and cursor/flag/bounds are compared.

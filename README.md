@@ -29,7 +29,7 @@ and cleanup. Equipment/transformation attack rebuilding and elemental-effect
 replacement run natively in the actor. User appearance packets include visible
 equipment, enchantments, cloak and social fields, with a copied-user snapshot path.
 Native user-cell queries now reveal hidden enemies using original duel, guild
-and map rules. Server map files/configuration, collision/line checks, entry bounds and movement cell resolution are
+and map rules. Server map files/configuration, collision/line checks, A* paths, entry bounds and movement cell resolution are
 reconstructed; world admission, broadcasts, combat and TCP world entry remain pending.
 Zone selection/reuse and access rules are reconstructed; world object initialization
 and zone queue services remain required dependencies.
