@@ -3,6 +3,7 @@
 #include "eternity/game/character_entry.hpp"
 #include "eternity/game/zone_entry.hpp"
 #include "eternity/game/world_admission.hpp"
+#include "eternity/game/world_users.hpp"
 #include "eternity/game/entry_delivery.hpp"
 #include <bit>
 #include "equipment_fixture.hpp"
@@ -133,11 +134,11 @@ int main(int argc,char** argv) {
             require(admitted.attack_state().motion==0 && admitted.movement_check().previous_time==13001 && admitted.movement_check().check_time==18001 && admitted.movement_check().previous.x==40 && admitted.status().current_target_type==0,"Actual actor zone lifecycle did not reset movement/combat state");
             require(zone.users->detach(9001),"Cannot detach native entry fixture");membership.position.x=81;admitted.appearance().vehicle_mode=2;entry_scene.events.clear();require(!enter_zone_actor(zone,admitted,membership,services) && !admitted.status().in_zone && !zone.users->size() && admitted.appearance().vehicle_mode==2 && entry_scene.events==std::vector<std::string>{"DIAGNOSTIC","CLOSE9"},"Out-of-map entry mutated membership/vehicle state or sent success data");
             struct WorldServices final:WorldAdmissionServices {
-                RuntimeZone& zone;std::function<bool()> entry;std::vector<std::string>& events;
+                RuntimeZone& zone;std::function<bool()> entry;std::vector<std::string>& events;std::function<void(WorldAdmissionUser&)> register_user;
                 WorldServices(RuntimeZone& z,std::function<bool()> e,std::vector<std::string>& v):zone(z),entry(std::move(e)),events(v) {}
                 void packets(WorldAdmissionUser&) override {throw std::runtime_error("Unexpected selection/connection packet work");}
                 RuntimeZone* select_zone(WorldAdmissionUser&) override {events.push_back("SELECT");return &zone;}
-                void register_world(WorldAdmissionUser&) override {events.push_back("REGISTER");}
+                void register_world(WorldAdmissionUser& user) override {events.push_back("REGISTER");register_user(user);}
                 bool enter_zone(WorldAdmissionUser&,RuntimeZone& selected) override {require(&selected==&zone,"Admission changed selected zone");return entry();}
                 void close(WorldAdmissionUser&,std::uint32_t) override {throw std::runtime_error("Unexpected world-state rejection");}
                 void diagnostic(WorldAdmissionUser&,WorldAdmissionError) override {throw std::runtime_error("Unexpected world-state diagnostic");}
@@ -146,8 +147,11 @@ int main(int argc,char** argv) {
                 void unlock_guild(WorldAdmissionUser&) override {throw std::runtime_error("Unexpected guild unlock");}
             };
             WorldAdmissionUser waiting;waiting.user_id=player.core.user_id;waiting.map=20;waiting.logout_type=7;waiting.logout_tick=8;
-            WorldServices world_services(zone,[&](){return enter_zone_actor(zone,admitted,membership,services);},entry_scene.events);WorldAdmission world(world_services);world.track_selection(waiting);entry_scene.events.clear();require(world.wait(waiting) && waiting.location==2 && !waiting.logout_type && !waiting.logout_tick,"Native world wait did not clear logout state");world.update_packets();require(waiting.location==3 && waiting.zone==&zone && !world.selection_count() && !world.waiting_count() && world.zone_waiting_count(zone)==1 && entry_scene.events==std::vector<std::string>{"REGISTER","SELECT"},"Native waiting user did not reach the selected zone queue");
+            WorldServices world_services(zone,[&](){return enter_zone_actor(zone,admitted,membership,services);},entry_scene.events);WorldUser live{admitted,waiting};WorldUsers* lookup=nullptr;
+            WorldUsers users({[&](WorldUser& user){require(&user==&live && lookup->find(admitted.id())==&live && !lookup->find_zone(admitted.id()),"World entry callback preceded indexing or exposed a waiting actor as in-zone");},[&](WorldUser& user){require(&user==&live && !lookup->find(admitted.id()),"World leave callback preceded index removal");}});lookup=&users;
+            world_services.register_user=[&](WorldAdmissionUser& user){require(&user==&waiting,"World index lost admission identity");users.enter(live);};WorldAdmission world(world_services);world.track_selection(waiting);entry_scene.events.clear();require(world.wait(waiting) && waiting.location==2 && !waiting.logout_type && !waiting.logout_tick,"Native world wait did not clear logout state");world.update_packets();require(waiting.location==3 && waiting.zone==&zone && !world.selection_count() && !world.waiting_count() && world.zone_waiting_count(zone)==1 && entry_scene.events==std::vector<std::string>{"REGISTER","SELECT"},"Native waiting user did not reach the selected zone queue");
             entry_scene.events.clear();require(!world.client_enter(waiting) && waiting.location==3 && world.zone_waiting_count(zone)==1 && entry_scene.events==std::vector<std::string>{"DIAGNOSTIC","CLOSE9"},"Failed native zone admission did not return its waiting user to the zone queue");membership.position.x=40;entry_scene.events.clear();require(world.client_enter(waiting) && waiting.location==4 && !world.zone_waiting_count(zone) && admitted.status().in_zone && zone.users->size()==1,"Native waiting/0201/actor path failed to complete zone admission");
+            require(users.find_zone(admitted.id())==&live && users.find_zone_move(admitted.id())==&live,"Admitted actor was absent from live world lookup");waiting.logout_tick=1;require(users.find_zone(admitted.id())==&live && !users.find_zone_move(admitted.id()),"Pending logout did not exclude actor from move lookup");users.leave(live);require(users.id_count()==0 && users.name_count()==0,"World index retained departing actor");
         }
         loading.events.clear();player.skills[0].id=999;const auto invalid=load_actor(player,rules,{10000,0,0,nullptr},loading);
         require(!invalid.actor && invalid.learned.invalid && loading.events.empty(),"Invalid learned definition proceeded into actor initialization");

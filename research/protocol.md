@@ -2041,3 +2041,29 @@ are ports. Native composition additionally reverses a periodic heal after its
 keep-tick reset and runs the lifecycle on the actual loaded actor after zone
 membership/weather delivery. This still leaves entity snapshots, obelisks, full
 live world ownership and TCP gameplay entry unfinished.
+
+`WorldUsers` reconstructs `ps_game.exe` `CWorld::EnterUserWorld` (`0040d450`)
+and `LeaveUserWorld` (`0040d4d0`) with independent ID and name indexes. Both
+insertions happen before the required EnterWorld callback; both erasures happen
+before LeaveWorld. Duplicate keys preserve the first pointer independently in
+each index, while callbacks still run. Erasure is by key, even if another user
+owns that key. Native session orchestration must prevent invalid duplicate owners
+rather than silently changing these source semantics. Actor/admission wrappers
+must remain alive while indexed; calls belong to one serialized world executor.
+
+`FindUser` (`0040d640`/`0040d690`) has no location filter. `FindUserZone`
+(`0040d700`/`0040d760`) requires location 4; `FindUserZoneMove`
+(`0040d7e0`/`0040d840`) additionally requires CUser+`0x57dc` (logout tick) zero,
+not the logout type at `0x57d8`. Name keys stop at the first NUL and compare
+unsigned bytes with case preserved, matching `stString::operator<` (`00412c50`).
+Native code rejects names beyond the original 31-byte stString capacity rather
+than reproducing a stack overflow. The runtime actor ID equals the indexed
+character ID after the existing successful-selection initialization.
+
+The 192-sequence fixture executes actual original insert/find/erase and balancing,
+covering 4,608 entry/leave/state operations with duplicate IDs/names, case variants,
+high bytes, embedded NUL, zero IDs and all location/logout filters. Allocation,
+OS locks and CUser EnterWorld/LeaveWorld bodies are ports. Native composition
+indexes the actual loaded actor during WaitUser and observes selection/wait/zone
+transitions and pending logout before removal. Full EnterWorld/LeaveWorld game
+services, guild/social ownership, logging and live TCP routing remain unfinished.
