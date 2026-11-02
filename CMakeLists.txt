@@ -64,6 +64,9 @@ target_compile_options(eternity-server PRIVATE -Wall -Wextra -Wpedantic -Wconver
 
 include(CTest)
 if(BUILD_TESTING)
+    add_executable(npc-movement-unit tests/npc_movement_unit.cpp)
+    target_link_libraries(npc-movement-unit PRIVATE eternity_game)
+    add_test(NAME npc-movement-unit COMMAND npc-movement-unit ${CMAKE_CURRENT_SOURCE_DIR}/tests/data/npc-movement-oracle.tsv)
     add_executable(zone-npcs-unit tests/zone_npcs_unit.cpp)
     target_link_libraries(zone-npcs-unit PRIVATE eternity_game)
     add_test(NAME zone-npcs-unit COMMAND zone-npcs-unit ${CMAKE_CURRENT_SOURCE_DIR}/tests/data/zone-npcs-oracle.tsv)

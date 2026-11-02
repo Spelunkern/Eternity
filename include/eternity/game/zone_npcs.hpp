@@ -26,6 +26,11 @@ private:
     std::vector<std::unique_ptr<Npc>> objects_;
     std::vector<Npc*> available_;
 };
+class NpcBroadcast {
+public:
+    virtual ~NpcBroadcast() = default;
+    virtual void send_cell(CellCoordinates) = 0;
+};
 class ZoneNpcServices {
 public:
     virtual ~ZoneNpcServices() = default;
@@ -33,10 +38,13 @@ public:
     virtual std::uint32_t next_id() = 0;
     virtual void invalid_guard_position(const MapNpc&) = 0;
     virtual void send_cell_view(CellCoordinates,const net::Packet&) = 0;
+    // A null buffer drops that broadcast. Priority 6 follows PSendAll with both
+    // forced immediate recipient IDs zero and timeout 65000; nullopt follows SendAll.
+    virtual std::unique_ptr<NpcBroadcast> allocate_broadcast(const net::Packet&,std::optional<std::uint8_t> priority) = 0;
 };
 net::Packet npc_appearance(const Npc&);
 // One world executor serializes operations. Maps/definitions, services and all
-// allocated NPCs must outlive the registry. Movement/AI remain separate.
+// allocated NPCs must outlive the registry. Path selection/AI remain separate.
 class ZoneNpcs {
 public:
     ZoneNpcs(const MapGeometry&,ZoneNpcServices&);
@@ -46,11 +54,13 @@ public:
     void initialize(const MapDefinition&,const NpcDefinitions&);
     bool enter(Npc&);
     bool leave(Npc&);
+    bool move(Npc&,UserPosition destination,std::uint8_t mode);
     Npc* find(std::uint32_t) const noexcept;
     std::span<Npc* const> all() const noexcept {return members_;}
     std::span<Npc* const> in_cell(CellCoordinates) const noexcept;
 private:
     std::size_t key(CellCoordinates) const;
+    void announce_transition(const Npc&,CellCoordinates previous,CellCoordinates next);
     MapGeometry geometry_;ZoneNpcServices& services_;
     std::vector<Npc*> members_;
     std::map<std::uint32_t,Npc*> index_;

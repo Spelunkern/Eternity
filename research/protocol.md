@@ -571,3 +571,32 @@ paths, boundaries, blocked guards, allocator failure, retained IDs/deadlines,
 ID overflow, multiple path positions and angle overflow. Native integration
 compares every initialized NPC and all ordered arrival/removal packets, with
 sanitizers covering the same complete populations.
+
+NPC movement: `ps_game.exe` `CZone::MoveNpc` (`00416f30`) validates destination
+X/Z with `IsSafePos`, retaining the original unordered-comparison behavior. When
+the destination is outside the current cell's inclusive expanded view, a possible
+replacement cell is calculated from the NPC's **stored** position. A valid change
+updates the intrusive cell lists, sends transition notices, then assigns the cell
+coordinates; the destination position is assigned afterward. Zone membership and
+ID indexing stay intact. This produces delayed cell changes during ordinary paths.
+Invalid destinations return false without mutations or broadcasts. Angle remains
+unchanged. The final 19-byte `0E03` packet contains the mode byte and destination
+XYZ; a null NPC zone pointer suppresses this final broadcast.
+
+`SendMoveNpc` (`0041faa0`) clips old/new observer areas to +/-2 cells. Its original
+exclusion predicate requires being outside **both axes** of the other area, so
+horizontal/vertical shifts send no appearance/removal notices. The native version
+preserves this predicate and row-major order: `0E02` to eligible old cells, then
+`0E01` using the still-stored position to eligible new cells. Each broadcast has
+an independent nullable buffer allocation. `PSendView` (`00421120`) sends the final
+movement across the current clipped 5x5 observer area through `PSendAll`: priority
+6, forced immediate recipient IDs 0/0, timeout 65000. Actual transport buffers and
+priority queues remain required world services.
+
+The movement oracle executes original geometry, list changes, visibility routing
+and prioritized-view routing. Native comparisons cover 1,536 independent cases
+and 144 consecutive steps across twelve paths, including view boundaries,
+nonfinite positions, stale stored positions/cells, null ownership, byte/WORD wire
+truncation, and every combination of three independent buffer allocation failures.
+Every per-cell packet includes a snapshot of position/cell state at delivery,
+verifying notification order as well as packet bytes and recipients.

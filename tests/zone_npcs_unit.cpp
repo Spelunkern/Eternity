@@ -13,6 +13,7 @@ void number(Bytes& bytes,std::uint32_t value,unsigned int size=4) {for(unsigned 
 Bytes unhex(const std::string& text) {Bytes result;for(std::size_t i=0;i<text.size();i+=2) result.push_back(static_cast<std::uint8_t>(std::stoul(text.substr(i,2),nullptr,16)));return result;}
 Bytes read_file(const std::filesystem::path& path) {std::ifstream file(path,std::ios::binary);require(file.good(),"Cannot open NPC input");return Bytes((std::istreambuf_iterator<char>(file)),{});}
 struct Services final:ZoneNpcServices {
+    std::unique_ptr<NpcBroadcast> allocate_broadcast(const Bytes&,std::optional<std::uint8_t>) override {throw std::logic_error("Unexpected movement broadcast during population initialization");}
     bool synthetic=false,leaving=false;std::uint32_t attempts=0,guards=0,serial=100;NpcPool pool;std::vector<Npc*> allocated;Bytes events;
     Npc* allocate() override {
         const auto attempt=attempts++;if(synthetic && attempt%5==4) return nullptr;
