@@ -2344,3 +2344,35 @@ preserve error 105, doubled quotes are decoded by SQL Server, the recovered
 procedure trims stored text without changing the cache, and valid text recovers
 after syntax errors. Live save scheduling and client guild-management gameplay
 remain pending.
+
+
+Mob runtime preparation now follows `CMob::Init` (`ps_game.exe`, `00490040`),
+`InitAttack` (`00490290`) and `SetAttack` (`004902f0`). Initialization binds the
+respawn record, copies definition resources/stats, resets combat/control fields
+and four multipliers, samples random then two clocks, and preserves wrapping
+movement/targeting deadlines. Native path/trail owners reset; only the first byte
+of each previous-attack text buffer clears. Position, identity, retained Lua
+flags/timers and other unassigned fields survive reuse. Attack reset clears all
+three attack/addition tables, current attack and attack clocks and restores speeds.
+
+Attack calculations preserve source float spills, integer-indefinite conversion
+and DWORD wrapping. Melee evasion uses half the definition level; ranged evasion
+uses the full level and ranged defense includes `dwDefenseAddSH`. Magic attack
+and critical chance use live wisdom/luck. The runtime definition projection
+follows `LoadConstMob` (`004c1720`), including zero HP ->1, invalid attribute ->0,
+NULL-initialized fields and the copy of `Attacktime3` into shield defense.
+It does not replace complete mob-skill/loot loading.
+
+AI types 10..99 call the required compiled-AI provider; success sets status 100
+and PAIS. Types >=100 call the required Lua initializer after lock/unbeatable
+reset but before the final vision-user reset. Provider side effects retain their
+original order. The factory/Lua implementations remain separate required work.
+
+The 384-case fixture executes the full original SQL mob loader and all three
+runtime methods, comparing 1,152 state/attack snapshots, retained bytes,
+AI/random/clock calls, overflow/NaN behavior and respawn/zone bindings. SQL,
+allocation, verified path reset implementations, AI providers and OS are ports.
+Native tests also clear actual allocated path/trail state. SQL integration loads
+the recovered distribution and verifies the first mob's runtime projection.
+Zone mob ownership, population placement, linked bosses, obelisks and the complete
+world application are still required before production TCP world entry.

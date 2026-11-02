@@ -1,6 +1,7 @@
 #include "eternity/storage/sql_server.hpp"
 #include "eternity/auth/accounts.hpp"
 #include "eternity/game/definitions.hpp"
+#include "eternity/game/mobs.hpp"
 #include "eternity/game/characters.hpp"
 #include "eternity/game/stats.hpp"
 #include "eternity/game/equipment.hpp"
@@ -110,6 +111,8 @@ int main() {
         const auto mobs=eternity::game::MobAttackTemplates::load(definitions.catalogs.at("Mobs"));
         require(mobs.find(1) && mobs.find(1)->level==38 && mobs.find(1)->hp==2765 && mobs.find(1)->attack==167 &&
                 mobs.find(1)->variance==83 && mobs.find(1)->physical_defense==38 && mobs.find(1)->magic_defense==31,"Restored mob transformation attack projection changed");
+        const auto runtime_mobs=eternity::game::MobRuntimeTemplates::load(definitions.catalogs.at("Mobs"));const auto* first_mob=runtime_mobs.find(1);
+        require(first_mob && first_mob->level==38 && first_mob->ai==1 && first_mob->hp==2765 && first_mob->sp==874 && first_mob->mp==1578 && first_mob->dexterity==60 && first_mob->wisdom==40 && first_mob->luck==53 && first_mob->attribute==4 && first_mob->physical_defense==38 && first_mob->magic_defense==31 && first_mob->shield_defense==0,"Original runtime mob projection differs from restored SQL");
         const auto skills=eternity::game::SkillDefinitions::load(definitions.catalogs.at("Skills"));
         require(skills.find(1,1) && !skills.find(1,4),"Restored original three-level skill definitions did not load");
         eternity::game::Characters characters(database,255,std::chrono::sys_days{std::chrono::year{2024}/1/1});

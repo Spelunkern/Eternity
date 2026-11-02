@@ -98,7 +98,9 @@ Zone selection/reuse and access rules are reconstructed; world object initializa
 and zone queue services remain required dependencies.
 Door/region templates, door operation and weather transitions are reconstructed.
 NPC definitions, populations, patrols, guard navigation/target queries and visibility
-packets are reconstructed; mob runtime, combat and the running world remain pending.
+packets are reconstructed. Mob runtime initialization and attack-table rebuilding
+now preserve original reset/reuse rules and load their SQL definition projection.
+Mob zone membership/spawning, full AI/combat and the running world remain pending.
 The active MD5 login
 path needs a missing procedure; see [research](research/protocol.md).
 
