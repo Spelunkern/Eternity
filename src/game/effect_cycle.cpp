@@ -153,6 +153,19 @@ void EffectCycle::remove_sleep(EffectStatus& status,EffectWorld& world,EffectObs
     status.action_block_b=0;world.speed_changed(status);
     for(const auto& notice:party) if(const auto raid=observer.party_kind()) observer.send_party(party_effect_removed_packet(character_id_,notice.id,notice.level,*raid));
 }
+void EffectCycle::clear_duel_debuffs(EffectStatus& status,EffectEquipment equipment,const ItemDefinitions& definitions,EffectWorld& world,EffectObserver& observer) {
+    // CUser::PvPClearDebuff 0047c610: unlink, DB-agent erase, cancellation,
+    // then free. No self/group removal packet and no elapsed-damage resolution.
+    shared_cursor_=effects_.empty()?0:effects_.begin()->first;
+    while(shared_cursor_!=0) {
+        auto entry=effects_.find(shared_cursor_);const auto active=entry->second;
+        if(active.definition->effect==3) {
+            shared_cursor_=entry==effects_.begin()?0:std::prev(entry)->first;effects_.erase(entry);
+            observer.erase_persisted(active.timer.effect);cancel_debuff(status,*active.definition,equipment,definitions,world);observer.release_id(active.id);
+        }
+        const auto next=shared_cursor_==0?effects_.begin():effects_.upper_bound(shared_cursor_);shared_cursor_=next==effects_.end()?0:next->first;
+    }
+}
 void EffectCycle::replace_attack_elements(std::uint8_t attribute,EffectStatus& status,EffectEquipment equipment,
     const ItemDefinitions& definitions,EffectRemovalWorld& world,EffectObserver& observer) {
     // AddApplySkillBuff 00484f86..004850a2: all conflicting detail-94 nodes, regardless of category/countdown.

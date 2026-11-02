@@ -71,6 +71,9 @@ target_compile_options(eternity-server PRIVATE -Wall -Wextra -Wpedantic -Wconver
 
 include(CTest)
 if(BUILD_TESTING)
+    add_executable(duel-cleanup-unit tests/duel_cleanup_unit.cpp)
+    target_link_libraries(duel-cleanup-unit PRIVATE eternity_game)
+    add_test(NAME duel-cleanup-unit COMMAND duel-cleanup-unit ${CMAKE_CURRENT_SOURCE_DIR}/tests/data/duel-cleanup-oracle.tsv)
     add_executable(actor-actions-unit tests/actor_actions_unit.cpp)
     target_link_libraries(actor-actions-unit PRIVATE eternity_game)
     add_test(NAME actor-actions-unit COMMAND actor-actions-unit ${CMAKE_CURRENT_SOURCE_DIR}/tests/data/actor-actions-oracle.tsv)

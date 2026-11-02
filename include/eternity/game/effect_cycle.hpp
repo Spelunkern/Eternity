@@ -37,6 +37,7 @@ public:
     bool remove_hide(EffectStatus& status,EffectWorld& world,EffectObserver& observer);
     bool cancel_shape_on_attack(EffectStatus&,EffectWorld&,EffectObserver&);
     void remove_sleep(EffectStatus&,EffectWorld&,EffectObserver&);
+    void clear_duel_debuffs(EffectStatus&,EffectEquipment,const ItemDefinitions&,EffectWorld&,EffectObserver&);
     void replace_attack_elements(std::uint8_t attribute,EffectStatus& status,EffectEquipment equipment,
         const ItemDefinitions& definitions,EffectRemovalWorld& world,EffectObserver& observer);
     std::vector<net::Packet> initial_packets(std::uint32_t tick_ms) const;

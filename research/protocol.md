@@ -942,3 +942,22 @@ self/absent peers, vehicle modes, invalid slot indices, pending-move types,
 target restoration, recovery clamps and clock wrap. A concrete active-effect
 case verifies the complete vehicle/move/transform/sleep/resume sequence with
 replica deletion. Live world adapters and guard combat dispatch remain pending.
+
+Duel cleanup reconstructs `ps_game.exe` `CancleApplySkillDebuff` (`00487ed0`),
+`PvPClearDebuff` (`0047c610`) and `PvPModeEnd` (`0047b200`). It removes every
+category-3 node in insertion order: unlink, persisted-effect erase, cancellation,
+then instance release. Outstanding periodic damage is discarded; no clock,
+self removal packet or group removal packet is used. Other categories survive.
+Cancellation restores abilities, decrements individual blocks with DWORD wrap,
+restores equipped armor/gem element and clears chase as indicated by detail.
+Transform cancellation tests the current shape: 101 clears fixed form and sends
+speed; other shapes rebuild equipment attack. Both clear shape/template and send
+shape, retaining the copied-user cache and omitting user-appearance notification.
+
+`Actor::end_duel` performs that cleanup even for duel state zero, resets the
+damage ledger, then sets duel state to zero, duel type to -1 and target kind to
+zero. Opponent and target IDs survive. The oracle compares 868 direct-helper,
+multi-effect-list and duel-end cases using original ability/element/list/ledger
+code, including counter wrap and repeated skill identities. An actor integration
+case combines negative effects, a surviving buff, replica erasure and damage
+reset. This is cleanup only; duel result dispatch and wagers remain pending.

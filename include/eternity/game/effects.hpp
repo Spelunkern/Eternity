@@ -56,6 +56,7 @@ void apply_effect_ability(EffectStatus& status,std::uint8_t effect,std::uint8_t 
 std::array<std::int32_t,3> periodic_heal(std::uint32_t elapsed_ms,const std::array<std::uint16_t,3>& rates);
 void remove_active_effect(EffectStatus& status,const SkillDefinition& skill,const EffectSource& source,std::uint32_t tick_ms,
     EffectEquipment equipment,const ItemDefinitions& definitions,EffectRemovalWorld& world);
+void cancel_debuff(EffectStatus&,const SkillDefinition&,EffectEquipment,const ItemDefinitions&,EffectWorld&);
 std::uint8_t attack_speed(const EffectStatus& status);
 std::uint8_t move_speed(const EffectStatus& status);
 }

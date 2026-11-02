@@ -13,6 +13,7 @@ struct UserRelations {
     std::uint32_t duel_opponent=0;
     std::uint32_t guild_id=0,opposing_guild_id=0;
     std::int32_t guild_duel_ready=0;
+    std::int32_t duel_type=-1; // CUser+54d0.
 };
 struct UserPosition {float x=0,y=0,z=0;};
 bool same_team(const Actor& subject,const Actor& other,std::int32_t map_team_mode);

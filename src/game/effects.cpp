@@ -96,6 +96,21 @@ std::array<std::int32_t,3> periodic_heal(std::uint32_t elapsed,const std::array<
     }
     return amounts;
 }
+void cancel_debuff(EffectStatus& status,const SkillDefinition& skill,EffectEquipment items,const ItemDefinitions& definitions,EffectWorld& world) {
+    // ps_game.exe CUser::CancleApplySkillDebuff 00487ed0. Cancellation does
+    // not resolve outstanding periodic damage or perform generic expiry notices.
+    switch(skill.detail) {
+        case 62:case 67:abilities(status,skill,false,false,world);break;
+        case 64:status.action_block_a=decrement(status.action_block_a);world.speed_changed(status);break;
+        case 65:status.movement_block=decrement(status.movement_block);world.speed_changed(status);break;
+        case 66:status.action_block_b=decrement(status.action_block_b);world.speed_changed(status);break;
+        case 68:if(items.armor) status.skills.equipment.defense_attribute=item_attribute(*items.armor,definitions);break;
+        case 70:status.chase_id=0;break;
+        case 90:
+            if(status.shape==101) {status.fixed_form=0;world.speed_changed(status);}else world.rebuild_attack(status,true);
+            shape(status,0);status.shape_template=0;world.shape_changed(status);break;
+    }
+}
 void remove_active_effect(EffectStatus& status,const SkillDefinition& skill,const EffectSource& source,std::uint32_t tick,
     EffectEquipment items,const ItemDefinitions& definitions,EffectRemovalWorld& world) {
     // CUser::RemApplySkillBuff 00485130 / RemApplySkillDebuff 00485720, ps_game.exe.
@@ -105,18 +120,8 @@ void remove_active_effect(EffectStatus& status,const SkillDefinition& skill,cons
         // CUser::RemApplySkill 00484c60 also expires an activated low-HP passive.
         abilities(status,skill,true,true,world);status.skills.hp_ability_applied=false;
     } else if(skill.effect==3) {
-        switch(skill.detail) {
-            case 61:case 63:world.finish_periodic_damage(status,skill,source,tick-source.previous_tick);break;
-            case 62:case 67:abilities(status,skill,false,false,world);break;
-            case 64:status.action_block_a=decrement(status.action_block_a);world.speed_changed(status);break;
-            case 65:status.movement_block=decrement(status.movement_block);world.speed_changed(status);break;
-            case 66:status.action_block_b=decrement(status.action_block_b);world.speed_changed(status);break;
-            case 68:restore_defense();break;
-            case 70:status.chase_id=0;break;
-            case 90:
-                if(status.shape==101) {status.fixed_form=0;world.speed_changed(status);}else world.rebuild_attack(status,true);
-                shape(status,0);status.shape_template=0;world.shape_changed(status);break;
-        }
+        if(skill.detail==61 || skill.detail==63) world.finish_periodic_damage(status,skill,source,tick-source.previous_tick);
+        else cancel_debuff(status,skill,items,definitions,world);
     } else if(skill.effect==4) {
         switch(skill.detail) {
             case 81:world.finish_periodic_heal(status,skill,source,periodic_heal(tick-source.previous_tick,skill.time_heal));break;

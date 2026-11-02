@@ -89,6 +89,8 @@ public:
     void cancel_move(ActorActionWorld&);
     void cancel_vehicle(ActorActionWorld&);
     void stop_casting(ActorActionWorld&);
+    void clear_duel_debuffs();
+    void end_duel();
     void maximum_changed(EffectStatus&,std::uint8_t resource) override;
     void speed_changed(EffectStatus&) override;
     void shape_changed(EffectStatus&) override;
