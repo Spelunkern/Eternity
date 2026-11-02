@@ -60,6 +60,9 @@ int main(int argc,char** argv) {
             {"14","1","122","0","0","0","0","0","0","0","0","0","0","0"},
             {"10","4","1","0","5","0","17","0","0","0","0","0","0","0"},
             {"15","2","1","0","5","0","17","0","0","0","0","0","0","0"}};
+        for(const auto name:{"AttrType","DefenceType","DefenceValue","ApplyRange","Arrow","ChangeType","ChangeLevel"}) {
+            table.columns.emplace_back(name);for(auto& row:table.rows) row.emplace_back("0");
+        }
         const auto definitions=SkillDefinitions::load(table);
         require(definitions.find(10,1)->weapon2==19 && definitions.find(12,1)->abilities[0].value==1 &&
             definitions.find(13,1)->effect==4 && definitions.find(14,1)->effect==6,"Original skill definition normalizations changed");

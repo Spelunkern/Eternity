@@ -188,5 +188,18 @@ the effect overrides for detail 93/122. `GetSkillInfo` (`00402770`) requires a
 level-one definition. Original SQL definitions and loaded player skills pass
 integration tests; `tools/skill_oracle.py` regenerates 1,152 ability and 144 passive
 vectors by executing original code with state-initialization broadcasts disabled.
-Active buff/debuff dispatch, effect lifetimes, low-HP activation, billing-service
-lookup and world integration remain pending.
+Effect lifetimes, low-HP activation, billing-service lookup and world integration
+remain pending.
+
+Active effect dispatch now follows `AddApplySkillBuff` (`00484cf0`) and
+`AddApplySkillDebuff` (`004855b0`): modifier signs, mirror/block categories,
+movement restrictions, appearance state, targeting flags and elemental overrides.
+Detail 91 negates only its first ability; debuff details 62/67 negate all three.
+Speed getters (`0048a460` / `0048a4d0`) preserve clamps and the 255 disabled value.
+`EffectWorld` requires implementations for broadcasts, taunts, hide detection,
+attack rebuilding and conflicting-element removal. These operations are not
+implemented by the live world yet, so selection remains disconnected from this
+stage. `tools/effect_oracle.py` verifies 296 original state/call-order vectors;
+world operations are intercepted and recorded, including one supplied element
+replacement. The vectors do not verify the delegated operations themselves.
+Expiry/removal, periodic damage/healing and persisted effect timing remain pending.

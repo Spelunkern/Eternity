@@ -33,6 +33,10 @@ SkillDefinitions SkillDefinitions::load(const storage::ResultSet& table) {
         if(skill.detail==93) skill.effect=4;else if(skill.detail==122) skill.effect=6;
         skill.weapon1=static_cast<std::uint8_t>(std::min(n("Weapon1"),19U));skill.weapon2=static_cast<std::uint8_t>(std::min(n("Weapon2"),19U));
         skill.weapon_value=static_cast<std::uint8_t>(n("Weaponvalue"));skill.bag=static_cast<std::uint8_t>(n("Bag"));
+        skill.attribute=static_cast<std::uint8_t>(n("AttrType"));if(skill.attribute>8) skill.attribute=0;
+        skill.defense_type=static_cast<std::uint8_t>(std::clamp(n("DefenceType"),1U,3U)-1);
+        skill.defense_value=static_cast<std::uint8_t>(n("DefenceValue"));skill.apply_range=static_cast<std::uint8_t>(n("ApplyRange"));
+        skill.aggro=static_cast<std::uint16_t>(n("Arrow",65535));skill.change_type=static_cast<std::uint16_t>(n("ChangeType",65535));skill.change_level=static_cast<std::uint16_t>(n("ChangeLevel",65535));
         for(std::size_t i=0;i<3;++i) {
             auto& ability=skill.abilities[i];ability.type=static_cast<std::uint8_t>(n("AbilityType"+std::to_string(i+1)));
             ability.value=static_cast<std::uint16_t>(n("AbilityValue"+std::to_string(i+1),65535));
