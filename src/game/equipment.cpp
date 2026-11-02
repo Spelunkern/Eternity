@@ -235,6 +235,56 @@ void add_equipment(EquipmentStatus& status,std::uint8_t slot,const PlayerItem& i
     }
     if(slot!=7) for(const auto gem_id:item.gems) if(const auto* info_gem=definitions.find(30,gem_id)) gem(status,slot,*info_gem);
 }
+void remove_equipment(EquipmentStatus& status,std::uint8_t slot,const PlayerItem& item,const ItemDefinitions& definitions,const EnchantValues& enchant,
+    bool initializing,EquipmentRemovalWorld& world) {
+    // ps_game.exe CUser::ItemEquipmentRem 004553c0 and GemEquipmentRem 00456280.
+    if(slot>=13) throw std::invalid_argument("Invalid original equipment removal slot");
+    const auto* definition=definitions.find(item.type,item.type_id);if(!definition) throw std::runtime_error("Missing original removed item definition");
+    const auto& info=*definition;const auto before=status;const bool weapon=slot==5,accessory=slot>=8;
+    const auto quality=accessory?0:status.quality[slot];if(quality>2) throw std::invalid_argument("Invalid cached original removal quality tier");
+    auto sub=[](std::int32_t& value,std::int32_t amount) {value=add(value,std::bit_cast<std::int32_t>(0U-static_cast<std::uint32_t>(amount)));};
+    const auto subtract_constants=[&](const ItemDefinition& value,bool resources) {
+        auto& a=status.base.attributes;const auto& b=value.attributes;
+        sub(a.strength,b.strength);sub(a.dexterity,b.dexterity);sub(a.recovery,b.recovery);sub(a.intelligence,b.intelligence);sub(a.wisdom,b.wisdom);sub(a.luck,b.luck);
+        auto& maximum=status.base.maximum;maximum.hp-=static_cast<std::uint32_t>(b.recovery)*5U;maximum.sp-=static_cast<std::uint32_t>(b.dexterity)*5U;maximum.mp-=static_cast<std::uint32_t>(b.wisdom)*5U;
+        if(resources) {maximum.hp-=value.resources.hp;maximum.sp-=value.resources.sp;maximum.mp-=value.resources.mp;}
+    };
+    if(weapon || accessory) {
+        sub(status.range,info.range);sub(status.attack_speed,info.attack_time);
+        if(accessory) sub(status.move_speed,info.speed);
+        if(weapon) {if(info.real_type>=20) throw std::runtime_error("Invalid original removal weapon mastery index");sub(status.attack_speed,status.weapon_speed[info.real_type]);}
+    }
+    if(!status.transformed) {
+        if(weapon || accessory) {sub(status.attack.item_attack,info.effects[0][quality]);sub(status.variance,info.effects[1][quality]);if(weapon) sub(status.attack.item_attack,status.weapon_damage[info.real_type]);}
+        if(!weapon) {sub(status.attack.physical_defense,info.effects[2][quality]);sub(status.attack.magic_defense,info.effects[3][quality]);}
+    }
+    if(slot==6) sub(status.attack.physical_defense,status.shield_value);
+    subtract_constants(info,true);
+    if(weapon) {world.remove_weapon_elements();status.attack_attribute=0;}
+    else if(slot==1) status.defense_attribute=0;
+    if(info.server!=0) {
+        const auto c=decode_craft(info,item.craft,enchant).additions;auto& a=status.base.attributes;auto& maximum=status.base.maximum;
+        sub(a.strength,c[0]);sub(a.dexterity,c[1]);sub(a.recovery,c[2]);sub(a.intelligence,c[3]);sub(a.wisdom,c[4]);sub(a.luck,c[5]);
+        maximum.hp-=static_cast<std::uint32_t>(c[2])*5U+static_cast<std::uint32_t>(c[6])*100U;maximum.sp-=static_cast<std::uint32_t>(c[1])*5U+static_cast<std::uint32_t>(c[8])*100U;maximum.mp-=static_cast<std::uint32_t>(c[4])*5U+static_cast<std::uint32_t>(c[7])*100U;
+        if(!status.transformed) sub(status.attack.item_attack,c[9]);
+        if(c[10]!=0) {sub(status.damage_reduction,c[10]);if(status.damage_reduction<0) {world.negative_craft_reduction(item,status.damage_reduction);status.damage_reduction=0;}}
+    }
+    if(slot!=7) for(const auto gem_id:item.gems) if(const auto* gem_info=definitions.find(30,gem_id)) {
+        const auto& g=*gem_info;sub(status.range,g.range);sub(status.attack_speed,g.attack_time);sub(status.move_speed,g.speed);
+        if(!status.transformed) {sub(status.attack.item_attack,g.effects[0][0]);sub(status.variance,g.effects[1][0]);sub(status.attack.physical_defense,g.effects[2][0]);sub(status.attack.magic_defense,g.effects[3][0]);}
+        subtract_constants(g,g.special!=16);
+        if(g.special==16) {const std::array<std::uint32_t,3> values{g.resources.hp,g.resources.sp,g.resources.mp};for(std::size_t i=0;i<3;++i) {sub(status.standing_recovery[i],std::bit_cast<std::int32_t>(values[i]));sub(status.sitting_recovery[i],std::bit_cast<std::int32_t>(values[i]));}}
+        sub(status.damage_reduction,g.experience);if(!weapon && g.special>0 && g.special<16) sub(status.state_blocks[g.special],1);
+    }
+    status.quality[slot]=0;
+    if(!initializing) {
+        if(before.attack_speed!=status.attack_speed || before.move_speed!=status.move_speed) world.equipment_speed_changed();
+        if(before.base.maximum.hp!=status.base.maximum.hp) world.equipment_maximum_changed(0);
+        if(before.base.maximum.sp!=status.base.maximum.sp) world.equipment_maximum_changed(2);
+        if(before.base.maximum.mp!=status.base.maximum.mp) world.equipment_maximum_changed(1);
+        world.equipment_recover();
+    }
+}
 EquipmentStatus initialize_equipment(BaseStatus base,const std::vector<PlayerItem>& items,const ItemDefinitions& definitions,const EnchantValues& enchant) {
     EquipmentStatus result;result.base=base;
     std::array<const PlayerItem*,13> slots{};

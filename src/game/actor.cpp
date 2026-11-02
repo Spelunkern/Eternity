@@ -17,6 +17,21 @@ void Actor::wear_defense() {
     const auto result=game::wear_defense(status_.skills.equipment,inventory_,equipment_.items,defense_wear_cursor_,status_.skills.benefits.no_durability_loss,status_.shape);
     if(result.attack_changed) recalculate_attack(status_);
 }
+void Actor::remove_equipment_modifiers(std::uint8_t slot,const PlayerItem& item,EquipmentRemovalDiagnostics& diagnostics) {
+    struct Operations final:EquipmentRemovalWorld {
+        Actor& actor;EquipmentRemovalDiagnostics& diagnostics;
+        Operations(Actor& owner,EquipmentRemovalDiagnostics& sink):actor(owner),diagnostics(sink) {}
+        void remove_weapon_elements() override {
+            EffectEquipment equipped;for(const auto& value:actor.inventory_) if(value.bag==0) {if(value.slot==5) equipped.weapon=&value;else if(value.slot==1) equipped.armor=&value;}
+            actor.effects_.remove_weapon_elements(actor.status_,equipped,actor.equipment_.items,actor,actor);
+        }
+        void negative_craft_reduction(const PlayerItem& value,std::int32_t amount) override {diagnostics.negative_craft_reduction(value,amount);}
+        void equipment_speed_changed() override {actor.speed_changed(actor.status_);}
+        void equipment_maximum_changed(std::uint8_t resource) override {actor.maximum_changed(actor.status_,resource);}
+        void equipment_recover() override {actor.recover({0,0,0});}
+    } operations(*this,diagnostics);
+    game::remove_equipment(status_.skills.equipment,slot,item,equipment_.items,equipment_.enchant,initializing_,operations);
+}
 bool Actor::check_hp_ability(const SkillDefinitions& definitions) {return effects_.activate_hp(status_,resources_.current(),definitions,*this,*this);}
 void Actor::clear_effects_on_death(const std::int32_t& death_penalty) {
     EffectEquipment equipped;

@@ -64,6 +64,21 @@ void rebuild_equipment_attack(EquipmentStatus& status,const std::vector<PlayerIt
 void rebuild_transformed_attack(EquipmentStatus& status,const MobAttackTemplate* mob);
 // Applies the original stat/element changes at initialization, without broadcasting equipment changes.
 void add_equipment(EquipmentStatus& status,std::uint8_t slot,const PlayerItem& item,const ItemDefinitions& definitions,const EnchantValues& enchant);
+class EquipmentRemovalDiagnostics {
+public:
+    virtual ~EquipmentRemovalDiagnostics() = default;
+    virtual void negative_craft_reduction(const PlayerItem&,std::int32_t value) = 0;
+};
+class EquipmentRemovalWorld:public EquipmentRemovalDiagnostics {
+public:
+    virtual void remove_weapon_elements() = 0;
+    virtual void equipment_speed_changed() = 0;
+    virtual void equipment_maximum_changed(std::uint8_t resource) = 0; // HP=0, MP=1, SP=2.
+    virtual void equipment_recover() = 0;
+};
+// ItemEquipmentRem leaves inventory pointers intact; the caller removes/moves them.
+void remove_equipment(EquipmentStatus&,std::uint8_t slot,const PlayerItem&,const ItemDefinitions&,const EnchantValues&,
+    bool initializing,EquipmentRemovalWorld&);
 struct EquipmentWear {
     bool applied=false,attack_changed=false;
 };

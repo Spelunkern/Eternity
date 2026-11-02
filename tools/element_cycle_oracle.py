@@ -2,7 +2,7 @@
 """Execute original elemental replacement, including nested InitApplySkill list iteration. Requires Unicorn."""
 import struct
 from unicorn import UC_HOOK_CODE
-from unicorn.x86_const import UC_X86_REG_EAX, UC_X86_REG_ECX, UC_X86_REG_EDI, UC_X86_REG_ESP, UC_X86_REG_EIP
+from unicorn.x86_const import UC_X86_REG_EAX, UC_X86_REG_ECX, UC_X86_REG_EDI, UC_X86_REG_ESP, UC_X86_REG_EIP, UC_X86_REG_EBP
 from original_oracle import load_game
 
 
@@ -57,8 +57,8 @@ def main():
             context['events'].append((2, struct.unpack_from('<I', data, 2)[0], 0, 0))
         elif address == 0x481990:
             context['events'].append((3, number(user + 0x17c), 0, 0))
-        elif address == 0x40a7c0:
-            node = machine.reg_read(UC_X86_REG_EDI)
+        elif address in (0x40a7c0, 0x45593d):
+            node = machine.reg_read(UC_X86_REG_EDI if address == 0x40a7c0 else UC_X86_REG_EBP)
             context['events'].append((4, number(node + 8), number(user + 0x1280), flags()))
             if not context['mutated']:
                 context['mutated'] = True
@@ -75,7 +75,8 @@ def main():
                 raise RuntimeError('Unexpected party notification')
             context['events'].append((5, identity, level, int(opcode == 0xc10)))
 
-    cpu.hook_add(UC_HOOK_CODE, hook)
+    for address in (0x4d4f10,0x4d4d20,0x481990,0x40a7c0,0x45593d,0x445680):
+        cpu.hook_add(UC_HOOK_CODE,hook,begin=address,end=address)
     e = lambda attribute=1, effect=4, offline=0: (94, effect, attribute, offline)
     b = (82, 4, 0, 0)
     many = [e(1 if i % 3 else 3, 4, i % 2) for i in range(70)]
@@ -87,7 +88,11 @@ def main():
                  (1, 0, 0, 0, 0, [b, e(), e(2), e(3)]), (1, 1, 0, 0, 0, [e(), e(2), b, e(2, 4, 1)]),
                  (1, -1, 0, 0, 0, [b, b, b]), (0, 0, 1, 6, 0, [e(), e(2), e(3)]),
                  (0, 0, 0, 1, 0, [e(0), e()])]
-    print(f'# ps_game.exe SHA256 {digest}; AddApplySkillBuff 00484cf0 detail 94; InitApplySkill 00487e50; SendSkillRemove 00482a70; RemApplySkill 00484c60')
+    for group in (-1,0,1):
+        for mutation in (0,1,2,3):
+            scenarios.append((2,group,2,511,mutation,[b,e(2),e(0),e(8,4,1),e(3,3),e(1,0)]))
+        scenarios.append((2,group,2,511,0,many))
+    print(f'# ps_game.exe SHA256 {digest}; AddApplySkillBuff 00484cf0 detail 94; InitApplySkill 00487e50; SendSkillRemove 00482a70; RemApplySkill 00484c60; ItemEquipmentRem 004553c0')
     print('# scenario mode group current_attribute flags mutation node_count; nodes(detail,effect,attribute,offline); remaining_count HP attribute flags; remaining IDs; event_count; events(code,a,b,c): DB,self,maxHP,free(with attribute/flags),party')
     for scenario, (mode, group, attribute, mask, mutation, entries) in enumerate(scenarios):
         context.update(events=[], mutation=mutation, mutated=False, node_count=len(entries))
@@ -103,7 +108,11 @@ def main():
         cpu.mem_write(incoming + 0x31, b'\x04');cpu.mem_write(incoming + 0x32, struct.pack('<H', 94));cpu.mem_write(incoming + 0x4e, b'\x02')
         cpu.mem_write(stack + 0x8000, struct.pack('<3I', stop, user, incoming))
         cpu.reg_write(UC_X86_REG_ESP, stack + 0x8000);cpu.reg_write(UC_X86_REG_EAX, user)
-        cpu.emu_start(0x487e50 if mode else 0x484cf0, stop, count=200000)
+        if mode==2:
+            descriptor,item,objects=incoming+0x2000,incoming+0x3000,incoming+0x4000
+            cpu.mem_write(descriptor,bytes(168));cpu.mem_write(item,bytes(160));cpu.mem_write(item+0x30,struct.pack('<I',descriptor));cpu.mem_write(objects,bytes(0x1000));cpu.mem_write(0x546f3c,struct.pack('<I',objects));cpu.mem_write(user+0x57b5,b'\x01')
+            cpu.mem_write(stack+0x8000,struct.pack('<II',stop,5));cpu.reg_write(UC_X86_REG_ECX,user);cpu.reg_write(UC_X86_REG_EAX,item)
+        cpu.emu_start(0x4553c0 if mode==2 else 0x487e50 if mode else 0x484cf0, stop, count=200000)
         if cpu.reg_read(UC_X86_REG_EIP) != stop:
             raise RuntimeError('Original element replacement did not return')
         remaining, node = [], number(root + 4)

@@ -38,6 +38,7 @@ public:
     bool cancel_shape_on_attack(EffectStatus&,EffectWorld&,EffectObserver&);
     void remove_sleep(EffectStatus&,EffectWorld&,EffectObserver&);
     void clear_duel_debuffs(EffectStatus&,EffectEquipment,const ItemDefinitions&,EffectWorld&,EffectObserver&);
+    void remove_weapon_elements(EffectStatus&,EffectEquipment,const ItemDefinitions&,EffectRemovalWorld&,EffectObserver&);
     void replace_attack_elements(std::uint8_t attribute,EffectStatus& status,EffectEquipment equipment,
         const ItemDefinitions& definitions,EffectRemovalWorld& world,EffectObserver& observer);
     std::vector<net::Packet> initial_packets(std::uint32_t tick_ms) const;
@@ -49,6 +50,7 @@ public:
     std::size_t size() const noexcept {return effects_.size();}
     bool contains(std::uint32_t instance_id) const noexcept;
 private:
+    void remove_attack_elements(std::optional<std::uint8_t>,EffectStatus&,EffectEquipment,const ItemDefinitions&,EffectRemovalWorld&,EffectObserver&);
     struct Active {std::uint32_t id;EffectTimer timer;const SkillDefinition* definition;};
     // Stable insertion order; ordinal zero represents the original list sentinel.
     std::map<std::uint64_t,Active> effects_;

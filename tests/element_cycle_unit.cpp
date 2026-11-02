@@ -15,7 +15,7 @@ struct World final:EffectRemovalWorld,EffectObserver {
     std::optional<std::uint32_t> allocate_id() noexcept override {return std::nullopt;}
     void release_id(std::uint32_t id) noexcept override {
         events.push_back({4,id,status.skills.equipment.attack_attribute,flags(status)});
-        if(!mutated) {mutated=true;if(mutation==1) party.reset();else if(mutation==2) party=true;else if(mutation==3) {
+        if(!mutated) {mutated=true;if(mutation==1) party.reset();else if(mutation==2 && party) party=true;else if(mutation==3) {
             const auto& definition=definitions[original_count];cycle.append(1000+original_count,{{definition.id,1,30},10000,12000,false},definition);
         }}
     }
@@ -59,17 +59,17 @@ int main(int argc,char** argv) {
                 cycle.append(1000+i,{{definition.id,1,30},10000,12000,definition.offline_countdown},definition);
             }
             auto& appended=definitions[count];appended.id=static_cast<std::uint16_t>(200+count);appended.level=1;appended.detail=94;appended.effect=4;appended.attribute=3;
-            if(mode) cycle.initialize(status,world);else {SkillDefinition incoming;incoming.id=9999;incoming.level=1;incoming.detail=94;incoming.effect=4;incoming.attribute=2;apply_active_effect(status,incoming,0,world);}
+            if(mode==2) {cycle.remove_weapon_elements(status,{},world.items,world,world);status.skills.equipment.attack_attribute=0;}else if(mode) cycle.initialize(status,world);else {SkillDefinition incoming;incoming.id=9999;incoming.level=1;incoming.detail=94;incoming.effect=4;incoming.attribute=2;apply_active_effect(status,incoming,0,world);}
             unsigned int remaining=0,hp=0,expected_attribute=0,expected_mask=0;row>>remaining>>hp>>expected_attribute>>expected_mask;
             const auto context=" at element scenario "+std::to_string(scenario);
             require(cycle.size()==remaining && status.skills.equipment.base.maximum.hp==hp && status.skills.equipment.attack_attribute==expected_attribute && flags(status)==expected_mask,"Element state differs"+context);
             std::vector<std::uint32_t> expected_ids(remaining);for(auto& id:expected_ids) row>>id;std::vector<std::uint32_t> actual_ids;
             for(const auto& packet:cycle.initial_packets(10000)) for(std::size_t offset=3;offset<packet.size();offset+=11) actual_ids.push_back(get(packet,offset,4));
             require(actual_ids==expected_ids,"Surviving element list order differs"+context);
-            std::size_t events=0;row>>events;require(world.valid && world.events.size()==events,"Element notification count differs"+context);
+            std::size_t events=0;row>>events;require(world.valid && world.events.size()==events,"Element notification count differs"+context+": "+std::to_string(world.events.size())+" != "+std::to_string(events));
             for(const auto& event:world.events) for(const auto value:event) {std::int64_t original=0;require(static_cast<bool>(row>>original) && value==original,"Element notification order/state differs"+context);}
             std::string extra;require(!(row>>extra),"Unexpected trailing element oracle data");++checked;
         }
-        require(checked==15,"Element replacement coverage changed");std::cout<<checked<<" original replacement and nested initialization scenarios passed\n";
+        require(checked==30,"Element replacement coverage changed");std::cout<<checked<<" original replacement and nested initialization scenarios passed\n";
     } catch(const std::exception& error) {std::cerr<<error.what()<<'\n';return 1;}
 }

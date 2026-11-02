@@ -90,6 +90,7 @@ public:
     std::array<std::int32_t,3> heal(std::array<std::int32_t,3> amounts);
     void recover(std::array<std::int32_t,3> amounts,bool send_set=false,bool recovering=false);
     void wear_defense();
+    void remove_equipment_modifiers(std::uint8_t slot,const PlayerItem&,EquipmentRemovalDiagnostics&);
     bool check_hp_ability(const SkillDefinitions& definitions);
     bool damage(std::int32_t kind,std::uint32_t source,std::int32_t amount,const SkillDefinitions& definitions);
     void clear_effects_on_death(const std::int32_t& death_penalty);

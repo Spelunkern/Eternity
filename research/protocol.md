@@ -1209,3 +1209,20 @@ protection, quest rejection, failed readmission, stack payloads, group changes a
 error/message ordering. The previous 640 detached-admission vectors regenerate
 unchanged. Live packet dispatch, full inventory ownership during loading and
 durable snapshot saving remain pending.
+
+
+Equipment removal (`ps_game.exe`, `CUser::ItemEquipmentRem` `004553c0`,
+`GemEquipmentRem` `00456280`) now runs through native actors. It uses cached
+quality tiers, suppresses attack/defense changes while transformed, reverses
+craft/gem stats and recovery, and clears the slot's cached tier. Craft reduction
+underflow logs then clamps before gem reduction; later gem subtraction remains
+unclamped. Weapon removal cancels all detail-94 effects in list order, updates
+the replica and self, frees each node, sends at most 48 deferred group notices,
+and finally clears the attack element. Armor removal clears its element without
+removing detail-95 effects. Speed, HP/SP/MP maximum updates and recovery follow
+in original order, except while initializing. The helper leaves inventory rows
+intact for its caller. Two 1,024-case original-code fixtures cover arithmetic,
+notification order and complete actor packets/resources. Element-list fixtures
+also cover group changes, callbacks inserting effects and the 48-notice limit.
+Inventory pointer transfer/removal, equipment visibility and TCP dispatch are
+still separate pending callers.

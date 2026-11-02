@@ -168,12 +168,19 @@ void EffectCycle::clear_duel_debuffs(EffectStatus& status,EffectEquipment equipm
 }
 void EffectCycle::replace_attack_elements(std::uint8_t attribute,EffectStatus& status,EffectEquipment equipment,
     const ItemDefinitions& definitions,EffectRemovalWorld& world,EffectObserver& observer) {
-    // AddApplySkillBuff 00484f86..004850a2: all conflicting detail-94 nodes, regardless of category/countdown.
+    // AddApplySkillBuff 00484f86..004850a2 excludes the new matching attribute.
+    remove_attack_elements(attribute,status,equipment,definitions,world,observer);
+}
+void EffectCycle::remove_weapon_elements(EffectStatus& status,EffectEquipment equipment,const ItemDefinitions& definitions,EffectRemovalWorld& world,EffectObserver& observer) {
+    // ItemEquipmentRem 004557ed..00455996 removes every detail-94 node.
+    remove_attack_elements(std::nullopt,status,equipment,definitions,world,observer);
+}
+void EffectCycle::remove_attack_elements(std::optional<std::uint8_t> attribute,EffectStatus& status,EffectEquipment equipment,const ItemDefinitions& definitions,EffectRemovalWorld& world,EffectObserver& observer) {
     struct Notice {std::uint16_t id;std::uint8_t level;};std::vector<Notice> party;
     shared_cursor_=0;
     for(auto entry=effects_.begin();entry!=effects_.end();entry=shared_cursor_==0?effects_.begin():effects_.upper_bound(shared_cursor_)) {
         shared_cursor_=entry->first;const auto& definition=*entry->second.definition;
-        if(definition.detail!=94 || definition.attribute==attribute) continue;
+        if(definition.detail!=94 || (attribute && definition.attribute==*attribute)) continue;
         shared_cursor_=entry==effects_.begin()?0:std::prev(entry)->first;
         auto removed=effects_.extract(entry);const auto& active=removed.mapped();
         observer.erase_persisted(active.timer.effect);observer.send_self(effect_removed_packet(active.id));
