@@ -31,6 +31,7 @@ struct MapPortal {
 };
 struct MapBind {std::int32_t country=0,attribute=0;std::vector<MapBox> boxes;};
 struct MapOther {MapBox box;std::int32_t type=0;std::uint8_t attribute1=0,attribute2=0;std::uint16_t attribute3=0;};
+struct MapTile {std::int32_t x=0,z=0;};
 struct MapDefinition {
     std::int32_t size=0;
     std::vector<std::uint8_t> tiles;
@@ -45,5 +46,7 @@ struct MapDefinition {
     static MapDefinition decode(std::span<const std::uint8_t>);
     static MapDefinition load(const std::filesystem::path&);
     MapGeometry geometry() const {return MapGeometry(size);}
+    bool blocked(MapTile) const;
+    bool enable_line(MapTile start,MapTile end,MapTile* previous=nullptr) const;
 };
 }

@@ -7,6 +7,46 @@
 #include <stdexcept>
 
 namespace eternity::game {
+bool MapDefinition::blocked(MapTile tile) const {
+    // CMap::IsBlockSafe 0041b420: outside coordinates are blocked.
+    if(tile.x<0 || tile.z<0 || tile.x>=size || tile.z>=size) return true;
+    const auto index=static_cast<std::size_t>(tile.z)*static_cast<std::size_t>(size)+static_cast<std::size_t>(tile.x);
+    if(index/8>=tiles.size()) throw std::invalid_argument("Missing original map collision tiles");
+    return ((tiles[index/8]>>(index%8))&1)!=0;
+}
+bool MapDefinition::enable_line(MapTile start,MapTile end,MapTile* previous) const {
+    // CMap::EnableLine 0042ab80/0042ade0: DDA sampling with float accumulator
+    // spills and truncation, excluding the starting tile. A clear line leaves
+    // the output at its initialized START, not the destination.
+    auto inside=[&](MapTile point){return point.x>=0 && point.z>=0 && point.x<size && point.z<size;};
+    if(!inside(start) || !inside(end)) return false;
+    if(previous) *previous=start;
+    const auto dx=std::abs(end.x-start.x),dz=std::abs(end.z-start.z);
+    const auto step_x=end.x<start.x?-1:1,step_z=end.z<start.z?-1:1;
+    if(dx==0 && dz==0) return true;
+    if(dx>dz) {
+        const auto step=static_cast<float>((static_cast<double>(static_cast<float>(dz))/static_cast<float>(dx))*static_cast<float>(step_z));
+        auto x=start.x+step_x;auto z=static_cast<float>(static_cast<double>(static_cast<float>(start.z))+step);
+        for(std::int32_t i=0;i<dx;++i) {
+            if(blocked({x,static_cast<std::int32_t>(z)})) {
+                if(previous) *previous={x-step_x,static_cast<std::int32_t>(static_cast<double>(z)-step)};
+                return false;
+            }
+            x+=step_x;z=static_cast<float>(static_cast<double>(z)+step);
+        }
+    } else {
+        const auto step=static_cast<float>((static_cast<double>(static_cast<float>(dx))/static_cast<float>(dz))*static_cast<float>(step_x));
+        auto z=start.z+step_z;auto x=static_cast<float>(static_cast<double>(static_cast<float>(start.x))+step);
+        for(std::int32_t i=0;i<dz;++i) {
+            if(blocked({static_cast<std::int32_t>(x),z})) {
+                if(previous) *previous={static_cast<std::int32_t>(static_cast<double>(x)-step),z-step_z};
+                return false;
+            }
+            z+=step_z;x=static_cast<float>(static_cast<double>(x)+step);
+        }
+    }
+    return true;
+}
 bool CellViewBounds::contains(float x,float z) const noexcept {
     // Original x87 status tests allow unordered comparisons through both bounds.
     return !(x<minimum_x || x>maximum_x || z<minimum_z || z>maximum_z);

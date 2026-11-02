@@ -18,9 +18,7 @@ void put(net::Packet& packet,std::size_t offset,std::uint32_t value,unsigned int
 bool blocked_guard(const MapDefinition& map,UserPosition position) {
     const auto x=truncate(position.x),z=truncate(position.z);
     if(x<0 || z<0 || x>=map.size || z>=map.size) return true;
-    const auto tile=static_cast<std::size_t>(z)*static_cast<std::size_t>(map.size)+static_cast<std::size_t>(x);
-    if(tile/8>=map.tiles.size()) throw std::invalid_argument("Missing original NPC guard tiles");
-    return ((map.tiles[tile/8]>>(tile%8))&1)!=0;
+    return map.blocked({x,z});
 }
 struct View {
     std::int32_t min_x,max_x,min_z,max_z;

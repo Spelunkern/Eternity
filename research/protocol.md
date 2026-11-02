@@ -625,3 +625,25 @@ isolated movement/RNG ports. It compares 1,536 independent states and twelve
 48-tick routes. The native route tests call real zone movement and visibility
 broadcasts, covering endpoint reversal, fractional/nonfinite coordinates, range
 and timer overflow, interacting users, missing/short paths and failed moves.
+
+Map collision/visibility prerequisites: `MapDefinition::blocked` reconstructs
+`ps_game.exe` `CMap::IsBlockSafe` (`0041b420`), treating positions outside the map
+as blocked and reading packed tile bits least-significant-first. Guard preparation
+now shares this native collision query.
+
+Both `CMap::EnableLine` overloads (`0042ab80`, `0042ade0`) validate the two integer
+endpoints, then sample a DDA line along the longer axis. The minor-axis accumulator
+and slope spill to float on each iteration; sampled coordinates truncate toward
+zero. The start tile is excluded and the destination is included; a coincident
+start/destination returns true even on a blocked tile. The output overload leaves
+its output untouched for invalid endpoints, initializes it to the start for valid
+ones, and only changes it on collision. A collision returns the preceding major
+coordinate plus truncation of the current accumulator minus the slope. On success
+the output remains the start. It is not the last point traversed. Both overloads
+produce the same boolean result; A* search and guard chase/return remain pending.
+
+The line oracle executes both original overloads, safe/unchecked collision and bit
+queries without replacing any function. Native validation covers 4,096 queries
+across sixteen synthetic collision maps and 128 queries on each of all 77 staged
+maps, including invalid endpoints, zero-length rays, blocked starts, cardinal and
+diagonal rays, reversals, single-tile maps and float accumulation near obstacles.

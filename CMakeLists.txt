@@ -65,6 +65,9 @@ target_compile_options(eternity-server PRIVATE -Wall -Wextra -Wpedantic -Wconver
 
 include(CTest)
 if(BUILD_TESTING)
+    add_executable(map-lines-unit tests/map_lines_unit.cpp)
+    target_link_libraries(map-lines-unit PRIVATE eternity_game)
+    add_test(NAME map-lines-unit COMMAND map-lines-unit ${CMAKE_CURRENT_SOURCE_DIR}/tests/data/map-lines-oracle.tsv)
     add_executable(npc-patrol-unit tests/npc_patrol_unit.cpp)
     target_link_libraries(npc-patrol-unit PRIVATE eternity_game)
     add_test(NAME npc-patrol-unit COMMAND npc-patrol-unit ${CMAKE_CURRENT_SOURCE_DIR}/tests/data/npc-patrol-oracle.tsv)
