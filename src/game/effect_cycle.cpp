@@ -107,6 +107,52 @@ bool EffectCycle::remove_hide(EffectStatus& status,EffectWorld& world,EffectObse
     }
     shared_cursor_=0;return false;
 }
+bool EffectCycle::cancel_shape_on_attack(EffectStatus& status,EffectWorld& world,EffectObserver& observer) {
+    // ps_game.exe RemApplySkillToMOB 00489560 removes the first hide/transform
+    // candidate only. A protected transform stops the search without removal.
+    if(status.shape==0) return false;
+    shared_cursor_=effects_.empty()?0:effects_.begin()->first;
+    while(shared_cursor_!=0) {
+        auto entry=effects_.find(shared_cursor_);const auto active=entry->second;const auto& skill=*active.definition;
+        if(skill.detail==90 || skill.detail==88) {
+            if(skill.detail==90 && skill.id==127 && skill.level!=100 && skill.change_type!=101) return false;
+            shared_cursor_=entry==effects_.begin()?0:std::prev(entry)->first;effects_.erase(entry);
+            observer.erase_persisted(active.timer.effect);observer.send_self(effect_removed_packet(active.id));
+            const bool notify_party=observer.party_kind().has_value();
+            if(skill.detail==90) {
+                world.rebuild_attack(status,true);status.shape=0;status.skills.equipment.transformed=false;status.shape_template=0;world.shape_changed(status);
+                if(skill.change_type==100) world.user_shape_changed(status);
+                else if(skill.change_type==101) {status.fixed_form=0;world.speed_changed(status);}
+            } else {
+                status.shape=0;status.skills.equipment.transformed=false;world.shape_changed(status);world.run_mode_changed(status,true);
+            }
+            observer.release_id(active.id);
+            if(notify_party) if(const auto raid=observer.party_kind()) observer.send_party(party_effect_removed_packet(character_id_,active.timer.effect.skill_id,active.timer.effect.level,*raid));
+            return true;
+        }
+        const auto next=effects_.upper_bound(shared_cursor_);shared_cursor_=next==effects_.end()?0:next->first;
+    }
+    return false;
+}
+void EffectCycle::remove_sleep(EffectStatus& status,EffectWorld& world,EffectObserver& observer) {
+    // RemApplySkillSleep 004893a0 removes every detail-66 node, then zeros
+    // the sleep block and sends speed before at most 48 deferred group notices.
+    if(status.action_block_b==0) return;
+    struct Notice {std::uint16_t id;std::uint8_t level;};std::vector<Notice> party;
+    shared_cursor_=effects_.empty()?0:effects_.begin()->first;
+    while(shared_cursor_!=0) {
+        auto entry=effects_.find(shared_cursor_);const auto active=entry->second;
+        if(active.definition->detail==66) {
+            shared_cursor_=entry==effects_.begin()?0:std::prev(entry)->first;effects_.erase(entry);
+            observer.erase_persisted(active.timer.effect);observer.send_self(effect_removed_packet(active.id));
+            if(observer.party_kind().has_value() && party.size()<48) party.push_back({active.timer.effect.skill_id,active.timer.effect.level});
+            observer.release_id(active.id);
+        }
+        const auto next=shared_cursor_==0?effects_.begin():effects_.upper_bound(shared_cursor_);shared_cursor_=next==effects_.end()?0:next->first;
+    }
+    status.action_block_b=0;world.speed_changed(status);
+    for(const auto& notice:party) if(const auto raid=observer.party_kind()) observer.send_party(party_effect_removed_packet(character_id_,notice.id,notice.level,*raid));
+}
 void EffectCycle::replace_attack_elements(std::uint8_t attribute,EffectStatus& status,EffectEquipment equipment,
     const ItemDefinitions& definitions,EffectRemovalWorld& world,EffectObserver& observer) {
     // AddApplySkillBuff 00484f86..004850a2: all conflicting detail-94 nodes, regardless of category/countdown.

@@ -840,14 +840,15 @@ reversal. Detail 90 rebuilds equipment attack, clears transformation and emits
 user appearance only for change type 100. Each removal then erases its DB-agent
 replica and releases the instance; ordinary self/group expiry notices are absent.
 
-The final reset clears movement/action/form/casting blocks, copied shape data,
+The final reset clears movement/action/form/casting blocks, the shape template,
 SP/MP absorption, chase, attack-element flags and targeting/death flags even if
 effects remain. Defense block modes and mirror skill IDs clear while their
 values/levels remain. Equipped armor/weapon elements are restored when present,
 even over a retained element effect; absent equipment leaves its prior element.
 A speed notification finishes the routine. Runtime low-HP selection/cooldown and
-the active flag of a retained passive survive. The actor discards copied-user
-appearance and retains the derived presence of surviving defense-element skills.
+the active flag of a retained passive survive. The cached copied-user profile at
+`CUser+135c` survives; clearing the adjacent template at `+1358` does not free it.
+The actor retains the derived presence of surviving defense-element skills.
 The oracle compares 728 single/multiple-effect cases against original linked-list,
 ability and element code. Actor checks cover persistent effects, passive removal,
 resource clamps, replica order and absence of ordinary expiry notices.
@@ -882,3 +883,27 @@ snapshot/list/packet/heap code, with global-map, transport and allocation ports.
 Every allocation's snapshot/binding, global ownership and ordered notifications
 are compared. Native checks also cover send-time unlink/reuse, shared-cursor
 mutation, allocation failure, invalid cells and duplicate heap release.
+
+Attack effect cancellation reconstructs `ps_game.exe` `RemApplySkillToMOB`
+(`00489560`) and `RemApplySkillSleep` (`004893a0`). Shape cancellation requires
+nonzero shape and inspects the first detail-90/88 candidate. Definition 127 with
+level other than 100 and change type other than 101 stops the search without
+removing it or trying later hide effects. Other candidates unlink, erase the
+replica and notify self before sampling group membership. Transform removal
+rebuilds equipment attack, clears shape/template and notifies shape; change type
+100 also notifies user appearance, while 101 clears fixed form and sends speed.
+Hide removal clears shape, notifies shape and enables running without clearing
+the template. Instance release precedes the optional group removal notice, which
+uses live membership/type. Cached copied-user data survives both paths.
+
+Sleep removal requires nonzero `CUser+1344` and removes every detail-66 node
+regardless of category. Each removal erases persistence, notifies self, records
+at most 48 group notices if currently grouped, and releases its instance. It then
+zeros the sleep block, sends speed even when no matching node existed, and sends
+deferred notices using live group membership/type. Neither route uses generic
+effect reversal or a clock. Shared active-list cursors remain live.
+The oracle compares 2,304 scenarios with original lists, frees and packet builders,
+including 70 simultaneous sleep effects, protected transforms, empty/missing
+matches, categories, and group changes during release/speed. Actor checks exercise
+the concrete attack rebuild, shape/speed/run packets, replica deletion and cached
+profile retention. Full casting/vehicle/pending-move cancellation is still pending.

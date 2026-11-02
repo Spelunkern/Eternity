@@ -147,7 +147,7 @@ int main(int argc,char** argv) {
         require(wearing.status().skills.equipment.defense_attribute==8,"Persistent defense effect did not initialize");
         wearing.clear_effects_on_death(5);
         require(wearing.effects().size()==1 && wearing.effects().contains(2001) && wearing.replica().snapshot().size()==1 && wearing.replica().snapshot()[0].skill_id==301,"Actor death cleanup removed a persistent effect or retained its removed replica");
-        require(wearing.status().skills.equipment.base.maximum.hp==before_death_hp && wearing.status().skills.equipment.defense_attribute==1 && wearing.status().skills.equipment.defense_attribute_skill && !wearing.appearance().copied_user,"Actor death cleanup did not reverse resources, restore armor element or discard copied appearance");
+        require(wearing.status().skills.equipment.base.maximum.hp==before_death_hp && wearing.status().skills.equipment.defense_attribute==1 && wearing.status().skills.equipment.defense_attribute_skill && wearing.appearance().copied_user.has_value(),"Actor death cleanup did not reverse resources, restore armor element or retain cached copied appearance");
         require(wear_scene.events==std::vector<std::string>{"F2000"},"Actor death cleanup emitted expiry notices or changed callback order");
         std::cout<<count<<" original actor operations, concrete effect expiry and durability integration passed\n";
     } catch(const std::exception& error) {std::cerr<<error.what()<<'\n';return 1;}

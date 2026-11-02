@@ -69,7 +69,7 @@ def main():
         cpu.mem_write(user, bytes(0x6000));cpu.mem_write(objects, bytes(0x2000));cpu.mem_write(nodes, bytes(0x10000))
         for offset in offsets:
             cpu.mem_write(user + offset, struct.pack('<I', 3))
-        for offset, value in ((0x17c, 10000), (0x1220, 100), (0x12ec, 2), (0x1280, 7), (0x1284, 8), (0x1358, 123), (0x578c, 9001), (0x145c, penalty & 0xffffffff)):
+        for offset, value in ((0x17c, 10000), (0x1220, 100), (0x12ec, 2), (0x1280, 7), (0x1284, 8), (0x1358, 123), (0x135c, 0x778899aa), (0x578c, 9001), (0x145c, penalty & 0xffffffff)):
             cpu.mem_write(user + offset, struct.pack('<I', value))
         cpu.mem_write(user + 0x134c, struct.pack('<H', 987))
         cpu.mem_write(user + 0x1354, b'\x63');cpu.mem_write(user + 0x1364, b'\x01\x01\x01');cpu.mem_write(user + 0x1368, b'\x01')
@@ -92,6 +92,8 @@ def main():
         cpu.emu_start(0x488000, stop, count=100000)
         if cpu.reg_read(UC_X86_REG_EIP) != stop:
             raise RuntimeError('Original death cleanup did not return')
+        if word(user + 0x135c) != 0x778899aa:
+            raise RuntimeError('Original death cleanup changed the cached copied-user pointer')
         retained = [];cursor = word(root + 4)
         while cursor != root:
             retained.append(word(cursor + 8));cursor = word(cursor + 4)

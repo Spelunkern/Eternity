@@ -80,6 +80,8 @@ public:
     void send_shape_self();
     void send_vehicle_partner();
     bool reveal();
+    bool cancel_shape_on_attack();
+    void remove_sleep();
     void maximum_changed(EffectStatus&,std::uint8_t resource) override;
     void speed_changed(EffectStatus&) override;
     void shape_changed(EffectStatus&) override;

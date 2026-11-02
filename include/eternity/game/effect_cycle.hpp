@@ -35,6 +35,8 @@ public:
     bool activate_hp(EffectStatus& status,const PlayerResources& current,const SkillDefinitions& definitions,
         EffectWorld& world,EffectActivationObserver& observer);
     bool remove_hide(EffectStatus& status,EffectWorld& world,EffectObserver& observer);
+    bool cancel_shape_on_attack(EffectStatus&,EffectWorld&,EffectObserver&);
+    void remove_sleep(EffectStatus&,EffectWorld&,EffectObserver&);
     void replace_attack_elements(std::uint8_t attribute,EffectStatus& status,EffectEquipment equipment,
         const ItemDefinitions& definitions,EffectRemovalWorld& world,EffectObserver& observer);
     std::vector<net::Packet> initial_packets(std::uint32_t tick_ms) const;

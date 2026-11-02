@@ -70,6 +70,9 @@ target_compile_options(eternity-server PRIVATE -Wall -Wextra -Wpedantic -Wconver
 
 include(CTest)
 if(BUILD_TESTING)
+    add_executable(attack-effects-unit tests/attack_effects_unit.cpp)
+    target_link_libraries(attack-effects-unit PRIVATE eternity_game)
+    add_test(NAME attack-effects-unit COMMAND attack-effects-unit ${CMAKE_CURRENT_SOURCE_DIR}/tests/data/attack-effects-oracle.tsv)
     add_executable(corpses-unit tests/corpses_unit.cpp)
     target_link_libraries(corpses-unit PRIVATE eternity_game)
     add_test(NAME corpses-unit COMMAND corpses-unit ${CMAKE_CURRENT_SOURCE_DIR}/tests/data/corpses-oracle.tsv)
