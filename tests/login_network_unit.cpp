@@ -1,6 +1,7 @@
 #include "eternity/net/login_server.hpp"
 #include "login_peer.hpp"
 #include "login_socket.hpp"
+#include "eternity/session/registry.hpp"
 #include <asio.hpp>
 #include <atomic>
 #include <chrono>
@@ -18,6 +19,9 @@ void require(bool condition, const char* message) {
 
 struct Fixture {
     asio::io_context io;
+    std::shared_ptr<eternity::session::Registry> registry=std::make_shared<eternity::session::Registry>();
+    std::shared_ptr<eternity::auth::RealmDirectory> realms=std::make_shared<eternity::auth::RealmDirectory>(
+        std::vector<eternity::auth::Realm>{{0,2,0,1000,"Eternity"}});
     std::atomic<unsigned int> calls{0};
     eternity::net::LoginServer server;
     std::jthread runner;
@@ -28,7 +32,7 @@ struct Fixture {
         std::this_thread::sleep_for(20ms);
         if(input.username=="exists" && input.password=="testpass") return eternity::auth::LoginResult{0,42};
         return eternity::auth::LoginResult{-3,0};
-    }) {
+    },registry,realms) {
         server.start();
         runner=std::jthread([this] { io.run(); });
     }
@@ -73,6 +77,29 @@ int main() {
         PeerSocket premature(fixture.server.port()); (void)premature.packet();
         premature.write(frame(Packet{2,0xa1})); premature.closed();
         require(fixture.calls==3,"Malformed pre-exchange input reached SQL");
+
+        Fixture handoff;
+        handoff.realms->replace({{0,0,0,1000,"Eternity"}});
+        PeerSocket selected(handoff.server.port());LoginPeer c(selected.packet());
+        selected.write(frame(c.exchange));selected.write(frame(c.credentials("exists","testpass")));
+        auto identity=selected.packet();c.receive->crypt(identity);
+        auto directory=selected.packet();c.receive->crypt(directory);
+        std::array<std::uint8_t,16> token{};std::copy_n(identity.begin()+8,16,token.begin());
+        Packet selection{2,0xa2,0,0xff,0xff,0xff,0xff};c.send->crypt(selection);selected.write(frame(selection));
+        auto endpoint=selected.packet();c.receive->crypt(endpoint);
+        require(endpoint==Packet({2,0xa2,0,127,0,0,1}),"TCP realm handoff did not return the original IPv4 packet");
+        const auto pending=handoff.registry->find(42);
+        require(pending && pending->location==eternity::session::LoginSession::Location::handoff,
+                "TCP selection did not reserve its world session");
+        Packet disconnect{2,0};c.send->crypt(disconnect);selected.write(frame(disconnect));selected.closed();
+        require(handoff.server.session_count()==1,"Login socket close destroyed the world reservation");
+        const auto now=static_cast<std::uint64_t>(std::chrono::duration_cast<std::chrono::milliseconds>(
+            std::chrono::steady_clock::now().time_since_epoch()).count());
+        const auto claimed=handoff.registry->claim(42,token,0,99,now);
+        require(claimed && claimed->game_key==eternity::session::game_key(c.secrets),
+                "World consumer could not recover the login-derived key");
+        require(!handoff.registry->claim(42,token,0,100,now),"World handoff token was replayable");
+        require(handoff.registry->release_world(42,claimed->session_id,99),"World owner could not release the transferred account");
         std::cout<<"TCP login passed: fragmented/coalesced frames, RSA/AES, retries, pending dispatch and session replacement.\n";
         return 0;
     } catch(const std::exception& error) { std::cerr<<error.what()<<'\n'; return 1; }

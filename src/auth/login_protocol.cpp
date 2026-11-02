@@ -47,14 +47,31 @@ LoginDecision login_decision(LoginResult login, bool admin_open) {
     return {result, permission};
 }
 
-LoginProtocol::LoginProtocol(const net::LoginKeyPair& key_pair, std::vector<Realm> realms)
-    : key_pair_(key_pair), realms_(std::move(realms)) {
+RealmDirectory::RealmDirectory(std::vector<Realm> realms) { replace(std::move(realms)); }
+
+void RealmDirectory::replace(std::vector<Realm> realms) {
     std::set<std::uint8_t> identifiers;
-    for (const auto& realm : realms_) {
+    for (const auto& realm : realms) {
         if (realm.name.size() > 31 || realm.name.find('\0') != std::string::npos || realm.id >= 254 ||
             !identifiers.insert(realm.id).second)
             throw std::invalid_argument("Invalid original realm directory entry");
     }
+    std::lock_guard lock(mutex_);
+    realms_=std::move(realms);
+}
+
+std::vector<Realm> RealmDirectory::snapshot() const { std::lock_guard lock(mutex_); return realms_; }
+std::optional<Realm> RealmDirectory::find(std::uint8_t id) const {
+    std::lock_guard lock(mutex_);
+    const auto found=std::find_if(realms_.begin(),realms_.end(),[id](const Realm& realm){return realm.id==id;});
+    return found==realms_.end() ? std::nullopt : std::optional(*found);
+}
+
+LoginProtocol::LoginProtocol(const net::LoginKeyPair& key_pair, std::vector<Realm> realms)
+    : LoginProtocol(key_pair,std::make_shared<RealmDirectory>(std::move(realms))) {}
+LoginProtocol::LoginProtocol(const net::LoginKeyPair& key_pair,std::shared_ptr<const RealmDirectory> realms)
+    : key_pair_(key_pair),realms_(std::move(realms)) {
+    if(!realms_) throw std::invalid_argument("Login protocol requires a realm directory");
 }
 
 net::Packet LoginProtocol::greeting() const { return key_pair_.public_packet(); }
@@ -99,9 +116,24 @@ LoginEvent LoginProtocol::receive(net::Packet payload) {
     }
     if (opcode == 0xa202 && state_ == State::authenticated) {
         if (payload.size() < 7) return reject();
-        // No world endpoint is available yet. Preserve the original offline result.
+        const auto realm=realms_->find(payload[2]);
         net::Packet reply{0x02, 0xa2, 0xfe, 0, 0, 0, 0};
-        return {{outgoing(std::move(reply))}, {}, false};
+        if(!realm || realm->status!=0) return {{outgoing(std::move(reply))},{},false};
+        if(permission_>=11 && realm->users>=realm->capacity) {
+            reply[2]=0xfc;
+            return {{outgoing(std::move(reply))},{},false};
+        }
+        std::uint32_t version=0;
+        for(unsigned int index=0;index<4;++index) version|=static_cast<std::uint32_t>(payload[3+index])<<(index*8);
+        if(version!=0xffffffff && realm->version!=0xffffffff && version!=realm->version) {
+            reply[2]=0xfd;
+            return {{outgoing(std::move(reply))},{},false};
+        }
+        selected_=realm;
+        state_=State::transferring;
+        LoginEvent event;
+        event.selection=RealmSelection{realm->id,version};
+        return event;
     }
     return reject();
 }
@@ -121,6 +153,7 @@ LoginEvent LoginProtocol::complete(LoginResult login, const std::array<std::uint
         return {{outgoing(std::move(reply))}, {}, false};
     }
     state_ = State::authenticated;
+    permission_=decision.permission;
     const auto user = static_cast<std::uint32_t>(login.user_id);
     for (unsigned int index = 0; index < 4; ++index)
         reply[3 + index] = static_cast<std::uint8_t>(user >> (index * 8));
@@ -128,13 +161,14 @@ LoginEvent LoginProtocol::complete(LoginResult login, const std::array<std::uint
     std::copy(token.begin(), token.end(), reply.begin() + 8);
     LoginEvent event{{outgoing(std::move(reply))}, {}, false};
     // CServerList::SendList 004072c0 emits at most 48 packed GSERVER_UNITs per packet.
-    for (std::size_t start = 0; start < realms_.size(); start += 48) {
-        const auto count = std::min<std::size_t>(48, realms_.size() - start);
+    const auto realms=realms_->snapshot();
+    for (std::size_t start = 0; start < realms.size(); start += 48) {
+        const auto count = std::min<std::size_t>(48, realms.size() - start);
         net::Packet list(3 + count * 38, 0);
         word(list, 0, 0xa201);
         list[2] = static_cast<std::uint8_t>(count);
         for (std::size_t index = 0; index < count; ++index) {
-            const auto& realm = realms_[start + index];
+            const auto& realm = realms[start + index];
             const auto offset = 3 + index * 38;
             list[offset] = realm.id;
             list[offset + 1] = realm.status;
@@ -145,5 +179,19 @@ LoginEvent LoginProtocol::complete(LoginResult login, const std::array<std::uint
         event.replies.push_back(outgoing(std::move(list)));
     }
     return event;
+}
+
+LoginEvent LoginProtocol::selected(bool accepted) {
+    if(state_!=State::transferring || !selected_) return {{},{},state_==State::closed};
+    net::Packet reply{2,0xa2,0xff,0,0,0,0};
+    if(accepted) {
+        reply[2]=selected_->id;
+        std::copy(selected_->address.begin(),selected_->address.end(),reply.begin()+3);
+        state_=State::transferred;
+    } else {
+        state_=State::authenticated;
+        selected_.reset();
+    }
+    return {{outgoing(std::move(reply))},{},false};
 }
 }

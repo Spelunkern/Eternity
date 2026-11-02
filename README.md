@@ -11,7 +11,8 @@ All pairs have matching CodeView GUID and age. `ps_gamewar` is out of scope.
 Source: the EP4.5 `PSM_Server/ShaiyaServerPatch/Server` distribution, including
 its matching `ps_login.exe`. Database backups and deployment configuration are
 not included. Implemented: SQL access, original definition loaders, asynchronous
-encrypted TCP login on the available SQL path, and account session replacement.
+encrypted TCP login on the available SQL path, account session replacement,
+realm handoff reservations, and the game handshake/cipher state machine.
 The active MD5 login
 path needs a missing procedure; see [research](research/protocol.md).
 

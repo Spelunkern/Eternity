@@ -69,6 +69,40 @@ int main() {
         truncated.receive(short_peer.exchange);
         Packet short_packet{2,0xa1}; short_peer.send->crypt(short_packet);
         require(truncated.receive(short_packet).close, "Truncated credential packet accepted");
+
+        auto directory=std::make_shared<RealmDirectory>(std::vector<Realm>{{0,0,1,1,"Eternity",7,{10,20,30,40}}});
+        LoginProtocol selecting(key,directory);
+        LoginPeer chooser(selecting.greeting());selecting.receive(chooser.exchange);
+        selecting.receive(chooser.credentials("example_user","testpass"));
+        auto ready=selecting.complete({0,42},token);
+        for(auto& reply:ready.replies) chooser.receive->crypt(reply);
+        const auto choose=[&](std::uint32_t version) {
+            Packet request{2,0xa2,0,0,0,0,0};
+            for(unsigned int index=0;index<4;++index) request[3+index]=static_cast<std::uint8_t>(version>>(index*8));
+            chooser.send->crypt(request);return selecting.receive(std::move(request));
+        };
+        auto full=choose(7);chooser.receive->crypt(full.replies[0]);
+        require(full.replies[0][2]==0xfc && !full.selection,"Full realm admitted a normal account");
+        directory->replace({{0,0,0,1,"Eternity",7,{10,20,30,40}}});
+        auto version=choose(6);chooser.receive->crypt(version.replies[0]);
+        require(version.replies[0][2]==0xfd,"Original client version check changed");
+        auto transfer=choose(0xffffffff);
+        require(transfer.selection && transfer.selection->realm_id==0 && transfer.replies.empty() &&
+                selecting.state()==LoginProtocol::State::transferring,"Valid selection did not request session handoff");
+        auto address=selecting.selected(true);chooser.receive->crypt(address.replies[0]);
+        require(address.replies[0]==Packet({2,0xa2,0,10,20,30,40}) &&
+                selecting.state()==LoginProtocol::State::transferred,"World address response changed byte order");
+        require(choose(7).close,"Repeated selection after completed transfer was accepted");
+
+        directory->replace({{0,0,1,1,"Eternity",7,{10,20,30,40}}});
+        LoginProtocol staff(key,directory);LoginPeer admin(staff.greeting());staff.receive(admin.exchange);
+        staff.receive(admin.credentials("staff","testpass"));
+        auto staff_login=staff.complete({0x10,43},token);for(auto& reply:staff_login.replies) admin.receive->crypt(reply);
+        Packet staff_request{2,0xa2,0,7,0,0,0};admin.send->crypt(staff_request);
+        require(staff.receive(staff_request).selection.has_value(),"Staff lost original full-realm bypass");
+        auto denied=staff.selected(false);admin.receive->crypt(denied.replies[0]);
+        require(denied.replies[0][2]==0xff && staff.state()==LoginProtocol::State::authenticated,
+                "Manager rejection did not restore the selectable login state");
         return 0;
     } catch (const std::exception& error) {
         std::cerr << error.what() << '\n';

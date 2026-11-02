@@ -3,21 +3,30 @@
 #include <asio.hpp>
 #include <deque>
 #include <atomic>
+#include <chrono>
 #include <limits>
 #include <openssl/rand.h>
 #include <unordered_map>
 
 namespace eternity::net {
 using asio::ip::tcp;
+namespace {
+std::uint64_t now_ms() {
+    return static_cast<std::uint64_t>(std::chrono::duration_cast<std::chrono::milliseconds>(
+        std::chrono::steady_clock::now().time_since_epoch()).count());
+}
+}
 
 struct LoginServer::Impl : std::enable_shared_from_this<LoginServer::Impl> {
     struct Connection;
     asio::strand<asio::io_context::executor_type> strand;
     tcp::acceptor acceptor;
+    asio::steady_timer handoff_timer;
     LoginServerOptions options;
     Authenticate authenticate;
     LoginKeyPair key_pair;
-    session::Registry sessions;
+    std::shared_ptr<session::Registry> sessions;
+    std::shared_ptr<auth::RealmDirectory> realms;
     asio::thread_pool database;
     std::unordered_map<std::uint64_t, std::shared_ptr<Connection>> connections;
     std::uint64_t next_id = 1;
@@ -26,13 +35,17 @@ struct LoginServer::Impl : std::enable_shared_from_this<LoginServer::Impl> {
     bool started = false;
     bool stopped = false;
 
-    Impl(asio::io_context& io, LoginServerOptions config, Authenticate function)
-        : strand(asio::make_strand(io)), acceptor(strand), options(std::move(config)),
-          authenticate(std::move(function)), database(options.database_workers) {
+    Impl(asio::io_context& io, LoginServerOptions config, Authenticate function,
+         std::shared_ptr<session::Registry> registry,std::shared_ptr<auth::RealmDirectory> directory)
+        : strand(asio::make_strand(io)), acceptor(strand),handoff_timer(strand), options(std::move(config)),
+          authenticate(std::move(function)),
+          sessions(registry?std::move(registry):std::make_shared<session::Registry>()),
+          realms(directory?std::move(directory):std::make_shared<auth::RealmDirectory>(options.realms)),
+          database(options.database_workers) {
         if (!authenticate || options.maximum_connections == 0 || options.database_workers == 0)
             throw std::invalid_argument("Login server requires authentication and bounded nonzero worker limits");
         // Validate realm metadata before opening the listener.
-        (void)auth::LoginProtocol(key_pair, options.realms);
+        (void)auth::LoginProtocol(key_pair, realms);
         std::array<unsigned char, 8> seed{};
         if (RAND_bytes(seed.data(), static_cast<int>(seed.size())) != 1)
             throw std::runtime_error("Generate session identifier seed failed");
@@ -52,6 +65,7 @@ struct LoginServer::Impl : std::enable_shared_from_this<LoginServer::Impl> {
     }
 
     void accept();
+    void expire_handoffs();
     void stop();
 };
 
@@ -68,7 +82,7 @@ struct LoginServer::Impl::Connection : std::enable_shared_from_this<Connection> 
     std::atomic_bool closed{false};
 
     Connection(tcp::socket peer, const std::shared_ptr<Impl>& server, std::uint64_t identity)
-        : socket(std::move(peer)), owner(server), id(identity), protocol(server->key_pair, server->options.realms) {}
+        : socket(std::move(peer)), owner(server), id(identity), protocol(server->key_pair, server->realms) {}
 
     void start() { send(protocol.greeting()); read(); }
 
@@ -81,7 +95,7 @@ struct LoginServer::Impl::Connection : std::enable_shared_from_this<Connection> 
         socket.shutdown(tcp::socket::shutdown_both, ignored);
         socket.close(ignored);
         if (auto server = owner.lock()) {
-            if (user_id) server->sessions.remove(*user_id, id);
+            if (user_id) server->sessions->release_login(*user_id, id);
             server->connections.erase(id);
         }
         // In-flight writes own their buffers separately until cancellation completes.
@@ -117,6 +131,11 @@ struct LoginServer::Impl::Connection : std::enable_shared_from_this<Connection> 
         if (result.close) { close(); return; }
         for (auto& reply : result.replies) send(std::move(reply));
         if (result.credentials) authenticate(std::move(*result.credentials));
+        if (result.selection) {
+            const auto server=owner.lock();
+            const bool accepted=server && user_id && server->sessions->select(*user_id,id,result.selection->realm_id,now_ms());
+            event(protocol.selected(accepted));
+        }
     }
 
     void authenticated(auth::LoginResult result, const std::string& username) {
@@ -130,14 +149,16 @@ struct LoginServer::Impl::Connection : std::enable_shared_from_this<Connection> 
                 if (RAND_bytes(token.data(), static_cast<int>(token.size())) != 1)
                     throw std::runtime_error("Generate login session token failed");
                 user_id = static_cast<std::uint32_t>(result.user_id);
-                auto previous = server->sessions.add(session::LoginSession{
-                    *user_id,id,decision.permission,username,token,session::game_key(protocol.secrets())});
+                auto record=session::LoginSession{
+                    *user_id,id,decision.permission,username,token,session::game_key(protocol.secrets())};
+                const auto executor=socket.get_executor();
+                const auto weak=weak_from_this();
+                record.disconnect=[weak,executor] { if(weak.expired()) return; asio::dispatch(executor,[weak] {
+                    if(auto connection=weak.lock()) connection->close();
+                }); };
+                auto previous = server->sessions->add(std::move(record));
                 if (previous && previous->session_id != id) {
-                    const auto old = server->connections.find(previous->session_id);
-                    if (old != server->connections.end()) {
-                        auto connection = old->second;
-                        connection->close();
-                    }
+                    if(previous->disconnect) previous->disconnect();
                 }
             }
             event(protocol.complete(result, token));
@@ -203,20 +224,32 @@ void LoginServer::Impl::accept() {
     });
 }
 
+void LoginServer::Impl::expire_handoffs() {
+    if(!running) return;
+    handoff_timer.expires_after(std::chrono::seconds(1));
+    handoff_timer.async_wait([server=shared_from_this()](const asio::error_code& error) {
+        if(error || !server->running) return;
+        for(const auto& expired:server->sessions->expire(now_ms())) if(expired.disconnect) expired.disconnect();
+        server->expire_handoffs();
+    });
+}
+
 void LoginServer::Impl::stop() {
     stopped = true;
     running = false;
     asio::error_code ignored;
     acceptor.cancel(ignored);
     acceptor.close(ignored);
+    handoff_timer.cancel(ignored);
     while (!connections.empty()) {
         auto connection = connections.begin()->second;
         connection->close();
     }
 }
 
-LoginServer::LoginServer(asio::io_context& io, LoginServerOptions options, Authenticate function)
-    : impl_(std::make_shared<Impl>(io,std::move(options),std::move(function))) {}
+LoginServer::LoginServer(asio::io_context& io, LoginServerOptions options, Authenticate function,
+                         std::shared_ptr<session::Registry> sessions,std::shared_ptr<auth::RealmDirectory> realms)
+    : impl_(std::make_shared<Impl>(io,std::move(options),std::move(function),std::move(sessions),std::move(realms))) {}
 LoginServer::~LoginServer() { stop(); impl_->database.join(); }
 void LoginServer::start() {
     asio::dispatch(impl_->strand, [server=impl_] {
@@ -224,9 +257,10 @@ void LoginServer::start() {
         server->started = true;
         server->running = true;
         server->accept();
+        server->expire_handoffs();
     });
 }
 void LoginServer::stop() { asio::dispatch(impl_->strand, [server=impl_] { server->stop(); }); }
 std::uint16_t LoginServer::port() const { return impl_->bound_port; }
-std::size_t LoginServer::session_count() const { return impl_->sessions.size(); }
+std::size_t LoginServer::session_count() const { return impl_->sessions->size(); }
 }

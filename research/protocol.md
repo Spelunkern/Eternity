@@ -18,9 +18,10 @@ Source: `originals/ps_login/ps_login.exe`, matching PDB, Ghidra 12.1.4.
   as message; its halves become the AES-128 key and counter IV.
 
 Native framing, cryptography and asynchronous TCP login are implemented and
-tested with a generated protocol peer and SQL Server. World selection returns
-the original offline result until the world endpoint is implemented. Actual
-client work is deferred.
+tested with a generated protocol peer and SQL Server. Realm selection validates
+availability, capacity and version, and reserves a single-use session handoff.
+The development endpoint advertises its world offline until a world TCP listener
+is implemented. Actual client work is deferred.
 
 `CUser::OnDispatchDB` (`00404a10`) hashes the submitted password and calls
 `GetUserMD5` (`00406e50`), which expects `usp_try_gamelogin_korea` and three
@@ -44,8 +45,26 @@ the session ID so the old socket cannot erase its replacement.
 World handoff: `ps_game.exe` `CUser::PacketProcessing` (`00466da0`) accepts
 `TPC_GAME_CONNECT` (`A301`, 22 bytes: user ID and 16-byte session token) before
 encryption. `CWorld::LoginUser` (`0040c510`) initializes the derived AES state and
-sends `TP_GAME_CONNECT` (`A301`, 20 bytes: result, encryption mode and 16-byte game
-key). `CUserCrypto::EnterCharSelect` / `LeaveCharSelect` (`00458060` / `00458070`)
+sends `TP_GAME_CONNECT` (`A301`, 20 bytes: result, encryption mode and 16-byte XOR
+seed). `CUserCrypto::EnterCharSelect` / `LeaveCharSelect` (`00458060` / `00458070`)
 switch outgoing traffic between AES and a separate world XOR transform; incoming
-traffic retains AES. The XOR table initialization still needs recovery.
+traffic retains AES. `CryptoInitKey` (`00457eb0`) constructs the 4096-byte table:
+the first 32 bytes are SHA256(seed); each subsequent block hashes the previous
+block's final 16 bytes. `CryptoXor` (`00457f70`) XORs payload byte `i` with table
+byte `payload_length + i`. Returning to selection resumes the outgoing AES
+counter without advancing it during XOR traffic. Native cipher and game protocol
+tests cover these transitions, encrypted greeting, replay and expired tokens.
 `ps_session.exe` `AddUserSessionLost` (`0040a2f0`) gives a handoff 30 seconds.
+`stUserInfo::EnableConnectGame` (`00402fa0`) checks realm and token; its IP
+argument is unused. Closing login after selection retains the reservation;
+closing its world owner removes it without removing a replacement login.
+
+Character selection contracts: `ps_dbAgent.exe` `DBCharacter::LoadCountry`
+(`0041fdc0`) calls `usp_Read_User_MaxGrow_R`; no row means country 2 and max grow
+2, otherwise max grow is clamped to at least 2. `LoadCharacterList` (`0041d930`)
+reads `usp_Read_Chars_R` and equipment through `usp_Read_Char_Items_Simple_R`.
+`ps_game.exe` `CUser::PacketUserDBChar` (`0046cf60`, case `403`) sends country
+(`0109`, 4 bytes), empty slots (`0101`, 7 bytes), then populated slots
+(`0101`, 83 bytes). There are five slots. The internal 86-byte database records
+are transformed, including map checks, into the client's 80-byte `stCharacterList`.
+Character loading and gameplay remain pending implementation.

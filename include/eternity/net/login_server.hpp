@@ -3,6 +3,8 @@
 #include <asio/io_context.hpp>
 #include <functional>
 
+namespace eternity::session { class Registry; }
+
 namespace eternity::net {
 struct LoginServerOptions {
     std::string address = "127.0.0.1";
@@ -17,7 +19,8 @@ using Authenticate = std::function<auth::LoginResult(const auth::Credentials&, s
 // Socket state and output queues are serialized on one Asio strand; SQL runs off it.
 class LoginServer {
 public:
-    LoginServer(asio::io_context& io, LoginServerOptions options, Authenticate authenticate);
+    LoginServer(asio::io_context& io, LoginServerOptions options, Authenticate authenticate,
+                std::shared_ptr<session::Registry> sessions = {}, std::shared_ptr<auth::RealmDirectory> realms = {});
     ~LoginServer();
     LoginServer(const LoginServer&) = delete;
     LoginServer& operator=(const LoginServer&) = delete;
