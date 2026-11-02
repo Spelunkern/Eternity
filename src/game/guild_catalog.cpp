@@ -15,6 +15,7 @@ EntryCatalogUpdate GuildCatalog::apply(std::span<const std::uint8_t> p) {
     if(p.size()<2) return EntryCatalogUpdate::rejected;const auto op=get(p,0,2);
     if(op==0xb01) {if(p.size()<6) return EntryCatalogUpdate::rejected;maximum_=get(p,2);return EntryCatalogUpdate::applied;}
     if(op==0xb0e) {if(p.size()<7) return EntryCatalogUpdate::rejected;auto* guild=find(get(p,2));if(!guild) return EntryCatalogUpdate::applied;return guild->npcs.apply(p)?EntryCatalogUpdate::applied:EntryCatalogUpdate::rejected;}
+    if(op==0xb0d) {if(p.size()<7) return EntryCatalogUpdate::rejected;auto* guild=find(get(p,2));if(!guild) return EntryCatalogUpdate::applied;if(!guild->bank) return EntryCatalogUpdate::unsupported;return guild->bank->apply(p)==GuildBankUpdate::applied?EntryCatalogUpdate::applied:EntryCatalogUpdate::rejected;}
     if(op!=0xb02 && op!=0xb03) return EntryCatalogUpdate::unsupported;
     const auto header=op==0xb02?3U:7U;if(p.size()<header) return EntryCatalogUpdate::rejected;
     LoadedGuild* guild=op==0xb03?find(get(p,2)):nullptr;if(op==0xb03 && !guild) return EntryCatalogUpdate::applied;
@@ -24,7 +25,7 @@ EntryCatalogUpdate GuildCatalog::apply(std::span<const std::uint8_t> p) {
         if(op==0xb02) {
             if(!ports_.allocate_guild()) continue;GuildMetadata data;
             auto& info=data.listing;info.id=get(row,0);info.name=text(row,4,25);info.master=text(row,29,21);info.country=row[50];info.points=get(row,51);info.rank=row[55];data.etin=get(row,56);data.use_house=row[60];info.notice=text(row,61,65);data.buy_house=row[126];data.keep_etin=get(row,127);data.return_count=get(row,131);
-            auto owned=std::make_unique<LoadedGuild>(std::move(data),ports_.transport);auto* value=owned.get();retained_.push_back(std::move(owned));ids_.emplace(value->metadata.listing.id,value);names_.emplace(name_key(value->metadata.listing.name),value);maximum_=std::max(maximum_,value->metadata.listing.id);
+            auto owned=std::make_unique<LoadedGuild>(std::move(data),ports_.transport,ports_.bank);auto* value=owned.get();retained_.push_back(std::move(owned));ids_.emplace(value->metadata.listing.id,value);names_.emplace(name_key(value->metadata.listing.name),value);maximum_=std::max(maximum_,value->metadata.listing.id);
         } else {
             if(!ports_.allocate_member()) continue;auto member=std::make_shared<GuildMember>();member->id=get(row,0);member->level=static_cast<std::int32_t>(get(row,4,2));member->job=row[6];const auto raw_rank=row[7];member->rank=raw_rank;member->name=text(row,8,21);
             auto& metadata=guild->metadata;if(member->name==metadata.listing.master && member->rank!=1) member->rank=1;

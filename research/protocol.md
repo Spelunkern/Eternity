@@ -2171,8 +2171,7 @@ is zeroed natively. Wire text remains tested with ASCII; legacy encoding is pend
 `GuildMgrSave::AddFromDB` (`0040fc10`) keeps an existing replica unchanged.
 Reloaded SQL guild name/master/country remain current while points, rank, etin,
 remark, house flags and return count come from the retained replica. New replicas
-require bank/NPC loader callbacks, called in that order, before sending metadata.
-Those bank/NPC owners remain separate required work. The combined loader never
+load bank/NPC owners, in that order, before sending metadata. The combined loader never
 writes record DWORD `0x7f` (KeepEtin), unlike the standalone guild-list loader;
 the native packet normalizes these undefined bytes to zero while retaining the
 actual SQL KeepEtin in the DB replica. Return count at `0x83` is defined.
@@ -2182,9 +2181,9 @@ although restored `dbo.Guilds` has no Rank column. Integration records that real
 failure without modifying original databases, then clones tables/procedures into
 a disposable catalog with the missing column supplied only there. It verifies
 SQL-to-game-to-client membership, missing-detail defaults, reload retention,
-new-replica bank/NPC callback order and conversion-failure batches. The fixture
+new-replica bank/NPC loading and conversion-failure batches. The fixture
 does not settle the intended ordering field for a production compatibility fix.
-Production bootstrap retry semantics, actual bank/NPC replicas, SQL cursor-error
+Production bootstrap retry semantics, SQL cursor-error
 streaming, the restored schema incompatibility and live TCP startup remain open.
 
 `GuildNpcReplica` reconstructs the eight three-WORD DB slots written by
@@ -2194,8 +2193,7 @@ unsigned BYTE slot. Slots >=8 are ignored; valid rows overwrite only that slot,
 zero its third WORD and leave untouched slots intact. Duplicate rows overwrite
 in fetch order. Query/conversion failure retains successful previous rows and is
 ignored by the enclosing new-guild load. Existing guild replicas skip NPC reload.
-The old NPC callback is replaced by this native SQL owner; bank loading remains
-a required separate owner.
+The old NPC callback is replaced by this native SQL owner.
 
 `GuildSql::send_npcs` follows `GuildMgrSave::SendGuildNpcLvList` (`00410cb0`)
 in unsigned guild-ID order. `GuildInfo::SendGuildNpcLv` (`0040f660`) emits `0b0e`
@@ -2212,6 +2210,34 @@ guild lookup and transport are ports. It covers retained slots, duplicate rows,
 NULL conversion buffers, partial/query failures and WORD-to-BYTE truncation.
 Disposable SQL now loads the actual original NPC procedure and table through the
 whole DB/game/client path, preserves cached levels after SQL changes and verifies
-partial NPC conversion failure without aborting metadata/member loading. Bank
-SQL/replicas, NPC upgrade gameplay, native world spawning and production TCP
-entry remain required for the full service.
+partial NPC conversion failure without aborting metadata/member loading. NPC
+upgrade gameplay, native world spawning and production TCP entry remain required.
+
+
+Guild banks now follow `DBGuild::LoadStoredItemList` (`ps_dbAgent.exe`,
+`00427800`) through the original `usp_Read_Guild_StoredItems_Detail_R`. Its
+240 slots retain directly assigned rows on failure; temporary duplicate rows are
+deleted. Successful loading relocates duplicates into the first free slots and
+returns overflow to the shared inventory replica pool. Reused save markers follow
+the source's conditional zero-to-two update. `TrimString` (`0041e9f0`) removes
+all ASCII spaces from craft text. SQL NULL retains conversion buffers, date parts
+pack into the original DWORD, and existing guild replicas skip bank reload.
+
+`GuildMgrSave::SendGuildBankList` (`00410c20`) visits guild IDs in order;
+`GuildInfo::SendGuildBank` (`0040f7d0`) emits `0b0d`, up to 40 rows of 46 bytes.
+Game `PacketGuild` (`ps_game.exe`, `00408e00`) resolves definitions, allocates
+items, applies `CopyCraftExpassion` (`004ba670`) and assigns bank slots. Only
+real equipment types 1..25 clamp excessive stack counts, emitting `0b14`.
+Overwritten items remain owned by the shared item pool but are not recycled,
+matching the source. Missing definitions invoke a fatal diagnostic port; the
+source deliberately crashes, which native code does not reproduce.
+`CGuild::SendBankItemList` (`0042f250`) emits `0d29`, 50 rows of 33 bytes.
+
+The 96-sequence oracle executes both original binaries across full banks,
+duplicates, pooled flags, allocation failures, partial/query errors and repeated
+game reception. String padding after NUL is normalized to zero; it is undefined
+source stack data. Native input rejects negative/out-of-range slot writes.
+Disposable SQL verifies the actual procedure through game/client output,
+NULL text reuse, duplicate relocation, date/quality conversion, count correction,
+cached reload and nested failure retention. Bank transfer commands and SQL saving,
+production world initialization and playable TCP entry remain pending.

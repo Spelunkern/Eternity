@@ -24,8 +24,8 @@ net::Packet packet(const GuildMetadata& data,const GuildMetadata& cached) {
     append(p,0);append(p,cached.return_count);return p;
 }
 }
-GuildSql::GuildSql(storage::SqlServer& main,storage::SqlServer& auxiliary,GuildSqlPorts ports,std::string catalog):main_(main),auxiliary_(auxiliary),ports_(std::move(ports)) {
-    if(&main==&auxiliary || !ports_.send || !ports_.allocate || !ports_.load_bank || !ports_.diagnostic) throw std::invalid_argument("Guild loading requires two SQL connections and replica services");
+GuildSql::GuildSql(storage::SqlServer& main,storage::SqlServer& auxiliary,InventoryReplicaPool& pool,GuildSqlPorts ports,std::string catalog):main_(main),auxiliary_(auxiliary),pool_(pool),ports_(std::move(ports)) {
+    if(&main==&auxiliary || !ports_.send || !ports_.allocate || !ports_.diagnostic) throw std::invalid_argument("Guild loading requires two SQL connections and replica services");
     if(catalog.empty() || catalog.find_first_not_of("ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789_")!=std::string::npos) throw std::invalid_argument("Invalid guild SQL catalog");prefix_="["+catalog+"].dbo.";
 }
 bool GuildSql::load_maximum() {
@@ -54,8 +54,8 @@ bool GuildSql::load() {
             auto found=replicas_.find(metadata.listing.id);
             if(found==replicas_.end()) {
                 if(!ports_.allocate()) continue;
-                found=replicas_.emplace(metadata.listing.id,GuildDbMetadata{metadata,{}}).first;
-                ports_.load_bank(metadata.listing.id);(void)load_npcs(metadata.listing.id,found->second.npcs);
+                found=replicas_.emplace(metadata.listing.id,GuildDbMetadata{metadata,{},std::make_unique<GuildBankReplica>(pool_)}).first;
+                (void)load_bank(metadata.listing.id,*found->second.bank);(void)load_npcs(metadata.listing.id,found->second.npcs);
             }
             ports_.send(packet(metadata,found->second.metadata));
             // Original caller ignores the member loader's result and continues.
@@ -73,4 +73,25 @@ bool GuildSql::load_npcs(std::uint32_t id,GuildNpcReplica& npcs) {
     } catch(const std::exception& error) {ports_.diagnostic(error.what());return false;}
 }
 void GuildSql::send_npcs() {for(const auto& [id,replica]:replicas_) if(auto p=replica.npcs.packet(id)) ports_.send(std::move(*p));}
+bool GuildSql::load_bank(std::uint32_t id,GuildBankReplica& bank) {
+    bank.begin_load();
+    try {
+        const std::array<storage::Parameter,1> parameters={std::int64_t{std::bit_cast<std::int32_t>(id)}};
+        const auto rows=auxiliary_.query("EXEC "+prefix_+"usp_Read_Guild_StoredItems_Detail_R ?;",parameters);const auto& data=result(rows);std::array<std::int64_t,21> v{};std::uint64_t uid=0;std::string craft,make;
+        for(const auto& row:data.rows) {
+            integer(row,0,v[0],INT32_MIN,INT32_MAX);integer(row,1,v[1],0,255);integer(row,2,v[2],0,255);
+            if(row.size()<21) throw std::runtime_error("Missing guild bank SQL fields");
+            if(row[3]) {const auto& text=*row[3];const auto parsed=std::from_chars(text.data(),text.data()+text.size(),uid);if(parsed.ec!=std::errc{} || parsed.ptr!=text.data()+text.size()) throw std::runtime_error("Guild bank UID conversion failed");}
+            integer(row,4,v[4],INT32_MIN,INT32_MAX);integer(row,5,v[5],INT16_MIN,INT16_MAX);
+            for(std::size_t i=6;i<12;++i) integer(row,i,v[i],0,255);
+            string(row,12,craft,20);integer(row,13,v[13],0,255);string(row,14,make,1);for(std::size_t i=15;i<21;++i) integer(row,i,v[i],INT32_MIN,INT32_MAX);
+            PlayerItem item;item.uid=uid;item.id=static_cast<std::uint32_t>(v[0]);item.type=static_cast<std::uint8_t>(v[1]);item.type_id=static_cast<std::uint8_t>(v[2]);item.quality=static_cast<std::uint16_t>(v[5]);for(std::size_t i=0;i<6;++i) item.gems[i]=static_cast<std::uint8_t>(v[6+i]);item.craft=craft;item.count=static_cast<std::uint8_t>(v[13]);item.make_type=make;
+            std::uint32_t stamp=static_cast<std::uint16_t>(v[15])-16U;for(const auto [i,bits]:std::array<std::pair<std::size_t,unsigned int>,5>{{{16,4},{17,5},{18,5},{19,6},{20,6}}}) stamp=(stamp<<bits)+static_cast<std::uint16_t>(v[i]);item.made_at=stamp;
+            bank.load(std::move(item),static_cast<std::int32_t>(v[4]));
+        }
+        bank.finish_load(true);return true;
+    } catch(const std::exception& error) {bank.finish_load(false);ports_.diagnostic(error.what());return false;}
+}
+void GuildSql::send_banks() {for(const auto& [id,replica]:replicas_) for(auto& p:replica.bank->packets(id)) ports_.send(std::move(p));}
+
 }

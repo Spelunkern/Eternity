@@ -2,6 +2,7 @@
 #include "eternity/game/guild_membership.hpp"
 #include "eternity/game/entry_catalogs.hpp"
 #include "eternity/game/guild_npcs.hpp"
+#include "eternity/game/guild_bank.hpp"
 #include <vector>
 
 namespace eternity::game {
@@ -14,16 +15,18 @@ struct LoadedGuild {
     GuildMetadata metadata;
     GuildMembership membership;
     GuildNpcs npcs;
-    LoadedGuild(GuildMetadata value,GuildMemberPorts port):metadata(std::move(value)),membership(metadata.listing.id,std::move(port)) {}
+    std::unique_ptr<GuildBank> bank;
+    LoadedGuild(GuildMetadata value,GuildMemberPorts port,GuildBankServices* services=nullptr):metadata(std::move(value)),membership(metadata.listing.id,std::move(port)),bank(services?std::make_unique<GuildBank>(*services):nullptr) {}
 };
 struct GuildCatalogPorts {
     GuildMemberPorts transport;
     std::function<bool()> allocate_guild,allocate_member;
+    GuildBankServices* bank=nullptr;
 };
 // Game-side 0b01/0b02/0b03 load owners, ps_game.exe PacketGuild 00408e00,
 // InitAddGuild 00431870 and InitAddUser 0042cf70. One world executor owns this
-// catalog; all live users must leave before it is destroyed. Guild bank packets
-// remain separate required initialization; 0b0e NPC updates are applied here.
+// catalog; all live users must leave before it is destroyed. Bank packets require
+// actual bank services; absent services return unsupported rather than success.
 class GuildCatalog {
 public:
     explicit GuildCatalog(GuildCatalogPorts);
