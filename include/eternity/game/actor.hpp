@@ -13,6 +13,8 @@ class GroundItemPool;
 class InventoryWorld;
 class ItemPickupWorld;
 class InventoryRemovalWorld;
+class ItemDropWorld;
+enum class ItemDropResult;
 enum class InventoryReceipt;
 // Required scene/transport services. Implementations own zone binding, combat
 // and connection queues; none default to no-op.
@@ -73,6 +75,7 @@ public:
     std::uint32_t receive_money(std::uint32_t amount,MoneyWorld&);
     std::uint32_t receive_money_item(GroundItem&,MoneyWorld&,GroundItemPool&);
     bool load_inventory_item(PlayerItem,GroundItemPool&); // Resolved SQL row, no DB/client notices.
+    ItemDropResult drop_item(std::uint8_t bag,std::uint16_t slot,std::int32_t count,ItemDropWorld&,GroundItemPool&);
     bool remove_item(std::uint8_t bag,std::uint16_t slot,InventoryRemovalWorld&,bool notify=true);
     bool delete_items(std::int32_t type,std::int32_t type_id,InventoryRemovalWorld&);
     std::array<std::uint16_t,13>& equipment_database_quality() noexcept {return equipment_database_quality_;}
@@ -146,6 +149,7 @@ public:
     std::optional<bool> party_kind() const noexcept override;
     void send_party(const net::Packet&) noexcept override;
 private:
+    void prepare_equipment_removal(std::uint16_t slot,InventoryRemovalWorld&);
     InventoryReceipt admit_item(GroundItem&,InventoryWorld&,GroundItemPool&,bool pickup);
     std::uint32_t credit_money(std::uint32_t amount,std::uint8_t type_id,std::uint8_t count,MoneyWorld&);
     std::uint8_t effective_shape() const;

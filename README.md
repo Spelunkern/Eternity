@@ -27,7 +27,8 @@ are reconstructed; live world operations and gameplay remain pending.
 Scalar HP damage, its protection/group notifications and the attacker damage ledger
 are reconstructed. Equipment removal reverses cached durability, gems and craft modifiers, cancels weapon
 elements and sends original speed/resource updates. Inventory removal now connects these updates, offer cleanup, DB/log/client messages
-and pool release; move/drop and TCP dispatch remain pending. Defense durability wear updates native actor equipment and defenses;
+and pool release. Whole and partial ground drops preserve identities, offer
+cleanup and original DB/log/client ordering; movement and TCP dispatch remain pending. Defense durability wear updates native actor equipment and defenses;
 scalar damage, attribution and low-HP passive activation now run through the actor.
 Death effect cleanup, corpse snapshots/cell visibility and the global corpse registry
 are reconstructed; death orchestration, combat dispatch and the live world remain pending.

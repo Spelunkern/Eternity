@@ -77,6 +77,9 @@ target_compile_options(eternity-server PRIVATE -Wall -Wextra -Wpedantic -Wconver
 
 include(CTest)
 if(BUILD_TESTING)
+    add_executable(item-drop-unit tests/item_drop_unit.cpp)
+    target_link_libraries(item-drop-unit PRIVATE eternity_game)
+    add_test(NAME item-drop-unit COMMAND item-drop-unit ${CMAKE_CURRENT_SOURCE_DIR}/tests/data/item-drop-oracle.tsv)
     add_executable(item-remove-unit tests/item_remove_unit.cpp)
     target_link_libraries(item-remove-unit PRIVATE eternity_game)
     add_test(NAME item-remove-unit COMMAND item-remove-unit ${CMAKE_CURRENT_SOURCE_DIR}/tests/data/item-remove-oracle.tsv)

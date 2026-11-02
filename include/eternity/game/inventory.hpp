@@ -22,6 +22,14 @@ public:
     virtual bool return_inventory_item(Actor&,GroundItem&) = 0; // EnterItem, appearance 1/default lifetime.
 };
 class InventoryRemovalWorld:public InventoryWorld,public ItemExchangeWorld,public EquipmentRemovalDiagnostics {};
+enum class ItemDropResult {ignored,allocation_failed,whole,partial};
+class ItemDropWorld:public InventoryRemovalWorld {
+public:
+    virtual UserPosition drop_position(const Actor&) = 0;
+    virtual std::uint64_t next_drop_uid() = 0;
+    virtual std::uint32_t drop_make_time() = 0;
+    virtual bool enter_dropped_item(Actor&,GroundItem&) = 0; // EnterItem, appearance 1/default lifetime.
+};
 class ItemPickupWorld:public InventoryWorld,public ItemPickWorld {};
 std::uint32_t pickup_money_amount(std::uint32_t amount,std::uint8_t drop_type,std::int32_t amulet,std::int32_t gold_bonus) noexcept;
 net::Packet inventory_failure_packet(std::uint8_t reason);

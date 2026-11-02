@@ -1274,6 +1274,37 @@ visibility, exact packets/logs, ordered frees, current resource clamps, offer
 references, qualities and final inventories. Attack arithmetic is isolated in
 this fixture and retains its separate original-code tests. Native preparation
 also checks pooled SQL-row loading (including unequipped bag-0 storage beyond
-slot 12), allocation failure and teardown. Full
-inventory movement/drop handlers, DB-agent inventory persistence and TCP world
+slot 12), allocation failure and teardown. Inventory movement handlers, DB-agent inventory persistence and TCP world
 dispatch remain pending.
+
+
+Ground drops (`ps_game.exe`, complete `CUser::ItemDrop` `0045cd10`) now connect
+pooled inventory, equipment removal, offer invalidation and zone admission.
+Missing items and real type 27 return without messages. Equipment removal runs
+before quantity validation. A nonstackable singleton drops whole regardless of
+the requested amount; other oversized requests return after equipment changes.
+Whole drops retain their allocation, runtime ID, UID, quality, gems and craft,
+clear the inventory pointer, copy current XYZ, and set owner/drop ID to the
+character, party 0 and drop type 2. Offer cleanup precedes DB `0702`, log `0402`,
+`EnterItem` appearance 1, and self `0206`.
+
+Partial drops allocate first. Failure preserves the stack/offers and still
+sends the current `0206` slot. Success decrements the BYTE count, sends DB
+`0702`, clears offer references, and creates a new UID through
+`SUniqueIDGenByServer::GenID` `00457a50`. The new object has zero quality/gems,
+`InitCraftExpansion` `004ba280`, current packed make time and make type `U`.
+The log refers to the original UID and its remaining count, followed by new-item
+admission and the remaining slot's `0206`. Zero/negative helper arguments retain
+original low-BYTE arithmetic; packet-level positive-count validation is a separate
+caller. Admission failure is ignored and does not free either allocation.
+`ItemDropResult::whole`/`partial` identify the ownership operation, independently
+of admission success; the world owner retains allocations that fail admission.
+
+A 1,536-case original-code fixture compares complete whole/split drops, exact
+packets/logs, new-item payloads, source resources/qualities/offers, allocation
+failure and ignored admission results. Every tested bag covers both whole and
+partial admission, including equipped oversized requests. Native zone integration
+checks `0401` visibility, lifetime/expiry, recycling, new split identity and
+retained whole-drop identity without double release at actor teardown. UID
+arithmetic and zone internals retain their separate original-code fixtures.
+Inventory movement, live TCP dispatch and inventory SQL saving remain pending.

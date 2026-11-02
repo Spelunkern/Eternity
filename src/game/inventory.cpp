@@ -23,6 +23,9 @@ void loot(Actor& actor,GroundItem& item,InventoryWorld& world,bool partial) {
     if(type!=3) packet[150]=item.item.count;
     world.send_money_log(packet);
 }
+void removal_log(Actor& actor,const GroundItem& item,std::uint8_t bag,std::uint16_t slot,InventoryWorld& world) {
+    net::Packet log(152,0);const auto subject=world.money_log_subject(actor);write_game_log_main(log,subject,world.money_local_calendar());put(log,0,0x402,2);put(log,74,item.item.uid,8);put(log,82,item.definition->id,4);text(log,86,world.inventory_item_name(*item.definition),31);std::copy(item.item.gems.begin(),item.item.gems.end(),log.begin()+118);put(log,124,item.item.made_at,4);text(log,128,item.item.craft,20);log[149]=bag;log[150]=static_cast<std::uint8_t>(slot);log[151]=item.item.count;world.send_money_log(log);
+}
 void party_notice(Actor& actor,const GroundItem& item,InventoryWorld& world) {
     if(const auto raid=world.inventory_party_kind(actor)) {net::Packet packet(8,0);put(packet,0,*raid?0xc14:0xb08,2);put(packet,2,actor.id(),4);packet[6]=item.item.type;packet[7]=item.item.type_id;world.send_inventory_party(actor,packet);}
 }
@@ -56,6 +59,41 @@ bool Actor::load_inventory_item(PlayerItem value,GroundItemPool& pool) {
     } catch(...) {pool.release(*item);throw;}
     return true;
 }
+void Actor::prepare_equipment_removal(std::uint16_t slot,InventoryRemovalWorld& world) {
+    const auto at=[&] {return std::find_if(inventory_.begin(),inventory_.end(),[&](const auto& value){return value.bag==0 && value.slot==slot;});};
+    if(slot>=13 || at()==inventory_.end()) throw std::logic_error("Missing original equipment removal slot");
+    if(equipment_database_quality_[slot]!=at()->quality) {net::Packet packet(9,0);put(packet,0,0x70c,2);put(packet,2,account_id_,4);packet[6]=static_cast<std::uint8_t>(slot);put(packet,7,at()->quality,2);world.send_inventory_database(packet);}
+    equipment_database_quality_[slot]=0;remove_equipment_modifiers(static_cast<std::uint8_t>(slot),*at(),world);send_equipment(static_cast<std::uint8_t>(slot));recalculate_attack(status_);
+}
+ItemDropResult Actor::drop_item(std::uint8_t bag,std::uint16_t slot,std::int32_t count,ItemDropWorld& world,GroundItemPool& pool) {
+    // Complete ps_game.exe ItemDrop 0045cd10. Equipment reversal precedes
+    // quantity validation; a nonstackable singleton ignores the requested count.
+    if(bag>9 || slot>=24 || (bag==0 && slot>=13)) throw std::out_of_range("Invalid original inventory drop position");
+    const auto at=[&] {return std::find_if(inventory_.begin(),inventory_.end(),[&](const auto& value){return value.bag==bag && value.slot==slot;});};
+    if(at()==inventory_.end()) return ItemDropResult::ignored;
+    auto held=std::find_if(retained_inventory_.begin(),retained_inventory_.end(),[&](const auto& value){return value.bag==bag && value.slot==slot;});if(held==retained_inventory_.end()) throw std::logic_error("Live drop requires a pooled inventory item");
+    auto* source=held->item;if(source->definition->real_type==27) return ItemDropResult::ignored;
+    if(bag==0) prepare_equipment_removal(slot,world);
+    const bool singleton=source->definition->stack_count==1 && at()->count==1;
+    if(!singleton && count>at()->count) return ItemDropResult::ignored;
+    const bool whole=singleton || count==at()->count;const auto amount=singleton?1:static_cast<std::uint8_t>(count);GroundItem* drop=source;auto result=ItemDropResult::whole;
+    const auto database=[&] {net::Packet packet(9,0);put(packet,0,0x702,2);put(packet,2,account_id_,4);packet[6]=bag;packet[7]=static_cast<std::uint8_t>(slot);packet[8]=static_cast<std::uint8_t>(amount);world.send_inventory_database(packet);};
+    const auto position=[&](GroundItem& item) {item.position=world.drop_position(*this);item.user_id=id_;item.party_id=0;item.drop_type=2;item.drop_id=id_;};
+    if(whole) {
+        remove_exchange_item(bag,slot,world);const auto current=at();if(current==inventory_.end()) throw std::logic_error("Inventory dropped reentrantly");source->item=*current;set_ground_item_craft(*source,current->craft);inventory_.erase(current);
+        held=std::find_if(retained_inventory_.begin(),retained_inventory_.end(),[&](const auto& value){return value.item==source;});if(held==retained_inventory_.end()) throw std::logic_error("Inventory ownership changed reentrantly");retained_inventory_.erase(held);
+        position(*source);database();removal_log(*this,*source,bag,slot,world);(void)world.enter_dropped_item(*this,*source);
+    } else {
+        drop=pool.allocate();if(!drop) result=ItemDropResult::allocation_failed;
+        else {
+            auto current=at();current->count=static_cast<std::uint8_t>(current->count-static_cast<std::uint8_t>(count));source->item.count=current->count;database();remove_exchange_item(bag,slot,world);
+            drop->definition=source->definition;drop->item.uid=world.next_drop_uid();drop->item.id=drop->definition->id;drop->item.type=at()->type;drop->item.type_id=at()->type_id;drop->item.count=static_cast<std::uint8_t>(amount);drop->item.quality=0;drop->item.gems.fill(0);
+            if(drop->definition->server!=0 && drop->definition->required_wisdom>0 && drop->definition->required_wisdom<100) set_ground_item_craft(*drop,std::string(20,'0'));
+            drop->item.made_at=world.drop_make_time();drop->item.make_type="U";position(*drop);source->item=*at();removal_log(*this,*source,bag,slot,world);(void)world.enter_dropped_item(*this,*drop);result=ItemDropResult::partial;
+        }
+    }
+    net::Packet packet{6,2,bag,static_cast<std::uint8_t>(slot),0,0,0};const auto current=at();if(current!=inventory_.end()) {packet[4]=current->type;packet[5]=current->type_id;packet[6]=current->count;}send_self(packet);return result;
+}
 bool Actor::remove_item(std::uint8_t bag,std::uint16_t slot,InventoryRemovalWorld& world,bool notify) {
     // Complete ItemRemove 0045f260 / ItemRemoveFree 0045f470. Only the former
     // sends the final 0206. Both preserve the pointer until after offer cleanup.
@@ -65,16 +103,13 @@ bool Actor::remove_item(std::uint8_t bag,std::uint16_t slot,InventoryRemovalWorl
     auto held=std::find_if(retained_inventory_.begin(),retained_inventory_.end(),[&](const auto& value){return value.bag==bag && value.slot==slot;});
     if(held==retained_inventory_.end()) throw std::logic_error("Live removal requires a pooled inventory item");
     auto* item=held->item;auto* pool=held->pool;
-    if(bag==0) {
-        if(equipment_database_quality_[slot]!=at()->quality) {net::Packet packet(9,0);put(packet,0,0x70c,2);put(packet,2,account_id_,4);packet[6]=static_cast<std::uint8_t>(slot);put(packet,7,at()->quality,2);world.send_inventory_database(packet);}
-        equipment_database_quality_[slot]=0;remove_equipment_modifiers(static_cast<std::uint8_t>(slot),*at(),world);send_equipment(static_cast<std::uint8_t>(slot));recalculate_attack(status_);
-    }
+    if(bag==0) prepare_equipment_removal(slot,world);
     remove_exchange_item(bag,slot,world);
     const auto current=at();if(current==inventory_.end()) throw std::logic_error("Inventory removed reentrantly");item->item=*current;set_ground_item_craft(*item,current->craft);inventory_.erase(current);
     held=std::find_if(retained_inventory_.begin(),retained_inventory_.end(),[&](const auto& value){return value.item==item;});if(held==retained_inventory_.end()) throw std::logic_error("Inventory ownership changed reentrantly");retained_inventory_.erase(held);
     struct Release {GroundItemPool& pool;GroundItem& item;~Release(){pool.release(item);}} release{*pool,*item};
     net::Packet packet(9,0);put(packet,0,0x702,2);put(packet,2,account_id_,4);packet[6]=bag;packet[7]=static_cast<std::uint8_t>(slot);packet[8]=item->item.count;world.send_inventory_database(packet);
-    net::Packet log(152,0);const auto subject=world.money_log_subject(*this);write_game_log_main(log,subject,world.money_local_calendar());put(log,0,0x402,2);put(log,74,item->item.uid,8);put(log,82,item->definition->id,4);text(log,86,world.inventory_item_name(*item->definition),31);std::copy(item->item.gems.begin(),item->item.gems.end(),log.begin()+118);put(log,124,item->item.made_at,4);text(log,128,item->item.craft,20);log[149]=bag;log[150]=static_cast<std::uint8_t>(slot);log[151]=item->item.count;world.send_money_log(log);
+    removal_log(*this,*item,bag,slot,world);
     if(notify) send_self({6,2,bag,static_cast<std::uint8_t>(slot),0,0,0});
     return true;
 }
