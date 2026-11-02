@@ -146,13 +146,14 @@ public:
     void erase_persisted(const PersistedEffect&) noexcept override;
     void persist_applied(const PersistedEffect&) noexcept override;
     void send_self(const net::Packet&) noexcept override;
+    // CUser::GetShape, used by zone admission before optional shape delivery.
+    std::uint8_t effective_shape() const;
     std::optional<bool> party_kind() const noexcept override;
     void send_party(const net::Packet&) noexcept override;
 private:
     void prepare_equipment_removal(std::uint16_t slot,InventoryRemovalWorld&);
     InventoryReceipt admit_item(GroundItem&,InventoryWorld&,GroundItemPool&,bool pickup);
     std::uint32_t credit_money(std::uint32_t amount,std::uint8_t type_id,std::uint8_t count,MoneyWorld&);
-    std::uint8_t effective_shape() const;
     bool in_zone() const noexcept override {return status_.in_zone;}
     void send_view(const net::Packet&) override;
     void reset_damage() override;

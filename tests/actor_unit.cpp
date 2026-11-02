@@ -1,6 +1,8 @@
 #include "eternity/game/actor.hpp"
 #include "eternity/game/actor_load.hpp"
 #include "eternity/game/character_entry.hpp"
+#include "eternity/game/zone_entry.hpp"
+#include "eternity/game/world_admission.hpp"
 #include <bit>
 #include "equipment_fixture.hpp"
 #include <fstream>
@@ -119,6 +121,28 @@ int main(int argc,char** argv) {
             require(initialized.actor && entry.ready && entry.runtime_id==9001 && entry.current==std::array<std::int32_t,3>{1429,2325,3110},"Entry pipeline changed original initialization/clamp results");
             require(entry_scene.events==std::vector<std::string>{"M030839300000","S0b0529230000027909","S04010029230000","S0404d2040000","S14012e160000","S1b020001"},"Entry sent its ACK before native effect/resource initialization or reordered its envelopes");
             require(!remaining_services.empty() && remaining_services.front()==CharacterEntryStep::wait_user && remaining_services.back()==CharacterEntryStep::flush,"Entry lost its external scene/catalog service ordering");
+            ConfiguredMap map;map.settings.id=20;map.settings.dungeon=true;map.definition.size=81;RuntimeZone zone;zone.map=&map;zone.users=std::make_unique<ZoneUsers>(map.definition.geometry(),0);zone.environment=ZoneEnvironment::prepare(map);
+            auto& admitted=*initialized.actor;admitted.appearance().vehicle_mode=2;admitted.status().shape=13;entry_scene.events.clear();ZoneEntryState membership;membership.character_id=9001;membership.permission=10;membership.direction=0x1234;membership.position={40,-17.5F,79};membership.guild_user_level=-1;
+            ZoneActorEntryServices services;services.send_view=[&](CellCoordinates c,net::Packet p){require(c.x==1 && c.z==1,"Zone enter broadcast used the wrong cell");entry_scene.record('V',p);};services.cell_info=[&](CellCoordinates c){require(c.x==1 && c.z==1 && admitted.status().in_zone && zone.users->position(9001).has_value(),"Cell snapshot preceded actual actor membership");entry_scene.events.push_back("I");};services.obelisks=[&](){entry_scene.events.push_back("O");};services.entered=[&](){entry_scene.events.push_back("E");};services.diagnostic=[&](){entry_scene.events.push_back("DIAGNOSTIC");};services.close=[&](std::uint32_t reason){entry_scene.events.push_back("CLOSE"+std::to_string(reason));};
+            require(enter_zone_actor(zone,admitted,membership,services) && membership.bound && membership.map==20 && zone.users->size()==1 && admitted.appearance().vehicle_mode==0,"Concrete actor did not enter its original map cell or dismount in a dungeon");
+            require(entry_scene.events.size()==7 && entry_scene.events[0]=="V0102292300000234120000204200008cc100009e42ffffffff00000000" && entry_scene.events[1]=="C1d05292300000d" && entry_scene.events[2].starts_with("N1c0529230000") && entry_scene.events[3]=="I" && entry_scene.events[4]=="S5104000000" && entry_scene.events[5]=="O" && entry_scene.events[6]=="E","Concrete zone entry changed view/shape/speed/cell/weather/obelisk/lifecycle ordering");
+            require(zone.users->detach(9001),"Cannot detach native entry fixture");membership.position.x=81;admitted.appearance().vehicle_mode=2;entry_scene.events.clear();require(!enter_zone_actor(zone,admitted,membership,services) && !admitted.status().in_zone && !zone.users->size() && admitted.appearance().vehicle_mode==2 && entry_scene.events==std::vector<std::string>{"DIAGNOSTIC","CLOSE9"},"Out-of-map entry mutated membership/vehicle state or sent success data");
+            struct WorldServices final:WorldAdmissionServices {
+                RuntimeZone& zone;std::function<bool()> entry;std::vector<std::string>& events;
+                WorldServices(RuntimeZone& z,std::function<bool()> e,std::vector<std::string>& v):zone(z),entry(std::move(e)),events(v) {}
+                void packets(WorldAdmissionUser&) override {throw std::runtime_error("Unexpected selection/connection packet work");}
+                RuntimeZone* select_zone(WorldAdmissionUser&) override {events.push_back("SELECT");return &zone;}
+                void register_world(WorldAdmissionUser&) override {events.push_back("REGISTER");}
+                bool enter_zone(WorldAdmissionUser&,RuntimeZone& selected) override {require(&selected==&zone,"Admission changed selected zone");return entry();}
+                void close(WorldAdmissionUser&,std::uint32_t) override {throw std::runtime_error("Unexpected world-state rejection");}
+                void diagnostic(WorldAdmissionUser&,WorldAdmissionError) override {throw std::runtime_error("Unexpected world-state diagnostic");}
+                std::optional<std::uint32_t> rank_window(RuntimeZone&) override {throw std::runtime_error("Unexpected ranked-map clock");}
+                bool lock_guild(WorldAdmissionUser&) override {throw std::runtime_error("Unexpected guild lock");}
+                void unlock_guild(WorldAdmissionUser&) override {throw std::runtime_error("Unexpected guild unlock");}
+            };
+            WorldAdmissionUser waiting;waiting.user_id=player.core.user_id;waiting.map=20;waiting.logout_type=7;waiting.logout_tick=8;
+            WorldServices world_services(zone,[&](){return enter_zone_actor(zone,admitted,membership,services);},entry_scene.events);WorldAdmission world(world_services);world.track_selection(waiting);entry_scene.events.clear();require(world.wait(waiting) && waiting.location==2 && !waiting.logout_type && !waiting.logout_tick,"Native world wait did not clear logout state");world.update_packets();require(waiting.location==3 && waiting.zone==&zone && !world.selection_count() && !world.waiting_count() && world.zone_waiting_count(zone)==1 && entry_scene.events==std::vector<std::string>{"REGISTER","SELECT"},"Native waiting user did not reach the selected zone queue");
+            entry_scene.events.clear();require(!world.client_enter(waiting) && waiting.location==3 && world.zone_waiting_count(zone)==1 && entry_scene.events==std::vector<std::string>{"DIAGNOSTIC","CLOSE9"},"Failed native zone admission did not return its waiting user to the zone queue");membership.position.x=40;entry_scene.events.clear();require(world.client_enter(waiting) && waiting.location==4 && !world.zone_waiting_count(zone) && admitted.status().in_zone && zone.users->size()==1,"Native waiting/0201/actor path failed to complete zone admission");
         }
         loading.events.clear();player.skills[0].id=999;const auto invalid=load_actor(player,rules,{10000,0,0,nullptr},loading);
         require(!invalid.actor && invalid.learned.invalid && loading.events.empty(),"Invalid learned definition proceeded into actor initialization");

@@ -1892,3 +1892,51 @@ raw flags, motion, no guild, captured guild and guild disappearance. Initializat
 catalog serialization, time and transport are ports; original clamps, envelopes,
 CGuildLock and final branches execute unchanged. TCP session ownership, complete
 catalog delivery and actual world/map admission remain pending.
+
+`enter_zone` reconstructs `ps_game.exe` `CZone::EnterUser` (`00415f80..0041619e`).
+Original safe-position and 40-unit cell rules reject invalid X/Z, including
+nonfinite values and mismatched grid dimensions, before changing admission state.
+Y is transmitted without a finite-value check. A map dungeon DWORD of exactly 1
+clears vehicle mode 2. Map/cell/zone fields precede consecutive cell/user membership,
+then the 29-byte `0201` grid-view packet: character ID, permission class (2 for
+permission <=10, otherwise 1), direction WORD, raw XYZ, guild-user level DWORD and
+vehicle partner only for mode 3. Nonzero GetShape triggers shape delivery; speed,
+cell contents, weather mode zero, obelisks and EnterZone follow in that order.
+Invalid coordinates log and close with reason 9 without an admission packet.
+`enter_zone_actor` binds actual `ZoneUsers` membership, actor shape/speed and native
+weather; cell contents, obelisks, transport and EnterZone lifecycle remain required
+services. It uses the actor's authoritative vehicle state and initialized zone
+resources. A 1,584-case instruction fixture verifies admission fields, full 0201
+bytes, signed/raw metadata, coordinates, dungeon values and notification order.
+Membership/scene bodies are ports; original map/cell arithmetic and packet code run.
+
+`WorldAdmission` implements connected/selection/world-wait/zone-wait lists with the
+shared cursor used by `SSyncList<CUser>` (`AddBack` `0040f170`, Remove `0040f200`,
+RemoveFront `0040f260`). Removing the current user during packet processing moves
+the cursor back, retaining the next user. `CWorld::WaitUser` (`0040ce70`) requires
+location 1, clears logout type/tick, moves to location 2 and registers the world
+user. Wrong location closes before logging. `UpdatePackets` (`0040bf90`) processes
+connected and selecting users in list order, then consumes world-wait FIFO entries.
+Zone selection precedes the user transition; success binds the zone, appends its
+wait list and sets location 3. Failure logs, appends the selection list, sets
+location 1 and closes. No extra location recheck is inserted after selection.
+
+Client `CUser::ZoneEnterUserMove` (`0044b8a0`) first requires an assigned zone.
+Party/rank/house maps (create types 3/5/6) clear a nonzero administrator instance
+owner for permission <=10. Rank maps check their opening window, record its stamp
+and increment the live guild's DWORD entry counter under a captured guild lock.
+These effects precede the location-3 check, including on rejected requests.
+A valid request removes the zone-wait node and invokes CZone::EnterUser; success
+sets location 4, failure appends it again. World-directed entry (`0040d000`) instead
+reselects the zone first and skips those client rank/override effects. Source
+ownership requires the user to belong to that selected zone's queue; the native
+adapter rejects invalid list ownership instead of dereferencing stale links.
+
+A 1,024-sequence fixture executes 7,168 original wait/update/client/world operations,
+including original list bodies and guild locking. A packet-body trampoline invokes
+original WaitUser during iteration. Selection, full zone entry, rank clock, world
+indexes/logging, OS and transport are explicit ports. Native composition joins a
+loaded actor, waiting lists, failed-position requeue, successful location 4, actual
+cell membership and view/shape/speed/weather delivery. It does not supply live TCP
+ownership, entity snapshots, obelisks, world indexes/logging or EnterZone services;
+those remain required integration/reconstruction work before a playable entry.

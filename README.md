@@ -71,7 +71,8 @@ replacement run natively in the actor. User appearance packets include visible
 equipment, enchantments, cloak and social fields, with a copied-user snapshot path.
 Native user-cell queries now reveal hidden enemies using original duel, guild
 and map rules. Server map files/configuration, collision/line checks, A* paths, entry bounds and movement cell resolution are
-reconstructed; world admission, broadcasts, combat and TCP world entry remain pending.
+reconstructed. Waiting/zone admission connects native actor membership, shape/speed
+and weather; complete world delivery, combat and TCP world entry remain pending.
 Zone selection/reuse and access rules are reconstructed; world object initialization
 and zone queue services remain required dependencies.
 Door/region templates, door operation and weather transitions are reconstructed.
