@@ -3,6 +3,7 @@
 #include "eternity/game/skill_replica.hpp"
 #include "eternity/game/quest_replica.hpp"
 #include "eternity/game/interface_replica.hpp"
+#include "eternity/game/account_state.hpp"
 
 namespace eternity::game {
 // Serialized DB-agent character state. Money has one authority:
@@ -10,7 +11,7 @@ namespace eternity::game {
 // Optional shared skill/quest pools must outlive this character.
 class CharacterReplica {
 public:
-    CharacterReplica(PlayerCore core,InventoryReplicaPool& pool,SkillReplicaPool* skills=nullptr,QuestReplicaPool* quests=nullptr):core_(std::move(core)),inventory_(core_.user_id,core_.money,pool),skills_(core_.user_id,core_.skill_points,skills?*skills:owned_skill_pool_),quests_(core_.user_id,quests?*quests:owned_quest_pool_),interface_(core_.user_id) {}
+    CharacterReplica(PlayerCore core,InventoryReplicaPool& pool,SkillReplicaPool* skills=nullptr,QuestReplicaPool* quests=nullptr):core_(std::move(core)),inventory_(core_.user_id,core_.money,pool),skills_(core_.user_id,core_.skill_points,skills?*skills:owned_skill_pool_),quests_(core_.user_id,quests?*quests:owned_quest_pool_),interface_(core_.user_id),market_(core_.user_id) {}
     PlayerCore core() const {auto result=core_;result.money=inventory_.money();return result;}
     InventoryReplica& inventory() noexcept {return inventory_;}
     const InventoryReplica& inventory() const noexcept {return inventory_;}
@@ -20,12 +21,16 @@ public:
     const QuestReplica& quests() const noexcept {return quests_;}
     InterfaceReplica& interface() noexcept {return interface_;}
     const InterfaceReplica& interface() const noexcept {return interface_;}
+    MarketReplica& market() noexcept {return market_;}
+    const MarketReplica& market() const noexcept {return market_;}
+    GrowthReplica& growth() noexcept {return growth_;}
+    const GrowthReplica& growth() const noexcept {return growth_;}
     InventoryReplicaResult apply(std::span<const std::uint8_t>);
     bool body_changed() const noexcept {return body_changed_;}
     // Core portion of CUser::SaveSuccess 00409560, after complete character commit.
     void core_save_success() noexcept {body_changed_=false;}
 private:
     PlayerCore core_;InventoryReplica inventory_;SkillReplicaPool owned_skill_pool_;SkillReplica skills_;
-    QuestReplicaPool owned_quest_pool_;QuestReplica quests_;InterfaceReplica interface_;bool body_changed_=false;
+    QuestReplicaPool owned_quest_pool_;QuestReplica quests_;InterfaceReplica interface_;MarketReplica market_;GrowthReplica growth_;bool body_changed_=false;
 };
 }

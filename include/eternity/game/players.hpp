@@ -49,6 +49,7 @@ struct PlayerSnapshot {
     std::vector<FinishedQuest> finished_quests;
     std::vector<QuickSlot> quick_slots;
     std::vector<PlayerSavePoint> save_points;
+    std::vector<std::uint32_t> concern_market;
     std::uint32_t cash_points = 0;
     std::int32_t guild_rejoin_hours = 0;
     // Preserve original rows for effects, quests, quick slots, save points, point log/items, social and market data.

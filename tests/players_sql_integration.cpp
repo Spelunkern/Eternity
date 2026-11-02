@@ -104,6 +104,7 @@ int main(int argc,char** argv) {
                 "Original quest finish/delete filtering changed");
         require(snapshot->quests.size()==1 && snapshot->quests[0].id==23 && snapshot->quests[0].delay==42 && snapshot->quests[0].counters==std::array<std::uint8_t,3>{3,4,5} &&
                 snapshot->finished_quests.size()==1 && snapshot->finished_quests[0].id==24 && snapshot->finished_quests[0].success==1,"Typed SQL quest state changed");
+        require(snapshot->concern_market==std::vector<std::uint32_t>{777},"Typed market concern IDs changed");
         require(snapshot->save_points.size()==1 && snapshot->save_points[0].slot==2 && snapshot->save_points[0].map==1 && snapshot->save_points[0].x==10.5F && snapshot->save_points[0].y==20.5F && snapshot->save_points[0].z==30.5F,"Typed save point state changed");
         require(snapshot->quick_slots.size()==1 && game::character_quick_slots(snapshot->quick_slots)==net::Packet{0x0b,1,1,1,2,3,7,0},"SQL quick slot WORD did not reach the original packet");
         const auto consumed=database.query("SELECT COUNT(*) FROM "+prefix+"PointGiftNotify WHERE UserUID=7001; SELECT COUNT(*) FROM "+prefix+

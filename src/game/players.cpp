@@ -197,6 +197,10 @@ std::optional<PlayerSnapshot> Players::load(std::uint32_t uid,std::uint32_t cid,
     if(hours.size()!=1) throw std::runtime_error("Missing original guild rejoin output");
     snapshot.guild_rejoin_hours=static_cast<std::int32_t>(integer(hours[0],0));
     snapshot.catalogs["ConcernMarket"]=result(database_.query("EXEC "+prefix_+"usp_Read_Char_ConcernMarket_R ?;",character),1);
+    for(const auto& row:snapshot.catalogs.at("ConcernMarket").rows) {
+        if(row.size()!=1) throw std::runtime_error("Original market concern row changed");
+        snapshot.concern_market.push_back(dword(row,0));
+    }
     // CUser::LoadCharacter 00404b00 ignores separate friend/block/gift loader failures.
     for(const auto social:{Loader{"Friends","usp_Read_FriendChar_R",7,false},Loader{"Blocked","usp_Read_BanChar_R",3,false},
                           Loader{"GiftNotifications","usp_Read_User_GiftPointItemNotify",3,true}}) {

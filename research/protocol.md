@@ -1534,5 +1534,48 @@ errors. It executes original CRT formatting, complete SaveSuccess and save-phase
 branches. Disposable SQL verifies periodic/explicit quick saves, partial quick
 commit, immediate diagnostics before a later point failure, rollback/retry
 across core/inventory/skills/quests/interface, coordinate rounding and sentinel
-behavior. Gameplay use and TCP delivery, billing/market phases, max-grow saving,
-file fallback, scheduling and the complete runtime save owner remain pending.
+behavior. Gameplay use and TCP delivery, billing, file fallback, scheduling
+and the complete runtime save owner remain pending.
+
+
+Market watch state reconstructs `ps_dbAgent.exe`, status `061a` in
+`PacketUserSetStatus` (`00405b00`) and `SendCharacterConcernMarket` (`0040ae20`).
+The cache holds ten DWORD IDs at `+867c`, a BYTE count at `+8678`, and state at
+`+8674`: incoming nonempty lists set state 1, empty lists state 3. Loaded lists
+start at 0. Order, duplicates and signed DWORD bit patterns remain intact.
+`0510` emits no packet for an empty list. The game sender `SendConcernMarket`
+(`ps_game.exe`, `00484010`) sends `061a` with variable length `7+4*count`.
+Typed market rows decode after their SQL query, preserving original load order.
+
+`MarketStore` reconstructs the last `SaveCharacter` phase
+(`004247e2..00424a81`). States 1/3 first delete the stored list; state 1 then
+adds IDs in order. Query errors log, stop that phase and remain nonfatal, so
+a partial list can commit while the cache remains pending. Only complete SQL
+success clears state, before the enclosing commit. SaveSuccess does not clear
+it or restore it after rollback. Explicit rollback after successful market SQL
+therefore leaves an unmarked cache whose list differs from the database.
+A 1,024-state original-code fixture compares 4,920 planned calls, 3,888 attempts,
+packets, error paths and complete SaveSuccess behavior.
+
+`GrowthReplica`/`GrowthStore` reconstruct `DBCharacter::SaveMaxGrow`
+(`004200c0`). If current grow exceeds cached maximum and is <=3, the cache
+catches up. At equal grow <3, it advances once; grows 1/2 require level >=30.
+The cache changes before DB allocation and is never restored on failure. Later
+calls evaluate the changed maximum, so a failed 2-to-3 unlock is not retried
+for that same grow. This write occurs before the character transaction on its
+own DB allocation. Null user returns 1; unavailable allocation returns 3;
+negative procedure return gives -1. API failures log but return 0, as does
+success. A zero-row SQL update is accepted by the original procedure. Native
+ports retain those distinct outcomes; the SQL store requires a connection
+outside the character transaction. Its initial maximum is supplied by the
+account roster, whose existing loader clamps it to at least 2.
+
+An original-code growth fixture compares 1,660 sequential attempts in 830
+cases, including threshold bounds, catch-up, null users, allocation/bind/query/
+result failures, negative procedure returns and repeat attempts after mutation.
+Disposable SQL composes market with core/items/skills/quests/interface and
+verifies partial commit, retry, pre-commit marker timing, signed IDs and owner
+isolation. It also verifies unlocks surviving character rollback and failed
+unlocks retaining cache changes. Billing, file fallback, scheduling and the
+complete runtime transaction owner remain pending; market gameplay and TCP
+delivery are still separate work.

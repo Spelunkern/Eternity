@@ -51,8 +51,9 @@ markers, sharing money status with item commands. Its inventory/bank SQL phase
 preserves ordered deletions, insert recovery and commit-only acknowledgment.
 A shared character replica handles core status and appearance changes; core/body
 SQL can commit with inventory, learned/applied skills and quest changes in the
-same transaction. Quick slots and save points retain original optional-save and
-error behavior. Remaining billing/market phases, transfers and scheduling are pending.
+same transaction. Quick slots, save points and market watch lists retain original
+save/error behavior; difficulty unlocks write separately before character saving.
+Billing, transfers and scheduling remain pending.
 Actor money credits preserve unsigned limits and ordered DB-status/client/log
 messages, with money-item release to the pool. Periodic money saving and shared
 loot dispatch still require integration.
