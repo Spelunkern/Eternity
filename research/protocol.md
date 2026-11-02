@@ -1098,3 +1098,36 @@ hash/consumed offset. Cases include missing items, owner/group combinations,
 deadline equality/wrap, exact/near distance boundaries, duplicate links and all
 failure codes. SQL integration now runs the complete supplied link distribution
 check. Inventory transfers and live TCP pickup dispatch remain pending.
+
+Money reconstruction covers `ps_game.exe` `ChkAddableMoney` (`00438460`),
+`IsvaildMoney` (`0044a040`), `ChkAddMoneyGet` (`0045b230`), `ChkAddMoney`
+(`00478360`), `SendDBMoney` (`0046c700`), `ItemGetMoney` (`0045ec70`) and the
+money branch of `ItemGet(CItem*)` (`0045df40..0045e085`). Bounds are unsigned
+DWORDs: sufficient money accepts amount <= balance, addability accepts amount
+<= UINT32_MAX-balance, and credit saturates at UINT32_MAX. `ChkAddMoneyGet`
+also changes the caller's amount to the accepted portion; `ChkAddMoney` does not.
+Arithmetic-only helpers send nothing. Actor loading now retains account UID and
+money separately from character/runtime ID.
+
+Credit always queues ten-byte `0603` (account UID, total balance), sends the
+16-byte `0205` receipt, then emits an 82-byte `0801` game log with the common
+74-byte header, accepted amount and current total. Zero credit still follows
+that sequence. The receipt has bag 1/slot 0/type 26, with the accepted DWORD
+at offsets 7..10. Direct credit uses type-ID 0/count 1; money-item credit copies
+those two bytes from the item, then releases the detached allocation after the
+log. Drop amount and item metadata remain unchanged, including when some money
+cannot fit. Receipt amount is captured before transport; the log samples the
+current balance after the common header, matching the original order.
+
+`MoneyReplica` reconstructs the cached DWORD assigned by `ps_dbAgent.exe`
+`CUser::PacketUserSetStatus` (`00405b00`, case `0603`) with owned account binding.
+This status update does not itself write SQL. Full character saving through
+`DBCharacter::SaveCharacter` (`00423190`) remains pending, as do party loot
+distribution, normal inventory admission and live pickup command dispatch.
+`MoneyWorld` requires ordered DB-status and log transport/calendar services.
+
+The oracle compares 1,792 original bounds/saturation/receipt/log/free operations,
+including zero, exact capacity, full DWORD values and calendar wrap. Native
+checks apply each status packet to the owned money replica, reject other-account
+or truncated updates, and join actual zone pickup, capped actor credit and pool
+release. Actor-load checks retain distinct account identity and unsigned balance.

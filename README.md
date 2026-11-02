@@ -38,6 +38,9 @@ Ground-item zone/cell indexes, visibility and expiry are reconstructed, includin
 native wager placement, expiry and pool recycling. The item pool preserves reused
 IDs and partial initialization. Pickup permissions and item/quest links are
 reconstructed; inventory transfers and TCP pickup dispatch remain pending.
+Actor money credits preserve unsigned limits and ordered DB-status/client/log
+messages, with money-item release to the pool. Periodic money saving and shared
+loot dispatch still require integration.
 Actor preparation connects these stages, including effect-driven resource clamps
 and cleanup. Equipment/transformation attack rebuilding and elemental-effect
 replacement run natively in the actor. User appearance packets include visible

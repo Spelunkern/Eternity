@@ -7,6 +7,8 @@
 #include "eternity/game/duel.hpp"
 
 namespace eternity::game {
+class MoneyWorld;
+class GroundItemPool;
 // Required scene/transport services. Implementations own zone binding, combat
 // and connection queues; none default to no-op.
 class ActorScene {
@@ -58,6 +60,13 @@ public:
     ActorAppearance& appearance() noexcept {return appearance_;}
     const ActorAppearance& appearance() const noexcept {return appearance_;}
     std::uint32_t id() const noexcept {return id_;}
+    std::uint32_t& account_id() noexcept {return account_id_;}
+    std::uint32_t account_id() const noexcept {return account_id_;}
+    std::uint32_t& money() noexcept {return money_;}
+    std::uint32_t money() const noexcept {return money_;}
+    void send_money_database(MoneyWorld&);
+    std::uint32_t receive_money(std::uint32_t amount,MoneyWorld&);
+    std::uint32_t receive_money_item(GroundItem&,MoneyWorld&,GroundItemPool&);
     UserRelations& relations() noexcept {return relations_;}
     const UserRelations& relations() const noexcept {return relations_;}
     ActorAttackState& attack_state() noexcept {return attack_;}
@@ -122,6 +131,7 @@ private:
     void send_view(const net::Packet&) override;
     void reset_damage() override;
     std::uint32_t id_;
+    std::uint32_t account_id_=0,money_=0;
     EffectStatus status_;
     ActorAppearance appearance_;
     ActorAttackState attack_;

@@ -81,11 +81,12 @@ int main(int argc,char** argv) {
         const auto quests=QuestDefinitions::decode(net::Packet{0,0,0,0});const ActorLoadRules rules{statuses,items,enchant,skills,quests,default_mobs};
         PlayerSnapshot player;auto& character=player.core.character;character.id=9001;character.level=1;character.map=1;character.strength=10;character.dexterity=20;
         character.recovery=30;character.intelligence=40;character.wisdom=50;character.luck=60;character.hp=2000;character.mp=3000;character.sp=4000;
-        player.skills={{100,5,1,0,0}};player.effects={{101,1,30}};
+        player.skills={{100,5,1,0,0}};player.effects={{101,1,30}};player.core.user_id=12345;player.core.money=0xfffffff0U;
         BlessingDefinition blessing;blessing.modifiers[1]=10;blessing.modifiers[5]=5;blessing.modifiers[8]=3;Scene loading;
         {
             auto loaded=load_actor(player,rules,{10000,0,2,&blessing},loading);
             require(loaded.actor && !loaded.learned.invalid && loaded.learned.active.size()==1 && loaded.learned.active[0].end_tick==15000,"Actor load lost learned cooldown");
+            require(loaded.actor->account_id()==12345 && loaded.actor->money()==0xfffffff0U,"Actor load lost account identity or unsigned money");
             const auto& loaded_status=loaded.actor->status();const auto maximum=loaded_status.skills.equipment.base.maximum;
             require(maximum.hp==1429 && maximum.mp==2425 && maximum.sp==3110 && loaded_status.skills.equipment.base.attributes.strength==22,"Actor equipment/blessing/passive/effect order changed");
             require(loaded.actor->resources().hp==1429 && loaded.actor->resources().mp==2325 && loaded.actor->resources().sp==3110,"Actor load postponed intermediate effect clamping until final maxima");

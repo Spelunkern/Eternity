@@ -10,6 +10,7 @@ LoadedActor load_actor(const PlayerSnapshot& player,const ActorLoadRules& rules,
         PlayerResources{player.core.character.hp,player.core.character.mp,player.core.character.sp},player.effects,scene,
         ActorEquipmentRules{rules.items,rules.enchant,rules.mobs},player.items);
     auto& actor=*result.actor;auto& status=actor.status();
+    actor.account_id()=player.core.user_id;actor.money()=player.core.money;
     actor.appearance().identity=user_shape_identity(player.core,options.country);
     actor.relations().guild_id=player.core.guild_id;
     actor.effects().restore(player.effects,rules.skills,player.core.character.map,options.disconnected_seconds,options.tick_ms,actor);
