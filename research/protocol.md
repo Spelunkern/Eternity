@@ -1274,8 +1274,8 @@ visibility, exact packets/logs, ordered frees, current resource clamps, offer
 references, qualities and final inventories. Attack arithmetic is isolated in
 this fixture and retains its separate original-code tests. Native preparation
 also checks pooled SQL-row loading (including unequipped bag-0 storage beyond
-slot 12), allocation failure and teardown. Inventory movement handlers, DB-agent inventory persistence and TCP world
-dispatch remain pending.
+slot 12), allocation failure and teardown. Inventory movement handlers and TCP
+world dispatch remain pending; DB-agent inventory persistence is documented below.
 
 
 Ground drops (`ps_game.exe`, complete `CUser::ItemDrop` `0045cd10`) now connect
@@ -1307,7 +1307,8 @@ partial admission, including equipped oversized requests. Native zone integratio
 checks `0401` visibility, lifetime/expiry, recycling, new split identity and
 retained whole-drop identity without double release at actor teardown. UID
 arithmetic and zone internals retain their separate original-code fixtures.
-Inventory movement, live TCP dispatch and inventory SQL saving remain pending.
+Inventory movement and live TCP dispatch remain pending; the DB-agent inventory
+SQL phase is documented below.
 
 
 DB-agent inventory/bank replica (`ps_dbAgent.exe`, `CUser::PacketUserItem`
@@ -1346,6 +1347,33 @@ all item fields, raw craft buffers, flags, ordered journals, money and allocatio
 recycle/stranded counts after each command. It executes the original nested
 journal/list, allocation, copy and free code. A native actor-to-replica flow also
 checks money credit, stacking, split drop, real-zone pickup, persisted UID
-removal and transient insert/remove suppression. Transactional SQL saving,
-save-success/failure snapshots, billing/guild cache owners and TCP world
-integration remain pending.
+removal and transient insert/remove suppression. Billing/guild cache owners,
+complete character saving and TCP world integration remain pending.
+
+
+Inventory/bank persistence reconstructs the corresponding phase of
+`ps_dbAgent.exe`, `DBCharacter::SaveCharacter` (`00423190`,
+`0042366d..00423f55`), insert recovery `SaveCharacterItemUnit` (`00424ac0`)
+and `SaveCharacterBankItemUnit` (`00424bc0`). Each FIFO deletion journal is
+written before its slot-ordered rows. The first delete call contains up to 40
+UIDs; the original counter never resets, so later UIDs each produce one call
+(`00423733`, `00423bc9`). Save type 1 inserts, 2 modifies; other values skip.
+Failed inserts delete that UID with `ChkID=0` (global UID scope), then retry the
+same insert once. Modifications and journal deletions have no recovery path.
+UIDs preserve signed BIGINT bit patterns; item IDs preserve signed DWORDs;
+`ConvTimeToString` (`0042ad20`) formats raw packed-date fields even when invalid.
+The original procedures normalize inventory insert quality >=5000 to zero,
+while bank inserts and both modifications retain SQL SMALLINT limits.
+
+`InventoryStore::save_in_transaction` requires the enclosing character
+transaction and never commits, rolls back or acknowledges it. Its owner must
+retain exclusive cache access through the entire save, matching original
+`SaveLock`/`SaveUnlock`; only after commit may it invoke the inventory/bank
+portion of `CUser::SaveSuccess` (`00409560`) to clear journals and item flags.
+All SQL values are bound parameters, including craft strings. A 128-scenario
+original-code fixture compares 4,925 generated calls, including journal
+boundaries, slot ordering, dirty flags, numeric extremes and packed dates.
+Disposable original-procedure SQL checks cover inserts, modifications, bank
+transfers, global-UID recovery, rollback across other character writes and
+retry without losing pending changes. The remaining character save phases,
+file fallback, save scheduling and runtime transaction owner are pending.

@@ -40,6 +40,11 @@ public:
     const std::vector<std::uint64_t>& deleted_inventory() const noexcept {return deleted_inventory_;}
     const std::vector<std::uint64_t>& deleted_bank() const noexcept {return deleted_bank_;}
     std::uint32_t money() const noexcept {return money_;}
+    std::uint32_t account_id() const noexcept {return account_id_;}
+    // Inventory/bank portion of CUser::SaveSuccess (00409560). Caller must hold
+    // exclusive cache ownership through the complete character transaction and
+    // call this only after its successful commit. Rollback leaves this untouched.
+    void inventory_save_success() noexcept;
 private:
     using Item=std::unique_ptr<CachedInventoryItem>;
     void journal(const Item&,bool bank);

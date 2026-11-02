@@ -13,6 +13,11 @@ void InventoryReplicaPool::release(std::unique_ptr<CachedInventoryItem> item) {i
 void InventoryReplicaPool::strand(std::unique_ptr<CachedInventoryItem> item) {if(item){std::lock_guard lock(mutex_);stranded_.push_back(std::move(item));}}
 InventoryReplicaPoolStatistics InventoryReplicaPool::statistics() const {std::lock_guard lock(mutex_);return {attempts_,available_.size(),stranded_.size()};}
 InventoryReplica::~InventoryReplica() {for(auto& item:inventory_) pool_.release(std::move(item));for(auto& item:bank_) pool_.release(std::move(item));}
+void InventoryReplica::inventory_save_success() noexcept {
+    deleted_inventory_.clear();deleted_bank_.clear();
+    for(auto& item:inventory_) if(item) item->save_type=0;
+    for(auto& item:bank_) if(item) item->save_type=0;
+}
 namespace {
 std::uint64_t get(std::span<const std::uint8_t> p,std::size_t offset,unsigned int bytes) {std::uint64_t value=0;for(unsigned int i=0;i<bytes;++i) value|=static_cast<std::uint64_t>(p[offset+i])<<(8*i);return value;}
 void dirty(CachedInventoryItem& item) {if(item.save_type==0) item.save_type=2;}

@@ -45,6 +45,7 @@ public:
     void begin();
     void commit();
     void rollback();
+    bool transaction_active() const noexcept { return transaction_active_; }
 private:
     SQLHENV environment_ = SQL_NULL_HENV;
     SQLHDBC connection_ = SQL_NULL_HDBC;
