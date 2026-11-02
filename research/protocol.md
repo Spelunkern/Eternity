@@ -2102,3 +2102,43 @@ string tails are normalized. Native composition joins actual loaded-actor world
 indexing, guild-list serialization, lifecycle logs, offline money and social exit
 after index removal. Full party/guild/admin ownership, production log transport
 and live TCP world entry remain unfinished.
+
+`GuildMembership` reconstructs `ps_game.exe` `CGuild::ConnectUser` (`0042d1c0`)
+and `DisconnectUser` (`0042d300`). An application row takes priority and only
+sets the user's guild-request ID. Otherwise connection consumes the offline row,
+copies guild/rank/ranking-entry state, binds its live user and fills the first
+empty one of seven officer slots for signed rank <3. `0d0c` mode `0x68` broadcasts
+before insertion into the online index. Disconnect consumes the online row,
+clears only the first matching officer slot when the user's live rank <3,
+retains the current ranking-entry stamp, clears the record's live user, inserts
+offline and broadcasts mode `0x69`. It deliberately leaves the user's guild fields
+for later character reset. Record-ID insertion remains independent of lookup key.
+
+`CGuild::Send` (`0042c050`) allocates one shared packet even for no recipients;
+allocation failure drops that broadcast without failing membership. It sends in
+online-map key order, skips absent live users and stops on a null record. The
+native transport exposes packet allocation/release and peer-delivery boundaries.
+`SendGuildUserList` (`0042c980`) streams `0d12` online, `0d13` offline with zero
+billing ID and `0d19` offline with nonzero billing ID. Records contain ID/rank/
+level/job/name in 29 bytes. `SendGuildJoinList` (`0042ce10`) sends 28-byte `0d16`
+application records without rank. Both batch 40, omit empty packets, preserve key
+order, truncate numeric wire widths and normalize only undefined name padding.
+The billing field remains part of normal guild views despite excluding gamewar.
+
+`GuildDirectory` reconstructs first-insert character-to-guild registration
+(`00432ab0`) and character-ID routing (`00431730`). InitGuild (`004762c0`)
+clears request ID, guild ID, rank and guild pointer before connecting; successful
+connection invokes SendCharacterGuild (`00476390`), sending member lists and,
+for signed rank <3, applications. ReleaseGuild (`00476300`) disconnects the
+captured guild. The native owner serializes these operations, so concurrent
+guild destruction/lock-time disappearance must be resolved by the future global
+owner rather than imitated with unowned raw pointers.
+
+The 72-sequence fixture executes 648 original membership/list owners with real
+tree insertion/removal, all seven officer slots, full officer arrays, packet-pool
+failures, null rows and 39/40/41-record boundaries. OS/allocation/transport are
+ports; original broadcast and roster iteration run. Actor composition now joins
+selection InitGuild, world entry guild listings and world-leave ReleaseGuild,
+preserving ranking state and officer cleanup. Global SQL guild loading, ownership,
+applications/rank-management gameplay, bank/NPC delivery and live TCP integration
+remain required before a playable service.

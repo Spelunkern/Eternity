@@ -80,6 +80,9 @@ world entry remain pending.
 World ID/name indexes preserve original duplicate and zone/logout lookup rules.
 World entry/leave coordination includes original log packets, offline money checks
 and social departure notices; full guild/party/admin services remain pending.
+Native guild membership moves accepted members between online/offline indexes,
+retains rank-map stamps and sends original roster/application packets. Global SQL
+guild loading and guild gameplay remain pending.
 Zone selection/reuse and access rules are reconstructed; world object initialization
 and zone queue services remain required dependencies.
 Door/region templates, door operation and weather transitions are reconstructed.
