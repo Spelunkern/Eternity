@@ -18,6 +18,7 @@ original persisted world calendar. Faction selection and character creation work
 over TCP with original SQL persistence and starter items. World entry is pending.
 Character detail loading and the experience/character-data packet are implemented
 and tested separately; selection does not enter the world yet.
+Base statistics and equipment modifiers are reconstructed; effects and gameplay remain pending.
 The active MD5 login
 path needs a missing procedure; see [research](research/protocol.md).
 

@@ -1,34 +1,13 @@
 #!/usr/bin/env python3
 """Execute the original SetAttack function to generate regression vectors (optional Unicorn dependency)."""
-import hashlib
-from pathlib import Path
 import random
 import struct
-from unicorn import Uc, UC_ARCH_X86, UC_MODE_32
 from unicorn.x86_const import UC_X86_REG_ECX, UC_X86_REG_ESP, UC_X86_REG_FPCW
-
-ROOT = Path(__file__).resolve().parents[1]
+from original_oracle import load_game
 
 
 def main():
-    original = ROOT / "originals/ps_game/ps_game.exe"
-    data = original.read_bytes()
-    digest = hashlib.sha256(data).hexdigest()
-    expected = next(line.split()[0] for line in (ROOT / "SHA256SUMS").read_text().splitlines()
-                    if line.split()[-1].removeprefix("*") == "originals/ps_game/ps_game.exe")
-    if digest != expected:
-        raise RuntimeError("Original executable hash mismatch")
-    pe = struct.unpack_from("<I", data, 0x3c)[0]
-    count, optional_size = struct.unpack_from("<H12xH", data, pe + 6)
-    optional = pe + 24
-    base = struct.unpack_from("<I", data, optional + 28)[0]
-    size = struct.unpack_from("<I", data, optional + 56)[0]
-    machine = Uc(UC_ARCH_X86, UC_MODE_32)
-    machine.mem_map(base, (size + 4095) & ~4095)
-    for section in range(count):
-        offset = optional + optional_size + 40 * section
-        virtual, raw_size, raw_offset = struct.unpack_from("<III", data, offset + 12)
-        machine.mem_write(base + virtual, data[raw_offset:raw_offset + raw_size])
+    machine, digest = load_game()
     stack, user, stop = 0x20000000, 0x30000000, 0x10000000
     for address in (stack, user, stop):
         machine.mem_map(address, 0x10000)

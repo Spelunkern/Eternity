@@ -1,5 +1,7 @@
 #include "eternity/game/creation.hpp"
 #include "eternity/game/player_packets.hpp"
+#include "eternity/game/equipment.hpp"
+#include <algorithm>
 #include <bit>
 #include <iostream>
 
@@ -12,6 +14,9 @@ int main(int argc,char** argv) {
         storage::SqlServer database(storage::SqlServerConfig::from_environment());
         const auto definitions=game::Definitions::load(database);const auto rules=game::CreationRules::load(definitions);
         const auto experience=game::Experience::load(definitions.catalogs.at("ExpDefs"));
+        const auto statuses=game::StatusRules::load(definitions.catalogs.at("StatusDefs"));
+        const auto item_definitions=game::ItemDefinitions::load(definitions.catalogs.at("Items"));
+        const auto enchant=game::EnchantValues::read(".local/server-data/ItemEnchant.ini");
         require(experience.bounds(0,1).previous==0 && experience.bounds(0,1).next==70,"Original level-one experience contract changed");
         const auto base=std::chrono::sys_days{std::chrono::year{2024}/1/1};game::Characters characters(database,1,base,catalog);
         require(characters.save_country(7001,0,true) && characters.save_country(7002,0,true),"Cannot initialize player fixture factions");
@@ -65,6 +70,13 @@ int main(int argc,char** argv) {
                 snapshot->items[2].bag==1 && snapshot->items[2].slot==1,"Duplicate SQL inventory item did not relocate to the first free inventory slot");
         require(snapshot->bank.size()==2 && snapshot->bank[0].uid==1200 && snapshot->bank[0].relocated && snapshot->bank[1].uid==1300 &&
                 snapshot->bank[1].slot==3,"Original bank item order/relocation changed");
+        const auto equipment=game::initialize_equipment(statuses.base(core.character),snapshot->items,item_definitions,enchant);
+        require(equipment.base.maximum.hp>=250 && equipment.base.maximum.mp>=85 && equipment.base.maximum.sp>=195 &&
+                equipment.attack.item_attack>0 && equipment.range>0,"Loaded original starter equipment did not initialize player status");
+        auto without_bags=snapshot->items;without_bags.erase(std::remove_if(without_bags.begin(),without_bags.end(),[](const auto& item){return item.bag!=0;}),without_bags.end());
+        const auto equipment_only=game::initialize_equipment(statuses.base(core.character),without_bags,item_definitions,enchant);
+        require(equipment_only.attack.item_attack==equipment.attack.item_attack && equipment_only.base.maximum.hp==equipment.base.maximum.hp,
+                "Inventory bags contributed equipped status");
         require(snapshot->skills.size()==2 && snapshot->skills[0].id==10 && snapshot->skills[0].number==0 && snapshot->skills[0].persisted_number==7 &&
                 snapshot->skills[1].id==11 && snapshot->skills[1].number==1 && snapshot->skills[1].delay==13,"Original player skill ordering changed");
         require(snapshot->cash_points==321 && snapshot->guild_rejoin_hours>=71 && snapshot->guild_rejoin_hours<=72,

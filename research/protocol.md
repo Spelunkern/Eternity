@@ -157,6 +157,21 @@ attack categories, retaining x87 float spills, truncation and 32-bit wrap.
 The critical formula uses the original float constant `0x3e428f5c` (0.19).
 `tools/attack_oracle.py` executes that original function with Unicorn and
 regenerates 84 committed regression vectors; regular CTests need no emulator.
-Equipment, blessing, passives, effects, damage resolution and world integration
-are separate pending stages. Ghidra's `EternityOffsets.java` gives anonymous
+Blessing, passives, effects, damage resolution and world integration remain
+pending. Ghidra's `EternityOffsets.java` gives anonymous
 PDB padding fields unique offset names without inferring their meaning.
+
+Equipment initialization now applies all 13 equipped slots in original order,
+before blessing/passives/effects. `CGameData::LoadConstItem` (`004c6420`) derives
+quality thresholds at 50%/10%, half effects and zero effects at the lowest tier.
+`CUser::ItemEquipmentAdd` (`00454c70`) treats weapons, armor and accessories
+separately; `GemEquipmentAdd` (`004560c0`) handles recovery gems, state blocks,
+stat/resource bonuses and element conflicts. `CItem::CopyCraftExpassion`
+(`004ba670`) decodes the nine two-digit craft bonuses and weapon/defense enchant
+values from server `ItemEnchant.ini`; ineligible items retain empty craft state
+when freshly initialized. Native initialization is tested with restored SQL
+definitions and loaded inventory. `tools/equipment_oracle.py` executes the original
+craft, equipment, gem and element routines to regenerate 138 committed vectors;
+only Windows critical-section calls are replaced with no-ops around a supplied
+local skill list. Equipment-change broadcasts, reroll/removal, wear updates and
+combat execution are pending.
