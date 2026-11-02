@@ -19,8 +19,8 @@ over TCP with original SQL persistence and starter items. World entry is pending
 Character detail loading and the experience/character-data packet are implemented
 and tested separately; selection does not enter the world yet.
 Base statistics, equipment modifiers, passive skills and active-effect state are
-reconstructed. Saved effect timers restore independently; live world operations
-and gameplay remain pending.
+reconstructed. Effect restoration, expiry and SQL snapshots are tested
+independently; live world operations and gameplay remain pending.
 The active MD5 login
 path needs a missing procedure; see [research](research/protocol.md).
 

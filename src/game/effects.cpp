@@ -93,7 +93,10 @@ void remove_active_effect(EffectStatus& status,const SkillDefinition& skill,cons
     // CUser::RemApplySkillBuff 00485130 / RemApplySkillDebuff 00485720, ps_game.exe.
     auto& equipment=status.skills.equipment;
     const auto restore_defense=[&]{if(items.armor) equipment.defense_attribute=item_attribute(*items.armor,definitions);};
-    if(skill.effect==3) {
+    if(skill.effect==0 && skill.detail==6) {
+        // CUser::RemApplySkill 00484c60 also expires an activated low-HP passive.
+        abilities(status,skill,true,true,world);status.skills.hp_ability_applied=false;
+    } else if(skill.effect==3) {
         switch(skill.detail) {
             case 61:case 63:world.finish_periodic_damage(status,skill,source,tick-source.previous_tick);break;
             case 62:case 67:abilities(status,skill,false,false,world);break;

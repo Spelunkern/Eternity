@@ -35,7 +35,8 @@ def run(command, build_directory="build"):
                       "usp_Read_Char_ApplySkills_R", "usp_Read_Char_Quest_R", "usp_Read_Char_FinishedQuest_R",
                       "usp_Read_Char_QuickSlots_R", "usp_Read_Char_SavePoint", "usp_Read_Chars_PointLog_R",
                       "usp_Read_User_StoredPointItems", "usp_Read_User_CashPoint_NCash", "usp_Read_Char_GuildJoinDate_R",
-                      "usp_Read_Char_ConcernMarket_R", "usp_Read_FriendChar_R", "usp_Read_BanChar_R", "usp_Read_User_GiftPointItemNotify")
+                      "usp_Read_Char_ConcernMarket_R", "usp_Read_FriendChar_R", "usp_Read_BanChar_R", "usp_Read_User_GiftPointItemNotify",
+                      "usp_Save_Char_ApplySkill_Del_E", "usp_Save_Char_ApplySkill_Add_E2")
         names = ",".join(literal(procedure) for procedure in procedures)
         modules = sql("""SELECT p.name,m.definition FROM sys.sql_modules m
             JOIN sys.procedures p ON p.object_id=m.object_id
@@ -53,6 +54,7 @@ def run(command, build_directory="build"):
             sql(f"EXEC({literal(definition)});", name)
         # A failure on the second starter item proves the outer character transaction rolls back.
         sql("ALTER TABLE dbo.CharItems ADD CONSTRAINT EternityRejectFixtureItem CHECK(ItemID<>2147483000); "
+            "ALTER TABLE dbo.CharApplySkills ADD CONSTRAINT EternityRejectFixtureEffect CHECK(SkillID<>32760); "
             "CREATE USER [eternity] FOR LOGIN [eternity]; "
             "GRANT SELECT,INSERT,UPDATE,DELETE,EXECUTE ON SCHEMA::dbo TO [eternity];", name)
         subprocess.run(command + [f"{build_directory}/creation-sql-integration", name], check=True)

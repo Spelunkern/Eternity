@@ -12,7 +12,7 @@ struct EffectTimer {
 };
 struct RestoredEffects {
     std::vector<EffectTimer> active;
-    // Original loading requests SQL deletion only for offline timers already spent while disconnected.
+    // Original loading requests deletion from the DB-agent replica for spent offline timers.
     std::vector<PersistedEffect> erase;
 };
 int effect_map_result(std::uint16_t map,std::uint16_t skill_id,std::uint8_t level);

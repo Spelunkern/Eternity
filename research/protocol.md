@@ -210,13 +210,13 @@ disconnected time. Restore adds ten seconds, capped by KeepTime, with the
 original unsigned deadline comparison and wrap behavior. FixRange=1 converts
 definition KeepTime hours to seconds. Signed SQL KeepTime values retain their
 DWORD bits; the restored kit contains two negative values. Already-spent offline
-effects produce explicit SQL deletion requests; missing definitions and map
+effects request deletion from the DB-agent replica; missing definitions and map
 restrictions only skip loading. `EnableApplySkillByMap` (`004845f0`) retains
 map 18's skill/level exceptions. `ChkEndTimeSkill` (`004865b0`) supplies the
 expiry predicate. `tools/effect_timer_oracle.py` verifies 178 restoration vectors
 and expiry branches, stopping before removal/notification operations. Player SQL
-snapshots now retain typed persisted effects. Live actor allocation, deletion
-requests and expiry side effects still need world integration.
+snapshots now retain typed persisted effects. Live actor allocation and the
+world's tick loop still need integration.
 
 Effect removal now follows `RemApplySkillBuff` (`00485130`) and
 `RemApplySkillDebuff` (`00485720`): inverse modifier signs, original counter
@@ -229,3 +229,18 @@ world health clamping and broadcasts. `_setdefaultprecision` (`0051136e`)
 configures 53-bit arithmetic; native attack/heal calculations now use that
 precision while retaining original float spills and low-DWORD truncation.
 `tools/heal_oracle.py` executes the original CRT setup before checking healing.
+
+`EffectCycle` now connects restoration, state initialization and expiry in
+insertion order. Expiry sends `050e` before reversal, then releases its instance;
+group/raid `0c05`/`0c10` notifications follow, capped at 48 ordinary effects.
+`tools/effect_cycle_oracle.py` executes the complete original expiry routine in
+11 list scenarios, including group changes, reentrant insertion, low-HP passive
+expiry and separately sampled healing time. `ps_dbAgent.exe`
+`CUser::PacketUserSkillApply` (`00406250`, case `0902`) removes only the first
+matching replica record. SQL changes wait for `DBCharacter::SaveCharacter`
+(`00423190`), which deletes all saved effects and re-adds the ordered replica
+through `usp_Save_Char_ApplySkill_Add_E2`. Native effect snapshot replacement
+checks ownership and rolls back the whole replacement on failure. Disposable SQL
+tests verify those contracts without changing existing characters. Live actor
+scheduling, replica-message delivery, group broadcasting and disconnect cleanup
+remain pending.

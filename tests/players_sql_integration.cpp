@@ -2,6 +2,7 @@
 #include "eternity/game/player_packets.hpp"
 #include "eternity/game/equipment.hpp"
 #include "eternity/game/skills.hpp"
+#include "eternity/game/effect_cycle.hpp"
 #include <algorithm>
 #include <bit>
 #include <iostream>
@@ -109,7 +110,24 @@ int main(int argc,char** argv) {
         require(snapshot && snapshot->cash_points==0 && snapshot->catalogs.at("GiftNotifications").rows.empty(),"Original negative-cash correction or one-shot gifts changed");
         const auto corrected=database.query("SELECT Point FROM "+prefix+"Users_Master WHERE UserUID=7001;");
         require(corrected[0].rows[0][0]==storage::Cell{"0"},"Original cash correction was not persisted in the fixture catalog");
+        database.query("INSERT "+prefix+"CharApplySkills(CharID,SkillID,SkillLevel,LeftResetTime) VALUES("+other_id+",20,1,23);");
+        game::EffectStore effect_store(database,1,catalog),wrong_realm(database,2,catalog);
+        require(!effect_store.replace(7001,other.character_id,{}) && !wrong_realm.replace(7001,created.character_id,{}) &&
+            !effect_store.replace(7002,created.character_id,{}),"Effect save reached a foreign character/server");
+        require(effect_store.replace(7001,created.character_id,{{10,2,50},{11,1,UINT32_MAX}}),"Original effect snapshot save failed");
+        const auto saved_effects=database.query("SELECT SkillID,SkillLevel,LeftResetTime FROM "+prefix+"CharApplySkills WHERE CharID="+cid+" ORDER BY SkillID,SkillLevel;");
+        require(saved_effects[0].rows.size()==2 && saved_effects[0].rows[0]==storage::Row{storage::Cell{"10"},storage::Cell{"2"},storage::Cell{"50"}} &&
+            saved_effects[0].rows[1]==storage::Row{storage::Cell{"11"},storage::Cell{"1"},storage::Cell{"-1"}},"Original full effect replacement/remaining-time DWORD bits changed");
+        bool effect_failure=false;
+        try{effect_store.replace(7001,created.character_id,{{12,1,61},{32760,1,62}});}catch(const std::runtime_error&){effect_failure=true;}
+        require(effect_failure,"Effect save fixture did not reject its second insert");
+        const auto rolled_back=database.query("SELECT SkillID,SkillLevel,LeftResetTime FROM "+prefix+"CharApplySkills WHERE CharID="+cid+" ORDER BY SkillID,SkillLevel;");
+        require(rolled_back[0].rows==saved_effects[0].rows,"Failed effect snapshot save lost the previous rows or retained a partial insert");
+        require(effect_store.replace(7001,created.character_id,{}),"Empty effect snapshot save failed");
+        const auto isolated_effects=database.query("SELECT COUNT(*) FROM "+prefix+"CharApplySkills WHERE CharID="+cid+"; SELECT COUNT(*) FROM "+prefix+"CharApplySkills WHERE CharID="+other_id+";");
+        require(isolated_effects[0].rows[0][0]==storage::Cell{"0"} && isolated_effects[1].rows[0][0]==storage::Cell{"1"},"Effect replacement changed a foreign character or failed to clear its owner");
         std::cout<<"Original player load SQL passed: owned core, inventory/bank repair, skills, quests, social, cash, gifts and JoinDate.\n";
+        std::cout<<"Original effect save SQL passed: full replacement, DWORD time, ownership, empty save and rollback.\n";
         return 0;
     } catch(const std::exception& error) {std::cerr<<error.what()<<'\n';return 1;}
 }
