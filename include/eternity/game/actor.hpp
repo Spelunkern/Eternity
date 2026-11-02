@@ -5,6 +5,7 @@
 #include "eternity/game/zone_users.hpp"
 #include "eternity/game/actor_actions.hpp"
 #include "eternity/game/duel.hpp"
+#include "eternity/game/item_exchange.hpp"
 
 namespace eternity::game {
 class MoneyWorld;
@@ -108,6 +109,12 @@ public:
     void clear_duel_debuffs();
     void end_duel();
     void leave_duel_on_attack(DuelWorld&);
+    ItemExchangeState& exchange() noexcept {return exchange_;}
+    const ItemExchangeState& exchange() const noexcept {return exchange_;}
+    ItemExchangeState& duel_exchange() noexcept {return duel_exchange_;}
+    const ItemExchangeState& duel_exchange() const noexcept {return duel_exchange_;}
+    void cancel_exchange_ready(Actor& peer,bool duel);
+    void remove_exchange_item(std::int32_t bag,std::int32_t slot,ItemExchangeWorld&);
     DuelWager& duel_wager() noexcept {return duel_wager_;}
     const DuelWager& duel_wager() const noexcept {return duel_wager_;}
     void maximum_changed(EffectStatus&,std::uint8_t resource) override;
@@ -145,6 +152,7 @@ private:
     ActorAttackState attack_;
     ActorActionState actions_;
     DuelWager duel_wager_;
+    ItemExchangeState exchange_,duel_exchange_;
     std::uint32_t guard_target_after_=0;
     std::int32_t defense_wear_cursor_=0;
     UserRelations relations_;

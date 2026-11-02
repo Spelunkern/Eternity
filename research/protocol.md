@@ -1226,3 +1226,19 @@ notification order and complete actor packets/resources. Element-list fixtures
 also cover group changes, callbacks inserting effects and the 48-notice limit.
 Inventory pointer transfer/removal, equipment visibility and TCP dispatch are
 still separate pending callers.
+
+
+Trade/duel inventory references (`ps_game.exe`, `ExchangeItemRemove` `0046f310`,
+`ExchangeCancleReady` `0046f450`, `ExchangeCancleReadyPvP` `0047d0a0`) now run
+through actors. Trade mode 3 uses a captured peer pointer and the first matching
+bag/slot, irrespective of its count. Nonzero readiness on either actor clears
+both flags before the two `0a05 03 01` messages. Removal clears only the offer's
+bag byte, preserving slot/count and later duplicates, then sends `0a07` with
+sides 1/2. Duel state 5 plus offer mode 3 performs zone lookup even without a
+matching slot, then follows the same sequence using `2409`/`240b`. Live duel
+state is read after ordinary trade callbacks; self peers receive both messages.
+Two thousand forty-eight original-code cases compare three actors, exact packets,
+pre-send state and callback mutations, including captured peers, missing users,
+duplicates, zero counts and readiness bytes other than 1. This reconstructs
+reference invalidation; actual inventory removal and complete trade/duel exchange
+handlers remain pending.
