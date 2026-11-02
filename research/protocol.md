@@ -1308,3 +1308,44 @@ checks `0401` visibility, lifetime/expiry, recycling, new split identity and
 retained whole-drop identity without double release at actor teardown. UID
 arithmetic and zone internals retain their separate original-code fixtures.
 Inventory movement, live TCP dispatch and inventory SQL saving remain pending.
+
+
+DB-agent inventory/bank replica (`ps_dbAgent.exe`, `CUser::PacketUserItem`
+`00408480`) now implements owned commands `0701`..`070f`, `0711`, `0715`..`0717`.
+Its inventory is 6 x 24 pointers at `CUser+e0`; the 240-slot bank starts at `+320`.
+`CItem+8` holds save type: 0 unchanged, 1 insert, 2 update. Ordinary mutation only
+changes 0 to 2. `0701` allocates a new insert, or adds the BYTE count with wrap
+when type/typeID match an existing slot; mismatches report the original
+`Disconnect` outcome for the owner to act on. UID and other incoming metadata
+are ignored when updating an existing slot. Allocation failure leaves the slot
+empty. `CopyString` `00408450` copies all 21 craft bytes and forces byte 20 to NUL;
+the replica preserves the complete buffer as well as its string prefix.
+
+Inventory/bank moves to empty destinations retain the original count. Occupied
+destinations receive the two supplied counts before pointer swapping. Same-cell
+moves preserve the second count write. Inventory/inventory and bank/bank swaps
+remove the new source when its count becomes zero. Cross-bank moves journal old
+rows before moving and force insert type 1 at the new locations. `0702` removes
+when the requested count reaches/exceeds the current count; `0707` stores zero
+without removing. Gem, craft and repair commands only replace money when their
+item exists, while bulk repair `070b` replaces it even with no repair entries.
+`0603` status uses that same owned money field.
+
+`AddDeleteItem` `00405200` and `AddDeleteItemBank` `00405270` append FIFO UID
+journals only when save type is not 1. UID zero and duplicate journal entries are
+retained. The source `070e`/`070f` reset loops clear their ranges without recycling
+allocations (`070f` calls `FreeItem` with a null pointer); native pools preserve
+those allocations outside the reusable list. Both original loops dereference
+all traversed slots without null checks; native application requires occupied
+ranges. Other commands validate complete envelopes, owner and index domains
+before mutation. Billing receipt `0710` and guild transfers `0712`/`0713` remain
+separate pending owners and return unsupported here.
+
+A 2,048-operation original-code fixture spans 32 persistent caches, comparing
+all item fields, raw craft buffers, flags, ordered journals, money and allocation/
+recycle/stranded counts after each command. It executes the original nested
+journal/list, allocation, copy and free code. A native actor-to-replica flow also
+checks money credit, stacking, split drop, real-zone pickup, persisted UID
+removal and transient insert/remove suppression. Transactional SQL saving,
+save-success/failure snapshots, billing/guild cache owners and TCP world
+integration remain pending.

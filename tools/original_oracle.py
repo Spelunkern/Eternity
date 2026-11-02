@@ -8,10 +8,15 @@ ROOT = Path(__file__).resolve().parents[1]
 
 
 def load_game():
-    data = (ROOT / "originals/ps_game/ps_game.exe").read_bytes()
+    return load_original("ps_game")
+
+
+def load_original(service):
+    relative = f"originals/{service}/{service}.exe"
+    data = (ROOT / relative).read_bytes()
     digest = hashlib.sha256(data).hexdigest()
     expected = next(line.split()[0] for line in (ROOT / "SHA256SUMS").read_text().splitlines()
-                    if line.split()[-1].removeprefix("*") == "originals/ps_game/ps_game.exe")
+                    if line.split()[-1].removeprefix("*") == relative)
     if digest != expected:
         raise RuntimeError("Original executable hash mismatch")
     pe = struct.unpack_from("<I", data, 0x3c)[0]

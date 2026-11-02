@@ -46,6 +46,9 @@ reconstructed. Detached-item admission now stacks, stores or returns remainders
 with original DB/client/group/log messages. ID-based pickup connects zone
 permissions, money bonuses, capacity errors and inventory admission; TCP world
 dispatch and shared loot distribution remain pending.
+The DB-agent inventory/bank replica applies owned item updates, moves and save/delete
+markers, sharing money status with item commands. Billing/guild transfers and
+transactional character saving remain pending.
 Actor money credits preserve unsigned limits and ordered DB-status/client/log
 messages, with money-item release to the pool. Periodic money saving and shared
 loot dispatch still require integration.
