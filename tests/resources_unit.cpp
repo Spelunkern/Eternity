@@ -31,10 +31,11 @@ int main(int argc,char** argv) {
             row>>op>>zone>>party>>initializing>>attack>>recovering>>current.hp>>current.mp>>current.sp>>maximum.hp>>maximum.mp>>maximum.sp;
             for(auto& value:amounts) row>>value;
             row>>expected.hp>>expected.mp>>expected.sp;for(auto& value:actual) row>>value;row>>event_count;
-            require(static_cast<bool>(row) && op>=0 && op<=5,"Malformed resource vector");
+            require(static_cast<bool>(row) && op>=0 && op<=6,"Malformed resource vector");
             Sink sink;sink.zone=zone!=0;if(party>=0) sink.party=party!=0;ActorResources actor(9001,current,sink);
             if(op==0) require(actor.heal(maximum,amounts)==actual,"Heal adjusted amounts differ at vector "+std::to_string(count));
             else if(op<=2) actor.recover(maximum,amounts,op==2,attack,recovering!=0);
+            else if(op==6) actor.announce_maximum(maximum);
             else actor.maximum_changed(maximum,static_cast<std::uint8_t>(op-3),initializing!=0);
             const auto& result=actor.current();const auto context=" at vector "+std::to_string(count)+" operation "+std::to_string(op);
             require(result.hp==expected.hp && result.mp==expected.mp && result.sp==expected.sp,"Resources differ"+context);
@@ -42,6 +43,6 @@ int main(int argc,char** argv) {
             for(const auto& event:sink.events) {std::string original;row>>original;require(event==original,"Event differs"+context+": "+event+" versus "+original);}
             std::string extra;require(!(row>>extra),"Unexpected trailing vector data");++count;
         }
-        require(count==1008,"Resource vector coverage changed");std::cout<<count<<" original resource mutation and ordered notification vectors passed\n";
+        require(count==1176,"Resource vector coverage changed");std::cout<<count<<" original resource mutation and ordered notification vectors passed\n";
     } catch(const std::exception& error) {std::cerr<<error.what()<<'\n';return 1;}
 }

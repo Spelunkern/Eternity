@@ -20,7 +20,7 @@ int main(int argc,char** argv) {try {
     eternity::storage::ResultSet table;table.columns={"Job","Level","HP","MP","SP"};const auto rules=StatusRules::load(table);std::string line;unsigned cases=0;
     while(std::getline(input,line)) {
         if(line.empty() || line[0]=='#') continue;std::istringstream row(line);unsigned scenario,grow,level,bypass,doubled,half,party;std::uint32_t old,amount;std::int32_t bonus;std::string events,expected;row>>scenario>>grow>>level>>old>>amount>>bypass>>doubled>>half>>bonus>>party>>events>>expected;check(static_cast<bool>(row));
-        PlayerCore player;player.character.id=123;player.character.grow=static_cast<std::uint8_t>(grow);player.character.level=static_cast<std::uint16_t>(level);player.experience=old;BaseStatus status{};Ports ports;
+        PlayerCore player;player.user_id=123;player.character.id=321;player.character.grow=static_cast<std::uint8_t>(grow);player.character.level=static_cast<std::uint16_t>(level);player.experience=old;BaseStatus status{};Ports ports;
         award_experience(player,status,rules,curve,777,std::bit_cast<std::int32_t>(amount),{bypass!=0,doubled!=0,half!=0,party!=0,bonus},ports);
         Bytes actual;number(actual,player.character.level,2);number(actual,player.stat_points,2);number(actual,player.skill_points,2);number(actual,player.experience);
         const auto& c=player.character;for(auto value:{c.strength,c.dexterity,c.intelligence,c.wisdom,c.recovery,c.luck}) number(actual,value,2);for(auto value:{status.maximum.hp,status.maximum.mp,status.maximum.sp}) number(actual,value);const auto& a=status.attributes;for(auto value:{a.strength,a.dexterity,a.intelligence,a.wisdom,a.recovery,a.luck}) number(actual,static_cast<std::uint32_t>(value));

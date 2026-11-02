@@ -23,6 +23,7 @@ public:
     // Requested/actual amounts use HP, SP, MP order, matching CUser::Heal's in/out buffer.
     std::array<std::int32_t,3> heal(PlayerResources maximum,std::array<std::int32_t,3> amounts);
     void recover(PlayerResources maximum,std::array<std::int32_t,3> amounts,bool send_set = false,std::int32_t attack_mode = 0,bool recovering = false);
+    void announce_maximum(PlayerResources); // SendEnergyAllMax 004822f0.
     void maximum_changed(PlayerResources maximum,std::uint8_t resource,bool initializing); // HP=0, MP=1, SP=2.
     bool damage(ScalarDamageState state,std::int32_t kind,std::uint32_t source,std::int32_t amount,DamageObserver& observer);
 private:

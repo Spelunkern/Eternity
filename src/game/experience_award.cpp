@@ -4,7 +4,7 @@
 namespace eternity::game {
 namespace {
 void append(net::Packet& packet,std::uint32_t value) {for(unsigned i=0;i<4;++i) packet.push_back(static_cast<std::uint8_t>(value>>(8*i)));}
-void save(const PlayerCore& player,ExperienceAwardPorts& ports) {net::Packet packet{2,6};append(packet,player.character.id);append(packet,player.experience);ports.send_database(packet);}
+void save(const PlayerCore& player,ExperienceAwardPorts& ports) {net::Packet packet{2,6};append(packet,player.user_id);append(packet,player.experience);ports.send_database(packet);}
 }
 void award_experience(PlayerCore& player,BaseStatus& status,const StatusRules& rules,const Experience& curve,std::uint32_t source,std::int32_t amount,ExperienceAwardOptions options,ExperienceAwardPorts& ports) {
     auto& c=player.character;if(amount==0 || c.level>=(c.grow==0?30:60)) return;

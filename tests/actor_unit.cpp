@@ -227,6 +227,25 @@ int main(int argc,char** argv) {
         require(wearing.effects().size()==1 && wearing.effects().contains(2001) && wearing.replica().snapshot().size()==1 && wearing.replica().snapshot()[0].skill_id==301,"Actor death cleanup removed a persistent effect or retained its removed replica");
         require(wearing.status().skills.equipment.base.maximum.hp==before_death_hp && wearing.status().skills.equipment.defense_attribute==1 && wearing.status().skills.equipment.defense_attribute_skill && wearing.appearance().copied_user.has_value(),"Actor death cleanup did not reverse resources, restore armor element or retain cached copied appearance");
         require(wear_scene.events==std::vector<std::string>{"F2000"},"Actor death cleanup emitted expiry notices or changed callback order");
+        {
+            storage::ResultSet status_rows;status_rows.columns={"Job","Level","HP","MP","SP"};const auto growth_rules=StatusRules::load(status_rows);
+            storage::ResultSet exp_rows;exp_rows.columns={"Level","Grow","Exp"};for(unsigned grow=1;grow<=4;++grow) for(unsigned level=1;level<=60;++level) exp_rows.rows.push_back({std::to_string(level),std::to_string(grow),"1000"});const auto curve=Experience::load(exp_rows);
+            PlayerCore core;core.user_id=7;core.character.id=9001;core.character.level=1;core.character.grow=1;core.character.strength=10;
+            EffectStatus live{};live.level=1;live.in_zone=true;live.skills.equipment.base.attributes.strength=10;live.skills.equipment.base.maximum={1000,2000,3000};Scene scene;
+            Actor actor(9001,live,{100,200,300},{},scene,equipment_rules);
+            struct AwardDelivery final:ExperienceAwardPorts {
+                Actor& actor;PlayerCore& core;std::vector<char> order;
+                AwardDelivery(Actor& a,PlayerCore& p):actor(a),core(p) {}
+                void send_database(const net::Packet& packet) override {require(actor.status().level==core.character.level && actor.status().level==2,"Actor level was stale during experience save");require(packet.size()==10 && packet[2]==7,"Actor experience save routed to wrong user");order.push_back('B');}
+                void send_self(const net::Packet&) override {order.push_back('C');}
+                void level_up(PlayerCore&,BaseStatus& base,std::uint32_t amount,std::uint32_t source) override {
+                    require(amount==1000 && source==777 && actor.status().level==2,"Actor level notification arguments changed");order.push_back('L');actor.rebuild_attack(actor.status(),false);actor.announce_maximum_resources();actor.recover({static_cast<std::int32_t>(base.maximum.hp),static_cast<std::int32_t>(base.maximum.sp),static_cast<std::int32_t>(base.maximum.mp)});
+                }
+            } delivery(actor,core);
+            actor.gain_experience(core,growth_rules,curve,777,1000,{true,false,false,false,0},delivery);
+            require(core.character.level==2 && core.character.strength==11 && core.experience==1000 && actor.status().level==2 && actor.status().skills.equipment.base.attributes.strength==11 && actor.status().calculated_attack[0].accuracy==2 && delivery.order==std::vector<char>{'B','L'},"Actor experience did not synchronize persisted/live stats and attack");
+            require(actor.resources().hp==1000 && actor.resources().mp==2000 && actor.resources().sp==3000 && !scene.events.empty() && scene.events.back()=="D","Actor level-up did not announce/recover resources and reset damage");
+        }
         std::cout<<count<<" original actor operations, concrete effect expiry and durability integration passed\n";
     } catch(const std::exception& error) {std::cerr<<error.what()<<'\n';return 1;}
 }

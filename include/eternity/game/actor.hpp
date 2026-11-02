@@ -1,6 +1,7 @@
 #pragma once
 #include "eternity/game/effect_cycle.hpp"
 #include "eternity/game/resources.hpp"
+#include "eternity/game/experience_award.hpp"
 #include "eternity/game/user_shape.hpp"
 #include "eternity/game/zone_users.hpp"
 #include "eternity/game/actor_actions.hpp"
@@ -98,6 +99,8 @@ public:
     std::vector<PlayerItem>& inventory() noexcept {return inventory_;}
     const std::vector<PlayerItem>& inventory() const noexcept {return inventory_;}
     void initializing(bool value) noexcept {initializing_=value;}
+    void gain_experience(PlayerCore&,const StatusRules&,const Experience&,std::uint32_t source,std::int32_t amount,ExperienceAwardOptions,ExperienceAwardPorts&);
+    void announce_maximum_resources() {resources_.announce_maximum(status_.skills.equipment.base.maximum);}
     void finish_loading_resources() {resources_.clamp(status_.skills.equipment.base.maximum);}
     std::array<std::int32_t,3> heal(std::array<std::int32_t,3> amounts);
     void recover(std::array<std::int32_t,3> amounts,bool send_set=false,bool recovering=false);

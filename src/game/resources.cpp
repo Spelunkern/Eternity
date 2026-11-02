@@ -18,6 +18,10 @@ void ActorResources::clamp(PlayerResources maximum) {
     if(signed_value(current_.sp)>signed_value(maximum.sp)) current_.sp=maximum.sp;
     if(signed_value(current_.mp)>signed_value(maximum.mp)) current_.mp=maximum.mp;
 }
+void ActorResources::announce_maximum(PlayerResources maximum) {
+    if(sink_.in_zone()) {auto packet=identified(0x51f,id_,12);put(packet,6,maximum.hp,2);put(packet,8,maximum.mp,2);put(packet,10,maximum.sp,2);sink_.send_view(packet);}
+    if(const auto raid=sink_.party_kind()) {auto packet=identified(*raid?0xc0d:0xc08,id_,12);put(packet,6,maximum.hp,2);put(packet,8,maximum.sp,2);put(packet,10,maximum.mp,2);sink_.send_party(packet);}
+}
 void ActorResources::party_energy() {
     // CUser::SendEnergyAllToParty 00482360: group payload orders HP, SP, MP.
     if(const auto raid=sink_.party_kind()) {

@@ -49,9 +49,9 @@ def main():
                   ((0, 0, 0), (100, 200, 300), (-1, -2, -3)),
                   ((0x7fffffff, 0xffffffff, 0x80000000), (0x7fffffff, 0xffffffff, 0), (1, 1, -1)),
                   ((10, 20, 30), (100, 200, 300), (0, 0, 0))]
-    print(f'# ps_game.exe SHA256 {digest}; Heal 004505a0, SendRecoverAdd 00481f20, SendRecoverAddSet 00482060, SendMaxHP/SP/MP 00481990/00481aa0/00481ba0')
+    print(f'# ps_game.exe SHA256 {digest}; Heal 004505a0, SendRecoverAdd 00481f20, SendRecoverAddSet 00482060, SendMaxHP/SP/MP 00481990/00481aa0/00481ba0, SendEnergyAllMax 004822f0/004823d0')
     print('# operation zone party(-1/0/1) initializing attack_mode recovering; current HP/MP/SP; maximum HP/MP/SP; amounts HP/SP/MP; final HP/MP/SP; actual amounts HP/SP/MP; event_count; ordered D(reset)/V(view)/P(party)/S(self) + hex payload')
-    entries = (0x4505a0, 0x481f20, 0x482060, 0x481990, 0x481ba0, 0x481aa0)
+    entries = (0x4505a0, 0x481f20, 0x482060, 0x481990, 0x481ba0, 0x481aa0, 0x4822f0)
     for op, entry in enumerate(entries):
         cases = [(cur, maximum, amounts, zone, group, 0, 0, 0)
                  for cur, maximum, amounts in boundaries for zone in (0, 1) for group in (-1, 0, 1)]
@@ -74,7 +74,7 @@ def main():
             cpu.mem_write(amounts_ptr, struct.pack('<3i', *amounts))
             cpu.mem_write(stack + 0x8000, struct.pack('<III', stop, amounts[1] & 0xffffffff, amounts[2] & 0xffffffff))
             cpu.reg_write(UC_X86_REG_ESP, stack + 0x8000)
-            cpu.reg_write(UC_X86_REG_EAX, amounts_ptr if op == 0 else amounts[0] & 0xffffffff)
+            cpu.reg_write(UC_X86_REG_EAX, user if op == 6 else amounts_ptr if op == 0 else amounts[0] & 0xffffffff)
             for reg in (UC_X86_REG_ECX, UC_X86_REG_EDI, UC_X86_REG_ESI):
                 cpu.reg_write(reg, user)
             cpu.emu_start(entry, stop, count=10000)

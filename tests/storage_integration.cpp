@@ -226,10 +226,10 @@ int main() {
             void send_self(const eternity::net::Packet& p) override {order.push_back('C');client=p;}
             void level_up(eternity::game::PlayerCore& p,eternity::game::BaseStatus&,std::uint32_t value,std::uint32_t origin) override {require(p.character.level==2,"SQL experience award did not update level before notification");order.push_back('L');amount=value;source=origin;}
         } award_ports;
-        eternity::game::PlayerCore awarded;awarded.character=fighter;awarded.character.id=42;auto award_status=fighter_status;const auto threshold=experience.bounds(1,1).next;
+        eternity::game::PlayerCore awarded;awarded.character=fighter;awarded.character.id=42;awarded.user_id=7;auto award_status=fighter_status;const auto threshold=experience.bounds(1,1).next;
         require(threshold<INT32_MAX && experience.bounds(1,2).next>threshold+1,"SQL award fixture needs increasing early levels");
         eternity::game::award_experience(awarded,award_status,statuses,experience,777,static_cast<std::int32_t>(threshold),{true,false,false,false,0},award_ports);
-        require(awarded.character.level==2 && awarded.character.strength==15 && awarded.stat_points==5 && awarded.skill_points==3 && awarded.experience==threshold && award_ports.order==std::vector<char>{'B','L'} && award_ports.amount==threshold && award_ports.source==777 && award_ports.database.size()==10 && award_ports.database[0]==2 && award_ports.database[1]==6 && award_ports.database[2]==42,"SQL-backed experience award/level-up/save ordering changed");
+        require(awarded.character.level==2 && awarded.character.strength==15 && awarded.stat_points==5 && awarded.skill_points==3 && awarded.experience==threshold && award_ports.order==std::vector<char>{'B','L'} && award_ports.amount==threshold && award_ports.source==777 && award_ports.database.size()==10 && award_ports.database[0]==2 && award_ports.database[1]==6 && award_ports.database[2]==7,"SQL-backed experience award/level-up/save ordering changed");
         award_ports.order.clear();eternity::game::award_experience(awarded,award_status,statuses,experience,777,1,{true,false,false,false,0},award_ports);
         require(awarded.character.level==2 && awarded.experience==threshold+1 && award_ports.order==std::vector<char>{'B','C'} && award_ports.client==eternity::net::Packet({7,2,1,0,0,0,0,0,0,0}),"SQL-backed experience award without level-up changed");
         const auto items=eternity::game::ItemDefinitions::load(definitions.catalogs.at("Items"));

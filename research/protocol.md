@@ -2851,3 +2851,42 @@ parties and signed/DWORD boundaries. SQL composition uses restored curves and
 status definitions for both a level transition and an ordinary gain. Full
 LevelUp notification, attack/resource updates, party/guild/game-log delivery and
 production death reward wiring remain required.
+
+
+`notify_level_up` follows `CUser::LevelUp` (`ps_game.exe`, `0048ad70`): required
+attack rebuild first, DB 0601 with current stats and truncated resource WORDs,
+optional client 0207 for a nonzero reported amount, then scene 0508/051e with
+curve bounds (source==actor selects 0508). Scene delivery uses radius 60 and
+priority 5. Stable party membership is acquired/rechecked, its experience state
+is refreshed and 0c09/0c13 is sent before release. Maximum energy announcement,
+resource recovery, game-log 0308 and guarded guild level update follow.
+
+The 64-case complete original coordinator fixture ports attack, transport,
+scene/party/guild, energy/recovery, log-main filling, locks and the cookie. It
+compares complete packets and callback ordering across zero/nonzero amounts,
+source identity, scene membership, party/raid/guild combinations and curve
+fallbacks. Native DB packets also pass through CharacterReplica with different
+user/character IDs: 0601 and 0602 route by PlayerCore.user_id (source CUser+578c),
+not character.id. Native recipient checks confirm persisted attribute order and
+resource truncation. Required live owners still need production integration;
+these coordinator tests do not establish a playable world.
+
+
+Maximum-resource announcements now follow `SendEnergyAllMax` (`ps_game.exe`,
+`004822f0`) and its actual party helper (`004823d0`). Scene 051f orders HP/MP/SP;
+party 0c08 and raid 0c0d order HP/SP/MP, excluding the announcing actor.
+All resources truncate to WORD. Scene delivery precedes party delivery, and
+neither current resources nor damage accounting changes. Actor exposes this
+operation through its existing resource owner. The complete original resource
+fixture now includes 168 announcement cases (1,176 total operations), using
+actual party formatting with transport/lock/damage boundaries ported.
+
+
+Actor experience integration now passes its live BaseStatus into the recovered
+award coordinator and synchronizes EffectStatus.level before DB delivery and
+level callbacks. It requires matching actor/character identity and initial level;
+attack rebuilding remains in the subsequent level notification phase. A concrete
+actor test advances persisted/live attributes, observes the updated level during
+DB delivery, rebuilds attack, announces maxima, recovers resources and verifies
+damage reset. Scene/party/guild/game-log ownership and production world dispatch
+still require their complete runtime providers.

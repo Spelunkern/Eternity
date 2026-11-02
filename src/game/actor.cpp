@@ -11,6 +11,17 @@ Actor::Actor(std::uint32_t id,EffectStatus status,PlayerResources current,std::v
     ActorEquipmentRules equipment,std::vector<PlayerItem> inventory)
     :id_(id),status_(std::move(status)),scene_(scene),resources_(id,current,*this),effects_(id),replica_(std::move(replica)),equipment_(equipment),inventory_(std::move(inventory)) {for(const auto& item:inventory_) if(item.bag==0 && item.slot<13) equipment_database_quality_[item.slot]=item.quality;}
 Actor::~Actor() {effects_.release_all(*this);for(auto& held:retained_inventory_) held.pool->release(*held.item);}
+void Actor::gain_experience(PlayerCore& player,const StatusRules& rules,const Experience& curve,std::uint32_t source,std::int32_t amount,ExperienceAwardOptions options,ExperienceAwardPorts& destination) {
+    if(player.character.id!=id_ || player.character.level!=status_.level) throw std::invalid_argument("Experience award requires the bound actor state");
+    struct Delivery final:ExperienceAwardPorts {
+        EffectStatus& live;PlayerCore& player;ExperienceAwardPorts& destination;
+        Delivery(EffectStatus& s,PlayerCore& p,ExperienceAwardPorts& d):live(s),player(p),destination(d) {}
+        void send_database(const net::Packet& packet) override {live.level=player.character.level;destination.send_database(packet);}
+        void send_self(const net::Packet& packet) override {destination.send_self(packet);}
+        void level_up(PlayerCore& core,BaseStatus& base,std::uint32_t gain,std::uint32_t origin) override {live.level=core.character.level;destination.level_up(core,base,gain,origin);}
+    } delivery(status_,player,destination);
+    award_experience(player,status_.skills.equipment.base,rules,curve,source,amount,options,delivery);
+}
 std::array<std::int32_t,3> Actor::heal(std::array<std::int32_t,3> amounts) {return resources_.heal(status_.skills.equipment.base.maximum,amounts);}
 void Actor::recover(std::array<std::int32_t,3> amounts,bool send_set,bool recovering) {resources_.recover(status_.skills.equipment.base.maximum,amounts,send_set,attack_.mode,recovering);}
 void Actor::wear_defense() {
