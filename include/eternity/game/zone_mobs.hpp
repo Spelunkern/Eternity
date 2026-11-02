@@ -26,6 +26,16 @@ public:
     virtual std::unique_ptr<MobBroadcast> allocate_broadcast(const net::Packet&,std::optional<std::uint8_t> priority)=0;
     virtual void lua_init(MobRuntime&)=0; // LuaCall("Init"), after entry broadcast.
 };
+// Required map/group owners for forced removal. Callbacks run after accounting
+// and before recycling; they may remove other actors, but not the subject.
+class MobRemovalOwners {
+public:
+    virtual ~MobRemovalOwners()=default;
+    virtual void destroy_obelisk(MobRuntime&,std::int32_t type)=0;
+    virtual void remove_obelisk_member(MobRuntime&,void* source)=0;
+    virtual void destroy_linked_group(std::int32_t type)=0;
+    virtual void remove_linked_member(MobRuntime&,void* source)=0;
+};
 // Serialized zone owner; objects/services outlive membership. Delivery may inspect
 // live state but must not move/remove the moving subject during transition sends.
 // Cell-list sends/finds preserve the original shared cursor and reentrant lookup.
@@ -36,6 +46,7 @@ public:
     ZoneMobs(const ZoneMobs&)=delete;ZoneMobs& operator=(const ZoneMobs&)=delete;
     bool enter(MobRuntime&); // EnterMob 00416860; 0601 appearance 1.
     bool leave(MobRuntime&); // LeaveMob 00416990; no packet or recycling.
+    bool remove_by_id(std::uint32_t,MobPool&,MobRemovalOwners&); // MobRemoveByID 0041e910.
     // MapReleaseObject 0041c3b0: clear cells/index first, then FIFO recycle.
     // Cleanup callbacks may inspect the remaining registry but must not mutate it.
     void release_to_pool(MobPool&);

@@ -21,7 +21,7 @@ void require(bool condition, const char* message) {
 void verify_mob_population(const eternity::game::MobRuntimeTemplates& definitions) {
     using namespace eternity::game;
     struct Services final:MobPoolServices,ZoneMobServices {
-        unsigned int views=0,releases=0;
+        unsigned int views=0,releases=0,removals=0;
         std::unique_ptr<MobRuntime> construct() override {auto mob=std::make_unique<MobRuntime>();mob->drop_random=ServerRandom(unix_time());return mob;}
         std::uint32_t unix_time() override {return 1700000000;}
         std::uint32_t tick_ms() override {return 0xfffffff0;}
@@ -29,7 +29,7 @@ void verify_mob_population(const eternity::game::MobRuntimeTemplates& definition
         void release_stack_ai(MobRuntime&) override {throw std::runtime_error("Unexpected stack AI in SQL spawn fixture");}
         void close_lua(void*) override {throw std::runtime_error("Unexpected Lua resource in SQL spawn fixture");}
         void lua_init(MobRuntime&) override {throw std::runtime_error("Unexpected Lua entry in SQL spawn fixture");}
-        void send_cell_view(CellCoordinates cell,const eternity::net::Packet& packet) override {require(cell.x==0 && cell.z==0 && packet.size()==17 && packet[0]==1 && packet[1]==6 && packet[6]==1,"SQL mob entry packet/cell changed");++views;}
+        void send_cell_view(CellCoordinates cell,const eternity::net::Packet& packet) override {if(packet.size()==6 && packet[0]==2 && packet[1]==6) {++removals;return;}require(cell.x==0 && cell.z==0 && packet.size()==17 && packet[0]==1 && packet[1]==6 && packet[6]==1,"SQL mob entry packet/cell changed");++views;}
         std::unique_ptr<MobBroadcast> allocate_broadcast(const eternity::net::Packet&,std::optional<std::uint8_t>) override {throw std::runtime_error("Unexpected SQL mob movement");}
     } services;
     MapDefinition map;map.size=81;map.tiles.resize((81*81+7)/8);MapMobArea area;area.box.minimum={-0.25F,7,0.75F};area.spawns={{1,2},{0,3}};map.mobs.push_back(area);
@@ -68,10 +68,14 @@ void verify_mob_population(const eternity::game::MobRuntimeTemplates& definition
     runtime.update_mob_population(pool,ports,181000,obelisks,linked_update);
     require(zone.size()==2 && respawn.current==2 && respawn.next==361000 && serial==109 && services.views==9,"SQL periodic respawn did not replenish one record at its deadline");
     runtime.release_mob_population(pool);require(pool.available()==3 && services.releases==9,"SQL periodic mob release changed");
-    struct World final:LinkedMobWorld {
+    struct World final:LinkedMobWorld,MobRemovalOwners {
         ZoneMobs& zone;MobPool& pool;RuntimeZone& runtime;std::span<ConfiguredMap> maps;
         World(ZoneMobs& z,MobPool& p,RuntimeZone& r,std::span<ConfiguredMap> m):zone(z),pool(p),runtime(r),maps(m) {}
-        void remove_by_id(std::uint32_t id) override {if(auto* mob=zone.find(id)) {require(zone.leave(*mob),"Cannot detach linked SQL companion");pool.release(*mob);}}
+        void remove_by_id(std::uint32_t id) override {static_cast<void>(zone.remove_by_id(id,pool,*this));}
+        void destroy_obelisk(MobRuntime&,std::int32_t) override {throw std::runtime_error("Unexpected SQL obelisk principal");}
+        void remove_obelisk_member(MobRuntime&,void*) override {throw std::runtime_error("Unexpected SQL obelisk member");}
+        void destroy_linked_group(std::int32_t) override {throw std::runtime_error("Unexpected SQL linked principal removal");}
+        void remove_linked_member(MobRuntime& mob,void* source) override {static_cast<LinkedMobSpawn*>(source)->remove(&mob);}
         void set_portal_country(const MapPortal& target,std::int32_t country) override {for(auto& map:maps) for(auto& portal:map.definition.portals) if(&portal==&target) {portal.country=country;runtime.update_instance_portal_country(portal.id,country);return;}throw std::runtime_error("Unknown linked SQL portal owner");}
     } world(zone,pool,runtime,linked_maps);
     runtime_map.settings.create_type=3;runtime.linked_mobs->respawn(0,map,zone,pool,ports,world);
@@ -87,7 +91,7 @@ void verify_mob_population(const eternity::game::MobRuntimeTemplates& definition
     runtime.update_mob_population(pool,ports,5000,unexpected_obelisk,actual_linked);
     require(zone.size()==3 && serial==117 && groups[0].leader.members[0]==zone.find(115) && groups[0].spawns[0].members[0]==zone.find(116) && groups[0].spawns[0].members[1]==zone.find(117) && runtime.instance_portal_country(1010)==3,"SQL linked updater did not remove rewards and recreate the group");
     for(auto* mob:zone.all()) require(mob->hp==2765 && mob->respawn->both_source!=nullptr,"SQL linked lifecycle lost restored resources or bindings");
-    runtime.release_mob_population(pool);require(pool.available()==3 && services.releases==17,"SQL linked lifecycle did not recycle its allocations");
+    runtime.release_mob_population(pool);require(pool.available()==3 && services.releases==17 && services.removals==4,"SQL linked lifecycle did not recycle its allocations");
 
 
 

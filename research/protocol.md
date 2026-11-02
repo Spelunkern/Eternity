@@ -2664,3 +2664,18 @@ strict death-time comparison and long-delay jitter; it cannot reuse forced
 removal accounting unchanged. These findings define the next native removal
 implementation and differential fixture; they do not constitute implemented
 world death handling.
+
+
+`ZoneMobs::remove_by_id` now implements the forced-removal coordinator with
+required `MobRemovalOwners` dispatch and actual zone index/cell unlinking and
+pool recycling. During 0602 delivery the actor has no zone/membership but still
+retains its old cell; accounting and owner callbacks follow delivery. The native
+ordering/precedence tests also cover missing IDs and unbound respawns. A separate
+360-case fixture executes the original accounting instruction block and compares
+native count/deadline/clock calls, including signed limits and DWORD wrap. This
+fixture establishes accounting only, not complete original-method equivalence.
+SQL integration now uses this removal path for companion replacement with
+parsed linked configuration and restored definitions, including tolerated stale
+IDs after bulk recycling and four actual disappearance sends.
+Production obelisk/group owners, complete-method differential execution and
+natural death/corpse processing remain pending.

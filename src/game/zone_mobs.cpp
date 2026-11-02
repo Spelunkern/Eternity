@@ -36,6 +36,26 @@ bool ZoneMobs::leave(MobRuntime& mob) {
     if(mob.zone!=this || !mob.cell || !members_.contains(&mob)) throw std::invalid_argument("Wrong mob ownership on leave");
     const auto member=members_.at(&mob);index_.erase(mob.id);ordered_.erase(member.ordinal);unlink_cell(member);members_.erase(&mob);mob.membership_owner_=nullptr;mob.zone=nullptr;mob.cell.reset();return true;
 }
+bool ZoneMobs::remove_by_id(std::uint32_t id,MobPool& pool,MobRemovalOwners& owners) {
+    auto* mob=find(id);if(!mob) return false;
+    const auto member=members_.at(mob);const auto cell=member.cell;
+    index_.erase(id);ordered_.erase(member.ordinal);unlink_cell(member);members_.erase(mob);
+    mob->membership_owner_=nullptr;mob->zone=nullptr;
+    // Source retains raw cell coordinates until after the disappearance send.
+    services_.send_cell_view(cell,mob_removed(mob->id));mob->cell.reset();
+    if(auto* respawn=mob->respawn) {
+        if(respawn->current==respawn->count) {
+            if(!mob->definition) throw std::invalid_argument("Removed mob lacks live definition");
+            respawn->next=services_.tick_ms()+mob->definition->respawn_time;
+        }
+        respawn->current=std::bit_cast<std::int32_t>(static_cast<std::uint32_t>(respawn->current)-1U);
+        if(respawn->obelisk) owners.destroy_obelisk(*mob,respawn->type);
+        else if(respawn->obelisk_source) owners.remove_obelisk_member(*mob,respawn->obelisk_source);
+        else if(respawn->both) owners.destroy_linked_group(respawn->type);
+        else if(respawn->both_source) owners.remove_linked_member(*mob,respawn->both_source);
+    }
+    pool.release(*mob);return true;
+}
 void ZoneMobs::release_to_pool(MobPool& pool) {
     for(auto& [key,cell]:cells_) cell.members.clear();
     index_.clear();
