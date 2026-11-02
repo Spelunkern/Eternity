@@ -4,7 +4,7 @@
 #include <memory>
 
 namespace eternity::game {
-class MobPool;
+class MobPool;class LinkedMobPopulation;
 net::Packet mob_appearance(const MobRuntime&,std::uint8_t appearance);
 net::Packet mob_removed(std::uint32_t id);
 std::int32_t mob_status(const MobRuntime&) noexcept;
@@ -46,6 +46,9 @@ public:
     ZoneMobs(const ZoneMobs&)=delete;ZoneMobs& operator=(const ZoneMobs&)=delete;
     bool enter(MobRuntime&); // EnterMob 00416860; 0601 appearance 1.
     bool leave(MobRuntime&); // LeaveMob 00416990; no packet or recycling.
+    // Delivery may inspect the corpse but must not remove it or recursively
+    // invoke this traversal. Cleanup providers may remove other actors.
+    void update_deaths(MobPool&,RandomSource&,std::uint32_t now,LinkedMobPopulation&); // UpdateMobDeath 00421a80.
     bool remove_by_id(std::uint32_t,MobPool&,MobRemovalOwners&); // MobRemoveByID 0041e910.
     // MapReleaseObject 0041c3b0: clear cells/index first, then FIFO recycle.
     // Cleanup callbacks may inspect the remaining registry but must not mutate it.
@@ -62,6 +65,7 @@ private:
     struct Cell {std::map<std::uint64_t,MobRuntime*> members;std::uint64_t cursor=0;};
     struct Member {std::uint64_t ordinal=0,cell_ordinal=0;CellCoordinates cell;};
     std::size_t key(CellCoordinates) const;
+    void unlink_global(const Member&,std::uint32_t id);
     void unlink_cell(const Member&);
     void link_cell(MobRuntime&,Member&,CellCoordinates);
     void transition(const MobRuntime&,CellCoordinates,CellCoordinates);
@@ -70,6 +74,6 @@ private:
     std::map<std::uint32_t,MobRuntime*> index_;
     std::map<std::uint64_t,MobRuntime*> ordered_;
     std::map<MobRuntime*,Member> members_;std::map<std::size_t,Cell> cells_;
-    std::uint64_t sequence_=0,cell_sequence_=0;
+    std::uint64_t sequence_=0,cell_sequence_=0,death_cursor_=0;
 };
 }

@@ -2729,3 +2729,23 @@ The 60-case instruction fixture uses no dependency ports and covers equality,
 sentinel, unsigned limits and zero/nonzero durations. It excludes traversal,
 status/death-time eligibility, unlinking and object recycling. The native helper
 requires the obelisk flag and does not substitute obelisk death/ownership logic.
+
+
+`ZoneMobs::update_deaths` reconstructs the `CZone::UpdateMobDeath` traversal
+(`ps_game.exe`, `00421a80`). Effective FSM status must be 2 and death_time must
+be strictly below the unsigned supplied tick. Disappearance is delivered before
+global/index/cell unlinking; raw bindings clear before respawn accounting and
+pool recycling. Global removals repair the active traversal cursor to its
+predecessor, preserving consecutive removals and changes during cleanup.
+Regular, obelisk and linked-principal timer branches use the recovered helpers.
+
+The 128-scenario/2,048-operation fixture executes the complete original updater,
+actual constructor/pool, global/index/cell removal and empty FSM cleanup, with
+heap/locks/time/atomic increment/transport ports. Unbound respawns isolate
+traversal, strict deadlines, retained survivors, repeated empty updates and FIFO
+cleanup; complete pool/portal/index/cell/object snapshots and cleanup observations
+are compared. Native composition cases additionally cover effective stack
+status, all timer branches and delivery before unlinking. SQL integration drives
+regular population through corpse eligibility, cleanup, fixed-delay accounting,
+reused allocation and replenishment. This does not implement CMob::Death reward,
+quest/drop, effect teardown or production world scheduling.

@@ -1,5 +1,6 @@
 #include "eternity/game/zone_mobs.hpp"
 #include "eternity/game/mob_pool.hpp"
+#include "eternity/game/linked_mobs.hpp"
 #include <algorithm>
 #include <bit>
 #include <cmath>
@@ -25,6 +26,31 @@ void ZoneMobs::link_cell(MobRuntime& mob,Member& member,CellCoordinates c) {
     member.cell=c;member.cell_ordinal=++cell_sequence_;cells_[key(c)].members.emplace(member.cell_ordinal,&mob);
 }
 void ZoneMobs::unlink_cell(const Member& member) {auto& cell=cells_.at(key(member.cell));const auto entry=cell.members.find(member.cell_ordinal);if(cell.cursor==entry->first) cell.cursor=entry==cell.members.begin()?0:std::prev(entry)->first;cell.members.erase(entry);}
+void ZoneMobs::unlink_global(const Member& member,std::uint32_t id) {
+    const auto entry=ordered_.find(member.ordinal);
+    if(death_cursor_==member.ordinal) death_cursor_=entry==ordered_.begin()?0:std::prev(entry)->first;
+    index_.erase(id);ordered_.erase(entry);
+}
+void ZoneMobs::update_deaths(MobPool& pool,RandomSource& random,std::uint32_t now,LinkedMobPopulation& linked) {
+    death_cursor_=ordered_.empty()?0:ordered_.begin()->first;
+    while(death_cursor_) {
+        auto* mob=ordered_.at(death_cursor_);
+        if(mob_status(*mob)==2 && mob->death_time<now) {
+            // Natural cleanup sends while both global and cell membership exist.
+            services_.send_cell_view(*mob->cell,mob_removed(mob->id));
+            leave(*mob);
+            if(auto* respawn=mob->respawn) {
+                if(!mob->definition) throw std::invalid_argument("Corpse lacks live mob definition");
+                if(respawn->obelisk) account_obelisk_mob_corpse(*respawn,*mob->definition,now);
+                else if(respawn->both) linked.account_principal_corpse(*mob,now,random);
+                else account_regular_mob_corpse(*respawn,*mob->definition,now,random);
+            }
+            pool.release(*mob);
+        }
+        const auto next=death_cursor_==0?ordered_.begin():ordered_.upper_bound(death_cursor_);
+        death_cursor_=next==ordered_.end()?0:next->first;
+    }
+}
 bool ZoneMobs::enter(MobRuntime& mob) {
     const CellCoordinates c{coordinate(mob.position.x),coordinate(mob.position.z)};const auto n=geometry_.cell_count();if(c.x<0 || c.z<0 || c.x>=n || c.z>=n) return false;
     if(mob.membership_owner_ || members_.contains(&mob)) throw std::invalid_argument("Mob already has cell membership");
@@ -34,12 +60,12 @@ bool ZoneMobs::enter(MobRuntime& mob) {
 }
 bool ZoneMobs::leave(MobRuntime& mob) {
     if(mob.zone!=this || !mob.cell || !members_.contains(&mob)) throw std::invalid_argument("Wrong mob ownership on leave");
-    const auto member=members_.at(&mob);index_.erase(mob.id);ordered_.erase(member.ordinal);unlink_cell(member);members_.erase(&mob);mob.membership_owner_=nullptr;mob.zone=nullptr;mob.cell.reset();return true;
+    const auto member=members_.at(&mob);unlink_global(member,mob.id);unlink_cell(member);members_.erase(&mob);mob.membership_owner_=nullptr;mob.zone=nullptr;mob.cell.reset();return true;
 }
 bool ZoneMobs::remove_by_id(std::uint32_t id,MobPool& pool,MobRemovalOwners& owners) {
     auto* mob=find(id);if(!mob) return false;
     const auto member=members_.at(mob);const auto cell=member.cell;
-    index_.erase(id);ordered_.erase(member.ordinal);unlink_cell(member);members_.erase(mob);
+    unlink_global(member,id);unlink_cell(member);members_.erase(mob);
     mob->membership_owner_=nullptr;mob->zone=nullptr;
     // Source retains raw cell coordinates until after the disappearance send.
     services_.send_cell_view(cell,mob_removed(mob->id));mob->cell.reset();
@@ -60,7 +86,7 @@ void ZoneMobs::release_to_pool(MobPool& pool) {
     for(auto& [key,cell]:cells_) cell.members.clear();
     index_.clear();
     while(!ordered_.empty()) {
-        auto* mob=ordered_.begin()->second;ordered_.erase(ordered_.begin());members_.erase(mob);mob->membership_owner_=nullptr;
+        auto* mob=ordered_.begin()->second;const auto member=members_.at(mob);unlink_global(member,mob->id);members_.erase(mob);mob->membership_owner_=nullptr;
         // Preserve raw zone/cell/respawn state, including during AI cleanup.
         pool.release(*mob);
     }

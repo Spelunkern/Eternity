@@ -101,6 +101,17 @@ void verify_mob_population(const eternity::game::MobRuntimeTemplates& definition
     const auto before_random=random.state();respawn.current=respawn.count;respawn.next=123;
     account_regular_mob_corpse(respawn,*restored,10000,random);
     require(respawn.current==respawn.count-1 && respawn.next==190000 && random.state()==before_random,"SQL corpse accounting changed restored fixed interval or consumed random");
+    require(runtime.mob_population->initialize(zone,pool,ports,[]{return true;}),"SQL corpse fixture could not restore regular population");
+    require(zone.size()==2 && serial==119 && respawn.current==2,"SQL corpse fixture initial population changed");
+    for(auto* mob:zone.all()) {mob->status=2;mob->death_time=100;}
+    zone.update_deaths(pool,random,100,*runtime.linked_mobs);require(zone.size()==2 && respawn.current==2,"SQL corpse cleanup used non-strict deadline");
+    zone.update_deaths(pool,random,101,*runtime.linked_mobs);
+    require(zone.size()==0 && respawn.current==0 && respawn.next==180101 && pool.available()==3 && services.removals==6,"SQL corpse cleanup did not unlink/account/recycle both regular actors");
+    runtime.mob_population->update(zone,pool,ports,180100);require(zone.size()==0 && serial==119,"SQL corpse respawn ignored deadline");
+    runtime.mob_population->update(zone,pool,ports,180101);
+    require(zone.size()==1 && serial==120 && respawn.current==1 && respawn.next==360101 && zone.find(120)->hp==2765,"SQL corpse did not replenish from restored definitions at deadline");
+    runtime.release_mob_population(pool);require(pool.available()==3 && services.releases==20,"SQL corpse cycle did not release reused actors");
+
 
 
 

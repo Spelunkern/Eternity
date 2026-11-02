@@ -33,7 +33,7 @@ struct Services final:MobPoolServices,ZoneMobServices {
     unsigned int entering_zone=255;
 };
 struct State {
-    std::uint32_t counter=0;Services services;std::unique_ptr<MobPool> pool;std::array<RuntimeZone,2> zones;
+    LinkedMobPopulation linked{std::span<const LinkedMobGroup>{}};MicrosoftRandom random;std::uint32_t counter=0;Services services;std::unique_ptr<MobPool> pool;std::array<RuntimeZone,2> zones;
     void initialize(unsigned int scenario,int extent,std::uint32_t serial) {
         counter=serial;services.zones=&zones;services.cells=extent/40+1;pool=std::make_unique<MobPool>(counter,services);
         for(unsigned int z=0;z<2;++z) {zones[z].mobs=std::make_unique<ZoneMobs>(MapGeometry(extent),services);for(unsigned int i=0;i<10;++i) zones[z].instance_portals[i]={static_cast<std::int32_t>(scenario*100+z*20+i*2+1),static_cast<std::int32_t>(scenario*100+z*20+i*2+2)};}
@@ -48,17 +48,19 @@ struct State {
 };
 int main(int argc,char** argv) {
     try {
-        require(argc==2,"Expected zone mob release oracle");std::ifstream input(argv[1]);require(input.good(),"Cannot open release oracle");std::unique_ptr<State> state;std::string line;unsigned int scenarios=0,operations=0;
+        require(argc==2 || argc==3,"Expected zone mob release/death oracle");std::ifstream input(argv[1]);require(input.good(),"Cannot open release oracle");std::unique_ptr<State> state;std::string line;unsigned int scenarios=0,operations=0;
         while(std::getline(input,line)) {
             if(line.empty() || line[0]=='#') continue;std::istringstream row(line);char op=0;row>>op;
             if(op=='S') {unsigned int scenario=0;int extent=0;std::uint32_t counter=0;row>>scenario>>extent>>counter;state=std::make_unique<State>();state->initialize(scenario,extent,counter);++scenarios;continue;}
             auto& s=state->services;s.events.clear();unsigned int result=255;
             if(op=='A') {unsigned int fail=0;row>>fail>>s.time;s.fail=fail!=0;auto* m=state->pool->allocate();result=s.id(m);if(m) std::erase(s.free,m);}
             else if(op=='C') {unsigned int index=0,config=0;std::uint32_t id=0;row>>index>>config>>id;auto& m=*s.objects.at(index);m.id=id;m.status=static_cast<std::int32_t>(100+config);m.target_kind=static_cast<std::int32_t>(200+config);if(config&1) m.state_stack=std::vector<std::int32_t>{};else m.state_stack.reset();m.lua_ai=static_cast<std::int32_t>((config>>1)&1);m.only_lua_attack=static_cast<std::int32_t>(300+config);m.lua_state=config&4?reinterpret_cast<void*>(static_cast<std::uintptr_t>(0x70000000U+index*16)):nullptr;}
+            else if(op=='H') {unsigned int index=0;std::int32_t status=0;std::uint32_t death=0;row>>index>>status>>death;auto& m=*s.objects.at(index);m.status=status;m.death_time=death;m.respawn=nullptr;}
+            else if(op=='D') {unsigned int z=0;std::uint32_t now=0;row>>z>>now;s.entering_zone=z;state->zones.at(z).mobs->update_deaths(*state->pool,state->random,now,state->linked);}
             else if(op=='E') {unsigned int index=0,z=0;std::uint32_t x=0,y=0,iz=0;row>>index>>z>>x>>y>>iz;auto& m=*s.objects.at(index);m.position={std::bit_cast<float>(x),std::bit_cast<float>(y),std::bit_cast<float>(iz)};s.entering_zone=z;result=state->zones.at(z).mobs->enter(m)?1:0;}
             else {require(op=='R',"Unknown release operation");unsigned int z=0;row>>z;state->zones.at(z).release_mob_population(*state->pool);}
             std::string hex;row>>hex;require(static_cast<bool>(row),"Malformed release vector");Bytes actual;number(actual,result,1);number(actual,static_cast<std::uint32_t>(s.events.size()));actual.insert(actual.end(),s.events.begin(),s.events.end());const auto snapshot=state->snapshot();actual.insert(actual.end(),snapshot.begin(),snapshot.end());const auto expected=unhex(hex);if(actual!=expected) {const auto at=std::mismatch(actual.begin(),actual.end(),expected.begin(),expected.end());throw std::runtime_error("Original zone release differs at operation "+std::to_string(operations)+" byte "+std::to_string(at.first-actual.begin()));}++operations;
         }
-        require(scenarios==128 && operations==3072,"Zone release coverage changed");std::cout<<scenarios<<" original two-zone lifecycles, "<<operations<<" allocation/entry/release/reuse operations passed\n";
+        require(scenarios==128 && operations==(argc==3?2048U:3072U),"Zone release coverage changed");std::cout<<scenarios<<" original two-zone lifecycles, "<<operations<<" allocation/entry/release/reuse operations passed\n";
     } catch(const std::exception& e) {std::cerr<<e.what()<<'\n';return 1;}
 }
