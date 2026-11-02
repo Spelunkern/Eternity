@@ -416,6 +416,31 @@ remain the future world owner's responsibility. The oracle verifies 4,440 grid,
 bounds, view and movement cases; a combined test checks the effect on detection
 across overlapping cell windows and rejected-position preservation.
 
+`MapConfiguration` follows `LoadGameMapConfig` (`004270a0`), `CMap::LoadConfig`
+(`00426940`), `ParseMapPos` (`004264c0`), `ParseMapPosArray` (`00426660`) and
+`ParseMapOpenTimeArray` (`00426820`). `BASE.MapCount` controls positional map IDs;
+creation now uses the same start-position parser. Profile values are limited to
+254 bytes, tokenized using the original delimiter set, with partial start tuples
+excluded. Rebirth retains partial fields, and a common value of at least six bytes
+is copied to both factions; otherwise each faction falls back separately. Only
+MapType, weather and rebirth inherit `DEFAULT_SET_ZONE`. MapName defaults to
+`<id>.svmap`; WarType P maps to 1. CreateType N/S/F/P/G/R/H maps to 0..6.
+Weather state is restricted to 0..2, while other numeric fields retain original
+DWORD wrapping and minute-to-millisecond arithmetic. Expiry adds 30 seconds;
+seven opening-time triples preserve WORD conversion and partial writes. Unused
+schedule hours are initialized to zero natively. Market mode is enabled for ID 42.
+
+`ServerMaps` loads configuration and exactly its referenced files, including
+aliases, in original ID order (`CWorld::InitMaps`, `00414710`, configuration/file
+phases). `--check-original-loaders` now checks this path alongside SQL definitions.
+The oracle executes original constructors, parsers, numeric conversion and string
+formatting; Windows profile/TLS and single-thread CRT lock ports are isolated.
+It checks 19 synthetic configurations and the staged INI's complete field
+fingerprint. Integration loads its 68 configured maps and verifies shared creation
+coordinates. Runtime zone selection/creation, schedules, weather transitions,
+obelisk binding and spawns remain pending; loading the map registry does not enter
+the world or implement these services.
+
 Attack-only rebuilding now follows `InitEquipment(bool)` (`00454ba0`),
 `ItemEquipmentAttackAdd` (`00456450`) and `GemEquipmentAttackAdd` (`004565b0`).
 It resets only item attack, variance, physical defense and magic defense;

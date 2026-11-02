@@ -1,10 +1,8 @@
 #include "eternity/game/creation.hpp"
+#include "eternity/game/map_config.hpp"
 #include <algorithm>
 #include <charconv>
-#include <cmath>
-#include <fstream>
 #include <map>
-#include <sstream>
 
 namespace eternity::game {
 namespace {
@@ -24,11 +22,6 @@ std::size_t column(const storage::ResultSet& table,std::string_view name) {
     const auto found=std::find(table.columns.begin(),table.columns.end(),name);
     if(found==table.columns.end()) throw std::runtime_error("Missing original creation definition column");
     return static_cast<std::size_t>(found-table.columns.begin());
-}
-std::string trim(std::string value) {
-    const auto begin=value.find_first_not_of(" \t\r\n");
-    if(begin==std::string::npos) return {};
-    return value.substr(begin,value.find_last_not_of(" \t\r\n")-begin+1);
 }
 }
 
@@ -51,41 +44,9 @@ StartPositions original_start_positions() {
              {{2,1726.0F,262.0F,334.0F}},{{2,419.0F,230.0F,723.0F}}}};
 }
 StartPositions read_start_positions(const std::filesystem::path& path) {
-    std::ifstream input(path,std::ios::binary);
-    if(!input) throw std::runtime_error("Cannot open original map configuration");
-    std::ostringstream contents;contents<<input.rdbuf();auto text=contents.str();
-    // Original distributions include a block-commented example before the BASE section.
-    for(auto start=text.find("/*");start!=std::string::npos;start=text.find("/*")) {
-        const auto end=text.find("*/",start+2);
-        if(end==std::string::npos) throw std::runtime_error("Unterminated map configuration comment");
-        text.erase(start,end+2-start);
-    }
-    auto positions=original_start_positions();bool base=false;std::istringstream lines(text);std::string line;
-    constexpr std::array<std::string_view,4> keys={"hugamestartmappos","elgamestartmappos","bagamestartmappos","degamestartmappos"};
-    while(std::getline(lines,line)) {
-        if(auto comment=line.find("//");comment!=std::string::npos) line.erase(comment);
-        if(auto comment=line.find(';');comment!=std::string::npos) line.erase(comment);
-        line=trim(line);if(line.empty()) continue;
-        if(line.front()=='[') {
-            std::transform(line.begin(),line.end(),line.begin(),[](unsigned char c){return c>='A'&&c<='Z'?static_cast<char>(c+32):static_cast<char>(c);});
-            base=line=="[base]";continue;
-        }
-        if(!base) continue;
-        const auto equal=line.find('=');if(equal==std::string::npos) continue;
-        auto key=trim(line.substr(0,equal));
-        std::transform(key.begin(),key.end(),key.begin(),[](unsigned char c){return c>='A'&&c<='Z'?static_cast<char>(c+32):static_cast<char>(c);});
-        const auto found=std::find(keys.begin(),keys.end(),key);if(found==keys.end()) continue;
-        auto value=line.substr(equal+1);
-        for(auto& c:value) if(c=='(' || c==')' || c==',') c=' ';
-        std::istringstream numbers(value);std::vector<StartPosition> parsed;int map;float x,y,z;
-        while(numbers>>map) {
-            if(!(numbers>>x>>y>>z) || map<0 || map>65535 || !std::isfinite(x) || !std::isfinite(y) || !std::isfinite(z))
-                throw std::runtime_error("Invalid character start position");
-            parsed.push_back({static_cast<std::uint16_t>(map),x,y,z});
-        }
-        if(parsed.empty() || !numbers.eof() || parsed.size()>64) throw std::runtime_error("Invalid character start position list");
-        positions[static_cast<std::size_t>(found-keys.begin())]=std::move(parsed);
-    }
+    const auto configuration=MapConfiguration::load(path);StartPositions positions;
+    for(std::size_t family=0;family<4;++family) for(const auto& start:configuration.starts[family])
+        positions[family].push_back({static_cast<std::uint16_t>(start.map),start.position.x,start.position.y,start.position.z});
     return positions;
 }
 

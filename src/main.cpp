@@ -1,5 +1,6 @@
 #include "eternity/storage/sql_server.hpp"
 #include "eternity/game/definitions.hpp"
+#include "eternity/game/map_config.hpp"
 #include "eternity/auth/sql_authenticator.hpp"
 #include "eternity/net/login_server.hpp"
 #include "eternity/net/world_server.hpp"
@@ -95,6 +96,10 @@ int main(int argc, char** argv) {
             for (const auto& [name, catalog] : definitions.catalogs)
                 std::cout << name << ": " << catalog.rows.size() << " rows, " << catalog.columns.size() << " columns\n";
             std::cout << "Original definition procedures loaded successfully.\n";
+            const char* configured=std::getenv("ETERNITY_MAP_INI");
+            const std::filesystem::path map_ini=configured?configured:".local/server-data/Map.ini";
+            const auto maps=eternity::game::ServerMaps::load(eternity::game::MapConfiguration::load(map_ini),map_ini.parent_path()/"Map");
+            std::cout << "Original map configuration and files loaded: " << maps.size() << " maps (runtime zones not initialized).\n";
             return 0;
         }
         // Read-only inspection of the recovered definition database.

@@ -29,7 +29,7 @@ and cleanup. Equipment/transformation attack rebuilding and elemental-effect
 replacement run natively in the actor. User appearance packets include visible
 equipment, enchantments, cloak and social fields, with a copied-user snapshot path.
 Native user-cell queries now reveal hidden enemies using original duel, guild
-and map rules. Server map files, entry bounds and movement cell resolution are
+and map rules. Server map files/configuration, entry bounds and movement cell resolution are
 reconstructed; world admission, broadcasts, combat and TCP world entry remain pending.
 The active MD5 login
 path needs a missing procedure; see [research](research/protocol.md).
@@ -63,4 +63,6 @@ Bind/advertised addresses default to loopback (`ETERNITY_LOGIN_BIND`,
 `ETERNITY_WORLD_BIND`, `ETERNITY_WORLD_ADVERTISE`). The runner shares the isolated
 SQL Server container's network namespace.
 Server assets remain in ignored `.local/server-data`; staged `Map.ini` supplies
-racial start positions. `ETERNITY_MAP_INI` overrides that path inside the container.
+racial start positions and map rules. `--check-original-loaders` checks SQL definitions
+and loads every configured map file. `ETERNITY_MAP_INI` overrides the INI path;
+map files are read from its adjacent `Map` directory inside the container.
