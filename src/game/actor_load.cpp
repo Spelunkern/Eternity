@@ -1,21 +1,28 @@
 #include "eternity/game/actor_load.hpp"
 
 namespace eternity::game {
-LoadedActor load_actor(const PlayerSnapshot& player,const ActorLoadRules& rules,ActorLoadOptions options,ActorScene& scene) {
+ActorLoadPipeline::ActorLoadPipeline(const PlayerSnapshot& player,const ActorLoadRules& rules,ActorLoadOptions options,ActorScene& scene):player_(player),rules_(rules),options_(options) {
     // PacketUserDBSetInfo 0046d780 loads 0504/0505/0506 before PacketUserDBChar 0046cf60 case 0407.
-    LoadedActor result;result.learned=restore_skills(player.skills,rules.skills,options.tick_ms);
-    if(result.learned.invalid) return result;
+    auto& result=result_;result.learned=restore_skills(player.skills,rules.skills,options.tick_ms);
+    if(result.learned.invalid) return;
     EffectStatus initial;initial.level=player.core.character.level;
     result.actor=std::make_unique<Actor>(player.core.character.id,std::move(initial),
         PlayerResources{player.core.character.hp,player.core.character.mp,player.core.character.sp},player.effects,scene,
         ActorEquipmentRules{rules.items,rules.enchant,rules.mobs},options.inventory_pool?std::vector<PlayerItem>{}:player.items);
-    auto& actor=*result.actor;auto& status=actor.status();
+    auto& actor=*result.actor;
     actor.account_id()=player.core.user_id;actor.money()=player.core.money;
     if(options.inventory_pool) for(const auto& item:player.items) actor.load_inventory_item(item,*options.inventory_pool);
     actor.appearance().identity=user_shape_identity(player.core,options.country);
     actor.relations().guild_id=player.core.guild_id;
     actor.effects().restore(player.effects,rules.skills,player.core.character.map,options.disconnected_seconds,options.tick_ms,actor);
     result.quests=restore_quests(player,rules.quests,options.tick_ms);
+}
+void ActorLoadPipeline::advance(unsigned int expected) {
+    if(!result_.actor || result_.learned.invalid || stage_!=expected) throw std::logic_error("Actor load phase is missing, repeated or out of order");
+    ++stage_;
+}
+void ActorLoadPipeline::equipment() {
+    advance(0);const auto& player=player_;const auto& rules=rules_;const auto options=options_;auto& result=result_;auto& actor=*result.actor;auto& status=actor.status();
     // InitEquipment 00454560 applies equipped slots, then blessing and SetAttack.
     actor.initializing(true);
     status.skills.equipment=initialize_equipment(rules.statuses.base(player.core.character),actor.inventory(),rules.items,rules.enchant);
@@ -23,6 +30,9 @@ LoadedActor load_actor(const PlayerSnapshot& player,const ActorLoadRules& rules,
     if(options.blessing) result.blessing=initialize_blessing(status.skills,result.attack_recovery,*options.blessing,
         {status.calculated_attack[0].defense,status.calculated_attack[1].defense});
     recalculate_attack(status);
+}
+void ActorLoadPipeline::passive() {
+    advance(1);const auto& player=player_;const auto& rules=rules_;auto& actor=*result_.actor;auto& status=actor.status();
     // InitPassive 004899a0 suppresses notifications but preserves per-ability attack recalculations.
     actor.initializing(true);
     std::optional<std::uint8_t> weapon,shield;
@@ -43,10 +53,23 @@ LoadedActor load_actor(const PlayerSnapshot& player,const ActorLoadRules& rules,
         }
     }
     actor.initializing(false);
+}
+void ActorLoadPipeline::effects() {
+    advance(2);auto& actor=*result_.actor;auto& status=actor.status();
     // InitApplySkill 00487e50 does not set the initialization flag: these callbacks may clamp current resources.
     actor.effects().initialize(status,actor);
-    apply_billing(status.skills,options.billing_type);
-    actor.finish_loading_resources();actor.stop_attack(status);
-    return result;
+}
+void ActorLoadPipeline::billing() {
+    advance(3);auto& actor=*result_.actor;apply_billing(actor.status().skills,options_.billing_type);
+    actor.finish_loading_resources();
+}
+LoadedActor ActorLoadPipeline::release() {
+    if(result_.actor && stage_!=4) throw std::logic_error("Actor released before complete initialization");
+    return std::move(result_);
+}
+LoadedActor load_actor(const PlayerSnapshot& player,const ActorLoadRules& rules,ActorLoadOptions options,ActorScene& scene) {
+    ActorLoadPipeline pipeline(player,rules,options,scene);
+    if(pipeline.result().actor) {pipeline.equipment();pipeline.passive();pipeline.effects();pipeline.billing();auto& actor=*pipeline.result().actor;actor.stop_attack(actor.status());}
+    return pipeline.release();
 }
 }

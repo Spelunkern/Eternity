@@ -1,5 +1,7 @@
 #include "eternity/game/actor.hpp"
 #include "eternity/game/actor_load.hpp"
+#include "eternity/game/character_entry.hpp"
+#include <bit>
 #include "equipment_fixture.hpp"
 #include <fstream>
 #include <iostream>
@@ -95,6 +97,29 @@ int main(int argc,char** argv) {
             require(loaded.actor->effects().size()==1 && loaded.actor->replica().snapshot().size()==1,"Actor load lost its runtime effect or replica");
         }
         require(loading.events==std::vector<std::string>{"S0b0529230000027909","F100"},"Actor destruction reversed effects or failed to release its instance");
+        {
+            Scene entry_scene;ActorLoadPipeline pipeline(player,rules,{10000,0,2,&blessing},entry_scene);
+            require(pipeline.result().actor && entry_scene.events.empty(),"DB restoration initialized actor effects before entry notification");
+            bool rejected=false;try{pipeline.passive();}catch(const std::logic_error&){rejected=true;}require(rejected,"Actor initialization accepted out-of-order passive work");rejected=false;try{auto early=pipeline.release();}catch(const std::logic_error&){rejected=true;}require(rejected,"Uninitialized actor escaped its pipeline");
+            CharacterEntryState entry;entry.user_id=player.core.user_id;entry.character_id=character.id;entry.level=character.level;
+            CharacterEntryPorts ports;ports.send_client=[&](net::Packet p){entry_scene.record('S',p);};ports.send_manager=[&](net::Packet p){entry_scene.record('M',p);};ports.world_day=[](){return 1234U;};ports.system_time=[](){return 5678U;};ports.lock_guild=[](){return false;};ports.unlock_guild=[](){throw std::runtime_error("Unowned guild lock released");};std::vector<CharacterEntryStep> remaining_services;
+            ports.step=[&](CharacterEntryStep step) {
+                switch(step) {
+                case CharacterEntryStep::equipment:pipeline.equipment();break;
+                case CharacterEntryStep::passive:pipeline.passive();break;
+                case CharacterEntryStep::effects:pipeline.effects();break;
+                case CharacterEntryStep::billing: {
+                    pipeline.billing();const auto& actor=*pipeline.result().actor;const auto maximum=actor.status().skills.equipment.base.maximum;const auto current=actor.resources();entry.maximum={std::bit_cast<std::int32_t>(maximum.hp),std::bit_cast<std::int32_t>(maximum.mp),std::bit_cast<std::int32_t>(maximum.sp)};entry.current={std::bit_cast<std::int32_t>(current.hp),std::bit_cast<std::int32_t>(current.mp),std::bit_cast<std::int32_t>(current.sp)};break;
+                }
+                case CharacterEntryStep::stop_attack: {auto& actor=*pipeline.result().actor;actor.stop_attack(actor.status());break;}
+                default:remaining_services.push_back(step);break; // Explicit test ports for catalog/social/zone delivery.
+                }
+            };
+            complete_character_selection(entry,ports);auto initialized=pipeline.release();
+            require(initialized.actor && entry.ready && entry.runtime_id==9001 && entry.current==std::array<std::int32_t,3>{1429,2325,3110},"Entry pipeline changed original initialization/clamp results");
+            require(entry_scene.events==std::vector<std::string>{"M030839300000","S0b0529230000027909","S04010029230000","S0404d2040000","S14012e160000","S1b020001"},"Entry sent its ACK before native effect/resource initialization or reordered its envelopes");
+            require(!remaining_services.empty() && remaining_services.front()==CharacterEntryStep::wait_user && remaining_services.back()==CharacterEntryStep::flush,"Entry lost its external scene/catalog service ordering");
+        }
         loading.events.clear();player.skills[0].id=999;const auto invalid=load_actor(player,rules,{10000,0,0,nullptr},loading);
         require(!invalid.actor && invalid.learned.invalid && loading.events.empty(),"Invalid learned definition proceeded into actor initialization");
         player.skills[0].id=100;player.effects={{102,1,30}};bool scene_failure=false;

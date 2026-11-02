@@ -63,7 +63,9 @@ Actor money credits preserve unsigned limits and ordered DB-status/client/log
 messages, with money-item release to the pool. Periodic money saving and shared
 loot dispatch still require integration.
 Actor preparation connects these stages, including effect-driven resource clamps
-and cleanup. A supplied inventory pool materializes resolved SQL rows and owns
+and cleanup. Selection/initial-data coordination preserves the original initialization
+and packet order; live session and world admission still require integration.
+A supplied inventory pool materializes resolved SQL rows and owns
 their allocations through removal or actor teardown. Equipment/transformation attack rebuilding and elemental-effect
 replacement run natively in the actor. User appearance packets include visible
 equipment, enchantments, cloak and social fields, with a copied-user snapshot path.

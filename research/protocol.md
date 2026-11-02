@@ -1857,3 +1857,38 @@ reset, detached clients and shutdown admission. Disposable SQL now sends an
 actual deferred disconnect through a native worker, composed character saving,
 leave and ordered `0302`/`0303` notifications. Live server ownership, periodic
 manager sweep, social persistence and connection-pool integration remain pending.
+
+`request_character_selection` reconstructs `ps_game.exe` `CUser::PacketCharacter`
+(`0046bf20`, `0104` at `0046c0f0`). An already-cleared selection latch ignores the
+request. Country byte 2 closes with reason 9 without consuming an enabled latch.
+Otherwise it clears the latch and forwards DB-agent `0407`, account UID and the
+raw requested character DWORD; trailing request bytes are ignored. This gate does
+not invent SQL ownership decisions or send a premature client success.
+
+`complete_character_selection` reconstructs successful `PacketUserDBChar`
+(`0046cf60`, `0407` branch `0046d4c1..0046d717`). It copies character ID to runtime
+ID, notifies the manager with `0803`, initializes equipment/passives/effects/billing,
+then performs signed HP/MP/SP upper clamps. Client `0104` success and world-day
+`0404` precede attack stop, world wait membership and guild/friend initialization.
+The original catalog-send order is preserved through stored point items. Automatic
+characters receive `0112` (runtime ID and level) and finish with `0113` instead of
+quick slots. A captured guild lock covers optional bank/NPC sends and the final
+clock/restriction/PvP/run-mode/quick/flush section. The original `CGuildLock`
+(`0042b800`) releases and discards a captured lock if the user's guild disappears
+during acquisition. System time `0114` and raw `021b` flag transforms retain DWORD
+and BYTE wrap. Motion byte 13 requests run-mode sending with argument zero. The
+initial-data marker is set before flush, and a captured lock releases afterward.
+This is preparation of a waiting user, not zone admission.
+
+`ActorLoadPipeline` separates DB restoration from the four initialization phases,
+allowing this owner to preserve manager/initialization/ACK order. It rejects
+repeated/out-of-order phases and premature actor release. The existing `load_actor`
+wrapper retains its previous behavior. A composed native check binds the four
+phases and attack stop to the real actor, proving effect-driven MP notification
+and current-resource clamping precede the selection ACK. Catalog/social/zone sends
+remain explicit test ports there. The original control fixture covers 144 gate
+cases and 864 complete 0407 sequences: normal/automatic, signed resource extremes,
+raw flags, motion, no guild, captured guild and guild disappearance. Initialization,
+catalog serialization, time and transport are ports; original clamps, envelopes,
+CGuildLock and final branches execute unchanged. TCP session ownership, complete
+catalog delivery and actual world/map admission remain pending.

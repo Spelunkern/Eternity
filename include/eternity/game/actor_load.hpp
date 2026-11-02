@@ -27,6 +27,23 @@ struct LoadedActor {
     std::array<std::int32_t,28> blessing{};
     std::array<std::int32_t,3> attack_recovery{};
 };
+// Separates DB restoration from the four 0407 initialization calls, so a live
+// entry owner can preserve manager notification / initialization / ACK order.
+// Snapshot, rules and scene outlive the pipeline; discard it after any error.
+class ActorLoadPipeline {
+public:
+    ActorLoadPipeline(const PlayerSnapshot&,const ActorLoadRules&,ActorLoadOptions,ActorScene&);
+    const LoadedActor& result() const noexcept {return result_;}
+    void equipment();
+    void passive();
+    void effects();
+    void billing();
+    LoadedActor release();
+private:
+    void advance(unsigned int expected);
+    const PlayerSnapshot& player_;const ActorLoadRules& rules_;ActorLoadOptions options_;
+    LoadedActor result_;unsigned int stage_=0;
+};
 // Recovered loading/initialization phases. Unknown learned definitions return learned.invalid
 // and no actor: the connection owner must log/disconnect, as the original does.
 LoadedActor load_actor(const PlayerSnapshot& player,const ActorLoadRules& rules,ActorLoadOptions options,ActorScene& scene);
