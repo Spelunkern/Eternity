@@ -24,7 +24,7 @@ net::Packet packet(const GuildMetadata& data,const GuildMetadata& cached) {
     append(p,0);append(p,cached.return_count);return p;
 }
 }
-GuildSql::GuildSql(storage::SqlServer& main,storage::SqlServer& auxiliary,InventoryReplicaPool& pool,GuildSqlPorts ports,std::string catalog):main_(main),auxiliary_(auxiliary),pool_(pool),ports_(std::move(ports)) {
+GuildSql::GuildSql(storage::SqlServer& main,storage::SqlServer& auxiliary,InventoryReplicaPool& pool,GuildSqlPorts ports,std::string catalog):main_(main),auxiliary_(auxiliary),pool_(pool),bank_store_(auxiliary,ports.diagnostic,catalog),ports_(std::move(ports)) {
     if(&main==&auxiliary || !ports_.send || !ports_.allocate || !ports_.diagnostic) throw std::invalid_argument("Guild loading requires two SQL connections and replica services");
     if(catalog.empty() || catalog.find_first_not_of("ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789_")!=std::string::npos) throw std::invalid_argument("Invalid guild SQL catalog");prefix_="["+catalog+"].dbo.";
 }
@@ -101,6 +101,10 @@ InventoryReplicaResult GuildSql::apply(std::span<const std::uint8_t> p) {
     const auto found=replicas_.find(id);
     if(found==replicas_.end()) {ports_.diagnostic("Guild bank command references unknown guild "+std::to_string(id));return InventoryReplicaResult::applied;}
     return found->second.bank->apply(p);
+}
+std::optional<std::uint32_t> GuildSql::save_bank(std::uint32_t guild) {
+    const auto found=replicas_.find(guild);if(found==replicas_.end()) return std::nullopt;
+    return bank_store_.save(guild,*found->second.bank);
 }
 void GuildSql::send_banks() {for(const auto& [id,replica]:replicas_) for(auto& p:replica.bank->packets(id)) ports_.send(std::move(p));}
 

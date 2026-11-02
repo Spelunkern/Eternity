@@ -1,4 +1,5 @@
 #include "eternity/game/guild_bank.hpp"
+#include "eternity/game/guild_bank_save.hpp"
 #include <algorithm>
 
 namespace eternity::game {
@@ -46,6 +47,11 @@ InventoryReplicaResult GuildBankReplica::apply(std::span<const std::uint8_t> p) 
         else {source->item.count=p[7];target->item.count=p[9];source.swap(target);dirty(source);dirty(target);if(source->item.count==0) remove(source);}
     }
     return InventoryReplicaResult::applied;
+}
+std::uint32_t GuildBankReplica::save(std::uint32_t guild,GuildBankSavePorts& ports) {
+    if(loading_) throw std::logic_error("Cannot save a loading guild bank");
+    std::array<CachedInventoryItem*,240> slots{};for(std::size_t i=0;i<slots.size();++i) slots[i]=slots_[i].get();
+    return save_guild_bank(guild,slots,deleted_,ports);
 }
 std::vector<CachedInventoryItem> GuildBankReplica::snapshot() const {std::vector<CachedInventoryItem> out;for(std::size_t i=0;i<240;++i) if(slots_[i]) {out.push_back(*slots_[i]);out.back().item.slot=static_cast<std::uint16_t>(i);}return out;}
 std::vector<net::Packet> GuildBankReplica::packets(std::uint32_t guild) const {

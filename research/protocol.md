@@ -2239,8 +2239,8 @@ game reception. String padding after NUL is normalized to zero; it is undefined
 source stack data. Native input rejects negative/out-of-range slot writes.
 Disposable SQL verifies the actual procedure through game/client output,
 NULL text reuse, duplicate relocation, date/quality conversion, count correction,
-cached reload and nested failure retention. Bank transfer commands and SQL saving,
-production world initialization and playable TCP entry remain pending.
+cached reload and nested failure retention. Character/guild transfers, production world initialization and playable TCP
+entry remain pending.
 
 
 DB bank mutation now follows `CConnection::PacketGuild` (`ps_dbAgent.exe`,
@@ -2253,5 +2253,27 @@ state is 1, then recycle the object. Other nonzero save states remain unchanged.
 The original oracle now also runs 1,536 mutations, comparing every changed slot,
 deletion journal and pool count. SQL integration routes game equipment corrections
 back into the DB replica and checks move/delete journal order and unknown-guild
-no-op diagnostics. These commands change cached state; SQL bank saving remains
-separate unfinished work.
+no-op diagnostics. SQL saving follows these retained cache markers and journals.
+
+
+`save_guild_bank` follows `GuildMgrSave::DBSaveItem` (`ps_dbAgent.exe`,
+`004105b0`). Deletions precede slot-ordered inserts/updates. Its deletion counter
+is never reset: the first 40 UIDs share a call, then each remaining UID gets its
+own call. Failure retains the entire deletion journal, even after earlier calls
+committed, and still attempts dirty items. Successful deletion clears the journal.
+Each successful item write clears its marker immediately; unrecognized markers
+also become zero without SQL. An item failure stops the slot scan. Only insert
+Query failure appends a cleanup UID; bind, MoreResults and negative procedure
+results do not. Lease failure returns one error without further work. Leases are
+released after each pass; caller retry/scheduling remains a separate owner.
+
+`GuildBankStore` executes the recovered Add/Mod/Del procedures with independent
+autocommit operations. `GuildSql::save_bank` exposes one pass for a retained guild.
+It preserves signed DWORD/UID formatting and unsigned quality arguments, including
+real SMALLINT conversion failures for quality >=32768. A 144-case, two-pass oracle
+executes the original save owner with lease/ODBC failures and compares SQL
+arguments, marker changes, journal retention, prepare/release order and error
+counts. Disposable SQL proves insertion survives a later failing update, subsequent
+delete/update clears acknowledged state, and invalid packed-date insertion
+schedules cleanup before retry. Production guild save scheduling, metadata/NPC
+persistence and character/guild inventory transfers remain pending.

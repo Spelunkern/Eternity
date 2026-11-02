@@ -1,5 +1,6 @@
 #pragma once
 #include "eternity/game/guild_catalog.hpp"
+#include "eternity/game/guild_bank_save.hpp"
 #include "eternity/storage/sql_server.hpp"
 
 namespace eternity::game {
@@ -18,13 +19,14 @@ public:
     bool load(); // LoadGuildNUserList 004271a0 / LoadUserList 004275d0.
     void send_npcs(); // SendGuildNpcLvList 00410cb0, after guild/bank loading.
     InventoryReplicaResult apply(std::span<const std::uint8_t>); // Owned bank commands, PacketGuild 0040ba00.
+    std::optional<std::uint32_t> save_bank(std::uint32_t guild); // One DBSaveItem pass; global scheduling is separate.
     void send_banks(); // SendGuildBankList 00410c20.
     const std::map<std::uint32_t,GuildDbMetadata>& replicas() const noexcept {return replicas_;}
 private:
     bool members(std::uint32_t);
     bool load_npcs(std::uint32_t,GuildNpcReplica&);
     bool load_bank(std::uint32_t,GuildBankReplica&);
-    storage::SqlServer& main_;storage::SqlServer& auxiliary_;InventoryReplicaPool& pool_;GuildSqlPorts ports_;std::string prefix_;
+    storage::SqlServer& main_;storage::SqlServer& auxiliary_;InventoryReplicaPool& pool_;GuildBankStore bank_store_;GuildSqlPorts ports_;std::string prefix_;
     std::map<std::uint32_t,GuildDbMetadata> replicas_;
 };
 }

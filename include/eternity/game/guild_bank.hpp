@@ -4,6 +4,7 @@
 #include "eternity/game/equipment.hpp"
 
 namespace eternity::game {
+struct GuildBankSavePorts;
 // Original DB-agent 240-slot guild bank, including its temporary duplicate list.
 // Pool outlives this owner. One DB executor serializes loads and later mutations.
 class GuildBankReplica {
@@ -17,6 +18,7 @@ public:
     void finish_load(bool success); // Success relocates duplicates; failure deletes them.
     // Caller resolves the guild envelope before dispatching these bank commands.
     InventoryReplicaResult apply(std::span<const std::uint8_t>);
+    std::uint32_t save(std::uint32_t guild,GuildBankSavePorts&);
     const std::vector<std::uint64_t>& deleted() const noexcept {return deleted_;}
     std::vector<CachedInventoryItem> snapshot() const;
     std::vector<net::Packet> packets(std::uint32_t guild) const; // SendGuildBank 0040f7d0.
