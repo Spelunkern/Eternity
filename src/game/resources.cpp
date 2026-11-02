@@ -12,6 +12,12 @@ net::Packet identified(std::uint16_t opcode,std::uint32_t id,std::size_t size) {
     net::Packet packet(size,0);put(packet,0,opcode,2);put(packet,2,id,4);return packet;
 }
 }
+void ActorResources::clamp(PlayerResources maximum) {
+    // PacketUserDBChar 0046cf60 case 0407 directly clamps after billing, without SendRecoverAdd.
+    if(signed_value(current_.hp)>signed_value(maximum.hp)) current_.hp=maximum.hp;
+    if(signed_value(current_.sp)>signed_value(maximum.sp)) current_.sp=maximum.sp;
+    if(signed_value(current_.mp)>signed_value(maximum.mp)) current_.mp=maximum.mp;
+}
 void ActorResources::party_energy() {
     // CUser::SendEnergyAllToParty 00482360: group payload orders HP, SP, MP.
     if(const auto raid=sink_.party_kind()) {

@@ -18,6 +18,7 @@ class ActorResources {
 public:
     ActorResources(std::uint32_t character_id,PlayerResources current,ResourceSink& sink):id_(character_id),current_(current),sink_(sink) {}
     const PlayerResources& current() const noexcept {return current_;}
+    void clamp(PlayerResources maximum); // Final character-load clamp, without notifications.
     // Requested/actual amounts use HP, SP, MP order, matching CUser::Heal's in/out buffer.
     std::array<std::int32_t,3> heal(PlayerResources maximum,std::array<std::int32_t,3> amounts);
     void recover(PlayerResources maximum,std::array<std::int32_t,3> amounts,bool send_set = false,std::int32_t attack_mode = 0,bool recovering = false);

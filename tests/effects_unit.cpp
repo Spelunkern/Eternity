@@ -47,7 +47,9 @@ std::vector<std::int64_t> fields(const EffectStatus& status) {
     result.push_back(status.chase_id);result.push_back(status.shape_template);result.push_back(status.block_all);
     result.push_back(status.shape);result.push_back(status.form_mob);result.push_back(status.no_mob_targeting);
     result.push_back(status.zero_attack_attribute_buff);result.insert(result.end(),equipment.attack_attribute_buffs.begin(),equipment.attack_attribute_buffs.end());
-    result.push_back(attack_speed(status));result.push_back(move_speed(status));return result;
+    result.push_back(attack_speed(status));result.push_back(move_speed(status));
+    for(const auto& value:status.calculated_attack) for(auto field:{value.accuracy,value.attack,value.evasion,value.defense,value.critical_attack,value.critical_defense}) result.push_back(field);
+    return result;
 }
 int main(int argc,char** argv) {
     try {

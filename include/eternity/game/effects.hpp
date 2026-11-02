@@ -5,6 +5,8 @@ namespace eternity::game {
 struct EffectDefense {std::int32_t block_mode = 0,block_value = 0,mirror_skill = 0,mirror_level = 0;};
 struct EffectStatus {
     SkillStatus skills;
+    std::uint16_t level = 0;
+    std::array<AttackValues,3> calculated_attack{};
     std::array<EffectDefense,3> defense{};
     // Offsets 133c, 1340, 1344, 1348 have conflicting PDB member names; behavior follows assembly.
     std::int32_t movement_block = 0,action_block_a = 0,action_block_b = 0,fixed_form = 0,casting = 0,movement_restricted = 0;
@@ -48,6 +50,8 @@ public:
     virtual void finish_periodic_damage(EffectStatus&,const SkillDefinition&,const EffectSource&,std::uint32_t elapsed_ms) = 0;
 };
 void apply_active_effect(EffectStatus& status,const SkillDefinition& skill,std::uint32_t attacker_id,EffectWorld& world);
+void recalculate_attack(EffectStatus& status);
+void apply_effect_ability(EffectStatus& status,std::uint8_t effect,std::uint8_t type,std::int32_t value,EffectWorld& world);
 std::array<std::int32_t,3> periodic_heal(std::uint32_t elapsed_ms,const std::array<std::uint16_t,3>& rates);
 void remove_active_effect(EffectStatus& status,const SkillDefinition& skill,const EffectSource& source,std::uint32_t tick_ms,
     EffectEquipment equipment,const ItemDefinitions& definitions,EffectRemovalWorld& world);

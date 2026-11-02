@@ -319,4 +319,29 @@ Case `0504` reconstructs learned cooldown deadlines and stops on an unknown skil
 definition, requiring disconnection. The oracles verify 432 original quest
 restorations and 40 learned-skill load scenarios. SQL integration verifies the
 typed fields and quick-slot packet, including its WORD item/skill number.
-Live actor initialization and delivery remain pending.
+Live world delivery remains pending.
+
+`Actor` now connects effect application/removal, resource changes, the effect
+replica and instance cleanup. `SendSpeed` (`004827b0`) uses proximity routing;
+`SendShape` (`00482590`) and vehicle partner `021c` (`00482660`) use the zone grid.
+`SendShapeMe` (`00482510`) always uses `051d`, while the view uses `0524` for shape
+102. Admin visibility and vehicle shape arithmetic retain their original rules.
+`SendRunMode` (`004826c0`) sends a command without changing movement state;
+`StatusAttackStop` (`00489ed0`) preserves modes zero/one and otherwise clears its
+original attack fields. Final periodic healing sends actual clamped HP/SP/MP in
+`050f`, after damage-history/party operations; `PSendViewCombat` (`004bd8d0`)
+supplies the same proximity route. The oracle checks 896 complete original
+operations. Effect apply/removal vectors also compare all calculated attack
+fields, preserving `SetSkillAbility` (`00485e00`) recalculation points.
+
+`load_actor` connects learned/quest/effect restoration, equipment, blessing,
+passives, active effects, billing and the final silent resource clamp in original
+loading order (`PacketUserDBChar`, `0046cf60`, case `0407`). Active-effect
+initialization permits notifications and intermediate resource clamping;
+passive initialization suppresses them. A combined test retains the resulting
+partially filled MP after a later MP-max buff. Destruction follows
+`ResetCharacter` (`0044a050`): free active instances without reversal packets or
+replica deletion, including failed preparation. Required `ActorScene` services
+still own spatial queries, combat, equipment attack rebuilding, complex user
+shape broadcasts and element replacement. The live world does not implement
+those services yet; TCP character selection still does not enter the world.

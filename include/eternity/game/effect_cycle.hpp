@@ -29,6 +29,7 @@ public:
         std::uint32_t disconnected_seconds,std::uint32_t tick_ms,EffectObserver& observer);
     void initialize(EffectStatus& status,EffectWorld& world);
     std::vector<net::Packet> initial_packets(std::uint32_t tick_ms) const;
+    void release_all(EffectObserver& observer) noexcept;
     void expire(std::uint32_t tick_ms,EffectStatus& status,EffectEquipment equipment,const ItemDefinitions& definitions,
         EffectRemovalWorld& world,EffectObserver& observer);
     std::size_t size() const noexcept {return effects_.size();}

@@ -21,6 +21,10 @@ net::Packet party_effect_removed_packet(std::uint32_t cid,std::uint16_t id,std::
 bool EffectCycle::contains(std::uint32_t id) const noexcept {
     return std::any_of(effects_.begin(),effects_.end(),[&](const auto& entry){return entry.second.id==id;});
 }
+void EffectCycle::release_all(EffectObserver& observer) noexcept {
+    // ResetCharacter 0044a050 frees the active list without reversing state or changing persistence.
+    while(!effects_.empty()) {auto node=effects_.extract(effects_.begin());observer.release_id(node.mapped().id);}
+}
 void EffectCycle::append(std::uint32_t id,EffectTimer timer,const SkillDefinition& definition) {
     if(contains(id)) throw std::invalid_argument("Duplicate active effect instance");
     if(timer.effect.skill_id!=definition.id || timer.effect.level!=definition.level) throw std::invalid_argument("Effect timer/definition identity mismatch");
@@ -39,7 +43,10 @@ void EffectCycle::restore(const std::vector<PersistedEffect>& effects,const Skil
         }
         const auto restored=restore_effects({effect},definitions,map,disconnected,tick);
         for(const auto& expired:restored.erase) observer.erase_persisted(expired);
-        for(const auto& timer:restored.active) if(const auto id=observer.allocate_id()) append(*id,timer,*definitions.find(effect.skill_id,effect.level));
+        for(const auto& timer:restored.active) if(const auto id=observer.allocate_id()) {
+            try {append(*id,timer,*definitions.find(effect.skill_id,effect.level));}
+            catch(...) {observer.release_id(*id);throw;}
+        }
     }
 }
 void EffectCycle::initialize(EffectStatus& status,EffectWorld& world) {

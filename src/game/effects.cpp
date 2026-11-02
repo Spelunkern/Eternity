@@ -15,14 +15,22 @@ void abilities(EffectStatus& status,const SkillDefinition& skill,bool first_nega
     for(std::size_t i=0;i<skill.abilities.size();++i) {
         const auto& ability=skill.abilities[i];std::int32_t value=ability.value;
         if(i==0?first_negative:others_negative) value=-value;
-        add_skill_ability(status.skills,skill.effect,ability.type,value);
-        if(skill.effect!=3) {
-            if(ability.type>=1 && ability.type<=3) world.maximum_changed(status,static_cast<std::uint8_t>(ability.type-1));
-            else if(value!=0 && (ability.type==5 || ability.type==7 || ability.type==8)) world.maximum_changed(status,ability.type==5?0:ability.type==7?1:2);
-        }
-        if(ability.type==16 || ability.type==17) world.speed_changed(status);
+        apply_effect_ability(status,skill.effect,ability.type,value,world);
     }
 }
+}
+void recalculate_attack(EffectStatus& status) {
+    status.calculated_attack=calculate_attack(status.level,status.skills.equipment.base.attributes,status.skills.equipment.attack);
+}
+void apply_effect_ability(EffectStatus& status,std::uint8_t effect,std::uint8_t type,std::int32_t value,EffectWorld& world) {
+    // SetSkillAbility 00485e00 recalculates attack synchronously, after resource notifications if any.
+    add_skill_ability(status.skills,effect,type,value);
+    if(effect!=3) {
+        if(type>=1 && type<=3) world.maximum_changed(status,static_cast<std::uint8_t>(type-1));
+        else if(value!=0 && (type==5 || type==7 || type==8)) world.maximum_changed(status,type==5?0:type==7?1:2);
+    }
+    if(type==16 || type==17) world.speed_changed(status);
+    if((type>=4 && type<=9) || type==18 || (type>=20 && type<=31)) recalculate_attack(status);
 }
 void apply_active_effect(EffectStatus& status,const SkillDefinition& skill,std::uint32_t attacker_id,EffectWorld& world) {
     // CUser::InitApplySkill 00487e50; AddApplySkillBuff 00484cf0 / Debuff 004855b0, ps_game.exe.

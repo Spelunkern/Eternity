@@ -79,7 +79,7 @@ def main():
     machine.hook_add(UC_HOOK_CODE, hook)
     functions = 'RemApplySkillBuff 00485130 / Debuff 00485720' if removal else 'AddApplySkillBuff 00484cf0 / Debuff 004855b0'
     print(f"# ps_game.exe SHA256 {digest}; {functions}; world operations recorded, not executed")
-    print("# detail effect attribute change_type scenario ability_set; state offsets " + " ".join(hex(x) for x in offsets) + "; shape/form/no-mob,element flags[9],speeds[2]; events(count,code,arg1,arg2)")
+    print("# detail effect attribute change_type scenario ability_set; state offsets " + " ".join(hex(x) for x in offsets) + "; shape/form/no-mob,element flags[9],speeds[2],calculated attacks[3*(accuracy,attack,evasion,defense,critical_attack,critical_defense)]; events(count,code,arg1,arg2)")
     for detail in range(60, 97):
         for effect in (3, 4):
             for scenario in range(4):
@@ -180,6 +180,8 @@ def main():
                     machine.reg_write(UC_X86_REG_EAX, user)
                     machine.emu_start(function, stop, count=1000)
                     values.append(machine.reg_read(UC_X86_REG_EAX) & 0xffffffff)
+                for category in range(3):
+                    values.extend(struct.unpack('<6i', machine.mem_read(user + 0x13b8 + 44 * category, 24)))
                 print(detail, effect, attribute, change, scenario, ability_set, *values, len(events), *[x for event in events for x in event], sep="\t")
 
 

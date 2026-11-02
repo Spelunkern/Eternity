@@ -1,0 +1,71 @@
+#include "eternity/game/actor.hpp"
+#include "eternity/game/entry_packets.hpp"
+#include <stdexcept>
+
+namespace eternity::game {
+namespace {
+void append(net::Packet& packet,std::uint32_t value,unsigned int bytes) {for(unsigned int i=0;i<bytes;++i) packet.push_back(static_cast<std::uint8_t>(value>>(8*i)));}
+}
+Actor::Actor(std::uint32_t id,EffectStatus status,PlayerResources current,std::vector<PersistedEffect> replica,ActorScene& scene)
+    :id_(id),status_(std::move(status)),scene_(scene),resources_(id,current,*this),effects_(id),replica_(std::move(replica)) {}
+Actor::~Actor() {effects_.release_all(*this);}
+std::array<std::int32_t,3> Actor::heal(std::array<std::int32_t,3> amounts) {return resources_.heal(status_.skills.equipment.base.maximum,amounts);}
+void Actor::recover(std::array<std::int32_t,3> amounts,bool send_set,bool recovering) {resources_.recover(status_.skills.equipment.base.maximum,amounts,send_set,attack_.mode,recovering);}
+void Actor::maximum_changed(EffectStatus& status,std::uint8_t resource) {resources_.maximum_changed(status.skills.equipment.base.maximum,resource,initializing_);}
+void Actor::speed_changed(EffectStatus& status) {
+    // CUser::SendSpeed 004827b0: suppressed during initialization, proximity view only.
+    if(!initializing_ && status.in_zone) scene_.send_nearby(character_speed(id_,status));
+}
+std::uint8_t Actor::effective_shape() const {
+    if(!appearance_.visible) return 13;
+    if(appearance_.vehicle_mode==2) return static_cast<std::uint8_t>(static_cast<std::uint32_t>(appearance_.vehicle_shape)+static_cast<std::uint32_t>(appearance_.vehicle_addition));
+    return status_.shape;
+}
+void Actor::send_shape_self() {
+    // SendShapeMe 00482510 always uses 051d, including copied-mob shape 102.
+    net::Packet packet{0x1d,5};append(packet,id_,4);packet.push_back(effective_shape());scene_.send_self(packet);
+}
+void Actor::shape_changed(EffectStatus&) {
+    // SendShape 00482590 uses the zone's grid view, unlike resource/speed proximity messages.
+    if(!status_.in_zone) return;
+    const auto shape=effective_shape();net::Packet packet{static_cast<std::uint8_t>(shape==102?0x24:0x1d),5};
+    append(packet,id_,4);packet.push_back(shape);if(shape==102) append(packet,status_.form_mob,2);scene_.send_cell_view(packet);
+}
+void Actor::send_vehicle_partner() {
+    // SendShapeVehicle2 00482660.
+    if(!status_.in_zone) return;
+    net::Packet packet{0x1c,2};append(packet,id_,4);append(packet,appearance_.vehicle_mode==3?appearance_.vehicle_partner:0,4);scene_.send_cell_view(packet);
+}
+void Actor::run_mode_changed(EffectStatus&,bool running) {
+    // SendRunMode 004826c0 sends a command only; it does not mutate the actor's movement state.
+    scene_.send_self(net::Packet{0x10,2,static_cast<std::uint8_t>(running)});
+}
+void Actor::stop_attack(EffectStatus& status) {
+    // StatusAttackStop 00489ed0 preserves modes 0 and 1, including their auxiliary fields.
+    if(attack_.mode==0 || attack_.mode==1) return;
+    attack_.mode=0;status.current_target_type=0;attack_.previous_tick=0;attack_.next_tick=0;
+    if(attack_.recovery<1) attack_.recovery=1;
+}
+void Actor::stop_target_mob(EffectStatus&,std::uint32_t id) {scene_.stop_target_mob(id);}
+void Actor::taunt(EffectStatus&,std::uint16_t aggro,float range) {scene_.taunt(aggro,range);}
+void Actor::detect_hidden(EffectStatus&,const SkillDefinition& skill) {scene_.detect_hidden(skill);}
+void Actor::rebuild_attack(EffectStatus& status,bool equipment) {scene_.rebuild_equipment_attack(status,equipment);recalculate_attack(status);}
+void Actor::user_shape_changed(EffectStatus&) {scene_.send_user_shape();}
+void Actor::replace_attack_elements(EffectStatus&,std::uint8_t attribute) {scene_.replace_attack_elements(attribute);}
+void Actor::finish_periodic_heal(EffectStatus&,const SkillDefinition& skill,const EffectSource&,const std::array<std::int32_t,3>& amounts) {
+    // RemApplySkillBuff 004852bd..00485317 broadcasts actual, clamped amounts even when zero.
+    const auto actual=heal(amounts);net::Packet packet{0x0f,5};append(packet,id_,4);append(packet,skill.id,2);packet.push_back(skill.level);
+    for(const auto value:actual) append(packet,static_cast<std::uint32_t>(value),2);
+    if(status_.in_zone) scene_.send_nearby(packet); // PSendViewCombat 004bd8d0 delegates this route.
+}
+void Actor::finish_periodic_damage(EffectStatus& status,const SkillDefinition& skill,const EffectSource& source,std::uint32_t elapsed) {scene_.finish_periodic_damage(status,skill,source,elapsed);}
+std::optional<std::uint32_t> Actor::allocate_id() noexcept {return scene_.allocate_effect_id();}
+void Actor::release_id(std::uint32_t id) noexcept {scene_.release_effect_id(id);}
+std::uint32_t Actor::tick_ms() const noexcept {return scene_.tick_ms();}
+void Actor::erase_persisted(const PersistedEffect& effect) noexcept {replica_.erase(effect.skill_id,effect.level);}
+void Actor::send_self(const net::Packet& packet) noexcept {scene_.send_self(packet);}
+std::optional<bool> Actor::party_kind() const noexcept {return scene_.party_kind();}
+void Actor::send_party(const net::Packet& packet) noexcept {scene_.send_party(packet);}
+void Actor::send_view(const net::Packet& packet) {scene_.send_nearby(packet);}
+void Actor::reset_damage() {scene_.reset_damage();}
+}
