@@ -1,39 +1,14 @@
 #include "eternity/game/character_core_save.hpp"
 #include <algorithm>
 #include <bit>
-#include <charconv>
-#include <cmath>
+#include "eternity/game/legacy_sql.hpp"
 
 namespace eternity::game {
 namespace {
 std::int64_t signed_word(std::uint16_t value) {return std::bit_cast<std::int16_t>(value);}
 std::int64_t signed_dword(std::uint32_t value) {return std::bit_cast<std::int32_t>(value);}
 std::int64_t kill_used(std::uint32_t value) {return static_cast<std::uint32_t>(static_cast<std::int32_t>(signed_word(static_cast<std::uint16_t>(value))));}
-std::string coordinate(float value) {
-    // _fltout2 00450877 emits 17 significant digits; _fptostr 00450746
-    // rounds the retained decimal suffix upward at >=5, then _cftof prints it.
-    // This differs from Linux printf at exact ties and at large magnitudes.
-    if(value==0) return "0.000000"; // The original normalizes negative zero.
-    const bool negative=std::signbit(value);
-    if(std::isinf(value)) return negative?"-1.#INF00":"1.#INF00";
-    if(std::isnan(value)) return std::bit_cast<std::uint32_t>(value)==0xffc00000U?"-1.#IND00":negative?"-1.#QNAN0":"1.#QNAN0";
-    char buffer[128];const auto formatted=std::to_chars(buffer,buffer+sizeof(buffer),std::fabs(static_cast<double>(value)),std::chars_format::scientific,16);
-    if(formatted.ec!=std::errc{}) throw std::runtime_error("Cannot format original character coordinate");
-    const std::string scientific(buffer,formatted.ptr);const auto exponent_at=scientific.find('e');
-    const int keep=std::stoi(scientific.substr(exponent_at+1))+7;
-    std::string digits;for(std::size_t i=0;i<exponent_at;++i) if(scientific[i]!='.') digits+=scientific[i];
-    std::string scaled;
-    if(keep>=0) {
-        scaled=digits.substr(0,static_cast<std::size_t>(keep));
-        if(keep>static_cast<int>(digits.size())) scaled.append(static_cast<std::size_t>(keep)-digits.size(),'0');
-        if(keep<static_cast<int>(digits.size()) && digits[static_cast<std::size_t>(keep)]>='5') {
-            std::size_t at=scaled.size();while(at && scaled[at-1]=='9') {scaled[--at]='0';}
-            if(at) ++scaled[at-1];else scaled.insert(scaled.begin(),'1');
-        }
-    }
-    if(scaled.size()<7) scaled.insert(scaled.begin(),7-scaled.size(),'0');
-    scaled.insert(scaled.size()-6,1,'.');if(negative) scaled.insert(scaled.begin(),'-');return scaled;
-}
+
 }
 std::vector<CharacterCoreSaveOperation> character_core_save_plan(const CharacterReplica& replica) {
     const auto p=replica.core();const auto& c=p.character;
@@ -42,7 +17,7 @@ std::vector<CharacterCoreSaveOperation> character_core_save_plan(const Character
     result.push_back({"usp_Save_Char_Info_E",{std::int64_t{c.id},std::int64_t{c.level},signed_word(p.stat_points),signed_word(p.skill_points),
         signed_word(c.strength),signed_word(c.dexterity),signed_word(c.recovery),signed_word(c.intelligence),signed_word(c.wisdom),signed_word(c.luck),
         signed_word(c.hp),signed_word(c.mp),signed_word(c.sp),signed_word(c.map),signed_word(p.direction),signed_dword(p.experience),signed_dword(p.money),
-        coordinate(p.x),coordinate(p.y),coordinate(p.z),std::int64_t{p.hunger},std::int64_t{p.vigor},std::int64_t{p.cg},std::int64_t{p.og},std::int64_t{p.ig},
+        legacy_sql_coordinate(p.x),legacy_sql_coordinate(p.y),legacy_sql_coordinate(p.z),std::int64_t{p.hunger},std::int64_t{p.vigor},std::int64_t{p.cg},std::int64_t{p.og},std::int64_t{p.ig},
         signed_dword(p.kills[0]),signed_dword(p.kills[1]),signed_dword(p.kills[2]),signed_dword(p.kills[3]),kill_used(p.kill_level),kill_used(p.dead_level)}});
     if(replica.body_changed()) result.push_back({"usp_Save_Char_BodyChg_E",{std::int64_t{c.id},std::int64_t{c.hair},std::int64_t{c.face},std::int64_t{c.size},std::int64_t{c.sex}}});
     return result;

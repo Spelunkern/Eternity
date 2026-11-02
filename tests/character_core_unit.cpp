@@ -44,7 +44,7 @@ int main(int argc,char** argv) {
         const net::Packet gem{8,7,0x39,0x30,0,0,1,0,0,7,77,0,0,0};require(cache.apply(gem)==InventoryReplicaResult::applied && cache.core().money==77 && cache.inventory().money()==77,"Core money diverged from gem/repair/craft authority");
         const auto before=snapshot(cache);
         for(const auto& p:std::vector<net::Packet>{{1,6},{3,6,0x38,0x30,0,0,1,0,0,0},{0x0c,6,0x39,0x30,0,0,6,1,0,0,0},{0x15,6,0x39,0x30,0,0,1,2,3}}) require(cache.apply(p)==InventoryReplicaResult::rejected,"Malformed/cross-owner status was accepted");
-        require(snapshot(cache)==before,"Rejected core packet mutated state");for(const auto op:{0x609,0x611,0x612,0x613,0x614,0x616,0x617,0x618,0x619,0x61a}) require(cache.apply(net::Packet{static_cast<std::uint8_t>(op),6,0x39,0x30,0,0})==InventoryReplicaResult::unsupported,"Other status owner was swallowed");
+        require(snapshot(cache)==before,"Rejected core packet mutated state");for(const auto op:{0x611,0x612,0x613,0x614,0x616,0x617,0x618,0x619,0x61a}) require(cache.apply(net::Packet{static_cast<std::uint8_t>(op),6,0x39,0x30,0,0})==InventoryReplicaResult::unsupported,"Other status owner was swallowed");
         std::cout<<steps<<" original core mutations and "<<queries<<" SQL calls passed, with shared item money and envelope checks\n";
     }catch(const std::exception& error) {std::cerr<<error.what()<<'\n';return 1;}
 }

@@ -1499,3 +1499,40 @@ insert/update, allocation failure during restart, the retained-journal effect,
 conversion failures and rollback/retry across core, inventory, skills and quests.
 Quest gameplay, quick-slot/save-point/billing phases, max-grow saving, file
 fallback, scheduling and the complete runtime save owner remain pending.
+
+
+Interface state reconstructs `ps_dbAgent.exe`, quick-slot status `0609` in
+`PacketUserSetStatus` (`00405b00`), `PacketUserSavePoint` (`00406c20`, `0d02`),
+`SendCharacterQuick` (`0040a770`, `0508`) and `SendCharacterSavePoint`
+(`0040aa10`, `0d01`). Quick entries carry three BYTEs and a WORD. Their actual
+storage uses 128 six-byte entries at `CUser+3814`, ending at the quest list
+`+3b14`; native validation rejects writes beyond that physical extent despite
+stale PDB array counts. Updates replace the logical count and preserve unused
+entries. Save points have four slots: absent map `ffff` or existing insert flag
+produces flag 1; an unchanged occupied point becomes flag 2. Coordinates retain
+raw float bits until SQL. Output packets omit absent maps and preserve slot order.
+Typed SQL point rows now load into `PlayerSnapshot` and the interface cache,
+ignoring slots >=4 and letting later duplicate rows win.
+
+`InterfaceStore` reconstructs `SaveCharacter` `00424617..004247e2`. The explicit
+first boolean argument controls quick replacement; both periodic-save attempts
+pass false. Quick delete or insert errors log immediately, skip remaining quick
+inserts, and continue to points. Thus a successful overall save can retain a
+partial quick list. Point insert/update errors instead fail the character save
+and require rollback of all phases. These original EXEC calls check query
+status, without binding procedure return values. The native diagnostic port
+reports a quick error even if a later point error propagates. SQL values remain
+bound parameters; points share the recovered CRT coordinate formatter with core
+saving, including decimal ties and SQL literal conversion.
+
+Map `ffff` points generate no SQL, including no deletion of an older stored row.
+`SaveSuccess` (`004098fe..00409916`) clears all four point flags after commit,
+without changing coordinates or the quick list. A 1,024-state original-code
+fixture compares complete logical state, packets, 5,111 planned SQL calls and
+4,333 attempted calls, including 190 nonfatal quick errors and 303 fatal point
+errors. It executes original CRT formatting, complete SaveSuccess and save-phase
+branches. Disposable SQL verifies periodic/explicit quick saves, partial quick
+commit, immediate diagnostics before a later point failure, rollback/retry
+across core/inventory/skills/quests/interface, coordinate rounding and sentinel
+behavior. Gameplay use and TCP delivery, billing/market phases, max-grow saving,
+file fallback, scheduling and the complete runtime save owner remain pending.

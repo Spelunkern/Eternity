@@ -133,7 +133,7 @@ Players::Players(storage::SqlServer& database,std::uint8_t server_id,std::string
 }
 void decode_player_auxiliary(PlayerSnapshot& player) {
     // ps_dbAgent DBCharacter::LoadCharacter 00420610: WORD IDs/delays, BYTE counters, ordered quick slots.
-    player.effects.clear();player.quests.clear();player.finished_quests.clear();player.quick_slots.clear();
+    player.effects.clear();player.quests.clear();player.finished_quests.clear();player.quick_slots.clear();player.save_points.clear();
     for(const auto& row:player.catalogs.at("AppliedSkills").rows) {
         if(row.size()!=3) throw std::runtime_error("Original applied skill row changed");
         player.effects.push_back({word(row,0),byte(row,1),dword(row,2)});
@@ -151,6 +151,11 @@ void decode_player_auxiliary(PlayerSnapshot& player) {
     for(const auto& row:quick) {
         if(row.size()!=4) throw std::runtime_error("Original quick slot row changed");
         player.quick_slots.push_back({byte(row,0),byte(row,1),byte(row,2),word(row,3)});
+    }
+    for(const auto& row:player.catalogs.at("SavePoints").rows) {
+        if(row.size()!=5) throw std::runtime_error("Original save point row changed");
+        const auto slot=byte(row,0);if(slot>=4) continue;
+        player.save_points.push_back({slot,word(row,1),real(row,2),real(row,3),real(row,4)});
     }
 }
 std::optional<PlayerSnapshot> Players::load(std::uint32_t uid,std::uint32_t cid,const std::string& username) {
