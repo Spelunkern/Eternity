@@ -57,6 +57,6 @@ int main(int argc,char** argv) {
             }
             std::string extra;require(!(input>>extra),"Trailing original vector data");++count;
         }
-        require(count==84,"Original attack vector count changed");return 0;
+        require(count==244,"Original attack vector count changed");return 0;
     } catch(const std::exception& error) {std::cerr<<error.what()<<'\n';return 1;}
 }

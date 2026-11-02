@@ -30,7 +30,7 @@ std::int32_t integer(long double value) {
 std::int32_t sum(std::int32_t a,std::int32_t b,std::int32_t c) {
     return std::bit_cast<std::int32_t>(static_cast<std::uint32_t>(a)+static_cast<std::uint32_t>(b)+static_cast<std::uint32_t>(c));
 }
-long double f32(std::int32_t value) {return static_cast<float>(value);}
+double f32(std::int32_t value) {return static_cast<float>(value);}
 }
 StatusRules StatusRules::load(const storage::ResultSet& definitions) {
     // ps_game.exe CGameData::LoadStatus 004bfbc0: six jobs, levels 0..60, unsigned words.
@@ -63,7 +63,7 @@ BaseStatus StatusRules::base(const CharacterSummary& character) const {
 }
 
 std::array<AttackValues,3> calculate_attack(std::uint16_t level,const Attributes& a,const AttackModifiers& modifiers) {
-    // ps_game.exe CUser::SetAttack 00454280. Keep the x87 float spills and extended intermediates.
+    // ps_game.exe CUser::SetAttack 00454280. Keep float spills and the CRT's 53-bit arithmetic.
     const auto dex=f32(a.dexterity),str=f32(a.strength),wis=f32(a.wisdom),intel=f32(a.intelligence),luck=f32(a.luck);
     const auto half_dex=static_cast<float>(dex*0.5F);
     const auto defense_base=static_cast<float>(luck*0.125F+half_dex);

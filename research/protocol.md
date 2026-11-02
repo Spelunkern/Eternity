@@ -156,7 +156,7 @@ uses job 0, level 60. `CUser::SetAttack` (`00454280`) now calculates the three
 attack categories, retaining x87 float spills, truncation and 32-bit wrap.
 The critical formula uses the original float constant `0x3e428f5c` (0.19).
 `tools/attack_oracle.py` executes that original function with Unicorn and
-regenerates 84 committed regression vectors; regular CTests need no emulator.
+regenerates 244 committed regression vectors; regular CTests need no emulator.
 Blessing, active effects, damage resolution and world integration remain
 pending. Ghidra's `EternityOffsets.java` gives anonymous
 PDB padding fields unique offset names without inferring their meaning.
@@ -202,7 +202,7 @@ implemented by the live world yet, so selection remains disconnected from this
 stage. `tools/effect_oracle.py` verifies 296 original state/call-order vectors;
 world operations are intercepted and recorded, including one supplied element
 replacement. The vectors do not verify the delegated operations themselves.
-Live expiry/removal and periodic damage/healing remain pending.
+Live expiry and periodic combat operations remain pending.
 
 Persisted effect timers follow `CUser::AddApplySkill` (`00487ce0`). Ordinary
 effects use millisecond deadlines; FixRange=1 effects use seconds and consume
@@ -217,3 +217,15 @@ expiry predicate. `tools/effect_timer_oracle.py` verifies 178 restoration vector
 and expiry branches, stopping before removal/notification operations. Player SQL
 snapshots now retain typed persisted effects. Live actor allocation, deletion
 requests and expiry side effects still need world integration.
+
+Effect removal now follows `RemApplySkillBuff` (`00485130`) and
+`RemApplySkillDebuff` (`00485720`): inverse modifier signs, original counter
+behavior, mirror/block cleanup, equipped-element restoration and transformation
+rebuild calls. `EffectRemovalWorld` requires periodic combat/heal completion;
+those world operations are still pending. The removal oracle verifies 288
+state/call-order cases, excluding periodic damage/reflection/death. Final periodic
+healing amounts are checked separately against 200 original executions before
+world health clamping and broadcasts. `_setdefaultprecision` (`0051136e`)
+configures 53-bit arithmetic; native attack/heal calculations now use that
+precision while retaining original float spills and low-DWORD truncation.
+`tools/heal_oracle.py` executes the original CRT setup before checking healing.

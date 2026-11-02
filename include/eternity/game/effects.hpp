@@ -32,7 +32,25 @@ public:
     virtual void user_shape_changed(EffectStatus&) = 0;
     virtual void replace_attack_elements(EffectStatus&,std::uint8_t attribute) = 0;
 };
+struct EffectSource {
+    std::uint32_t instance_id = 0,attacker_id = 0,previous_tick = 0;
+    std::uint8_t attacker_kind = 1;
+};
+struct EffectEquipment {
+    const PlayerItem* weapon = nullptr;
+    const PlayerItem* armor = nullptr;
+    bool defense_element_remains = false;
+};
+class EffectRemovalWorld:public EffectWorld {
+public:
+    virtual void finish_periodic_heal(EffectStatus&,const SkillDefinition&,const EffectSource&,const std::array<std::int32_t,3>& amounts) = 0;
+    // Combat owns periodic damage, mirror/reflection, death and its notifications.
+    virtual void finish_periodic_damage(EffectStatus&,const SkillDefinition&,const EffectSource&,std::uint32_t elapsed_ms) = 0;
+};
 void apply_active_effect(EffectStatus& status,const SkillDefinition& skill,std::uint32_t attacker_id,EffectWorld& world);
+std::array<std::int32_t,3> periodic_heal(std::uint32_t elapsed_ms,const std::array<std::uint16_t,3>& rates);
+void remove_active_effect(EffectStatus& status,const SkillDefinition& skill,const EffectSource& source,std::uint32_t tick_ms,
+    EffectEquipment equipment,const ItemDefinitions& definitions,EffectRemovalWorld& world);
 std::uint8_t attack_speed(const EffectStatus& status);
 std::uint8_t move_speed(const EffectStatus& status);
 }

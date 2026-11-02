@@ -60,7 +60,7 @@ int main(int argc,char** argv) {
             {"14","1","122","0","0","0","0","0","0","0","0","0","0","0"},
             {"10","4","1","0","5","0","17","0","0","0","0","0","0","0"},
             {"15","2","1","0","5","0","17","0","0","0","0","0","0","0"}};
-        for(const auto name:{"AttrType","DefenceType","DefenceValue","ApplyRange","Arrow","ChangeType","ChangeLevel","FixRange","KeepTime"}) {
+        for(const auto name:{"AttrType","DefenceType","DefenceValue","ApplyRange","Arrow","ChangeType","ChangeLevel","FixRange","KeepTime","TimeHealHP","TimeHealSP","TimeHealMP"}) {
             table.columns.emplace_back(name);for(auto& row:table.rows) row.emplace_back("0");
         }
         const auto definitions=SkillDefinitions::load(table);

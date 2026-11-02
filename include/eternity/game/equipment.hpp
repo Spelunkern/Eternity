@@ -45,5 +45,6 @@ struct EquipmentStatus {
 };
 // Applies the original stat/element changes at initialization, without broadcasting equipment changes.
 void add_equipment(EquipmentStatus& status,std::uint8_t slot,const PlayerItem& item,const ItemDefinitions& definitions,const EnchantValues& enchant);
+std::uint32_t item_attribute(const PlayerItem& item,const ItemDefinitions& definitions);
 EquipmentStatus initialize_equipment(BaseStatus base,const std::vector<PlayerItem>& items,const ItemDefinitions& definitions,const EnchantValues& enchant);
 }

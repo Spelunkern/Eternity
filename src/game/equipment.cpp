@@ -135,6 +135,12 @@ CraftValues decode_craft(const ItemDefinition& item,std::string_view name,const 
     }
     return result;
 }
+std::uint32_t item_attribute(const PlayerItem& item,const ItemDefinitions& definitions) {
+    // CUser::SetAttrAtk 00455f80 / SetAttrDef 00456020 use the same original item/gem rule.
+    const auto* definition=definitions.find(item.type,item.type_id);
+    if(!definition) throw std::runtime_error("Missing original element item definition");
+    return attribute(*definition,item,definitions);
+}
 void add_equipment(EquipmentStatus& status,std::uint8_t slot,const PlayerItem& item,const ItemDefinitions& definitions,const EnchantValues& enchant) {
     // CUser::ItemEquipmentAdd 00454c70, ps_game.exe. Called for equipped slots 0..12.
     if(slot>=13) throw std::invalid_argument("Invalid original equipment slot");

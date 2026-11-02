@@ -10,6 +10,7 @@ struct SkillDefinition {
     std::array<SkillAbility,3> abilities{};
     std::uint32_t keep_time_seconds = 0;
     bool offline_countdown = false;
+    std::array<std::uint16_t,3> time_heal{}; // HP, SP, MP per original three-second interval.
 };
 class SkillDefinitions {
 public:

@@ -47,6 +47,7 @@ SkillDefinitions SkillDefinitions::load(const storage::ResultSet& table) {
         skill.aggro=static_cast<std::uint16_t>(n("Arrow",65535));skill.change_type=static_cast<std::uint16_t>(n("ChangeType",65535));skill.change_level=static_cast<std::uint16_t>(n("ChangeLevel",65535));
         skill.offline_countdown=n("FixRange")==1;skill.keep_time_seconds=dword(row,column(table,"KeepTime"));
         if(skill.offline_countdown) skill.keep_time_seconds*=3600U;
+        skill.time_heal={static_cast<std::uint16_t>(n("TimeHealHP",65535)),static_cast<std::uint16_t>(n("TimeHealSP",65535)),static_cast<std::uint16_t>(n("TimeHealMP",65535))};
         for(std::size_t i=0;i<3;++i) {
             auto& ability=skill.abilities[i];ability.type=static_cast<std::uint8_t>(n("AbilityType"+std::to_string(i+1)));
             ability.value=static_cast<std::uint16_t>(n("AbilityValue"+std::to_string(i+1),65535));
