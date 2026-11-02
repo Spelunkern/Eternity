@@ -16,6 +16,18 @@ void Actor::wear_defense() {
     const auto result=game::wear_defense(status_.skills.equipment,inventory_,equipment_.items,defense_wear_cursor_,status_.skills.benefits.no_durability_loss,status_.shape);
     if(result.attack_changed) recalculate_attack(status_);
 }
+bool Actor::check_hp_ability(const SkillDefinitions& definitions) {return effects_.activate_hp(status_,resources_.current(),definitions,*this,*this);}
+bool Actor::damage(std::int32_t kind,std::uint32_t source,std::int32_t amount,const SkillDefinitions& definitions) {
+    struct Operations final:DamageObserver {
+        Actor& actor;const SkillDefinitions& definitions;
+        Operations(Actor& owner,const SkillDefinitions& skills):actor(owner),definitions(skills) {}
+        void defense_wear() override {actor.wear_defense();}
+        void record_damage(std::int32_t kind,std::uint32_t source,std::int32_t amount) override {actor.damage_.add(kind,source,amount);}
+        void check_hp_ability() override {actor.check_hp_ability(definitions);}
+    } operations(*this,definitions);
+    const auto& equipment=status_.skills.equipment;
+    return resources_.damage({attack_.mode,static_cast<std::uint32_t>(equipment.damage_reduction),equipment.base.maximum.hp},kind,source,amount,operations);
+}
 void Actor::maximum_changed(EffectStatus& status,std::uint8_t resource) {resources_.maximum_changed(status.skills.equipment.base.maximum,resource,initializing_);}
 void Actor::speed_changed(EffectStatus& status) {
     // CUser::SendSpeed 004827b0: suppressed during initialization, proximity view only.
@@ -88,9 +100,10 @@ std::optional<std::uint32_t> Actor::allocate_id() noexcept {return scene_.alloca
 void Actor::release_id(std::uint32_t id) noexcept {scene_.release_effect_id(id);}
 std::uint32_t Actor::tick_ms() const noexcept {return scene_.tick_ms();}
 void Actor::erase_persisted(const PersistedEffect& effect) noexcept {replica_.erase(effect.skill_id,effect.level);}
+void Actor::persist_applied(const PersistedEffect& effect) noexcept {replica_.apply(effect);}
 void Actor::send_self(const net::Packet& packet) noexcept {scene_.send_self(packet);}
 std::optional<bool> Actor::party_kind() const noexcept {return scene_.party_kind();}
 void Actor::send_party(const net::Packet& packet) noexcept {scene_.send_party(packet);}
 void Actor::send_view(const net::Packet& packet) {scene_.send_nearby(packet);}
-void Actor::reset_damage() {scene_.reset_damage();}
+void Actor::reset_damage() {damage_.reset();scene_.reset_damage();}
 }

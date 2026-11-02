@@ -18,6 +18,10 @@ public:
     virtual std::optional<bool> party_kind() const noexcept = 0; // absent, party=false, raid=true.
     virtual void send_party(const net::Packet&) noexcept = 0; // excludes the affected character.
 };
+class EffectActivationObserver:public EffectObserver {
+public:
+    virtual void persist_applied(const PersistedEffect&) noexcept = 0;
+};
 class EffectCycle {
 public:
     explicit EffectCycle(std::uint32_t character_id):character_id_(character_id) {}
@@ -28,6 +32,8 @@ public:
     void restore(const std::vector<PersistedEffect>& effects,const SkillDefinitions& definitions,std::uint16_t map,
         std::uint32_t disconnected_seconds,std::uint32_t tick_ms,EffectObserver& observer);
     void initialize(EffectStatus& status,EffectWorld& world);
+    bool activate_hp(EffectStatus& status,const PlayerResources& current,const SkillDefinitions& definitions,
+        EffectWorld& world,EffectActivationObserver& observer);
     bool remove_hide(EffectStatus& status,EffectWorld& world,EffectObserver& observer);
     void replace_attack_elements(std::uint8_t attribute,EffectStatus& status,EffectEquipment equipment,
         const ItemDefinitions& definitions,EffectRemovalWorld& world,EffectObserver& observer);
@@ -50,6 +56,7 @@ class EffectReplica {
 public:
     explicit EffectReplica(std::vector<PersistedEffect> effects):effects_(std::move(effects)) {}
     bool erase(std::uint16_t skill_id,std::uint8_t level);
+    void apply(PersistedEffect effect);
     const std::vector<PersistedEffect>& snapshot() const noexcept {return effects_;}
 private:
     std::vector<PersistedEffect> effects_;

@@ -45,7 +45,7 @@ struct ActorEquipmentRules {
     const MobAttackTemplates& mobs;
 };
 // Single actor executor; its owner must serialize commands, ticks and scene changes.
-class Actor final:public EffectRemovalWorld,public EffectObserver,private ResourceSink {
+class Actor final:public EffectRemovalWorld,public EffectActivationObserver,private ResourceSink {
 public:
     Actor(std::uint32_t id,EffectStatus status,PlayerResources current,std::vector<PersistedEffect> replica,ActorScene& scene,
         ActorEquipmentRules equipment,std::vector<PlayerItem> inventory = {});
@@ -70,6 +70,9 @@ public:
     std::array<std::int32_t,3> heal(std::array<std::int32_t,3> amounts);
     void recover(std::array<std::int32_t,3> amounts,bool send_set=false,bool recovering=false);
     void wear_defense();
+    bool check_hp_ability(const SkillDefinitions& definitions);
+    bool damage(std::int32_t kind,std::uint32_t source,std::int32_t amount,const SkillDefinitions& definitions);
+    const DamageLedger& damage_ledger() const noexcept {return damage_;}
     std::int32_t& defense_wear_cursor() noexcept {return defense_wear_cursor_;}
     std::int32_t defense_wear_cursor() const noexcept {return defense_wear_cursor_;}
     void send_shape_self();
@@ -92,6 +95,7 @@ public:
     void release_id(std::uint32_t id) noexcept override;
     std::uint32_t tick_ms() const noexcept override;
     void erase_persisted(const PersistedEffect&) noexcept override;
+    void persist_applied(const PersistedEffect&) noexcept override;
     void send_self(const net::Packet&) noexcept override;
     std::optional<bool> party_kind() const noexcept override;
     void send_party(const net::Packet&) noexcept override;
@@ -109,6 +113,7 @@ private:
     UserRelations relations_;
     ActorScene& scene_;
     ActorResources resources_;
+    DamageLedger damage_;
     EffectCycle effects_;
     EffectReplica replica_;
     ActorEquipmentRules equipment_;

@@ -761,8 +761,8 @@ This routine does not itself change the actor's life mode or execute death.
 `SendEnergyHPToParty` (`004824b0`) sends nine bytes: `0c01` for party or `0c0a`
 for raid, character DWORD, zero resource byte and current HP WORD. The actor is
 excluded. There is no zone requirement, proximity broadcast or reset of damage
-attribution in this path. Required observer operations retain equipment wear,
-attribution and low-HP activation order; full actor integration remains pending.
+attribution in this path. The native actor supplies equipment wear, attribution
+and low-HP activation in the original order.
 
 `CDamage::Add` (`004b8b60`), `Reset` (`004b8aa0`) and `GetMax` (`004b8c40`)
 are implemented as an owned ledger. Records merge by stored BYTE kind compared
@@ -795,3 +795,36 @@ zero; `ResetCharacter` (`0044a050`) preserves it, so future connection reuse mus
 retain it. The native actor owns an accessible cursor and recalculates final
 defenses after a tier change. The oracle compares 1,136 direct decrements and
 1,536 defense scans, with a concrete actor integration check and suffix/wrap tests.
+
+Low-HP passives reconstruct `ps_game.exe` `CUser::ChkHPAbilityApply`
+(`00487020`). A zero selected skill or active flag skips even the clock read.
+Otherwise the unsigned wrapped `previous + 180000 <= tick` gate precedes lookup.
+The HP threshold multiplies maximum HP by the definition's `LimitHP` BYTE with
+DWORD wrapping, interprets the product as signed, rounds it to float, divides by
+100 with the original 53-bit arithmetic and truncates to int. Current HP uses a
+signed inclusive comparison. Missing definitions or failed allocation do nothing.
+
+`SendSkillApply` (`00482860`) first sends the DB-agent application with the
+definition's `KeepTime`, then self `050d` (instance DWORD, skill WORD, level BYTE),
+then group `0c04`/raid `0c0e` excluding self (character DWORD, skill WORD, level
+BYTE). Only after these notices are the active flag and previous tick updated;
+all three abilities run through `SetSkillAbility` (`00485e00`), then the effect
+is appended. Its runtime deadline is always the sampled tick plus 30000, even
+when persisted `KeepTime` differs. Existing expiry reverses the abilities, clears
+the active flag and removes the replica entry; the three-minute cooldown remains.
+
+`ps_dbAgent.exe` `CUser::PacketUserSkillApply` (`00406250`, case `0901`) updates
+the first matching skill ID/level in place or appends an absent pair. The owned
+replica implements this alongside the existing first-match erase. `Actor::damage`
+now connects scalar HP mutation, concrete equipment wear, owned attribution and
+passive activation. Full healing resets owned attribution. Lethal damage reports
+true to the caller without itself running death or changing life mode.
+
+The oracle compares 1,354 original activation attempts, executing actual ability
+mutations and list insertion while isolating allocation, clock, transport and
+final-stat notification ports. Coverage includes float/overflow thresholds,
+inclusive cooldowns and wrap, missing/invalid selections, active state, allocation
+failure, ordered persistence/self/group notices and flag timing. Concrete actor
+tests cover damage-triggered activation, first-match persistence, fixed expiry,
+cooldown reactivation, protection leaving one HP, lethal damage and full healing.
+Guard attack/death integration and TCP gameplay remain pending.

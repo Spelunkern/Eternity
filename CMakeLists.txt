@@ -69,6 +69,9 @@ target_compile_options(eternity-server PRIVATE -Wall -Wextra -Wpedantic -Wconver
 
 include(CTest)
 if(BUILD_TESTING)
+    add_executable(hp-ability-unit tests/hp_ability_unit.cpp)
+    target_link_libraries(hp-ability-unit PRIVATE eternity_game)
+    add_test(NAME hp-ability-unit COMMAND hp-ability-unit ${CMAKE_CURRENT_SOURCE_DIR}/tests/data/hp-ability-oracle.tsv)
     add_executable(durability-unit tests/durability_unit.cpp)
     target_link_libraries(durability-unit PRIVATE eternity_game)
     add_test(NAME durability-unit COMMAND durability-unit ${CMAKE_CURRENT_SOURCE_DIR}/tests/data/durability-oracle.tsv)

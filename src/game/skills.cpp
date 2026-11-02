@@ -44,6 +44,7 @@ SkillDefinitions SkillDefinitions::load(const storage::ResultSet& table) {
         skill.attribute=static_cast<std::uint8_t>(n("AttrType"));if(skill.attribute>8) skill.attribute=0;
         skill.defense_type=static_cast<std::uint8_t>(std::clamp(n("DefenceType"),1U,3U)-1);
         skill.defense_value=static_cast<std::uint8_t>(n("DefenceValue"));skill.apply_range=static_cast<std::uint8_t>(n("ApplyRange"));
+        skill.limit_hp=static_cast<std::uint8_t>(n("LimitHP"));
         skill.aggro=static_cast<std::uint16_t>(n("Arrow",65535));skill.change_type=static_cast<std::uint16_t>(n("ChangeType",65535));skill.change_level=static_cast<std::uint16_t>(n("ChangeLevel",65535));
         skill.offline_countdown=n("FixRange")==1;skill.keep_time_seconds=dword(row,column(table,"KeepTime"));
         if(skill.offline_countdown) skill.keep_time_seconds*=3600U;

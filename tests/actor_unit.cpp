@@ -70,7 +70,7 @@ int main(int argc,char** argv) {
         require(scene.events.size()==2 && scene.events[0]=="S0e0564000000" && scene.events[1]=="F100","Concrete actor expiry ordering changed");
         storage::ResultSet skill_table;skill_table.columns={"SkillID","SkillLevel","TypeDetail","TypeEffect","Weapon1","Weapon2","Weaponvalue","Bag",
             "AbilityType1","AbilityValue1","AbilityType2","AbilityValue2","AbilityType3","AbilityValue3",
-            "AttrType","DefenceType","DefenceValue","ApplyRange","Arrow","ChangeType","ChangeLevel","FixRange","KeepTime","TimeHealHP","TimeHealSP","TimeHealMP"};
+            "AttrType","DefenceType","DefenceValue","ApplyRange","Arrow","ChangeType","ChangeLevel","FixRange","KeepTime","TimeHealHP","TimeHealSP","TimeHealMP","LimitHP"};
         for(unsigned int id:{100,101,102}) {
             storage::Row row(skill_table.columns.size(),storage::Cell{"0"});row[0]=std::to_string(id);row[1]="1";row[2]=id==100?"4":"82";row[3]=id==100?"0":"4";
             row[8]="1";row[9]=id==100?"40":"100";row[10]="2";row[11]=id==100?"60":"100";row[12]="4";row[13]=id==100?"7":"5";row[22]="100";

@@ -9,7 +9,7 @@ eternity::storage::ResultSet skill_table(unsigned int id,unsigned int level,unsi
     using namespace eternity::storage;
     ResultSet table;table.columns={"SkillID","SkillLevel","TypeDetail","TypeEffect","Weapon1","Weapon2","Weaponvalue","Bag",
         "AbilityType1","AbilityValue1","AbilityType2","AbilityValue2","AbilityType3","AbilityValue3",
-        "AttrType","DefenceType","DefenceValue","ApplyRange","Arrow","ChangeType","ChangeLevel","FixRange","KeepTime","TimeHealHP","TimeHealSP","TimeHealMP"};
+        "AttrType","DefenceType","DefenceValue","ApplyRange","Arrow","ChangeType","ChangeLevel","FixRange","KeepTime","TimeHealHP","TimeHealSP","TimeHealMP","LimitHP"};
     if(available) for(unsigned int current=1;current<=level;++current) {
         Row row(table.columns.size(),Cell{"0"});
         row[0]=std::to_string(id);row[1]=std::to_string(current);row[3]=std::to_string(effect);

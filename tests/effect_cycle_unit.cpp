@@ -91,9 +91,11 @@ int main(int argc,char** argv) {
         EffectReplica replica({{10,1,31},{10,1,40},{10,2,50}});
         require(replica.erase(10,1) && replica.snapshot().size()==2 && replica.snapshot()[0].remaining==40 && !replica.erase(99,1),
             "DB-agent effect deletion did not retain ordered first-match semantics");
+        EffectReplica applied({{10,1,31},{10,1,40},{10,2,50}});applied.apply({10,1,UINT32_MAX});applied.apply({11,1,60});
+        require(applied.snapshot().size()==4 && applied.snapshot()[0].remaining==UINT32_MAX && applied.snapshot()[1].remaining==40 && applied.snapshot()[2].level==2 && applied.snapshot()[3].skill_id==11,"DB-agent effect application did not retain first-match update and tail insertion semantics");
         storage::ResultSet table;table.columns={"SkillID","SkillLevel","TypeDetail","TypeEffect","Weapon1","Weapon2","Weaponvalue","Bag",
             "AbilityType1","AbilityValue1","AbilityType2","AbilityValue2","AbilityType3","AbilityValue3",
-            "AttrType","DefenceType","DefenceValue","ApplyRange","Arrow","ChangeType","ChangeLevel","FixRange","KeepTime","TimeHealHP","TimeHealSP","TimeHealMP"};
+            "AttrType","DefenceType","DefenceValue","ApplyRange","Arrow","ChangeType","ChangeLevel","FixRange","KeepTime","TimeHealHP","TimeHealSP","TimeHealMP","LimitHP"};
         for(auto id:{10,11,124}) {
             storage::Row row(table.columns.size(),storage::Cell{"0"});row[0]=std::to_string(id);row[1]="1";row[2]="82";row[3]="4";
             row[8]="1";row[9]="1";row[21]=id==11?"1":"0";row[22]="100";table.rows.push_back(std::move(row));

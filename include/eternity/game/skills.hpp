@@ -6,7 +6,7 @@ struct SkillAbility {std::uint8_t type = 0;std::uint16_t value = 0;};
 struct SkillDefinition {
     std::uint16_t id = 0,detail = 0,aggro = 0,change_type = 0,change_level = 0;
     std::uint8_t level = 0,effect = 0,weapon1 = 0,weapon2 = 0,weapon_value = 0,bag = 0;
-    std::uint8_t attribute = 0,defense_type = 0,defense_value = 0,apply_range = 0;
+    std::uint8_t attribute = 0,defense_type = 0,defense_value = 0,apply_range = 0,limit_hp = 0;
     std::array<SkillAbility,3> abilities{};
     std::uint32_t keep_time_seconds = 0;
     bool offline_countdown = false;

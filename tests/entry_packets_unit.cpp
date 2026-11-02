@@ -66,7 +66,7 @@ int main(int argc,char** argv) {
         require(checked==321,"Entry packet coverage changed");std::cout<<checked<<" original initial character packet scenarios passed\n";
         storage::ResultSet table;table.columns={"SkillID","SkillLevel","TypeDetail","TypeEffect","Weapon1","Weapon2","Weaponvalue","Bag",
             "AbilityType1","AbilityValue1","AbilityType2","AbilityValue2","AbilityType3","AbilityValue3",
-            "AttrType","DefenceType","DefenceValue","ApplyRange","Arrow","ChangeType","ChangeLevel","FixRange","KeepTime","TimeHealHP","TimeHealSP","TimeHealMP"};
+            "AttrType","DefenceType","DefenceValue","ApplyRange","Arrow","ChangeType","ChangeLevel","FixRange","KeepTime","TimeHealHP","TimeHealSP","TimeHealMP","LimitHP"};
         for(unsigned int id=1000;id<1255;++id) for(unsigned int level=1;level<=3;++level) {storage::Row row(table.columns.size(),storage::Cell{"0"});row[0]=std::to_string(id);row[1]=std::to_string(level);table.rows.push_back(std::move(row));}
         const auto definitions=SkillDefinitions::load(table);std::ifstream learned(argv[2]);require(learned.good(),"Cannot open learned skill oracle");unsigned int restored_count=0;
         while(std::getline(learned,line)) {

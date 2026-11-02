@@ -61,6 +61,34 @@ void EffectCycle::initialize(EffectStatus& status,EffectWorld& world) {
         shared_cursor_=next==effects_.end()?0:next->first;
     }
 }
+bool EffectCycle::activate_hp(EffectStatus& status,const PlayerResources& current,const SkillDefinitions& definitions,
+    EffectWorld& world,EffectActivationObserver& observer) {
+    // ps_game.exe CUser::ChkHPAbilityApply 00487020.
+    auto& passive=status.skills;
+    if(passive.hp_ability_id==0 || passive.hp_ability_applied) return false;
+    const auto tick=observer.tick_ms();
+    if(passive.hp_ability_previous+180000U>tick) return false;
+    const auto* skill=definitions.find(passive.hp_ability_id,passive.hp_ability_level);
+    if(!skill) return false;
+    const auto product=std::bit_cast<std::int32_t>(status.skills.equipment.base.maximum.hp*static_cast<std::uint32_t>(skill->limit_hp));
+    const float rounded=static_cast<float>(product);
+    const auto threshold=static_cast<std::int32_t>(static_cast<double>(rounded)/100.0);
+    if(std::bit_cast<std::int32_t>(current.hp)>threshold) return false;
+    const auto id=observer.allocate_id();if(!id) return false;
+    const PersistedEffect effect{passive.hp_ability_id,passive.hp_ability_level,skill->keep_time_seconds};
+    // SendSkillApply 00482860: DB-agent replica, self, then optional group.
+    observer.persist_applied(effect);
+    net::Packet packet(9,0);put(packet,0,0x50d,2);put(packet,2,*id,4);put(packet,6,effect.skill_id,2);packet[8]=effect.level;
+    observer.send_self(packet);
+    if(const auto raid=observer.party_kind()) {
+        put(packet,0,*raid?0xc0e:0xc04,2);put(packet,2,character_id_,4);observer.send_party(packet);
+    }
+    passive.hp_ability_applied=true;passive.hp_ability_previous=tick;
+    for(const auto& ability:skill->abilities) apply_effect_ability(status,skill->effect,ability.type,ability.value,world);
+    // The runtime lifetime is fixed, independently of the persisted KeepTime.
+    append(*id,{effect,tick,tick+30000U,skill->offline_countdown},*skill);
+    return true;
+}
 bool EffectCycle::remove_hide(EffectStatus& status,EffectWorld& world,EffectObserver& observer) {
     // RemApplySkillHide 00489290 removes only the first detail-88 node, without generic unapply.
     if(status.shape==0) return false;
@@ -137,6 +165,13 @@ bool EffectReplica::erase(std::uint16_t id,std::uint8_t level) {
     const auto found=std::find_if(effects_.begin(),effects_.end(),[&](const auto& effect){return effect.skill_id==id && effect.level==level;});
     if(found==effects_.end()) return false;
     effects_.erase(found);return true;
+}
+void EffectReplica::apply(PersistedEffect effect) {
+    // ps_dbAgent.exe PacketUserSkillApply 00406250 case 0901 updates the first
+    // matching ID/level in place; an absent pair is appended at the tail.
+    const auto found=std::find_if(effects_.begin(),effects_.end(),[&](const auto& existing){return existing.skill_id==effect.skill_id && existing.level==effect.level;});
+    if(found!=effects_.end()) *found=effect;
+    else effects_.push_back(effect);
 }
 bool EffectStore::replace(std::uint32_t uid,std::uint32_t cid,const std::vector<PersistedEffect>& effects) {
     if(uid==0 || uid>INT32_MAX || cid==0 || cid>INT32_MAX) throw std::invalid_argument("Invalid effect owner identity");
