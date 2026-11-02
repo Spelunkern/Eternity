@@ -28,6 +28,8 @@ public:
     void restore(const std::vector<PersistedEffect>& effects,const SkillDefinitions& definitions,std::uint16_t map,
         std::uint32_t disconnected_seconds,std::uint32_t tick_ms,EffectObserver& observer);
     void initialize(EffectStatus& status,EffectWorld& world);
+    void replace_attack_elements(std::uint8_t attribute,EffectStatus& status,EffectEquipment equipment,
+        const ItemDefinitions& definitions,EffectRemovalWorld& world,EffectObserver& observer);
     std::vector<net::Packet> initial_packets(std::uint32_t tick_ms) const;
     void release_all(EffectObserver& observer) noexcept;
     void expire(std::uint32_t tick_ms,EffectStatus& status,EffectEquipment equipment,const ItemDefinitions& definitions,
@@ -36,9 +38,11 @@ public:
     bool contains(std::uint32_t instance_id) const noexcept;
 private:
     struct Active {std::uint32_t id;EffectTimer timer;const SkillDefinition* definition;};
-    // Insertion order permits callbacks to append/remove entries without invalidating the traversal cursor.
+    // Stable insertion order; ordinal zero represents the original list sentinel.
     std::map<std::uint64_t,Active> effects_;
     std::uint64_t sequence_ = 0;
+    // InitApplySkill and nested element replacement share CUser's cursor at 0xa98.
+    std::uint64_t shared_cursor_ = 0;
     std::uint32_t character_id_;
 };
 class EffectReplica {

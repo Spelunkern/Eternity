@@ -21,7 +21,6 @@ public:
     virtual void taunt(std::uint16_t aggro,float range) = 0;
     virtual void detect_hidden(const SkillDefinition&) = 0;
     virtual void send_user_shape() = 0;
-    virtual void replace_attack_elements(std::uint8_t attribute) = 0;
     virtual void finish_periodic_damage(EffectStatus&,const SkillDefinition&,const EffectSource&,std::uint32_t elapsed) = 0;
 };
 struct ActorAppearance {

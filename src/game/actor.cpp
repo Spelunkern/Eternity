@@ -56,7 +56,14 @@ void Actor::rebuild_attack(EffectStatus& status,bool equipment) {
     recalculate_attack(status);
 }
 void Actor::user_shape_changed(EffectStatus&) {scene_.send_user_shape();}
-void Actor::replace_attack_elements(EffectStatus&,std::uint8_t attribute) {scene_.replace_attack_elements(attribute);}
+void Actor::replace_attack_elements(EffectStatus& status,std::uint8_t attribute) {
+    EffectEquipment equipped;
+    for(const auto& item:inventory_) if(item.bag==0) {
+        if(item.slot==5) equipped.weapon=&item;
+        else if(item.slot==1) equipped.armor=&item;
+    }
+    effects_.replace_attack_elements(attribute,status,equipped,equipment_.items,*this,*this);
+}
 void Actor::finish_periodic_heal(EffectStatus&,const SkillDefinition& skill,const EffectSource&,const std::array<std::int32_t,3>& amounts) {
     // RemApplySkillBuff 004852bd..00485317 broadcasts actual, clamped amounts even when zero.
     const auto actual=heal(amounts);net::Packet packet{0x0f,5};append(packet,id_,4);append(packet,skill.id,2);packet.push_back(skill.level);

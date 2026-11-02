@@ -25,7 +25,6 @@ struct Scene final:ActorScene {
     void taunt(std::uint16_t,float) override {unexpected();}
     void detect_hidden(const SkillDefinition&) override {unexpected();}
     void send_user_shape() override {unexpected();}
-    void replace_attack_elements(std::uint8_t) override {unexpected();}
     void finish_periodic_damage(EffectStatus&,const SkillDefinition&,const EffectSource&,std::uint32_t) override {unexpected();}
 };
 int main(int argc,char** argv) {
@@ -118,6 +117,13 @@ int main(int argc,char** argv) {
         require(copied.status().shape==0 && rebuilt.attack.item_attack==559 && rebuilt.variance==533 && rebuilt.attack.physical_defense==33 && rebuilt.attack.magic_defense==34,"Actor transformation reversal did not rebuild cached-quality equipment");
         require(rebuilt.base.maximum.hp==previous_maximum.hp && rebuilt.base.maximum.mp==previous_maximum.mp && rebuilt.base.maximum.sp==previous_maximum.sp && rebuilt.range==previous_range,"Actor attack rebuild changed resource maxima or attack range");
         require(transformed_scene.events==std::vector<std::string>{"C1d052923000007","C1d052923000000"},"Actor transformation view sequence changed");
+        Scene elemental_scene;EffectStatus elemental_status;elemental_status.skills.equipment.base.maximum={1000,1000,1000};
+        std::array<SkillDefinition,3> elemental_skills{};
+        Actor elemental(9001,elemental_status,{500,500,500},{{200,1,30},{201,1,30},{202,1,30}},elemental_scene,equipment_rules);
+        for(std::size_t i=0;i<3;++i) {auto& skill=elemental_skills[i];skill.id=static_cast<std::uint16_t>(200+i);skill.level=1;skill.effect=4;skill.detail=i==0?82:94;skill.attribute=static_cast<std::uint8_t>(i);skill.abilities[0]={1,1};elemental.effects().append(static_cast<std::uint32_t>(1000+i),{{skill.id,1,30},10000,12000,false},skill);}
+        elemental.effects().initialize(elemental.status(),elemental);
+        require(elemental.status().skills.equipment.base.maximum.hp==1002 && elemental.effects().size()==2 && elemental.replica().snapshot().size()==2 && elemental.replica().snapshot()[1].skill_id==202,"Concrete actor lost original shared-cursor element reinitialization behavior");
+        require(elemental_scene.events==std::vector<std::string>{"S0e05e9030000","F1001"},"Concrete actor element replacement notifications changed");
         std::cout<<count<<" original actor operations and concrete effect expiry passed\n";
     } catch(const std::exception& error) {std::cerr<<error.what()<<'\n';return 1;}
 }

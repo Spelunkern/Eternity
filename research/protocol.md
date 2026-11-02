@@ -342,8 +342,8 @@ passive initialization suppresses them. A combined test retains the resulting
 partially filled MP after a later MP-max buff. Destruction follows
 `ResetCharacter` (`0044a050`): free active instances without reversal packets or
 replica deletion, including failed preparation. Required `ActorScene` services
-still own spatial queries, combat, complex user
-shape broadcasts and element replacement. The live world does not implement
+still own spatial queries, combat and complex user
+shape broadcasts. The live world does not implement
 those services yet; TCP character selection still does not enter the world.
 
 Attack-only rebuilding now follows `InitEquipment(bool)` (`00454ba0`),
@@ -359,3 +359,14 @@ inventory and performs both rebuild paths without a scene callback. The oracle
 checks 192 original rebuilds and all resulting attack values; actor tests cover
 transformation reversal while the shape flag is still set. SQL integration checks
 the projection against the restored original definitions.
+
+Element replacement now executes inside `EffectCycle`/`Actor`, following
+`AddApplySkillBuff` (`00484cf0`, detail 94). Conflicting detail-94 nodes are removed
+regardless of effect category or countdown mode. Replica deletion and self
+`050e` precede reversal/freeing; group notices follow, capped at 48. The original
+shared list cursor (`CUser+0xa98`) matters: nested replacement finishes at the
+sentinel, so `InitApplySkill` (`00487e50`) can revisit surviving earlier buffs.
+Native initialization preserves this behavior, including repeated stat additions.
+The oracle verifies 15 list scenarios with exact state/notification ordering,
+70-node batches, group changes, reentrant insertion and nested initialization;
+the actor test also checks its resulting persistence replica.

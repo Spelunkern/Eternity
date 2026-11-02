@@ -24,6 +24,7 @@ bool EffectCycle::contains(std::uint32_t id) const noexcept {
 void EffectCycle::release_all(EffectObserver& observer) noexcept {
     // ResetCharacter 0044a050 frees the active list without reversing state or changing persistence.
     while(!effects_.empty()) {auto node=effects_.extract(effects_.begin());observer.release_id(node.mapped().id);}
+    shared_cursor_=0;
 }
 void EffectCycle::append(std::uint32_t id,EffectTimer timer,const SkillDefinition& definition) {
     if(contains(id)) throw std::invalid_argument("Duplicate active effect instance");
@@ -50,12 +51,34 @@ void EffectCycle::restore(const std::vector<PersistedEffect>& effects,const Skil
     }
 }
 void EffectCycle::initialize(EffectStatus& status,EffectWorld& world) {
-    // InitApplySkill 00487e50 applies the original ordered list after equipment/passives.
-    std::uint64_t cursor=0;
-    for(auto entry=effects_.begin();entry!=effects_.end();entry=effects_.upper_bound(cursor)) {
-        cursor=entry->first;const auto active=entry->second;
+    // InitApplySkill 00487e50 reads the shared cursor after each application. Nested replacement
+    // leaves it at the sentinel, so initialization can revisit earlier surviving effects.
+    shared_cursor_=effects_.empty()?0:effects_.begin()->first;
+    while(shared_cursor_!=0) {
+        const auto active=effects_.at(shared_cursor_);
         apply_active_effect(status,*active.definition,active.timer.attacker_id,world);
+        const auto next=shared_cursor_==0?effects_.begin():effects_.upper_bound(shared_cursor_);
+        shared_cursor_=next==effects_.end()?0:next->first;
     }
+}
+void EffectCycle::replace_attack_elements(std::uint8_t attribute,EffectStatus& status,EffectEquipment equipment,
+    const ItemDefinitions& definitions,EffectRemovalWorld& world,EffectObserver& observer) {
+    // AddApplySkillBuff 00484f86..004850a2: all conflicting detail-94 nodes, regardless of category/countdown.
+    struct Notice {std::uint16_t id;std::uint8_t level;};std::vector<Notice> party;
+    shared_cursor_=0;
+    for(auto entry=effects_.begin();entry!=effects_.end();entry=shared_cursor_==0?effects_.begin():effects_.upper_bound(shared_cursor_)) {
+        shared_cursor_=entry->first;const auto& definition=*entry->second.definition;
+        if(definition.detail!=94 || definition.attribute==attribute) continue;
+        shared_cursor_=entry==effects_.begin()?0:std::prev(entry)->first;
+        auto removed=effects_.extract(entry);const auto& active=removed.mapped();
+        observer.erase_persisted(active.timer.effect);observer.send_self(effect_removed_packet(active.id));
+        if(observer.party_kind().has_value() && party.size()<48) party.push_back({active.timer.effect.skill_id,active.timer.effect.level});
+        const EffectSource source{active.id,active.timer.attacker_id,active.timer.previous_tick,active.timer.attacker_kind};
+        remove_active_effect(status,*active.definition,source,0,equipment,definitions,world);
+        observer.release_id(active.id);
+    }
+    shared_cursor_=0;
+    for(const auto& notice:party) if(const auto raid=observer.party_kind()) observer.send_party(party_effect_removed_packet(character_id_,notice.id,notice.level,*raid));
 }
 std::vector<net::Packet> EffectCycle::initial_packets(std::uint32_t tick) const {
     std::vector<ActiveEffectPacketEntry> entries;entries.reserve(effects_.size());
