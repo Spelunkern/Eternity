@@ -90,8 +90,13 @@ void verify_mob_population(const eternity::game::MobRuntimeTemplates& definition
     runtime.update_mob_population(pool,ports,4999,unexpected_obelisk,actual_linked);require(serial==114 && zone.size()==2,"SQL linked updater ignored the principal deadline");
     runtime.update_mob_population(pool,ports,5000,unexpected_obelisk,actual_linked);
     require(zone.size()==3 && serial==117 && groups[0].leader.members[0]==zone.find(115) && groups[0].spawns[0].members[0]==zone.find(116) && groups[0].spawns[0].members[1]==zone.find(117) && runtime.instance_portal_country(1010)==3,"SQL linked updater did not remove rewards and recreate the group");
-    for(auto* mob:zone.all()) require(mob->hp==2765 && mob->respawn->both_source!=nullptr,"SQL linked lifecycle lost restored resources or bindings");
+    for(auto* mob:zone.all()) require(mob->definition->respawn_selector==3 && mob->hp==2765 && mob->respawn->both_source!=nullptr,"SQL linked lifecycle lost restored resources or bindings");
     runtime.release_mob_population(pool);require(pool.available()==3 && services.releases==17 && services.removals==4,"SQL linked lifecycle did not recycle its allocations");
+    const auto* restored=definitions.find(1);require(restored && restored->respawn_selector==3,"SQL corpse selector was not preserved");
+    const auto before_random=random.state();respawn.current=respawn.count;respawn.next=123;
+    account_regular_mob_corpse(respawn,*restored,10000,random);
+    require(respawn.current==respawn.count-1 && respawn.next==190000 && random.state()==before_random,"SQL corpse accounting changed restored fixed interval or consumed random");
+
 
 
 

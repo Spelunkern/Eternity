@@ -2686,3 +2686,21 @@ state are checked at source delivery; native observers check actual registry
 unlinking and retained cell coordinates. Source container/callback bodies are
 not exercised by this fixture. Production obelisk/group owners and natural
 death/corpse processing remain pending.
+
+
+Regular/member corpse accounting from `CZone::UpdateMobDeath` (`ps_game.exe`,
+`00421d02` through `00421d62`) now has a native implementation. Only a full
+record receives a new deadline; all regular/member records decrement current.
+Zero delay schedules exactly now without randomness. Nonzero delays use the
+normalized Attackspecial3 selector retained by the definition loader: selectors
+>=9 add `(rand()%120-60)*60000` with DWORD wrap; lower selectors use the fixed
+delay. Linked principals and obelisks require separate accounting paths and are
+rejected by this helper. The 540-case original-instruction fixture covers full
+and underfilled records, signed count boundaries, zero/fixed/long delays,
+selector thresholds, random values and deadline wrap, including clock/random
+consumption. It does not execute traversal, corpse eligibility or unlinking.
+SQL integration also checks the restored mob 1 selector 3 and fixed 180000-ms
+delay without consuming random. The 384-scenario full original loader fixture
+also compares the retained normalized selector directly, alongside its computed
+duration and the existing 1,152 initialization/attack snapshots. Zone corpse
+traversal remains pending.

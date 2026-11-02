@@ -11,7 +11,7 @@ class ZoneMobs;
 struct MobRuntimeTemplate {
     std::uint16_t id=0,level=0,sp=0,mp=0,dexterity=0,wisdom=0,luck=0,physical_defense=0,magic_defense=0;
     std::uint32_t hp=0,shield_defense=0,respawn_time=5000;
-    std::uint8_t ai=0,attribute=0;
+    std::uint8_t ai=0,attribute=0,respawn_selector=0;
 };
 class MobRuntimeTemplates {
 public:
@@ -61,6 +61,8 @@ struct MobInitPorts {
     std::function<bool(MobRuntime&,std::uint8_t ai)> compiled_ai;
     std::function<void(MobRuntime&)> lua_ai;
 };
+// Regular (non-obelisk/non-principal) corpse accounting, UpdateMobDeath 00421d02.
+void account_regular_mob_corpse(MobRespawn&,const MobRuntimeTemplate&,std::uint32_t now,RandomSource&);
 // ps_game.exe CMob::SetAttack 004902f0, InitAttack 00490290, Init 00490040.
 void rebuild_mob_attack(MobRuntime&);
 void reset_mob_attack(MobRuntime&);

@@ -29,7 +29,8 @@ MobRuntimeTemplates MobRuntimeTemplates::load(const storage::ResultSet& table) {
         MobRuntimeTemplate m;m.id=word("MobID");m.level=word("Level");m.sp=word("SP");m.mp=word("MP");m.dexterity=word("Dex");m.wisdom=word("Wis");m.luck=word("Luc");m.physical_defense=word("Defense");m.magic_defense=word("Magic");m.hp=dword("HP");if(m.hp==0) m.hp=1;m.shield_defense=dword("Attacktime3");
         const auto selector=value(table,row,"Attackspecial3",0,255);
         constexpr std::array<std::uint32_t,16> times={5000,30000,60000,180000,300000,600000,900000,1800000,3600000,14400000,43200000,86400000,259200000,7200000,0,604800000};
-        m.respawn_time=times[selector>15?0:static_cast<std::size_t>(selector)];
+        m.respawn_selector=selector>15?0:static_cast<std::uint8_t>(selector);
+        m.respawn_time=times[m.respawn_selector];
         m.ai=static_cast<std::uint8_t>(value(table,row,"AI",0,255));m.attribute=static_cast<std::uint8_t>(value(table,row,"Attrib",0,255));if(m.attribute>4) m.attribute=0;result.records_[m.id]=m;
     }
     return result;
@@ -37,6 +38,18 @@ MobRuntimeTemplates MobRuntimeTemplates::load(const storage::ResultSet& table) {
 const MobRuntimeTemplate* MobRuntimeTemplates::find(std::uint32_t id) const noexcept {
     if(id>65535) return nullptr;
     const auto at=records_.find(static_cast<std::uint16_t>(id));return at==records_.end() || at->second.id==0 || at->second.level==0 || at->second.hp==0?nullptr:&at->second;
+}
+void account_regular_mob_corpse(MobRespawn& respawn,const MobRuntimeTemplate& definition,std::uint32_t now,RandomSource& random) {
+    if(respawn.obelisk || respawn.both) throw std::invalid_argument("Regular corpse accounting requires a regular/member respawn");
+    if(respawn.current==respawn.count) {
+        auto deadline=now+definition.respawn_time;
+        if(definition.respawn_time!=0 && definition.respawn_selector>=9) {
+            const auto minutes=random.next()%120-60;
+            deadline+=static_cast<std::uint32_t>(minutes)*60000U;
+        }
+        respawn.next=deadline;
+    }
+    respawn.current=std::bit_cast<std::int32_t>(static_cast<std::uint32_t>(respawn.current)-1U);
 }
 void rebuild_mob_attack(MobRuntime& m) {
     if(!m.definition) throw std::invalid_argument("Mob attack requires a definition");
