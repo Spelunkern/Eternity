@@ -31,6 +31,8 @@ equipment, enchantments, cloak and social fields, with a copied-user snapshot pa
 Native user-cell queries now reveal hidden enemies using original duel, guild
 and map rules. Server map files/configuration, entry bounds and movement cell resolution are
 reconstructed; world admission, broadcasts, combat and TCP world entry remain pending.
+Zone selection/reuse and access rules are reconstructed; world object initialization
+and zone queue services remain required dependencies.
 The active MD5 login
 path needs a missing procedure; see [research](research/protocol.md).
 

@@ -441,6 +441,38 @@ coordinates. Runtime zone selection/creation, schedules, weather transitions,
 obelisk binding and spawns remain pending; loading the map registry does not enter
 the world or implement these services.
 
+`ZoneRegistry` reconstructs `CWorld::InitZones` (`00414870`), `ChkZoneID`
+(`004146f0`) and `GetZoneByMapID` (`00413df0`). Startup prepares one zone per map;
+mode 0 keeps it permanently, while every other mode releases its objects and
+caches the allocation. Selection returns a permanent zone immediately. Mode 1
+creates a new active instance each time; mode 2 reuses the first active instance.
+Modes 3/4 key instances by party/guild. Modes 5/6 use guild ranking/house rules.
+Permission bytes <=10 with a nonzero instance-owner override bypass ordinary
+party/ranking/house checks, but mode 4 still requires a guild. Existing keyed
+instances are returned after access checks. New dynamic instances reuse the
+initial cache or allocate another zone; only ID-zero instances repeat map
+preparation. Object initialization, expiry clearing, owner assignment, unsigned
+statistics and insertion precede the server wait-queue call. Startup checks
+initialization failures; dynamic selection preserves the original ignored return
+values. Serial/counter DWORD wrapping and zero-valued owner IDs are retained.
+
+`IsGuildRankMapOpenTime` (`00428d20`) checks only the first two configured schedule
+slots and stops at the first day-FFFF sentinel. It handles overnight intervals
+with WORD arithmetic and packs the entry stamp from scheduled hour/weekday and
+current local day/month, excluding year. Ranking access rejects an unchanged
+entry stamp. `CGuild::EnableGuildHouse` (`0042f0c0`) requires ranking index <31,
+acquired byte exactly 1 and enabled byte nonzero. These predicates use local civil
+time, separate from the persisted game-world calendar.
+
+The oracle checks 1,053 original startup/selection sequences, 2,240 ranking windows
+and 36 house predicates. Original list/access/counter code executes with isolated
+allocator, object preparation, ownership-index and queue ports. Tests include
+pool reuse, owner changes, zero IDs, failure paths and counter wrap, plus multiple
+maps in one registry. `ZoneServices` remains a required dependency for actual
+allocation, map/object initialization, release and queue ownership; the native
+registry is not wired to TCP. Object runtime initialization, zone expiry/removal
+and admission remain pending.
+
 Attack-only rebuilding now follows `InitEquipment(bool)` (`00454ba0`),
 `ItemEquipmentAttackAdd` (`00456450`) and `GemEquipmentAttackAdd` (`004565b0`).
 It resets only item attack, variance, physical defense and magic defense;
