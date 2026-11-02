@@ -3,6 +3,11 @@
 #include <stdexcept>
 
 namespace eternity::game {
+void RuntimeZone::release_mob_population(MobPool& pool) {
+    if(!mobs) throw std::logic_error("Zone mob registry is not initialized");
+    mobs->release_to_pool(pool);instance_portals.fill({});
+}
+
 std::optional<std::uint32_t> guild_rank_window(const MapSettings& map,ZoneLocalTime time) {
     // CMap::IsGuildRankMapOpenTime 00428d20 checks only the first TWO of seven schedule slots.
     for(std::size_t i=0;i<2;++i) {

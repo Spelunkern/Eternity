@@ -10,7 +10,7 @@ MobRuntime* MobPool::allocate() {
     mob->id=++counter_;mob->drop_random.seed(services_.unix_time()^mob->id);return mob;
 }
 void MobPool::release(MobRuntime& mob) {
-    if(mob.zone || mob.cell) throw std::invalid_argument("Cannot recycle an attached mob");
+    if(mob.membership_owner_) throw std::invalid_argument("Cannot recycle an attached mob");
     if(std::none_of(objects_.begin(),objects_.end(),[&](const auto& owned){return owned.get()==&mob;}) || std::find(available_.begin(),available_.end(),&mob)!=available_.end()) throw std::invalid_argument("Mob does not belong to the active pool");
     services_.release_compiled_ai(mob);
     if(mob.state_stack) {services_.release_stack_ai(mob);mob.state_stack.reset();}

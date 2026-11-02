@@ -3,6 +3,7 @@
 #include "eternity/game/definitions.hpp"
 #include "eternity/game/mobs.hpp"
 #include "eternity/game/mob_population.hpp"
+#include "eternity/game/zones.hpp"
 #include "eternity/game/characters.hpp"
 #include "eternity/game/stats.hpp"
 #include "eternity/game/equipment.hpp"
@@ -31,15 +32,20 @@ void verify_mob_population(const eternity::game::MobRuntimeTemplates& definition
         std::unique_ptr<MobBroadcast> allocate_broadcast(const eternity::net::Packet&,std::optional<std::uint8_t>) override {throw std::runtime_error("Unexpected SQL mob movement");}
     } services;
     MapDefinition map;map.size=81;map.tiles.resize((81*81+7)/8);MapMobArea area;area.box.minimum={-0.25F,7,0.75F};area.spawns={{1,2},{0,3}};map.mobs.push_back(area);
-    MobPopulation population(map,definitions);std::uint32_t serial=100;MobPool pool(serial,services);ZoneMobs zone(map.geometry(),services);MicrosoftRandom random;
+    MobPopulation population(map,definitions);std::uint32_t serial=100;MobPool pool(serial,services);RuntimeZone runtime;runtime.mobs=std::make_unique<ZoneMobs>(map.geometry(),services);auto& zone=*runtime.mobs;MicrosoftRandom random;
     MobInitPorts ports{random,[&]{return services.tick_ms();},[](MobRuntime&,std::uint8_t)->bool {throw std::runtime_error("Unexpected compiled AI creation in SQL spawn fixture");},[](MobRuntime&) {throw std::runtime_error("Unexpected Lua creation in SQL spawn fixture");}};
     unsigned int linked=0;require(population.initialize(zone,pool,ports,[&]{++linked;require(zone.size()==2,"Linked groups initialized before regular SQL mobs");return false;}),"Linked-group failure changed original regular spawn result");
     require(linked==1 && services.views==2 && serial==102 && population.areas()[0].spawns[0].current==2 && population.areas()[0].spawns[1].current==0,"SQL population counts/bindings changed");
+    const auto first_population=zone.all();
+    runtime.instance_portals.fill({55,1});runtime.release_mob_population(pool);
+    require(zone.size()==0 && pool.available()==2 && services.releases==2 && runtime.instance_portals[0].id==0 && runtime.instance_portals[9].country==0,"SQL bulk mob release/portal reset changed");
+    for(auto* mob:first_population) require(mob->zone==&zone && mob->cell.has_value() && mob->respawn==&population.areas()[0].spawns[0],"SQL bulk release cleared retained source bindings");
+    require(population.initialize(zone,pool,ports,[&]{++linked;return false;}) && linked==2 && services.views==4 && zone.find(103)==first_population[1] && zone.find(104)==first_population[0],"SQL population did not reuse released mobs in original LIFO order");
     for(auto* mob:zone.all()) {
         require(mob->definition==definitions.find(1) && mob->respawn==&population.areas()[0].spawns[0] && mob->hp==2765 && mob->sp==874 && mob->mp==1578 && mob->dexterity==60 && mob->wisdom==40 && mob->status==0 && mob->next_new_target==4984 && mob->position.x==-0.25F && mob->position.y==7 && mob->respawn_position.z==0.75F && mob->drop_random.seed()==(1700000000U^mob->id),"Restored SQL mob did not survive allocation, initialization and zone entry");
         require(zone.leave(*mob),"Cannot detach SQL fixture mob");pool.release(*mob);
     }
-    require(zone.size()==0 && pool.available()==2 && services.releases==2,"SQL mob pool/zone cleanup changed");
+    require(zone.size()==0 && pool.available()==2 && services.releases==4,"SQL mob pool/zone cleanup changed");
 }
 
 int main() {

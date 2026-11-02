@@ -1,4 +1,5 @@
 #include "eternity/game/zone_mobs.hpp"
+#include "eternity/game/mob_pool.hpp"
 #include <algorithm>
 #include <bit>
 #include <cmath>
@@ -17,21 +18,32 @@ net::Packet mob_appearance(const MobRuntime& m,std::uint8_t appearance) {net::Pa
 net::Packet mob_removed(std::uint32_t id) {net::Packet p{2,6};append(p,id);return p;}
 std::int32_t mob_status(const MobRuntime& m) noexcept {return !m.state_stack?m.status:m.state_stack->empty()?0:m.state_stack->back();}
 ZoneMobs::ZoneMobs(const MapGeometry& geometry,ZoneMobServices& services):geometry_(geometry),services_(services) {}
-ZoneMobs::~ZoneMobs() {for(auto& [mob,entry]:members_) {mob->zone=nullptr;mob->cell.reset();}}
+ZoneMobs::~ZoneMobs() {for(auto& [mob,entry]:members_) {mob->zone=nullptr;mob->cell.reset();mob->membership_owner_=nullptr;}}
 std::size_t ZoneMobs::key(CellCoordinates c) const {const auto n=geometry_.cell_count();if(c.x<0 || c.z<0 || c.x>=n || c.z>=n) throw std::out_of_range("Invalid mob cell");return static_cast<std::size_t>(c.z)*static_cast<std::size_t>(n)+static_cast<std::size_t>(c.x);}
 void ZoneMobs::link_cell(MobRuntime& mob,Member& member,CellCoordinates c) {
-    if(cell_sequence_==UINT64_MAX) throw std::overflow_error("Mob cell sequence exhausted");member.cell=c;member.cell_ordinal=++cell_sequence_;cells_[key(c)].members.emplace(member.cell_ordinal,&mob);
+    if(cell_sequence_==UINT64_MAX) throw std::overflow_error("Mob cell sequence exhausted");
+    member.cell=c;member.cell_ordinal=++cell_sequence_;cells_[key(c)].members.emplace(member.cell_ordinal,&mob);
 }
 void ZoneMobs::unlink_cell(const Member& member) {auto& cell=cells_.at(key(member.cell));const auto entry=cell.members.find(member.cell_ordinal);if(cell.cursor==entry->first) cell.cursor=entry==cell.members.begin()?0:std::prev(entry)->first;cell.members.erase(entry);}
 bool ZoneMobs::enter(MobRuntime& mob) {
     const CellCoordinates c{coordinate(mob.position.x),coordinate(mob.position.z)};const auto n=geometry_.cell_count();if(c.x<0 || c.z<0 || c.x>=n || c.z>=n) return false;
-    if(mob.cell || members_.contains(&mob)) throw std::invalid_argument("Mob already has cell membership");if(sequence_==UINT64_MAX) throw std::overflow_error("Mob zone sequence exhausted");
-    mob.cell=c;mob.zone=this;mob.respawn_position=mob.position;Member member;member.ordinal=++sequence_;link_cell(mob,member,c);members_.emplace(&mob,member);ordered_.emplace(member.ordinal,&mob);index_.emplace(mob.id,&mob);
+    if(mob.membership_owner_ || members_.contains(&mob)) throw std::invalid_argument("Mob already has cell membership");
+    if(sequence_==UINT64_MAX) throw std::overflow_error("Mob zone sequence exhausted");
+    mob.membership_owner_=this;mob.cell=c;mob.zone=this;mob.respawn_position=mob.position;Member member;member.ordinal=++sequence_;link_cell(mob,member,c);members_.emplace(&mob,member);ordered_.emplace(member.ordinal,&mob);index_.emplace(mob.id,&mob);
     services_.send_cell_view(c,mob_appearance(mob,1));if(mob.lua_ai!=0) services_.lua_init(mob);return true;
 }
 bool ZoneMobs::leave(MobRuntime& mob) {
     if(mob.zone!=this || !mob.cell || !members_.contains(&mob)) throw std::invalid_argument("Wrong mob ownership on leave");
-    const auto member=members_.at(&mob);index_.erase(mob.id);ordered_.erase(member.ordinal);unlink_cell(member);members_.erase(&mob);mob.zone=nullptr;mob.cell.reset();return true;
+    const auto member=members_.at(&mob);index_.erase(mob.id);ordered_.erase(member.ordinal);unlink_cell(member);members_.erase(&mob);mob.membership_owner_=nullptr;mob.zone=nullptr;mob.cell.reset();return true;
+}
+void ZoneMobs::release_to_pool(MobPool& pool) {
+    for(auto& [key,cell]:cells_) cell.members.clear();
+    index_.clear();
+    while(!ordered_.empty()) {
+        auto* mob=ordered_.begin()->second;ordered_.erase(ordered_.begin());members_.erase(mob);mob->membership_owner_=nullptr;
+        // Preserve raw zone/cell/respawn state, including during AI cleanup.
+        pool.release(*mob);
+    }
 }
 void ZoneMobs::transition(const MobRuntime& mob,CellCoordinates previous,CellCoordinates next) {
     // SendMoveMob 0041f860 excludes a cell only when it is outside on BOTH axes.

@@ -22,6 +22,7 @@ struct ZoneUserAccess {
     std::optional<std::uint32_t> party_id;
     std::optional<ZoneGuildAccess> guild;
 };
+struct InstanceZonePortal {std::int32_t id=0,country=0;};
 struct RuntimeZone {
     virtual ~RuntimeZone() = default; // Concrete world zones own/destruct their object resources.
     std::uint32_t id=0,owner=0,expiry_tick=0;
@@ -33,6 +34,8 @@ struct RuntimeZone {
     std::unique_ptr<ZoneCorpses> corpses;
     std::unique_ptr<ZoneItems> items;
     std::optional<ZoneEnvironment> environment;
+    std::array<InstanceZonePortal,10> instance_portals{};
+    void release_mob_population(MobPool&); // MapReleaseObject 0041c3b0.
 };
 class ZoneServices {
 public:

@@ -13,7 +13,8 @@ public:
     virtual void close_lua(void*)=0;
 };
 // Serialized object-manager owner. All members must leave their zones before
-// recycling/destruction. The world counter and services outlive this pool.
+// recycling/destruction. Raw zone/cell values may survive bulk release.
+// The world counter and services outlive this pool.
 // CreateMob 0040a5e0 / FreeMob 0040a630, SSyncHeap<CMob>::Alloc 0040ab80.
 class MobPool {
 public:

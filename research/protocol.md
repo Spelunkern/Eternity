@@ -2419,7 +2419,8 @@ increments the construction-attempt counter without consuming an ID or time.
 Release invokes the required compiled-FSM cleanup, active stack-FSM cleanup,
 conditional Lua flag reset and Lua close, then makes the object reusable. Stack
 release disables the stack FSM. Position, status, target and other unassigned
-fields survive. Zone detachment is required before recycling. Actual AI/state
+fields survive. Actual list membership must be removed before recycling; bulk
+zone release retains the raw zone/cell values. Actual AI/state
 handlers, Lua ownership/initialization and final world teardown remain required
 services; this pool does not substitute no-op gameplay providers.
 
@@ -2463,5 +2464,31 @@ memory failure, negative/zero counts, unknown definitions, blocked tiles,
 boundaries/NaN and wrapped IDs/ticks. Isolated SQL also drives a restored mob
 through preparation, allocation, runtime initialization, cell entry and recycling,
 verifying original resources, respawn binding and deferred linked initialization.
-Production scheduling, full population release, AI and TCP world entry remain
-pending.
+Production scheduling, AI and TCP world entry remain pending.
+
+
+Bulk population release now follows `CZone::MapReleaseObject` (`ps_game.exe`,
+`0041c3b0`). It clears every mob cell list and the complete ID index first, then
+removes global-list members FIFO before invoking compiled/stack FSM and Lua
+cleanup and returning each allocation to the pool. Cleanup observers see the
+remaining global members while both lookup/cell indexes are already empty.
+It sends no departure packets. Raw zone/cell, position, respawn binding, status,
+target and unassigned state survive recycling. Native ownership bookkeeping now
+tracks actual membership separately from these retained public fields, allowing
+original cross-zone reuse without clearing information that AI initialization
+may observe. Active duplicate membership and duplicate pool release remain
+invalid. Cleanup callbacks may inspect registries but must not mutate membership.
+
+After all mobs are recycled, the source zeroes all ten `stInsZonePortal` records
+(`CZone+0218`, 80 bytes). `RuntimeZone::release_mob_population` resets the native
+portal ID/country pairs at the same point. Other zone entities/environment and
+population definitions remain intact. The 128 two-zone/3,072-operation fixture
+executes original allocation, construction, index/cell insertion, full bulk
+release, empty FSM cleanup and portal zeroing, then reuses objects across zones.
+Heap/locks/time/atomic increment, Lua close and transport are ports. It compares
+cleanup-phase observations, duplicate-ID indexes, FIFO release/LIFO reuse,
+retained raw bindings, Lua flag/handle ordering, silent empty/repeated release,
+wrapped IDs and the complete portal arrays. SQL integration now releases and
+recreates the restored mob population using the same allocations and then checks
+ordinary per-mob leave/recycle. Complete world teardown and live AI resources
+remain part of production integration.

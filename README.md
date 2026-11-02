@@ -104,8 +104,9 @@ Mob zone/cell membership, cell snapshots and movement packets preserve original
 ordering and visibility rules. The mob pool preserves LIFO reuse, new IDs on
 every allocation, original drop-random streams and AI/Lua release ordering.
 Regular map populations now connect placement/collision checks, allocation, runtime
-initialization and zone entry. Linked bosses, obelisks, full AI/combat and the
-running world remain pending.
+initialization and zone entry. Bulk zone release preserves retained mob bindings,
+cleans AI/Lua, recycles in original order and resets instance portals. Linked
+bosses, obelisks, full AI/combat and the running world remain pending.
 The active MD5 login
 path needs a missing procedure; see [research](research/protocol.md).
 

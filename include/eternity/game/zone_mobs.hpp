@@ -4,6 +4,7 @@
 #include <memory>
 
 namespace eternity::game {
+class MobPool;
 net::Packet mob_appearance(const MobRuntime&,std::uint8_t appearance);
 net::Packet mob_removed(std::uint32_t id);
 std::int32_t mob_status(const MobRuntime&) noexcept;
@@ -35,6 +36,9 @@ public:
     ZoneMobs(const ZoneMobs&)=delete;ZoneMobs& operator=(const ZoneMobs&)=delete;
     bool enter(MobRuntime&); // EnterMob 00416860; 0601 appearance 1.
     bool leave(MobRuntime&); // LeaveMob 00416990; no packet or recycling.
+    // MapReleaseObject 0041c3b0: clear cells/index first, then FIFO recycle.
+    // Cleanup callbacks may inspect the remaining registry but must not mutate it.
+    void release_to_pool(MobPool&);
     bool move(MobRuntime&,UserPosition,std::uint8_t mode); // MoveMob 004169d0.
     MobRuntime* find(std::uint32_t) const noexcept;
     MobRuntime* find_cell(CellCoordinates,std::uint32_t);

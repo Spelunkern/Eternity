@@ -49,6 +49,11 @@ struct MobRuntime {
     std::uint32_t combat_timeout=0,retarget_time=0,lua_attacked_count=0,lua_order_time=0,function_type=0,current_time=0;
     UserPosition move_target;
     ServerRandom drop_random;void* lua_state=nullptr;
+private:
+    friend class ZoneMobs;friend class MobPool;
+    // Host bookkeeping for intrusive membership. MapReleaseObject retains the
+    // public zone/cell fields after unlinking, so those fields are not ownership.
+    ZoneMobs* membership_owner_=nullptr;
 };
 struct MobInitPorts {
     RandomSource& random;
