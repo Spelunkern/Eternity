@@ -244,3 +244,17 @@ checks ownership and rolls back the whole replacement on failure. Disposable SQL
 tests verify those contracts without changing existing characters. Live actor
 scheduling, replica-message delivery, group broadcasting and disconnect cleanup
 remain pending.
+
+`ActorResources` follows `ps_game.exe` `CUser::Heal` (`004505a0`),
+`SendRecoverAdd` (`00481f20`), `SendRecoverAddSet` (`00482060`) and
+`SendMaxHP/SP/MP` (`00481990`/`00481aa0`/`00481ba0`). Arithmetic retains
+DWORD wrapping, signed upper clamps and the recovery routes' WORD-sized
+previous values. Heal resets damage history before party energy; recovery
+resets it after view/party messages. View `0505` and self `0521` order HP/MP/SP;
+party `0c03` and raid `0c0c` order HP/SP/MP. Max-resource `050b` uses HP=0,
+SP=1, MP=2; HP goes to the view, SP/MP to self, followed by group `0c02`/`0c0b`.
+Initialization suppresses both clamping and max-resource messages. Required
+`ResourceSink` operations leave routing and damage-history ownership to the
+future actor runtime. `tools/resources_oracle.py` checks 1,008 original executions
+including packet bytes, call order, wrapping, negative recovery, group kinds and
+initialization. Live actor integration remains pending.
