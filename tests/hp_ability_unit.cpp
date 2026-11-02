@@ -116,6 +116,8 @@ int main(int argc,char** argv) {
         scene.tick=359999;require(!actor.check_hp_ability(registry),"Passive reactivated before three-minute cooldown");
         scene.tick=360000;require(actor.check_hp_ability(registry),"Passive failed to reactivate at inclusive cooldown");
         actor.heal({10000,0,0});require(actor.damage_ledger().entries().empty(),"Full healing retained actor damage attribution");
+        actor.clear_effects_on_death(5);
+        require(actor.effects().size()==0 && actor.replica().snapshot().empty() && !actor.status().skills.hp_ability_applied && actor.status().skills.hp_ability_previous==360000 && actor.status().skills.equipment.base.maximum.hp==1000 && actor.resources().hp==1000,"Actor death cleanup did not remove activated passive, preserve cooldown or clamp resources");
         EffectStatus protected_status;protected_status.skills.equipment.base.maximum.hp=1000;protected_status.skills.equipment.damage_reduction=0x12345678;
         Scene protected_scene;Actor protected_actor(9001,protected_status,{1000,0,0},{},protected_scene,{items,enchant,mobs});
         require(!protected_actor.damage(3,456,1000,registry) && protected_actor.resources().hp==1 && protected_actor.damage_ledger().maximum()->amount==999,"Guard protection did not leave one HP or record adjusted damage");

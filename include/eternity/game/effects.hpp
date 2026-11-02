@@ -15,6 +15,7 @@ struct EffectStatus {
     std::uint16_t form_mob = 0;
     std::uint8_t shape = 0;
     bool no_mob_targeting = false,zero_attack_attribute_buff = false,in_zone = false;
+    bool block_death = false,block_dying = false; // CUser+1364/+1365.
     std::int32_t current_target_type = 0;
 };
 // World operations are required dependencies, not optional callbacks. The world runtime

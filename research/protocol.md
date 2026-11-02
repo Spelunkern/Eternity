@@ -828,3 +828,26 @@ failure, ordered persistence/self/group notices and flag timing. Concrete actor
 tests cover damage-triggered activation, first-match persistence, fixed expiry,
 cooldown reactivation, protection leaving one HP, lethal damage and full healing.
 Guard attack/death integration and TCP gameplay remain pending.
+
+Death effect cleanup reconstructs `ps_game.exe` `CUser::ClearApplySkillByDeath`
+(`00488000`). It preserves definitions with nonzero `FixRange` and, when the
+death penalty is -1, skills above 200 except level 100. `FixRange==1` still
+selects offline countdown/hour conversion; other nonzero values preserve on
+death without selecting that clock. Removed effects reverse abilities only for
+details 6/62/67/82/91: 62/67 add all three values, 6/82 subtract all, and 91 adds
+the first then subtracts the others. Detail 6 clears its active flag before
+reversal. Detail 90 rebuilds equipment attack, clears transformation and emits
+user appearance only for change type 100. Each removal then erases its DB-agent
+replica and releases the instance; ordinary self/group expiry notices are absent.
+
+The final reset clears movement/action/form/casting blocks, copied shape data,
+SP/MP absorption, chase, attack-element flags and targeting/death flags even if
+effects remain. Defense block modes and mirror skill IDs clear while their
+values/levels remain. Equipped armor/weapon elements are restored when present,
+even over a retained element effect; absent equipment leaves its prior element.
+A speed notification finishes the routine. Runtime low-HP selection/cooldown and
+the active flag of a retained passive survive. The actor discards copied-user
+appearance and retains the derived presence of surviving defense-element skills.
+The oracle compares 728 single/multiple-effect cases against original linked-list,
+ability and element code. Actor checks cover persistent effects, passive removal,
+resource clamps, replica order and absence of ordinary expiry notices.

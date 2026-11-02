@@ -138,6 +138,17 @@ int main(int argc,char** argv) {
         wearing.status().shape=13;wearing.wear_defense();require(wearing.defense_wear_cursor()==3,"Transformed actor advanced wear cursor");
         wearing.status().shape=0;wearing.status().skills.benefits.no_durability_loss=1;wearing.wear_defense();
         require(wearing.defense_wear_cursor()==3 && wearing.inventory()[0].quality==500 && wear_scene.events.empty(),"Durability protection mutated gear or emitted packets");
+        SkillDefinition removable;removable.id=300;removable.level=1;removable.effect=4;removable.detail=82;removable.abilities={{{1,17},{4,31},{16,9}}};
+        SkillDefinition persistent;persistent.id=301;persistent.level=1;persistent.effect=4;persistent.detail=95;persistent.attribute=8;persistent.preserve_on_death=true;persistent.offline_countdown=true;
+        const auto before_death_hp=wearing.status().skills.equipment.base.maximum.hp;
+        wearing.effects().append(2000,{{300,1,30},0,30000,false},removable);wearing.persist_applied({300,1,30});
+        wearing.effects().append(2001,{{301,1,30},0,30000,true},persistent);wearing.persist_applied({301,1,30});
+        wearing.effects().initialize(wearing.status(),wearing);wearing.appearance().copied_user.emplace();
+        require(wearing.status().skills.equipment.defense_attribute==8,"Persistent defense effect did not initialize");
+        wearing.clear_effects_on_death(5);
+        require(wearing.effects().size()==1 && wearing.effects().contains(2001) && wearing.replica().snapshot().size()==1 && wearing.replica().snapshot()[0].skill_id==301,"Actor death cleanup removed a persistent effect or retained its removed replica");
+        require(wearing.status().skills.equipment.base.maximum.hp==before_death_hp && wearing.status().skills.equipment.defense_attribute==1 && wearing.status().skills.equipment.defense_attribute_skill && !wearing.appearance().copied_user,"Actor death cleanup did not reverse resources, restore armor element or discard copied appearance");
+        require(wear_scene.events==std::vector<std::string>{"F2000"},"Actor death cleanup emitted expiry notices or changed callback order");
         std::cout<<count<<" original actor operations, concrete effect expiry and durability integration passed\n";
     } catch(const std::exception& error) {std::cerr<<error.what()<<'\n';return 1;}
 }

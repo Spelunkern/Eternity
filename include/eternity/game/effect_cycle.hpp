@@ -41,6 +41,8 @@ public:
     void release_all(EffectObserver& observer) noexcept;
     void expire(std::uint32_t tick_ms,EffectStatus& status,EffectEquipment equipment,const ItemDefinitions& definitions,
         EffectRemovalWorld& world,EffectObserver& observer);
+    void clear_on_death(const std::int32_t& death_penalty,EffectStatus& status,EffectEquipment equipment,
+        const ItemDefinitions& definitions,EffectWorld& world,EffectObserver& observer);
     std::size_t size() const noexcept {return effects_.size();}
     bool contains(std::uint32_t instance_id) const noexcept;
 private:

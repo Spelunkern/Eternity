@@ -9,7 +9,7 @@ struct SkillDefinition {
     std::uint8_t attribute = 0,defense_type = 0,defense_value = 0,apply_range = 0,limit_hp = 0;
     std::array<SkillAbility,3> abilities{};
     std::uint32_t keep_time_seconds = 0;
-    bool offline_countdown = false;
+    bool offline_countdown = false,preserve_on_death = false;
     std::array<std::uint16_t,3> time_heal{}; // HP, SP, MP per original three-second interval.
 };
 class SkillDefinitions {

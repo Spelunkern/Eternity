@@ -17,6 +17,12 @@ void Actor::wear_defense() {
     if(result.attack_changed) recalculate_attack(status_);
 }
 bool Actor::check_hp_ability(const SkillDefinitions& definitions) {return effects_.activate_hp(status_,resources_.current(),definitions,*this,*this);}
+void Actor::clear_effects_on_death(const std::int32_t& death_penalty) {
+    EffectEquipment equipped;
+    for(const auto& item:inventory_) if(item.bag==0) {if(item.slot==5) equipped.weapon=&item;else if(item.slot==1) equipped.armor=&item;}
+    effects_.clear_on_death(death_penalty,status_,equipped,equipment_.items,*this,*this);
+    appearance_.copied_user.reset();
+}
 bool Actor::damage(std::int32_t kind,std::uint32_t source,std::int32_t amount,const SkillDefinitions& definitions) {
     struct Operations final:DamageObserver {
         Actor& actor;const SkillDefinitions& definitions;

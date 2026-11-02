@@ -64,6 +64,10 @@ int main(int argc,char** argv) {
             table.columns.emplace_back(name);for(auto& row:table.rows) row.emplace_back("0");
         }
         const auto definitions=SkillDefinitions::load(table);
+        auto flagged=table;flagged.rows[0][21]="2";flagged.rows[0][22]="7";auto flagged_definitions=SkillDefinitions::load(flagged);
+        require(flagged_definitions.find(10,1)->preserve_on_death && !flagged_definitions.find(10,1)->offline_countdown && flagged_definitions.find(10,1)->keep_time_seconds==7,"Nonzero FixRange death preservation was confused with offline countdown");
+        flagged.rows[0][21]="1";flagged_definitions=SkillDefinitions::load(flagged);
+        require(flagged_definitions.find(10,1)->preserve_on_death && flagged_definitions.find(10,1)->offline_countdown && flagged_definitions.find(10,1)->keep_time_seconds==25200,"FixRange 1 did not retain original time conversion and death preservation");
         require(definitions.find(10,1)->weapon2==19 && definitions.find(12,1)->abilities[0].value==1 &&
             definitions.find(13,1)->effect==4 && definitions.find(14,1)->effect==6,"Original skill definition normalizations changed");
         require(!definitions.find(10,4) && !definitions.find(0,1) && !definitions.find(15,2),"Original skill level/base lookup checks changed");

@@ -160,6 +160,41 @@ EffectStore::EffectStore(storage::SqlServer& database,std::uint8_t server_id,std
         throw std::invalid_argument("Invalid effect database catalog");
     prefix_="["+catalog+"].dbo.";
 }
+void EffectCycle::clear_on_death(const std::int32_t& death_penalty,EffectStatus& status,EffectEquipment equipment,
+    const ItemDefinitions& definitions,EffectWorld& world,EffectObserver& observer) {
+    // ps_game.exe CUser::ClearApplySkillByDeath 00488000. This intentionally
+    // differs from ordinary expiry: only selected details reverse abilities.
+    shared_cursor_=effects_.empty()?0:effects_.begin()->first;
+    while(shared_cursor_!=0) {
+        auto entry=effects_.find(shared_cursor_);const auto active=entry->second;const auto& skill=*active.definition;
+        if(!skill.preserve_on_death && !(death_penalty==-1 && active.timer.effect.skill_id>200 && active.timer.effect.level!=100)) {
+            shared_cursor_=entry==effects_.begin()?0:std::prev(entry)->first;
+            effects_.erase(entry);
+            if(skill.detail==6) status.skills.hp_ability_applied=false;
+            if(skill.detail==6 || skill.detail==62 || skill.detail==67 || skill.detail==82 || skill.detail==91) {
+                for(std::size_t i=0;i<skill.abilities.size();++i) {
+                    const auto ability=skill.abilities[i];const auto positive=skill.detail==62 || skill.detail==67 || (skill.detail==91 && i==0);
+                    apply_effect_ability(status,skill.effect,ability.type,positive?ability.value:-static_cast<std::int32_t>(ability.value),world);
+                }
+            } else if(skill.detail==90) {
+                world.rebuild_attack(status,true);status.shape=0;status.skills.equipment.transformed=false;status.shape_template=0;
+                if(skill.change_type==100) world.user_shape_changed(status);
+            }
+            observer.erase_persisted(active.timer.effect);observer.release_id(active.id);
+        }
+        const auto next=shared_cursor_==0?effects_.begin():effects_.upper_bound(shared_cursor_);
+        shared_cursor_=next==effects_.end()?0:next->first;
+    }
+    status.action_block_a=0;status.movement_block=0;status.action_block_b=0;status.fixed_form=0;status.form_mob=0;
+    status.zero_attack_attribute_buff=false;status.skills.equipment.attack_attribute_buffs.fill(0);
+    status.no_mob_targeting=false;status.block_death=false;status.block_dying=false;status.shape=0;status.skills.equipment.transformed=false;
+    for(auto& defense:status.defense) {defense.mirror_skill=0;defense.block_mode=0;}
+    status.block_all=0;status.giveup_sp_mp=0;status.chase_id=0;status.shape_template=0;status.casting=0;
+    if(equipment.armor) status.skills.equipment.defense_attribute=item_attribute(*equipment.armor,definitions);
+    if(equipment.weapon) status.skills.equipment.attack_attribute=item_attribute(*equipment.weapon,definitions);
+    status.skills.equipment.defense_attribute_skill=std::any_of(effects_.begin(),effects_.end(),[](const auto& entry){return entry.second.definition->detail==95;});
+    world.speed_changed(status);
+}
 bool EffectReplica::erase(std::uint16_t id,std::uint8_t level) {
     // ps_dbAgent.exe CUser::PacketUserSkillApply 00406250, case 0902: remove the first matching replica node.
     const auto found=std::find_if(effects_.begin(),effects_.end(),[&](const auto& effect){return effect.skill_id==id && effect.level==level;});

@@ -72,6 +72,7 @@ public:
     void wear_defense();
     bool check_hp_ability(const SkillDefinitions& definitions);
     bool damage(std::int32_t kind,std::uint32_t source,std::int32_t amount,const SkillDefinitions& definitions);
+    void clear_effects_on_death(const std::int32_t& death_penalty);
     const DamageLedger& damage_ledger() const noexcept {return damage_;}
     std::int32_t& defense_wear_cursor() noexcept {return defense_wear_cursor_;}
     std::int32_t defense_wear_cursor() const noexcept {return defense_wear_cursor_;}
