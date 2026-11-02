@@ -15,6 +15,14 @@ struct Npc {
     const NpcDefinition* definition=nullptr;
     const MapNpc* source=nullptr;
     std::uint32_t disable_time=0;
+    std::int32_t users_using=0,next_position=0;
+    bool forward=true;
+    std::uint32_t next_move=0;
+};
+class NpcMovementWorld {
+public:
+    virtual ~NpcMovementWorld() = default;
+    virtual bool move(Npc&,UserPosition,std::uint8_t mode) = 0;
 };
 // Original SSyncHeap<CNpc> uses a LIFO free list and preserves IDs/object state.
 // The owner must detach an NPC before returning it; reset is a separate operation.
@@ -44,8 +52,8 @@ public:
 };
 net::Packet npc_appearance(const Npc&);
 // One world executor serializes operations. Maps/definitions, services and all
-// allocated NPCs must outlive the registry. Path selection/AI remain separate.
-class ZoneNpcs {
+// allocated NPCs must outlive the registry. Patrol ticks/guard AI remain separate.
+class ZoneNpcs:public NpcMovementWorld {
 public:
     ZoneNpcs(const MapGeometry&,ZoneNpcServices&);
     ~ZoneNpcs();
@@ -54,7 +62,7 @@ public:
     void initialize(const MapDefinition&,const NpcDefinitions&);
     bool enter(Npc&);
     bool leave(Npc&);
-    bool move(Npc&,UserPosition destination,std::uint8_t mode);
+    bool move(Npc&,UserPosition destination,std::uint8_t mode) override;
     Npc* find(std::uint32_t) const noexcept;
     std::span<Npc* const> all() const noexcept {return members_;}
     std::span<Npc* const> in_cell(CellCoordinates) const noexcept;

@@ -600,3 +600,28 @@ nonfinite positions, stale stored positions/cells, null ownership, byte/WORD wir
 truncation, and every combination of three independent buffer allocation failures.
 Every per-cell packet includes a snapshot of position/cell state at delivery,
 verifying notification order as well as packet bytes and recipients.
+
+NPC waypoint patrols: `ps_game.exe` `CNpc::UpdateMove` (`004bbeb0`) waits while
+users are interacting, until its unsigned next-move deadline, or when its source
+path is absent/contains at most one point. Direction starts forward and the next
+position starts at index zero. The current X/Z coordinates truncate to signed
+integers before subtraction from the target point; nonfinite/overflow conversion
+uses the x87 integer indefinite. Distance uses the original float spill before
+CRT sqrt (`SVector::Length`/`Length2`, `0041b2e0`/`004a7c30`). Normalized steps also
+retain float division/multiplication/addition spills.
+
+At distance <= `nMoveDist`, a successful move to the target advances the index,
+reversing at either end without repeating the terminal point. A failed move keeps
+the index/direction. Both outcomes consume one signed `rand()%10000` and schedule
+`tick + nMoveSpeed + 10000 + random_remainder`, with DWORD wrapping. Longer steps
+multiply the normalized vector by `nMoveDist`, retaining current Y; they ignore
+the movement result and schedule `tick + nMoveSpeed` without RNG. All moves use
+mode zero and route through the native `ZoneNpcs::move` implementation. The idle
+and guard dispatchers must still enforce disable deadlines and combat states;
+this patrol function does not replace the pending guard AI/world tick.
+
+The patrol oracle executes original `UpdateMove`, vector math and CRT sqrt with
+isolated movement/RNG ports. It compares 1,536 independent states and twelve
+48-tick routes. The native route tests call real zone movement and visibility
+broadcasts, covering endpoint reversal, fractional/nonfinite coordinates, range
+and timer overflow, interacting users, missing/short paths and failed moves.
