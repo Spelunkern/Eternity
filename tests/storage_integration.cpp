@@ -1,3 +1,4 @@
+#include "eternity/game/experience_award.hpp"
 #include "eternity/game/mob_experience.hpp"
 #include "eternity/storage/sql_server.hpp"
 #include "eternity/auth/accounts.hpp"
@@ -208,8 +209,29 @@ int main() {
         const auto fighter_status=statuses.base(fighter);
         require(fighter_status.maximum.hp==250 && fighter_status.maximum.mp==85 && fighter_status.maximum.sp==195,
                 "Restored status definitions disagree with original fighter resources");
+        eternity::game::PlayerCore advancing;advancing.character=fighter;advancing.stat_points=1;advancing.skill_points=2;auto advanced_status=fighter_status;
+        statuses.level_up(advancing,advanced_status);const auto reloaded_level_status=statuses.base(advancing.character);
+        require(advancing.character.level==2 && advancing.character.strength==15 && advancing.stat_points==6 && advancing.skill_points==5 && advanced_status.attributes.strength==15 && advanced_status.maximum.hp==reloaded_level_status.maximum.hp && advanced_status.maximum.mp==reloaded_level_status.maximum.mp && advanced_status.maximum.sp==reloaded_level_status.maximum.sp,"SQL-backed fighter level-up did not preserve original status growth");
+        for(std::uint8_t job=0;job<6;++job) {
+            eternity::game::PlayerCore growth;growth.character=fighter;growth.character.job=job;auto before_growth=statuses.base(growth.character);auto after_growth=before_growth;
+            statuses.level_up(growth,after_growth);const auto reloaded=statuses.base(growth.character);
+            const auto& c=growth.character;const std::array<std::uint16_t,6> actual={c.strength,c.dexterity,c.recovery,c.intelligence,c.wisdom,c.luck};std::array<std::uint16_t,6> expected={14,12,9,8,7,15};const std::array<unsigned,6> class_attribute={0,2,1,5,3,4};++expected[class_attribute[job]];
+            require(actual==expected && after_growth.attributes.strength==reloaded.attributes.strength && after_growth.attributes.dexterity==reloaded.attributes.dexterity && after_growth.attributes.recovery==reloaded.attributes.recovery && after_growth.attributes.intelligence==reloaded.attributes.intelligence && after_growth.attributes.wisdom==reloaded.attributes.wisdom && after_growth.attributes.luck==reloaded.attributes.luck && after_growth.maximum.hp==reloaded.maximum.hp && after_growth.maximum.mp==reloaded.maximum.mp && after_growth.maximum.sp==reloaded.maximum.sp,"SQL level-up class attribute/resource mapping changed");
+        }
         const auto experience=eternity::game::Experience::load(definitions.catalogs.at("ExpDefs"));
         require(experience.bounds(1,1).previous==0 && experience.bounds(1,1).next>0,"Restored experience curve did not load");
+        struct AwardPorts final:eternity::game::ExperienceAwardPorts {
+            std::vector<char> order;eternity::net::Packet database,client;std::uint32_t amount=0,source=0;
+            void send_database(const eternity::net::Packet& p) override {order.push_back('B');database=p;}
+            void send_self(const eternity::net::Packet& p) override {order.push_back('C');client=p;}
+            void level_up(eternity::game::PlayerCore& p,eternity::game::BaseStatus&,std::uint32_t value,std::uint32_t origin) override {require(p.character.level==2,"SQL experience award did not update level before notification");order.push_back('L');amount=value;source=origin;}
+        } award_ports;
+        eternity::game::PlayerCore awarded;awarded.character=fighter;awarded.character.id=42;auto award_status=fighter_status;const auto threshold=experience.bounds(1,1).next;
+        require(threshold<INT32_MAX && experience.bounds(1,2).next>threshold+1,"SQL award fixture needs increasing early levels");
+        eternity::game::award_experience(awarded,award_status,statuses,experience,777,static_cast<std::int32_t>(threshold),{true,false,false,false,0},award_ports);
+        require(awarded.character.level==2 && awarded.character.strength==15 && awarded.stat_points==5 && awarded.skill_points==3 && awarded.experience==threshold && award_ports.order==std::vector<char>{'B','L'} && award_ports.amount==threshold && award_ports.source==777 && award_ports.database.size()==10 && award_ports.database[0]==2 && award_ports.database[1]==6 && award_ports.database[2]==42,"SQL-backed experience award/level-up/save ordering changed");
+        award_ports.order.clear();eternity::game::award_experience(awarded,award_status,statuses,experience,777,1,{true,false,false,false,0},award_ports);
+        require(awarded.character.level==2 && awarded.experience==threshold+1 && award_ports.order==std::vector<char>{'B','C'} && award_ports.client==eternity::net::Packet({7,2,1,0,0,0,0,0,0,0}),"SQL-backed experience award without level-up changed");
         const auto items=eternity::game::ItemDefinitions::load(definitions.catalogs.at("Items"));
         require(items.find(5,1) && items.find(30,1),"Restored weapon/gem definitions did not load");
         const auto mobs=eternity::game::MobAttackTemplates::load(definitions.catalogs.at("Mobs"));

@@ -62,6 +62,27 @@ BaseStatus StatusRules::base(const CharacterSummary& character) const {
     return status;
 }
 
+void StatusRules::level_up(PlayerCore& player,BaseStatus& status) const {
+    auto& c=player.character;if(c.level==UINT16_MAX) throw std::out_of_range("Invalid level-up wrap");
+    ++c.level;
+    const std::array<std::uint16_t*,6> stored={&c.strength,&c.recovery,&c.dexterity,&c.luck,&c.intelligence,&c.wisdom};
+    const std::array<std::int32_t*,6> live={&status.attributes.strength,&status.attributes.recovery,&status.attributes.dexterity,&status.attributes.luck,&status.attributes.intelligence,&status.attributes.wisdom};
+    if(c.job<6) {++*stored[c.job];*live[c.job]=sum(*live[c.job],1,0);if(c.job==1) status.maximum.hp+=5;else if(c.job==2) status.maximum.sp+=5;else if(c.job==5) status.maximum.mp+=5;}
+    if(c.grow>3) return;
+    player.stat_points=static_cast<std::uint16_t>(player.stat_points+(c.grow<2?5:c.grow==2?7:9));
+    player.skill_points=static_cast<std::uint16_t>(player.skill_points+(c.grow<2?3:c.grow==2?4:5));
+    const auto lookup=[&](unsigned level){return c.job<6 && level<=60?levels_[c.job][level]:levels_[0][60];};
+    const auto old=lookup(c.level-1U),next=lookup(c.level);
+    const auto update=[&](std::uint32_t current,std::uint32_t before,std::uint32_t after) {
+        if(c.grow<2) return current-before+after;
+        const double scale=c.grow==2?static_cast<double>(1.1F):1.5;
+        const auto removed=std::trunc(f32(std::bit_cast<std::int32_t>(current))-static_cast<double>(static_cast<float>(before))*scale);
+        const auto remaining=std::bit_cast<std::int32_t>(static_cast<std::uint32_t>(static_cast<std::int64_t>(removed)));
+        return static_cast<std::uint32_t>(integer(static_cast<double>(static_cast<float>(after))*scale+f32(remaining)));
+    };
+    status.maximum.hp=update(status.maximum.hp,old.hp,next.hp);status.maximum.sp=update(status.maximum.sp,old.sp,next.sp);status.maximum.mp=update(status.maximum.mp,old.mp,next.mp);
+}
+
 std::array<AttackValues,3> calculate_attack(std::uint16_t level,const Attributes& a,const AttackModifiers& modifiers) {
     // ps_game.exe CUser::SetAttack 00454280. Keep float spills and the CRT's 53-bit arithmetic.
     const auto dex=f32(a.dexterity),str=f32(a.strength),wis=f32(a.wisdom),intel=f32(a.intelligence),luck=f32(a.luck);

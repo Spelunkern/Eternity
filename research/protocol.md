@@ -2803,3 +2803,51 @@ new definition field. SQL integration verifies restored mob 1 Exp=704 and its
 same-level unmodified result of 844. This computes a candidate award; actual
 experience delivery, party/raid sharing and death reward coordination remain
 pending.
+
+
+`StatusRules::level_up` implements `CUser::LevelUpStatus` (`ps_game.exe`,
+`0048a5e0`) over persisted PlayerCore fields and the live BaseStatus. It advances
+the WORD level and class attribute, increments the corresponding runtime DWORD
+attribute with wrapping, then applies source class resource additions and
+mode-dependent point/resource changes. Modes 0/1 add 5 stat and 3 skill points;
+mode 2 adds 7/4, mode 3 adds 9/5. Invalid modes preserve the source's earlier
+level/class mutations but skip mode-specific updates. Scaled resource changes
+preserve the separate old-resource truncation, float spills and final DWORD
+conversion; they do not recompute the actor from scratch. Native code guards
+invalid level wrap instead of reading before the original status array.
+
+The stored/live source attribute order is STR, DEX, INT, WIS, REC, LUC
+(offsets 0170..017a / 1220..1234), unlike the native Attributes declaration.
+Class growth is fighter STR, defender REC, ranger DEX, archer LUC, mage INT,
+priest WIS; DB packet 0601 field order independently confirms the mapping.
+SQL composition checks all six classes against their reloaded base state.
+
+The 384-case complete-function fixture executes original CRT conversion without
+ports against a deterministic nonlinear six-class status table. All persisted
+and runtime projections match across jobs, modes, level boundaries, wrapped
+points/attributes and signed resource limits. SQL integration also advances the
+restored level-1 fighter and checks its updated state against the loaded table.
+Actor attack rebuilding, level notifications, party/guild notices, resource
+recovery and complete experience-award orchestration remain pending.
+
+
+`award_experience` reconstructs `CUser::AddExpFromUser` (`ps_game.exe`,
+`00458240`), using actual StatusRules and Experience owners. Zero input and
+characters already at the mode cap return before delivery. Optional skill
+modifiers use the original double factors and wrapped low-DWORD conversion;
+negative resulting gains clamp to zero. A normal seven-member party adds a
+second gain only on the path without level-up. Level-up tests the unsigned
+wrapped total, applies status changes until below the next threshold or capped,
+then emits DB 0602 before the required LevelUp owner. At cap, stored experience
+is the previous-level threshold and the reported amount is its wrapped
+difference from the old experience. Ordinary gain emits DB 0602 then client
+0207 with gain and party extra.
+
+The 512-case fixture executes the complete original coordinator, real
+LevelUpStatus, curve lookup and SendDBExp. Only LevelUp notification and DB/client
+transport are ports. It compares final core/base fields and exact packet/callback
+order across modes, caps, multi-level gains, bonuses, bypass, seven-member
+parties and signed/DWORD boundaries. SQL composition uses restored curves and
+status definitions for both a level transition and an ordinary gain. Full
+LevelUp notification, attack/resource updates, party/guild/game-log delivery and
+production death reward wiring remain required.

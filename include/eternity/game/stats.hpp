@@ -12,6 +12,8 @@ public:
     static StatusRules load(const storage::ResultSet& definitions);
     // Initial phase only: equipment, faction blessing, passives, effects and billing follow this.
     BaseStatus base(const CharacterSummary& character) const;
+    // CUser::LevelUpStatus 0048a5e0: mutate persisted and live base state.
+    void level_up(PlayerCore&,BaseStatus&) const;
 private:
     std::array<std::array<PlayerResources,61>,6> levels_{};
 };
