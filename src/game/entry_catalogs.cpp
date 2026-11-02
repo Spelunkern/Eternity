@@ -28,6 +28,11 @@ void SocialCatalog::notify_online(const Lookup& lookup,const std::function<void(
     if(!lookup || !send) throw std::invalid_argument("Missing social world lookup/transport");
     for(const auto& value:friends_) if(value.id && lookup(value.id)) {net::Packet p{7,0x22};append(p,character_);p.push_back(1);send(value.id,std::move(p));}
 }
+void SocialCatalog::notify_offline(const Lookup& lookup,const std::function<void(std::uint32_t,net::Packet)>& send) const {
+    // ps_game.exe ReleaseFriend 004757a0; no mutual-friend check, clear or zone filter.
+    if(!lookup || !send) throw std::invalid_argument("Missing social world lookup/transport");
+    for(const auto& value:friends_) if(value.id && lookup(value.id)) {net::Packet p{7,0x22};append(p,character_);p.push_back(0);send(value.id,std::move(p));}
+}
 std::vector<net::Packet> SocialCatalog::packets(const Lookup& lookup) const {
     std::vector<net::Packet> out;send_packets(lookup,[&](net::Packet p){out.push_back(std::move(p));});return out;
 }

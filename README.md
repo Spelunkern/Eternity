@@ -78,6 +78,8 @@ reconstructed. Waiting/zone admission connects native actor membership, shape/sp
 weather and movement/effect initialization; complete world delivery, combat and TCP
 world entry remain pending.
 World ID/name indexes preserve original duplicate and zone/logout lookup rules.
+World entry/leave coordination includes original log packets, offline money checks
+and social departure notices; full guild/party/admin services remain pending.
 Zone selection/reuse and access rules are reconstructed; world object initialization
 and zone queue services remain required dependencies.
 Door/region templates, door operation and weather transitions are reconstructed.

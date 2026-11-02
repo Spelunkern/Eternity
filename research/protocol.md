@@ -2067,3 +2067,38 @@ OS locks and CUser EnterWorld/LeaveWorld bodies are ports. Native composition
 indexes the actual loaded actor during WaitUser and observes selection/wait/zone
 transitions and pending logout before removal. Full EnterWorld/LeaveWorld game
 services, guild/social ownership, logging and live TCP routing remain unfinished.
+
+`enter_world`/`leave_world` reconstruct `ps_game.exe` `CUser::EnterWorld`
+(`0044a820`) and `LeaveWorld` (`0044aad0`). Permission <=10 requires successful
+administrator registration or closes reason 9 before guild-list/log delivery.
+Entry sends the guild list, a 113-byte `0306` log and, for auto-character zero,
+consumes offline money. An unsigned increase of at least 10000 emits `030d` and
+manager `080e` severity 1. Signed CUser+`5814` <=3 emits `030f` and a new-user
+notice. Required services preserve the source's gameplay/admin operations.
+
+Leave orders normal/raid departure, guild release, friend release and dead-index
+removal, followed by administrator end/not-answered/leave and vehicle cancellation
+(mode 2 versus other nonzero modes). It sends a 108-byte `0307` log. Reconnect flag
+exactly 1 skips offline-money storage and subsequent notices. Otherwise, storage
+precedes the check for an unsigned increase of at least 1000000000 over initial
+money (`030e`/severity 0), then signed CUser+`5814` <=3 emits `0310`/new-user notice.
+Initial money is the final DWORD of `0307`, after its level WORD; bank money is
+the source DWORD at CUser+`148`. Both diagnostic logs are 82 bytes.
+
+The existing `SetGameLogMain` serializer writes real headers and samples local
+calendar separately for each full log. New-user logs reuse the first header,
+including its calendar, rather than resampling. Manager packets have original
+259-byte framing, format literals and severity; bytes after their NUL are
+undefined in the original and normalized to zero. `OfflineMoney` overwrites by
+character ID and consumes an entry on take, following `GetOffCharMoney`
+(`0040d8c0`) / `AddOffCharMoney` (`0040d920`). `SocialCatalog::notify_offline`
+implements `ReleaseFriend` (`004757a0`): skip zero IDs, notify every present peer
+with `2207` status 0, preserving duplicate/one-way friends and the cached list.
+
+The 1,024-sequence fixture executes three original owners per case, real common
+log-header code and all envelope/condition branches. Gameplay/admin, calendar,
+offline-money hash storage, CRT formatting and transport are ports; only undefined
+string tails are normalized. Native composition joins actual loaded-actor world
+indexing, guild-list serialization, lifecycle logs, offline money and social exit
+after index removal. Full party/guild/admin ownership, production log transport
+and live TCP world entry remain unfinished.

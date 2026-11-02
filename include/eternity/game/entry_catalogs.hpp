@@ -25,6 +25,7 @@ public:
     // Lookup/sends must not mutate these lists. InitFriend notifies every present
     // nonzero friend, whereas 2201 marks online only with a mutual relationship.
     void notify_online(const Lookup&,const std::function<void(std::uint32_t,net::Packet)>&) const;
+    void notify_offline(const Lookup&,const std::function<void(std::uint32_t,net::Packet)>&) const;
     void send_packets(const Lookup&,const std::function<void(net::Packet)>&) const;
     std::vector<net::Packet> packets(const Lookup&) const;
 private:
