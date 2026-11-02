@@ -1988,3 +1988,29 @@ UI/history/stored-point replica packets into game caches and client packets, plu
 ASCII friend/block rows into original layouts. This does not provide the complete
 live TCP owner, global guild loader, social persistence or legacy wire text
 encoding; those remain required for the original-client service goal.
+
+The native `WorldServer` now creates one `WorldApplication` after authenticated
+handoff, retaining its immutable account/session/connection identity. A worker
+strand serializes factory/open/receive/close and destruction. Disconnect cancels
+queued input and releases the registry immediately; application cleanup waits for
+in-flight work. A work guard keeps graceful IO shutdown alive until cleanup ends.
+The existing SQL roster/creation callbacks use this owner through an adapter.
+`WorldChannel` provides weak asynchronous plaintext delivery, disconnect and
+ordered outgoing AES/XOR transitions; input remains AES. Retained ports become
+inert after close. Application exceptions, including cleanup failures, increment
+an observable counter without escaping worker threads.
+
+Ghidra identifies the player disconnect boundary as `ps_game.exe`
+`CServer::OnDisconnect` (`00406430`), which calls `CWorld::LeaveUser`
+(`0040ca20`). The new native ownership boundary is infrastructure for that
+lifecycle, not a reconstruction of the complete game leave/save path.
+`CServer::Start` (`00405a30`) calls `SAgentParam::SetParamSender` (`004d87a0`)
+with `0xc0000` for accepted sockets; the native bounded framed-output queue uses
+this 768 KiB default instead of its previous arbitrary 16 KiB cap. This records
+the original configured threshold, without asserting identical internal buffer
+accounting. Outgoing modes follow `CUserCrypto::Enc` (`00458080`). Native TCP
+tests verify independent state, early commands, external delivery, mode ordering,
+remote close/relogin/shutdown during blocked work, failure cleanup and catalog
+bursts above 16 KiB. They use a synthetic application and do not enable playable
+0104 selection. Global world ownership, account save/load exclusion on relogin,
+full leave/save integration and live gameplay routing remain required.

@@ -27,19 +27,19 @@ struct WorldServer::Impl : std::enable_shared_from_this<WorldServer::Impl> {
     WorldServerOptions options;
     std::shared_ptr<session::Registry> sessions;
     std::shared_ptr<const WorldXor> world_xor = random_world_xor();
-    LoadCharacters load;
-    DispatchCharacter dispatch;
+    WorldApplicationFactory factory;
+    std::atomic_uint64_t application_failures{0};
     asio::thread_pool database;
     std::unordered_map<std::uint64_t,std::shared_ptr<Connection>> connections;
     std::uint64_t next_id = 1;
     std::uint16_t bound_port = 0;
     bool running = false,started = false,stopped = false;
     Impl(asio::io_context& io,WorldServerOptions config,std::shared_ptr<session::Registry> registry,
-        LoadCharacters loader,DispatchCharacter dispatcher)
+        WorldApplicationFactory application_factory)
         : strand(asio::make_strand(io)),acceptor(strand),options(std::move(config)),sessions(std::move(registry)),
-          load(std::move(loader)),dispatch(std::move(dispatcher)),database(options.database_workers) {
-        if(!sessions || !load || options.realm>=254 || options.maximum_connections==0 || options.database_workers==0)
-            throw std::invalid_argument("World server requires session registry, loader and bounded worker limits");
+          factory(std::move(application_factory)),database(options.database_workers) {
+        if(!sessions || !factory || options.realm>=254 || options.maximum_connections==0 || options.database_workers==0 || options.maximum_queued_bytes<4)
+            throw std::invalid_argument("World server requires session registry, application factory and bounded worker limits");
         const auto address=asio::ip::make_address(options.address);
         if(!address.is_v4()) throw std::invalid_argument("Original game endpoints use IPv4");
         const tcp::endpoint endpoint(address,options.port);
@@ -58,12 +58,16 @@ struct WorldServer::Impl::Connection : std::enable_shared_from_this<Connection> 
     std::array<std::uint8_t,8192> input{};
     std::deque<std::shared_ptr<Packet>> output;
     std::deque<Packet> pending;
-    std::shared_ptr<game::CharacterRoster> roster = std::make_shared<game::CharacterRoster>();
+    asio::strand<asio::thread_pool::executor_type> worker;
+    asio::executor_work_guard<asio::any_io_executor> lifetime;
+    std::unique_ptr<WorldApplication> application; // Worker strand only.
+    std::size_t maximum_queued_bytes;
     std::size_t queued_bytes = 0;
     std::atomic_bool closed{false};
     bool working = false,loaded = false;
     Connection(tcp::socket peer,const std::shared_ptr<Impl>& server,std::uint64_t identity)
-        : socket(std::move(peer)),owner(server),id(identity) {}
+        : socket(std::move(peer)),owner(server),id(identity),worker(asio::make_strand(server->database)),
+          lifetime(socket.get_executor()),maximum_queued_bytes(server->options.maximum_queued_bytes) {}
     void start() {
         const auto server=owner.lock();if(!server) return close();
         const auto weak=weak_from_this();const auto executor=socket.get_executor();
@@ -79,11 +83,18 @@ struct WorldServer::Impl::Connection : std::enable_shared_from_this<Connection> 
         asio::error_code ignored;socket.cancel(ignored);socket.shutdown(tcp::socket::shutdown_both,ignored);socket.close(ignored);
         if(auto server=owner.lock()) server->connections.erase(id);
         output.clear();pending.clear();queued_bytes=0;
+        asio::post(worker,[self=shared_from_this()] {
+            if(self->application) {
+                try {self->application->close();} catch(...) {self->application_failed();}
+                self->application.reset();
+            }
+            self->lifetime.reset();
+        });
     }
     void send(Packet payload) {
         if(closed) return;
         auto packet=std::make_shared<Packet>(frame(payload));
-        if(queued_bytes+packet->size()>16384) return close();
+        if(packet->size()>maximum_queued_bytes-queued_bytes) return close();
         const bool idle=output.empty();queued_bytes+=packet->size();output.push_back(std::move(packet));if(idle) write();
     }
     void write() {
@@ -95,6 +106,36 @@ struct WorldServer::Impl::Connection : std::enable_shared_from_this<Connection> 
             self->queued_bytes-=bytes->size();self->output.pop_front();self->write();
         });
     }
+    void application_failed() {
+        if(auto server=owner.lock()) ++server->application_failures;
+    }
+    WorldChannel channel() {
+        const auto weak=weak_from_this();const auto executor=socket.get_executor();
+        WorldChannel result;
+        result.send=[weak,executor](Packet packet) {
+            asio::post(executor,[weak,packet=std::move(packet)]() mutable {
+                const auto self=weak.lock();if(!self || self->closed) return;
+                try {self->send(self->protocol->outgoing(std::move(packet)));}
+                catch(...) {self->close();}
+            });
+        };
+        result.enter_world=[weak,executor] {
+            asio::post(executor,[weak] {
+                const auto self=weak.lock();if(!self || self->closed) return;
+                try {self->protocol->enter_world();} catch(...) {self->close();}
+            });
+        };
+        result.enter_character_selection=[weak,executor] {
+            asio::post(executor,[weak] {
+                const auto self=weak.lock();if(!self || self->closed) return;
+                try {self->protocol->enter_character_selection();} catch(...) {self->close();}
+            });
+        };
+        result.disconnect=[weak,executor] {
+            asio::post(executor,[weak] {if(auto self=weak.lock()) self->close();});
+        };
+        return result;
+    }
     void schedule() {
         if(closed || working || !protocol->owner() || (loaded && pending.empty())) return;
         const auto server=owner.lock();if(!server) return close();
@@ -102,25 +143,22 @@ struct WorldServer::Impl::Connection : std::enable_shared_from_this<Connection> 
         const auto account=*protocol->owner();const bool initial=!loaded;
         Packet request;if(!initial) {request=std::move(pending.front());pending.pop_front();}
         const auto executor=socket.get_executor();const auto weak=weak_from_this();
-        asio::post(server->database,[weak,executor,account,initial,roster=roster,request=std::move(request),load=server->load,dispatch=server->dispatch] {
-            const auto current=weak.lock();if(!current || current->closed) return;
-            bool failed=false;game::CharacterReply reply;
+        asio::post(worker,[self=shared_from_this(),executor,weak,account,initial,
+                          request=std::move(request),factory=server->factory] {
+            if(self->closed) return;
+            bool failed=false;
             try {
-                if(initial) {*roster=load(account);reply.packets=game::character_list(*roster);}
-                else if(dispatch) reply=dispatch(account,*roster,request);
-                else failed=true; // Unreconstructed commands must not report fabricated success.
-            } catch(const std::exception&) {failed=true;}
-            asio::post(executor,[weak,initial,failed,reply=std::move(reply)]() mutable {
+                if(initial) {
+                    self->application=factory(account,self->channel());
+                    if(!self->application) throw std::runtime_error("World application factory returned null");
+                    self->application->open();
+                } else self->application->receive(request);
+            } catch(...) {self->application_failed();failed=true;}
+            asio::post(executor,[weak,initial,failed] {
                 const auto connection=weak.lock();if(!connection || connection->closed) return;
-                if(failed || reply.close) return connection->close();
+                if(failed) return connection->close();
                 connection->working=false;if(initial) connection->loaded=true;
-                try {
-                    for(auto& packet:reply.packets) {
-                        connection->send(connection->protocol->outgoing(std::move(packet)));
-                        if(connection->closed) return;
-                    }
-                    connection->schedule();
-                } catch(const std::exception&) {connection->close();}
+                connection->schedule();
             });
         });
     }
@@ -164,9 +202,39 @@ void WorldServer::Impl::stop() {
     stopped=true;running=false;asio::error_code ignored;acceptor.cancel(ignored);acceptor.close(ignored);
     while(!connections.empty()) {auto connection=connections.begin()->second;connection->close();}
 }
+namespace {
+class RosterApplication final : public WorldApplication {
+public:
+    RosterApplication(session::LoginSession account,WorldChannel channel,LoadCharacters load,DispatchCharacter dispatch)
+        : account_(std::move(account)),channel_(std::move(channel)),load_(std::move(load)),dispatch_(std::move(dispatch)) {}
+    void open() override {roster_=load_(account_);for(auto& packet:game::character_list(roster_)) channel_.send(std::move(packet));}
+    void receive(const Packet& packet) override {
+        if(!dispatch_) return channel_.disconnect();
+        auto reply=dispatch_(account_,roster_,packet);
+        if(reply.close) return channel_.disconnect();
+        for(auto& response:reply.packets) channel_.send(std::move(response));
+    }
+    void close() override {roster_={};}
+private:
+    session::LoginSession account_;
+    WorldChannel channel_;
+    LoadCharacters load_;
+    DispatchCharacter dispatch_;
+    game::CharacterRoster roster_;
+};
+WorldApplicationFactory roster_factory(LoadCharacters load,DispatchCharacter dispatch) {
+    if(!load) throw std::invalid_argument("World roster requires a loader");
+    return [load=std::move(load),dispatch=std::move(dispatch)](const session::LoginSession& account,WorldChannel channel) {
+        return std::make_unique<RosterApplication>(account,std::move(channel),load,dispatch);
+    };
+}
+}
+WorldServer::WorldServer(asio::io_context& io,WorldServerOptions options,std::shared_ptr<session::Registry> sessions,
+    WorldApplicationFactory factory)
+    : impl_(std::make_shared<Impl>(io,std::move(options),std::move(sessions),std::move(factory))) {}
 WorldServer::WorldServer(asio::io_context& io,WorldServerOptions options,std::shared_ptr<session::Registry> sessions,
     LoadCharacters load,DispatchCharacter dispatch)
-    : impl_(std::make_shared<Impl>(io,std::move(options),std::move(sessions),std::move(load),std::move(dispatch))) {}
+    : WorldServer(io,std::move(options),std::move(sessions),roster_factory(std::move(load),std::move(dispatch))) {}
 WorldServer::~WorldServer() {stop();impl_->database.join();}
 void WorldServer::start() {asio::dispatch(impl_->strand,[server=impl_] {
     if(server->started || server->stopped) return;
@@ -174,4 +242,5 @@ void WorldServer::start() {asio::dispatch(impl_->strand,[server=impl_] {
 });}
 void WorldServer::stop() {asio::dispatch(impl_->strand,[server=impl_] {server->stop();});}
 std::uint16_t WorldServer::port() const {return impl_->bound_port;}
+std::uint64_t WorldServer::application_failures() const noexcept {return impl_->application_failures.load();}
 }
