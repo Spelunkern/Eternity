@@ -2374,5 +2374,37 @@ AI/random/clock calls, overflow/NaN behavior and respawn/zone bindings. SQL,
 allocation, verified path reset implementations, AI providers and OS are ports.
 Native tests also clear actual allocated path/trail state. SQL integration loads
 the recovered distribution and verifies the first mob's runtime projection.
-Zone mob ownership, population placement, linked bosses, obelisks and the complete
+Population placement/pooling, linked bosses, obelisks and the complete
 world application are still required before production TCP world entry.
+
+
+Mob zone/cell ownership follows `CZone::AddMob` (`ps_game.exe`, `00416700`),
+`RemoveMob` (`00416790`), `FindMob` (`00416800`), `EnterMob` (`00416860`),
+`LeaveMob` (`00416990`) and `CCell::FindMob` (`00423680`). Global and cell lists
+retain FIFO ordering independently of the first-key ID index. Removing a duplicate
+ID erases the index key even while another object with that ID remains linked.
+Entry copies respawn position, binds both lists/indexes, sends `0601` appearance 1,
+then invokes the required Lua `Init` callback when enabled. Leave unlinks silently
+without recycling. Unsafe negative/out-of-grid cell indexes are rejected natively.
+
+Cell snapshots follow `CCell::SendCellInfoEnter` (`00423aa0`) and
+`SendCellInfoLeave` (`00424130`). Entry sends `0601` appearance 0 and skips effective
+FSM status 2; an active empty stack yields status 0. Leave sends every `0602`,
+including dead mobs. Shared cell cursors preserve reentrant lookup effects.
+Packets contain X/Z, without Y. The 128-registry/2,048-operation fixture executes
+original tree insertion/erasure/lookup, intrusive lists and whole-cell snapshots;
+only allocation, locks, Lua and transport are ports.
+
+Movement follows `CZone::MoveMob` (`004169d0`), `SendMoveMob` (`0041f860`) and
+`PSendView` (`00421120`). Transition sends observe the old public cell/position
+after membership moves to the destination cell. The original view difference
+requires exclusion on both axes, so purely horizontal transitions announce no
+appearance/removal cells. Position/direction and the sampled clock update before
+prioritized `0603` delivery. Float spills differ between normalization and the
+separate planar range calculation. The 1,536 independent movements and 144 steps
+across 12 sustained paths compare byte-for-byte deliveries, binding order,
+allocation failures, detached zone pointers, boundaries and NaN behavior against
+original execution. The source cell operations, geometry and math execute; the
+zone ID index is a port in this movement fixture and verified separately above.
+The registry is owned by `RuntimeZone`; actual population/pool/AI initialization
+and production world transport remain required integration work.

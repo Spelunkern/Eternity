@@ -2,6 +2,7 @@
 #include "eternity/game/map_config.hpp"
 #include "eternity/game/zone_environment.hpp"
 #include "eternity/game/zone_npcs.hpp"
+#include "eternity/game/zone_mobs.hpp"
 #include "eternity/game/corpses.hpp"
 #include "eternity/game/ground_items.hpp"
 #include <memory>
@@ -26,6 +27,7 @@ struct RuntimeZone {
     const ConfiguredMap* map=nullptr;
     std::unique_ptr<ZoneUsers> users;
     std::unique_ptr<ZoneNpcs> npcs;
+    std::unique_ptr<ZoneMobs> mobs;
     std::unique_ptr<ZoneCorpses> corpses;
     std::unique_ptr<ZoneItems> items;
     std::optional<ZoneEnvironment> environment;

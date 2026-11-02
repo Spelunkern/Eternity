@@ -30,6 +30,9 @@ struct MobRuntime {
     std::uint32_t id=0;const MobRuntimeTemplate* definition=nullptr;std::uint16_t type=0;
     ZoneMobs* zone=nullptr;std::optional<CellCoordinates> cell;UserPosition position,respawn_position,exit_position,selected_position;
     std::uint32_t hp=0;std::uint16_t sp=0,mp=0;std::int32_t dexterity=0,wisdom=0,luck=0,attribute=0;
+    // CObject stack FSM: inactive uses status; active/empty means zero.
+    // State handlers are owned by the actual AI provider. Init retains this stack.
+    std::optional<std::vector<std::int32_t>> state_stack;
     std::int32_t status=0,target_kind=0;std::uint32_t target_id=0;
     std::array<std::int32_t,3> attack_disabled{};std::array<AttackValues,3> attack{};std::array<AttackAdd,3> additions{};
     std::int32_t move_speed=2,attack_speed=3,current_attack=0;std::array<std::uint32_t,3> attack_times{};
