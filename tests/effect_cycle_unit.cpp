@@ -50,7 +50,7 @@ struct Harness final:EffectRemovalWorld,EffectObserver {
 };
 int main(int argc,char** argv) {
     try {
-        require(argc==2,"Expected expiry cycle oracle file");
+        require(argc==3,"Expected expiry cycle and load filter oracle files");
         require(effect_removed_packet(0x78563412)==net::Packet{0x0e,5,0x12,0x34,0x56,0x78},"Effect removal DWORD packet changed");
         require(party_effect_removed_packet(0x78563412,0x2345,3,true)==net::Packet{0x10,0x0c,0x12,0x34,0x56,0x78,0x45,0x23,3},"Raid effect removal packet changed");
         std::ifstream input(argv[1]);require(input.good(),"Cannot open expiry cycle vectors");std::string line;unsigned int checked=0;
@@ -111,6 +111,20 @@ int main(int argc,char** argv) {
         EffectCycle failed(9001);Harness allocation(failed,unused);allocation.allocation_failure=true;
         failed.restore({{10,1,1}},registry,1,0,10000,allocation);
         require(failed.size()==0 && allocation.trace.empty(),"Failed skill allocation changed persistence or attached an effect");
+        std::ifstream filter_input(argv[2]);require(filter_input.good(),"Cannot open persisted effect filter oracle");unsigned int filtered=0;
+        while(std::getline(filter_input,line)) {
+            if(line.empty() || line[0]=='#') continue;
+            std::istringstream row(line);unsigned int available=0,effect=0,detail=0,shape=0,disposition=0;
+            require(static_cast<bool>(row>>available>>effect>>detail>>shape>>disposition),"Malformed effect load filter vector");
+            auto data=table;data.rows.clear();
+            if(available) {storage::Row values(data.columns.size(),storage::Cell{"0"});values[0]="321";values[1]="1";values[2]=std::to_string(detail);values[3]=std::to_string(effect);values[19]=std::to_string(shape);values[22]="100";data.rows.push_back(std::move(values));}
+            const auto skills=SkillDefinitions::load(data);EffectCycle actor(9001);Harness observer(actor,unused);
+            actor.restore({{321,1,30}},skills,1,0,10000,observer);
+            require(actor.size()==(disposition==1 && (effect==3 || effect==4)?1U:0U),"Original load filter attached a different effect");
+            require(observer.trace==(disposition==2?std::vector<std::array<std::int64_t,4>>{{1,321,1,0}}:std::vector<std::array<std::int64_t,4>>{}),"Original load filter replica deletion differs");
+            ++filtered;
+        }
+        require(filtered==84,"Effect load filter coverage changed");
         return 0;
     }catch(const std::exception& error){std::cerr<<error.what()<<'\n';return 1;}
 }

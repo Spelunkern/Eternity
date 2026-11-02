@@ -31,6 +31,12 @@ void EffectCycle::restore(const std::vector<PersistedEffect>& effects,const Skil
     std::uint32_t disconnected,std::uint32_t tick,EffectObserver& observer) {
     // AddApplySkill 00487ce0 processes each database row in arrival order.
     for(const auto& effect:effects) {
+        // PacketUserDBSetInfo 0046d780 case 0505 filters transient effects before AddApplySkill.
+        const auto* definition=definitions.find(effect.skill_id,effect.level);
+        if(definition && (definition->detail==74 || definition->detail==75 || definition->detail==76 ||
+            (definition->detail==90 && (definition->change_type==100 || definition->change_type==101 || definition->change_type==102)))) {
+            observer.erase_persisted(effect);continue;
+        }
         const auto restored=restore_effects({effect},definitions,map,disconnected,tick);
         for(const auto& expired:restored.erase) observer.erase_persisted(expired);
         for(const auto& timer:restored.active) if(const auto id=observer.allocate_id()) append(*id,timer,*definitions.find(effect.skill_id,effect.level));

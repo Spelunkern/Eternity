@@ -287,3 +287,11 @@ item `strcpy` leaves unused bytes after the craft NUL unspecified; native packet
 zero those bytes and oracle comparison normalizes only that padding. Typed quest
 runtime restoration, complete initialization sequencing, remaining entry packets
 and live character selection integration are still pending.
+
+`PacketUserDBSetInfo` (`0046d780`, case `0505`) also filters persisted effects
+before `AddApplySkill`: details 74/75/76 and detail 90 with ChangeType exactly
+100/101/102 request replica deletion and never allocate a runtime skill. This
+filter precedes effect-category and map checks; a missing definition is ignored.
+`EffectCycle::restore` now preserves that outer loading step.
+`tools/effect_load_filter_oracle.py` verifies 84 original branch executions,
+including exact WORD ChangeType comparisons and non-buff/debuff definitions.
