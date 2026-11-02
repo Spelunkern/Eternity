@@ -55,7 +55,8 @@ same transaction. Quick slots, save points and market watch lists retain origina
 save/error behavior; difficulty unlocks write separately before character saving.
 Product and stored-point receipts preserve SQL transactions and commit acknowledgments.
 Point purchases preserve separate item/charge commits and original error behavior.
-Gifts, guild transfers and scheduling remain pending.
+Recovery journals retain original file output and save markers, including legacy SQL
+signatures. Gifts, the complete save/retry owner, guild transfers and scheduling remain pending.
 Actor money credits preserve unsigned limits and ordered DB-status/client/log
 messages, with money-item release to the pool. Periodic money saving and shared
 loot dispatch still require integration.

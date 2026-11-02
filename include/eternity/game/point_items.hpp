@@ -36,6 +36,8 @@ public:
     std::uint32_t account_id() const noexcept {return inventory_.account_id();}
     // Full SaveSuccess clears product flags and recycles state-3 stored items.
     void point_save_success();
+    // SaveToFile clears pending product flags, retaining stored-point receipts.
+    void recovery_save_success() noexcept;
 private:
     InventoryReplica& inventory_;PointItemPool& pool_;
     std::array<CachedProductItem,240> products_{};

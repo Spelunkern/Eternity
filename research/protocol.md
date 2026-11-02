@@ -1680,5 +1680,51 @@ Disposable SQL preserves original purchase/account procedure logic while
 redirecting the account procedure dependency into the scratch catalog. It proves
 independent commits, later character rollback/retry, insufficient-balance rollback,
 late item errors, mixed-queue continuation, signed DWORD costs and history reload.
-The complete user/DB-job owner, gifts, retry/file saving, scheduling and TCP
-purchase gameplay remain pending.
+The complete user/DB-job owner, gifts, save/retry orchestration, scheduling and
+TCP purchase gameplay remain pending.
+
+
+`capture_character_recovery` reconstructs complete `ps_dbAgent.exe`
+`DBCharacter::SaveToFile` (`00424ce0..00425e6f`) and its max-grow helper
+(`00425ee0`). The emergency path has distinct SQL and acknowledgment behavior.
+It advances cached maximum grow again using the original eligibility rules,
+then writes an older 29-argument core envelope. WORD stats/resources/map/direction
+are zero-extended, kills are unsigned DWORDs, and kill/dead-level arguments are
+absent. Stored bank money uses a separate procedure and its low DWORD. Body
+changes clear their flag when captured.
+
+Pending products produce the original 14-argument envelope, omitting six gems
+and craft, then clear their state-3 flag. Stored-point receipts retain the full
+SQL envelope and remain state 3 without being freed. The recovered live core and
+product procedures reject those older file envelopes. Native output preserves
+those differences; replay requires handling the recovered legacy signatures.
+
+Inventory/bank deletion journals are consumed in FIFO order, with the first
+40 UIDs batched and later UIDs emitted singly. Inventory inserts unconditionally
+emit a global UID delete (ChkID=0) before the insert; bank inserts do not. Every
+occupied item/bank slot clears its flag, including states that emit no statement.
+Learned skill saved-count/reset markers advance. Applied skills are fully
+replaced, including remaining-time zero entries that live SQL saving skips.
+Quest deletion journals are consumed here, unlike the dead cleanup branch of
+normal SaveSuccess; active flags become 2 and finished flags 0. Quick slots are
+always emitted. Save-point flags remain pending. Market state, purchase history
+and queued purchase copies are untouched.
+
+`CharacterRecoveryFile` appends records under its file mutex, flushing each line
+before proceeding and retaining original begin/end metadata and CRLF boundaries. `SLog::PrintFileText`
+(`00432f30`) flushes each line and returns false for an unavailable file; the
+original SaveToFile ignores that result and still returns 1 after changing its
+cache markers. Native results expose both legacy success and actual persistence,
+including an unavailable-file case. File recovery does not imply a SQL commit.
+
+A 32-case fixture executes the complete original function twice per case,
+comparing 2,172 statements and complete affected marker/journal state under
+successful and failed log output. It covers signed-width differences, invalid
+packed timestamps, item UID batches, duplicate/zero UIDs, resets, zero effects,
+quest transitions, receipts, quick/save points and repeat captures. Filesystem
+checks verify failed opens, repeated appends and concurrent noninterleaved
+records. Disposable SQL confirms legacy envelope failures and replays compatible
+statements with rollback/commit, including global UID replacement, consumed
+quests, zero-time effects, truncated stored money, stored-point delivery and UI.
+The complete SaveCharacter transaction, retry/file trigger policy, user/DB-job
+owner and periodic scheduling still require integration.

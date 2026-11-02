@@ -47,7 +47,7 @@ def run(command, build_directory="build"):
                       "usp_Create_Char_SavePoint", "usp_Save_Char_SavePoint", "usp_Save_Char_ConcernMarket_Add_E",
                       "usp_Save_Char_ConcernMarket_Del_E", "usp_Save_Char_Maxgrow_E",
                       "usp_Read_Char_Product_Item_E", "usp_Save_Char_Product_Item_E", "usp_Save_User_StoredPointItems",
-                      "usp_Save_User_BuyPointItems_NCash")
+                      "usp_Save_User_BuyPointItems_NCash", "usp_Save_User_StoredMoney_E")
         names = ",".join(literal(procedure) for procedure in procedures)
         modules = sql("""SELECT p.name,m.definition FROM sys.sql_modules m
             JOIN sys.procedures p ON p.object_id=m.object_id
@@ -106,6 +106,7 @@ def run(command, build_directory="build"):
         subprocess.run(command + [f"{build_directory}/account-state-sql-integration", name], check=True)
         subprocess.run(command + [f"{build_directory}/point-items-sql-integration", name], check=True)
         subprocess.run(command + [f"{build_directory}/purchases-sql-integration", name], check=True)
+        subprocess.run(command + [f"{build_directory}/character-recovery-sql-integration", name], check=True)
     finally:
         # Only the fresh, randomly named fixture catalog is removed.
         sql(f"ALTER DATABASE {catalog} SET SINGLE_USER WITH ROLLBACK IMMEDIATE; DROP DATABASE {catalog};")

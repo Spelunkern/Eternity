@@ -36,6 +36,8 @@ public:
     // SaveSuccess 00409560 sets active flags to 2 and finished flags to 0.
     // Its original dead branch leaves the deletion journal intact after commit.
     void save_success() noexcept;
+    // SaveToFile consumes deletion journals, unlike the normal SaveSuccess bug.
+    void recovery_save_success() noexcept {deleted_.clear();save_success();}
 private:
     using Item=std::unique_ptr<CachedQuest>;
     void journal(const Item& item) {if(item->save_type!=1) deleted_.push_back(item->id);}

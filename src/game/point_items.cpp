@@ -57,6 +57,7 @@ std::string timestamp(std::uint32_t value) {char buffer[32];std::snprintf(buffer
 std::optional<net::Packet> PointItemReplica::product_packet() const {auto result=packet(0x40c,account_id());for(std::size_t i=0;i<products_.size();++i) {const auto& item=products_[i];if(item.count) result.insert(result.end(),{static_cast<std::uint8_t>(i),item.type,item.type_id,item.count});}return finish(std::move(result));}
 std::optional<net::Packet> PointItemReplica::stored_packet() const {auto result=packet(0xe04,account_id());for(std::size_t i=0;i<stored_.size();++i) if(stored_[i]) {const auto& item=stored_[i]->receipt;result.insert(result.end(),{static_cast<std::uint8_t>(i),item.type,item.type_id,item.count});}return finish(std::move(result));}
 void PointItemReplica::point_save_success() {for(auto& product:products_) product.save_type=0;for(auto& item:stored_) if(item && item->save_type==3) pool_.release(std::move(item));}
+void PointItemReplica::recovery_save_success() noexcept {for(auto& product:products_) if(product.save_type==3) product.save_type=0;}
 std::vector<PointSaveOperation> point_save_plan(const PointItemReplica& replica,std::uint8_t server,std::uint32_t character) {
     if(!character || character>INT32_MAX || !replica.account_id() || replica.account_id()>INT32_MAX) throw std::invalid_argument("Invalid point item save owner");
     std::vector<PointSaveOperation> result;
