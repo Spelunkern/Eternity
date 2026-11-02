@@ -1,5 +1,6 @@
 #include "equipment_fixture.hpp"
 #include "eternity/game/actor.hpp"
+#include <algorithm>
 #include <bit>
 #include <fstream>
 #include <iostream>
@@ -37,17 +38,18 @@ struct World final:DuelWorld {
     std::array<Actor*,2> actors{};std::array<DuelDropItem,9> items;
     std::vector<std::string> trace;std::vector<std::int32_t> randoms;
     bool available=false,allocate=false;int year=2026;std::size_t random_index=0;
+    ZoneItems* ground=nullptr;
     unsigned int index(const Actor& actor) {require(actors[0]==&actor || actors[1]==&actor,"Unknown duel actor");return actors[0]==&actor?0:1;}
     Actor* find_duel_user(Actor& requester,std::uint32_t id) override {
         require(&requester==actors[0],"Unexpected duel requester");trace.push_back("Q"+std::to_string(id));
         return id==9001?actors[0]:id==9002 && available?actors[1]:nullptr;
     }
-    UserPosition duel_position(const Actor& actor) override {const auto i=static_cast<float>(index(actor));return {10000.25F+i,-30.5F+i,-9000.75F+i};}
+    UserPosition duel_position(const Actor& actor) override {const auto i=static_cast<float>(index(actor));return ground?UserPosition{10+i,20,10}:UserPosition{10000.25F+i,-30.5F+i,-9000.75F+i};}
     std::int32_t drop_random() override {const auto value=randoms.at(random_index++);trace.push_back("R"+std::to_string(value));return value;}
     DuelDropItem* allocate_drop_item() override {trace.push_back("A"+std::to_string(allocate));return allocate?&items[0]:nullptr;}
     bool enter_duel_item(Actor& owner,DuelDropItem& drop,bool notify) override {
         std::string event="E"+std::to_string(&drop-items.data())+","+std::to_string(17+index(owner))+","+std::to_string(notify);
-        for(auto value:item_state(drop)) event+=","+std::to_string(value);trace.push_back(event);return false;
+        for(auto value:item_state(drop)) event+=","+std::to_string(value);trace.push_back(event);return ground?ground->enter(drop,static_cast<std::uint8_t>(notify)):false;
     }
     GameLogSubject duel_log_subject(const Actor& actor) override {
         const auto i=index(actor);GameLogSubject result;result.account_id=12345+i;result.character_id=23456+i;result.experience=0xffff0000U+i;
@@ -57,6 +59,12 @@ struct World final:DuelWorld {
         trace.push_back("T");return std::chrono::sys_days{std::chrono::year{year}/11/2}+std::chrono::hours{13}+std::chrono::minutes{47}+std::chrono::seconds{59};
     }
     void send_duel_log(const net::Packet& packet) override {trace.push_back("G"+hex(packet));}
+};
+struct GroundServices final:ZoneItemServices {
+    std::vector<net::Packet> notices;std::vector<GroundItem*> freed;
+    std::uint32_t tick_ms() override {return 100;}
+    void send_cell_view(CellCoordinates cell,const net::Packet& packet) override {require(cell.x==0 && cell.z==0,"Wager entered the wrong cell");notices.push_back(packet);}
+    void release(GroundItem& item) override {require(!item.zone && !item.cell,"Wager freed while still attached");freed.push_back(&item);}
 };
 }
 int main(int argc,char** argv) {
@@ -101,6 +109,15 @@ int main(int argc,char** argv) {
             require(static_cast<bool>(row),"Truncated duel attack vector");std::string extra;require(!(row>>extra),"Trailing duel attack data");++count;
         }
         require(count==768,"Duel attack coverage changed");
-        std::cout<<count<<" original log/wager/attack-exit cases passed\n";
+        // Native wager drops now enter a real zone index/cell list and expire there.
+        World world;GroundServices ground_services;const MapGeometry geometry(160);ZoneItems ground(geometry,ground_services);world.ground=&ground;world.allocate=true;world.randoms.assign(10,500);
+        Scene first_scene(9001,world.trace),second_scene(9002,world.trace);Actor first(9001,{}, {100,0,0},{},first_scene,{definitions,enchant,mobs}),second(9002,{}, {100,0,0},{},second_scene,{definitions,enchant,mobs});world.actors={&first,&second};
+        for(unsigned int i=0;i<3;++i) {world.items[i].id=100+i;world.items[i].item.type=5;world.items[i].item.type_id=6;world.items[i].item.count=7;world.items[i].item.make_type="A";}
+        first.duel_wager().money=999;first.duel_wager().items[0]=&world.items[1];first.duel_wager().items[7]=&world.items[2];drop_duel_wager(first,second,world);
+        require(ground.size()==3 && ground_services.notices.size()==3 && first.duel_wager().money==0 && std::all_of(first.duel_wager().items.begin(),first.duel_wager().items.end(),[](const auto* item){return item==nullptr;}),"Wager did not enter its concrete zone");
+        for(unsigned int i=0;i<3;++i) {const auto& item=world.items[i];require(ground.find(100+i)==&item && item.expires_at==60100 && item.position.x==10 && item.position.y==20 && item.position.z==10 && item.user_id==9002 && item.party_id==0 && item.drop_type==3 && item.drop_id==9001 && ground_services.notices[i][6]==1,"Concrete wager placement/metadata differs");}
+        require(world.items[0].money==999 && world.items[0].item.type==26 && world.items[1].item.count==7 && world.random_index==10,"Concrete wager payload/random sequence differs");
+        ground.update(60100);require(ground_services.freed.empty(),"Concrete wager expired at the inclusive boundary");ground.update(60101);require(ground.size()==0 && ground_services.freed.size()==3 && ground_services.notices.size()==6,"Concrete wager expiry did not remove/free each item");
+        std::cout<<count<<" original log/wager/attack-exit cases and concrete zone wager expiry passed\n";
     } catch(const std::exception& error) {std::cerr<<error.what()<<'\n';return 1;}
 }

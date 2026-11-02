@@ -995,3 +995,39 @@ cleanup, float positioning, header/calendar and packet code. It covers every
 duel state, absent/self peers, money allocation/admission failure, all eight
 slots, repeated pointers, signed random inputs and calendar wrap. Full duel
 request/accept/tick/death handlers and live item ownership remain pending.
+
+Ground items reconstruct `ps_game.exe` `CZone::AddItem/RemoveItem/FindItem`
+(`004170b0`/`00417140`/`004171b0`), both `EnterItem` overloads
+(`00417210`/`00417320`), `LeaveItem` (`00417440`), `UpdateItem` (`00421e20`),
+and cell enter/leave/find (`004237f0`/`00423840`/`004238a0`). `GroundItem` extends
+the wager allocation with a runtime ID, expiry, zone and cell; the runtime ID is
+separate from the definition's ItemID. `RuntimeZone` can own a `ZoneItems` view.
+
+Entry truncates X/Z divided by 40 against the extra final cell extent, samples
+the clock, writes expiry as DWORD tick+lifetime (default 60,000 ms), links the
+cell, links the zone list, inserts the zone-local ID and broadcasts. The 22-byte
+`0401` contains runtime ID, caller's appearance byte, type/type-ID/count and XYZ.
+Appearance zero still broadcasts. Duplicate IDs attach both allocations but
+retain the first map entry. Removing either allocation erases that ID, even if
+the other allocation owned the map key. This differs from corpse registration.
+
+Ordinary removal erases the ID and zone/cell links, clears the zone, broadcasts
+six-byte `0402` (runtime ID), then clears cell coordinates without freeing the
+allocation. Expiry scans insertion order with a live shared zone cursor; only
+unsigned `expires_at < tick` expires, then follows removal with pool release.
+There is no signed wrap-safe comparison. Cell entry/leave streams preserve
+insertion order and use live shared cursors, emitting `0401` appearance zero
+or `0402` without removing membership (`00424018..004240a7` and
+`004242be..0042431c`). Negative/nonfinite cell indices that would dereference
+invalid original memory throw; fractional negatives truncating to zero remain
+valid. Fresh native allocation and pool semantics remain separate work.
+
+The oracle compares 640 persistent two-zone operations using original intrusive
+lists, admission, expiry and packet builders, with tree/clock/transport ports
+isolated. It checks all allocations, per-zone indexes, ordered messages and
+release timing, including duplicate keys, edge cells, explicit/default lifetime,
+equality and DWORD wrap. Native checks cover removal/insertion during streaming,
+nested shared-cursor lookup and release-time removal of the next item. A concrete
+wager integration places money and two existing items in the actual zone view,
+checks metadata/notices and expires all three through that view. Pickup, object
+pool ownership and the running world's tick/transport adapter remain pending.

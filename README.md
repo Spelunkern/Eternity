@@ -34,6 +34,8 @@ live actor lookup and ordinary ranged broadcasts remain required world services.
 Duel cleanup, attack-triggered exit, wager-drop sequencing and result/log packets
 run through actors; item-pool ownership, world admission and the remaining duel
 handlers still require integration.
+Ground-item zone/cell indexes, visibility and expiry are reconstructed, including
+native wager placement and expiry; pickup and the item pool remain pending.
 Actor preparation connects these stages, including effect-driven resource clamps
 and cleanup. Equipment/transformation attack rebuilding and elemental-effect
 replacement run natively in the actor. User appearance packets include visible

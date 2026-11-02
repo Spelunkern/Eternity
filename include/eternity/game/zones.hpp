@@ -3,6 +3,7 @@
 #include "eternity/game/zone_environment.hpp"
 #include "eternity/game/zone_npcs.hpp"
 #include "eternity/game/corpses.hpp"
+#include "eternity/game/ground_items.hpp"
 #include <memory>
 
 namespace eternity::game {
@@ -26,6 +27,7 @@ struct RuntimeZone {
     std::unique_ptr<ZoneUsers> users;
     std::unique_ptr<ZoneNpcs> npcs;
     std::unique_ptr<ZoneCorpses> corpses;
+    std::unique_ptr<ZoneItems> items;
     std::optional<ZoneEnvironment> environment;
 };
 class ZoneServices {

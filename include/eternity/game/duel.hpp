@@ -1,16 +1,10 @@
 #pragma once
 #include "eternity/game/game_log.hpp"
+#include "eternity/game/ground_items.hpp"
 
 namespace eternity::game {
 class Actor;
-struct ItemDefinition;
-struct DuelDropItem {
-    PlayerItem item;
-    const ItemDefinition* definition=nullptr;
-    UserPosition position;
-    std::uint32_t user_id=0,party_id=0,drop_id=0,money=0;
-    std::uint8_t drop_type=0;
-};
+using DuelDropItem=GroundItem;
 struct DuelWager {
     std::uint32_t money=0; // CUser+15b8.
     // Borrowed pool allocations, corresponding to CUser+15bc..15d8.
