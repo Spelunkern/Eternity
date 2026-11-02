@@ -14,7 +14,8 @@ not included. Implemented: SQL access, original definition loaders, asynchronous
 encrypted TCP login on the available SQL path, account session replacement,
 realm handoff reservations, game TCP handshake/ciphers, and SQL-backed character
 listings. `--serve` starts login and game listeners with shared sessions and the
-original persisted world calendar. Character creation/selection is pending.
+original persisted world calendar. Creation rules and transactional SQL persistence
+are implemented; their TCP command dispatch and world entry are pending.
 The active MD5 login
 path needs a missing procedure; see [research](research/protocol.md).
 

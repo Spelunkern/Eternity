@@ -34,15 +34,22 @@ struct CharacterRoster {
     std::array<std::optional<CharacterSummary>,5> slots;
 };
 
+struct CharacterDraft;
+struct CreateResult { std::uint8_t result; std::uint32_t character_id; std::string error = {}; };
+
 class Characters {
 public:
-    Characters(storage::SqlServer& database, std::uint8_t server_id, std::chrono::sys_seconds world_base)
-        : database_(database), server_id_(server_id), world_base_(world_base) {}
+    Characters(storage::SqlServer& database, std::uint8_t server_id, std::chrono::sys_seconds world_base,
+        std::string catalog = "PS_GameData");
     CharacterRoster load(std::uint32_t user_id);
+    CreateResult create(std::uint32_t user_id,const std::string& username,const CharacterDraft& draft,
+        std::chrono::sys_seconds made_at);
+    bool save_country(std::uint32_t user_id,std::uint8_t country,bool new_account);
 private:
     storage::SqlServer& database_;
     std::uint8_t server_id_;
     std::chrono::sys_seconds world_base_;
+    std::string prefix_;
 };
 
 // Map normalization is a separate world-map responsibility; these encode an already resolved roster.

@@ -1,8 +1,12 @@
 #include "eternity/game/characters.hpp"
+#include "eternity/game/creation.hpp"
 #include <algorithm>
 #include <bit>
 #include <charconv>
 #include <limits>
+#include <iomanip>
+#include <set>
+#include <sstream>
 
 namespace eternity::game {
 namespace {
@@ -13,6 +17,7 @@ std::int64_t integer(const storage::Row& row, std::size_t index) {
     if(parsed.ec!=std::errc{} || parsed.ptr!=text.data()+text.size()) throw std::runtime_error("Invalid character SQL integer");
     return result;
 }
+
 std::uint8_t byte(const storage::Row& row, std::size_t index) {
     const auto value=integer(row,index);
     if(value<0 || value>255) throw std::runtime_error("Character byte outside original range");
@@ -37,6 +42,14 @@ std::chrono::sys_seconds calendar(int year,unsigned int month,unsigned int day,i
         throw std::runtime_error("Invalid original calendar value");
     return std::chrono::sys_days{date}+std::chrono::hours{hour}+std::chrono::minutes{minute}+std::chrono::seconds{second};
 }
+}
+
+Characters::Characters(storage::SqlServer& database,std::uint8_t server_id,std::chrono::sys_seconds base,std::string catalog)
+    : database_(database),server_id_(server_id),world_base_(base) {
+    if(catalog.empty() || catalog.size()>128 || std::any_of(catalog.begin(),catalog.end(),[](unsigned char c) {
+        return !((c>='A'&&c<='Z') || (c>='a'&&c<='z') || (c>='0'&&c<='9') || c=='_');
+    })) throw std::invalid_argument("Invalid character SQL catalog identifier");
+    prefix_="["+catalog+"].dbo.";
 }
 
 std::chrono::sys_seconds unpack_world_time(std::uint32_t value) {
@@ -82,13 +95,13 @@ CharacterRoster Characters::load(std::uint32_t user_id) {
         throw std::invalid_argument("Invalid character account identifier");
     const std::array<storage::Parameter,2> parameters={std::int64_t{server_id_},std::int64_t{user_id}};
     CharacterRoster roster;
-    const auto country=result(database_.query("EXEC PS_GameData.dbo.usp_Read_User_MaxGrow_R ?,?;",parameters),2);
+    const auto country=result(database_.query("EXEC "+prefix_+"usp_Read_User_MaxGrow_R ?,?;",parameters),2);
     if(!country.rows.empty()) {
         roster.country=byte(country.rows[0],0);
         roster.max_grow=std::max<std::uint8_t>(2,byte(country.rows[0],1));
         roster.new_account=false;
     }
-    const auto characters=result(database_.query("EXEC PS_GameData.dbo.usp_Read_Chars_R ?,?;",parameters),29);
+    const auto characters=result(database_.query("EXEC "+prefix_+"usp_Read_Chars_R ?,?;",parameters),29);
     for(const auto& row:characters.rows) {
         CharacterSummary value;
         const auto id=integer(row,0);
@@ -113,7 +126,7 @@ CharacterRoster Characters::load(std::uint32_t user_id) {
     for(auto& slot:roster.slots) {
         if(!slot) continue;
         const std::array<storage::Parameter,2> items={std::int64_t{slot->id},std::int64_t{8}};
-        const auto equipment=result(database_.query("EXEC PS_GameData.dbo.usp_Read_Char_Items_Simple_R ?,?,0;",items),9);
+        const auto equipment=result(database_.query("EXEC "+prefix_+"usp_Read_Char_Items_Simple_R ?,?,0;",items),9);
         for(const auto& row:equipment.rows) {
             const auto index=byte(row,0);
             if(index>=8) continue;
@@ -122,6 +135,67 @@ CharacterRoster Characters::load(std::uint32_t user_id) {
         }
     }
     return roster;
+}
+
+CreateResult Characters::create(std::uint32_t user_id,const std::string& username,const CharacterDraft& draft,
+    std::chrono::sys_seconds made_at) {
+    if(user_id==0 || user_id>2147483647 || username.empty() || username.size()>12 || draft.request.slot>=5 ||
+        draft.request.name.size()<2 || draft.request.name.size()>20 || draft.items.size()>10)
+        throw std::invalid_argument("Invalid character creation persistence input");
+    std::set<std::uint64_t> identifiers;
+    for(const auto& item:draft.items)
+        if(item.uid==0 || !identifiers.insert(item.uid).second) throw std::invalid_argument("Starter items require unique nonzero identifiers");
+    const auto day=std::chrono::floor<std::chrono::days>(made_at);
+    const std::chrono::year_month_day date{day};const std::chrono::hh_mm_ss time{made_at-day};
+    std::ostringstream timestamp;
+    timestamp<<std::setfill('0')<<std::setw(4)<<static_cast<int>(date.year())<<'-'<<std::setw(2)<<static_cast<unsigned int>(date.month())
+        <<'-'<<std::setw(2)<<static_cast<unsigned int>(date.day())<<' '<<std::setw(2)<<time.hours().count()<<':'
+        <<std::setw(2)<<time.minutes().count()<<':'<<std::setw(2)<<time.seconds().count();
+    const auto& c=draft.character;const auto& request=draft.request;
+    const std::array<storage::Parameter,36> parameters={std::int64_t{server_id_},username,std::int64_t{user_id},request.name,
+        std::int64_t{request.slot},std::int64_t{request.family},std::int64_t{request.grow},std::int64_t{request.hair},
+        std::int64_t{request.face},std::int64_t{request.size},std::int64_t{request.job},std::int64_t{request.sex},
+        std::int64_t{1},std::int64_t{0},std::int64_t{0},std::int64_t{c.strength},std::int64_t{c.dexterity},
+        std::int64_t{c.recovery},std::int64_t{c.intelligence},std::int64_t{c.luck},std::int64_t{c.wisdom},
+        std::int64_t{c.hp},std::int64_t{c.mp},std::int64_t{c.sp},std::int64_t{c.map},std::int64_t{0},std::int64_t{0},std::int64_t{0},
+        static_cast<double>(draft.position.x),static_cast<double>(draft.position.y),static_cast<double>(draft.position.z),
+        std::int64_t{0},std::int64_t{200},std::int64_t{0},std::int64_t{0},std::int64_t{0}};
+    database_.begin();
+    try {
+        // Serialize creation in this game catalog. The original procedure uses IDENT_CURRENT, shared across users.
+        const auto lock=result(database_.query("DECLARE @Lock int; EXEC @Lock="+prefix_.substr(0,prefix_.size()-4)+
+            "sys.sp_getapplock @Resource='Eternity.CharacterCreate',@LockMode='Exclusive',@LockOwner='Transaction',@LockTimeout=5000; SELECT @Lock;"),1);
+        if(lock.rows.size()!=1 || integer(lock.rows[0],0)<0) throw std::runtime_error("Cannot acquire character creation lock");
+        const std::array<storage::Parameter,3> slot={std::int64_t{server_id_},std::int64_t{user_id},std::int64_t{request.slot}};
+        const auto occupied=result(database_.query("SELECT CharID FROM "+prefix_+"Chars WITH (UPDLOCK,HOLDLOCK) WHERE ServerID=? AND UserUID=? AND Slot=? AND Del=0;",slot),1);
+        if(!occupied.rows.empty()) {database_.rollback();return {1,0};}
+        std::string sql="DECLARE @Created int; EXEC @Created="+prefix_+"usp_Create_Char_R ";
+        for(std::size_t i=0;i<parameters.size();++i) sql+=(i ? ",?" : "?");
+        sql+="; SELECT @Created;";
+        const auto created=result(database_.query(sql,parameters),1);
+        if(created.rows.size()!=1 || integer(created.rows[0],0)<1) {database_.rollback();return {1,0};}
+        const auto id=integer(created.rows[0],0);
+        if(id>2147483647) throw std::runtime_error("Created character ID exceeds original range");
+        for(const auto& item:draft.items) {
+            const std::array<storage::Parameter,11> values={id,std::bit_cast<std::int64_t>(item.uid),std::int64_t{item.bag},std::int64_t{item.slot},
+                std::int64_t{item.item_id},std::int64_t{item.type},std::int64_t{item.type_id},std::int64_t{item.quality},
+                std::string{"기본아이템"},std::int64_t{item.count},timestamp.str()}; // Original CP949 literal at 00467e70.
+            const auto saved=result(database_.query("DECLARE @Saved int; EXEC @Saved="+prefix_+
+                "usp_Save_Char_Item_Add_E ?,?,?,?,?,?,?,?,0,0,0,0,0,0,?,?,?,'S'; SELECT @Saved;",values),1);
+            if(saved.rows.size()!=1 || integer(saved.rows[0],0)<0) throw std::runtime_error("Original starter item save failed");
+        }
+        database_.commit();return {0,static_cast<std::uint32_t>(id)};
+    } catch(const std::exception& error) {
+        try{database_.rollback();}catch(...){}
+        return {1,0,error.what()}; // DBCharacter::CreateCharacter 00420270 maps SQL failures to wire result 1.
+    }
+}
+
+bool Characters::save_country(std::uint32_t user_id,std::uint8_t country,bool new_account) {
+    if(user_id==0 || user_id>2147483647 || country>2) throw std::invalid_argument("Invalid original country save input");
+    const std::array<storage::Parameter,4> parameters={std::int64_t{server_id_},std::int64_t{user_id},std::int64_t{country},std::int64_t{new_account}};
+    const auto saved=result(database_.query("DECLARE @Saved int; EXEC @Saved="+prefix_+"usp_Save_Char_Country_E ?,?,?,?; SELECT @Saved;",parameters),1);
+    return saved.rows.size()==1 && integer(saved.rows[0],0)>=0;
 }
 
 std::vector<net::Packet> character_list(const CharacterRoster& roster,bool include_country) {

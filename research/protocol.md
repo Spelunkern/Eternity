@@ -92,4 +92,23 @@ stats, mode multipliers (1, 1.1, 1.5), racial bonuses, configured random start
 positions and base equipment. `DBCharacter::CreateCharacter` (`ps_dbAgent.exe`
 `00420270`) wraps `usp_Create_Char_R` and every `usp_Save_Char_Item_Add_E` call
 in an outer transaction. The available create procedure overrides SkillPoint to
-5. These creation commands are not yet implemented.
+5. Native request validation, class/race resources, positions and transactional
+creation persistence are implemented. `CMap::LoadGameMapConfig` (`004270a0`)
+reads the four racial start arrays from `[BASE]` in `data/map.ini`, with original
+fallback coordinates. `CGameData::LoadBaseItem` (`004bf800`) ignores the base
+definition's Slot/Quality: it takes quality from Items, equips the first type
+1..19 in slot 5 and puts other items into consecutive inventory slots. SQL
+creation uses a transaction-scoped catalog lock because the recovered procedure
+returns `IDENT_CURRENT`, shared across accounts. Country save retains the original
+`usp_Save_Char_Country_E` contract. TCP creation/country dispatch, native item ID
+generation and legacy wire name decoding remain pending.
+
+Creation integration copies the original tables, defaults, database collation
+and six procedures into a disposable catalog. It verifies valid creation,
+occupied/duplicate names, concurrent names and rollback after failure on the
+second starter item, then drops that catalog. Existing account/character data
+and identity counters are preserved. The original starter craft label at
+`ps_dbAgent.exe` `00467e70` is CP949 text. Native UTF-8 parameters bind as Unicode;
+the restored database's Chinese varchar procedure collation converts that label
+to five question marks. The original Windows ANSI path's collation behavior is
+not yet verified; no forced collation conversion is added to the procedure.
