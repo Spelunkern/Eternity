@@ -12,6 +12,7 @@ class MoneyWorld;
 class GroundItemPool;
 class InventoryWorld;
 class ItemPickupWorld;
+class InventoryRemovalWorld;
 enum class InventoryReceipt;
 // Required scene/transport services. Implementations own zone binding, combat
 // and connection queues; none default to no-op.
@@ -71,6 +72,12 @@ public:
     void send_money_database(MoneyWorld&);
     std::uint32_t receive_money(std::uint32_t amount,MoneyWorld&);
     std::uint32_t receive_money_item(GroundItem&,MoneyWorld&,GroundItemPool&);
+    bool load_inventory_item(PlayerItem,GroundItemPool&); // Resolved SQL row, no DB/client notices.
+    bool remove_item(std::uint8_t bag,std::uint16_t slot,InventoryRemovalWorld&,bool notify=true);
+    bool delete_items(std::int32_t type,std::int32_t type_id,InventoryRemovalWorld&);
+    std::array<std::uint16_t,13>& equipment_database_quality() noexcept {return equipment_database_quality_;}
+    const std::array<std::uint16_t,13>& equipment_database_quality() const noexcept {return equipment_database_quality_;}
+    void send_equipment(std::uint8_t slot);
     InventoryReceipt receive_item(GroundItem&,InventoryWorld&,GroundItemPool&);
     InventoryReceipt pickup_item(ZoneItems&,std::uint32_t id,bool checks,const ItemQuestLinks&,ItemPickupWorld&,GroundItemPool&);
     UserRelations& relations() noexcept {return relations_;}
@@ -163,6 +170,7 @@ private:
     EffectReplica replica_;
     ActorEquipmentRules equipment_;
     std::vector<PlayerItem> inventory_;
+    std::array<std::uint16_t,13> equipment_database_quality_{}; // +1aa, separate from quality tiers.
     struct RetainedInventory {std::uint8_t bag;std::uint16_t slot;GroundItem* item;GroundItemPool* pool;};
     std::vector<RetainedInventory> retained_inventory_; // Bound pools must outlive the actor.
     bool initializing_=false;

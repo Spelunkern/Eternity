@@ -1224,8 +1224,7 @@ in original order, except while initializing. The helper leaves inventory rows
 intact for its caller. Two 1,024-case original-code fixtures cover arithmetic,
 notification order and complete actor packets/resources. Element-list fixtures
 also cover group changes, callbacks inserting effects and the 48-notice limit.
-Inventory pointer transfer/removal, equipment visibility and TCP dispatch are
-still separate pending callers.
+Inventory movement and TCP dispatch remain pending.
 
 
 Trade/duel inventory references (`ps_game.exe`, `ExchangeItemRemove` `0046f310`,
@@ -1240,5 +1239,41 @@ state is read after ordinary trade callbacks; self peers receive both messages.
 Two thousand forty-eight original-code cases compare three actors, exact packets,
 pre-send state and callback mutations, including captured peers, missing users,
 duplicates, zero counts and readiness bytes other than 1. This reconstructs
-reference invalidation; actual inventory removal and complete trade/duel exchange
-handlers remain pending.
+reference invalidation; complete trade/duel exchange handlers remain pending.
+
+
+Inventory removal (`ps_game.exe`, `ItemRemove` `0045f260`, `ItemRemoveFree`
+`0045f470`, `ItemDelete` `0045f650`) now runs through actors with pooled items.
+Equipment first sends dirty WORD quality via `070c`, clears that DB-quality
+cache, reverses modifiers, sends `SendEquipment` `004839e0`, and recalculates
+attack. The original still exposes the equipped pointer during `0507`; removal
+does not substitute an empty-equipment payload. Offer cleanup follows, then the
+inventory pointer clears before DB `0702` (9 bytes), log `0402` (152 bytes),
+optional self `0206` (7 bytes), and pool release. The silent variant omits only
+`0206`. The log ends with bag/slot/count after its 21-byte craft field. `ItemDelete`
+scans bags 0 through the live maximum and slots 0..23, returning true even if
+nothing matches. `0507` is 10 bytes, or 16 for a present cloak with its six gem
+bytes; an absent cloak uses 10 bytes. Only visible slots 0..7 broadcast, using
+the cell view without initialization suppression.
+
+Resolved SQL inventory can now be loaded into the item pool during actor
+preparation (`PacketUserDBSetInfo` `0046d780`, case `0502`, allocation at
+`0046ddd7`; `CopyCraftExpassion` `004ba670`). Each successful allocation retains
+its runtime ID, definition, UID and normalized craft cache. Allocation failure
+skips that row before equipment/passive initialization. Existing SQL row repair
+still runs before this phase. `InitEquipment` `00454560` snapshots the separate
+13 WORD DB-quality cache; ordinary wear changes the item's quality and cached
+tier without changing that snapshot. Actors release remaining allocations at
+teardown. Projection-only actor fixtures remain supported; live removal requires
+pooled ownership. Live equipment removal accepts slots 0..12; other bag-0
+storage loads without applying equipment modifiers. The runtime owner must keep
+those pools alive.
+
+A 1,408-case original-code fixture covers complete normal/silent/bulk removal,
+visibility, exact packets/logs, ordered frees, current resource clamps, offer
+references, qualities and final inventories. Attack arithmetic is isolated in
+this fixture and retains its separate original-code tests. Native preparation
+also checks pooled SQL-row loading (including unequipped bag-0 storage beyond
+slot 12), allocation failure and teardown. Full
+inventory movement/drop handlers, DB-agent inventory persistence and TCP world
+dispatch remain pending.

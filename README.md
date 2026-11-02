@@ -26,8 +26,8 @@ independently. Resource recovery and its ordered view/self/group notifications
 are reconstructed; live world operations and gameplay remain pending.
 Scalar HP damage, its protection/group notifications and the attacker damage ledger
 are reconstructed. Equipment removal reverses cached durability, gems and craft modifiers, cancels weapon
-elements and sends original speed/resource updates. Inventory move/drop/removal
-dispatch remains pending. Defense durability wear updates native actor equipment and defenses;
+elements and sends original speed/resource updates. Inventory removal now connects these updates, offer cleanup, DB/log/client messages
+and pool release; move/drop and TCP dispatch remain pending. Defense durability wear updates native actor equipment and defenses;
 scalar damage, attribution and low-HP passive activation now run through the actor.
 Death effect cleanup, corpse snapshots/cell visibility and the global corpse registry
 are reconstructed; death orchestration, combat dispatch and the live world remain pending.
@@ -49,7 +49,8 @@ Actor money credits preserve unsigned limits and ordered DB-status/client/log
 messages, with money-item release to the pool. Periodic money saving and shared
 loot dispatch still require integration.
 Actor preparation connects these stages, including effect-driven resource clamps
-and cleanup. Equipment/transformation attack rebuilding and elemental-effect
+and cleanup. A supplied inventory pool materializes resolved SQL rows and owns
+their allocations through removal or actor teardown. Equipment/transformation attack rebuilding and elemental-effect
 replacement run natively in the actor. User appearance packets include visible
 equipment, enchantments, cloak and social fields, with a copied-user snapshot path.
 Native user-cell queries now reveal hidden enemies using original duel, guild

@@ -9,7 +9,7 @@ void append(net::Packet& packet,std::uint32_t value,unsigned int bytes) {for(uns
 }
 Actor::Actor(std::uint32_t id,EffectStatus status,PlayerResources current,std::vector<PersistedEffect> replica,ActorScene& scene,
     ActorEquipmentRules equipment,std::vector<PlayerItem> inventory)
-    :id_(id),status_(std::move(status)),scene_(scene),resources_(id,current,*this),effects_(id),replica_(std::move(replica)),equipment_(equipment),inventory_(std::move(inventory)) {}
+    :id_(id),status_(std::move(status)),scene_(scene),resources_(id,current,*this),effects_(id),replica_(std::move(replica)),equipment_(equipment),inventory_(std::move(inventory)) {for(const auto& item:inventory_) if(item.bag==0 && item.slot<13) equipment_database_quality_[item.slot]=item.quality;}
 Actor::~Actor() {effects_.release_all(*this);for(auto& held:retained_inventory_) held.pool->release(*held.item);}
 std::array<std::int32_t,3> Actor::heal(std::array<std::int32_t,3> amounts) {return resources_.heal(status_.skills.equipment.base.maximum,amounts);}
 void Actor::recover(std::array<std::int32_t,3> amounts,bool send_set,bool recovering) {resources_.recover(status_.skills.equipment.base.maximum,amounts,send_set,attack_.mode,recovering);}
@@ -67,6 +67,13 @@ std::uint8_t Actor::effective_shape() const {
     if(!appearance_.visible) return 13;
     if(appearance_.vehicle_mode==2) return static_cast<std::uint8_t>(static_cast<std::uint32_t>(appearance_.vehicle_shape)+static_cast<std::uint32_t>(appearance_.vehicle_addition));
     return status_.shape;
+}
+void Actor::send_equipment(std::uint8_t slot) {
+    // ps_game.exe SendEquipment 004839e0 broadcasts the current pointer before
+    // ItemRemove clears it. There is no initialization-flag suppression.
+    if(slot>=8) return;
+    const PlayerItem* equipped=nullptr;for(const auto& value:inventory_) if(value.bag==0 && value.slot==slot) equipped=&value;
+    auto packet=character_equipment(id_,slot,equipped);if(status_.in_zone) scene_.send_cell_view(packet);
 }
 void Actor::send_shape_self() {
     // SendShapeMe 00482510 always uses 051d, including copied-mob shape 102.

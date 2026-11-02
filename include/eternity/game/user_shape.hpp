@@ -25,5 +25,6 @@ struct CopiedUserShape {
 UserShapeIdentity user_shape_identity(const PlayerCore&,std::uint8_t country);
 net::Packet character_user_shape(std::uint32_t id,const UserShapeIdentity&,bool dead,std::uint8_t motion,
     const UserShapeSocial&,std::span<const PlayerItem> inventory);
+net::Packet character_equipment(std::uint32_t id,std::uint8_t slot,const PlayerItem*);
 net::Packet character_copied_user_shape(std::uint32_t id,const CopiedUserShape&);
 }

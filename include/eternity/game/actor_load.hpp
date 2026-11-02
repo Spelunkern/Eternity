@@ -18,6 +18,7 @@ struct ActorLoadOptions {
     std::int32_t billing_type=0;
     const BlessingDefinition* blessing=nullptr;
     std::uint8_t country=2;
+    GroundItemPool* inventory_pool=nullptr; // Live runtime owner must outlive the loaded actor.
 };
 struct LoadedActor {
     std::unique_ptr<Actor> actor;

@@ -40,6 +40,52 @@ net::Packet inventory_receipt_packet(std::uint8_t bag,std::uint8_t slot,const Pl
     net::Packet packet(16+(extended?item.craft.size():0),0);put(packet,0,0x205,2);packet[2]=bag;packet[3]=slot;packet[4]=item.type;packet[5]=item.type_id;packet[6]=item.count;
     if(extended) {put(packet,7,item.quality,2);std::copy(item.gems.begin(),item.gems.end(),packet.begin()+9);text(packet,15,item.craft,20);}return packet;
 }
+bool Actor::load_inventory_item(PlayerItem value,GroundItemPool& pool) {
+    // PacketUserDBSetInfo 0046d780 case 0502, after SQL inventory repair.
+    // InitEquipment 00454560 separately snapshots equipped WORD qualities.
+    if(value.bag>9 || value.slot>=24) throw std::out_of_range("Invalid resolved inventory position");
+    if(std::any_of(inventory_.begin(),inventory_.end(),[&](const auto& item){return item.bag==value.bag && item.slot==value.slot;})) throw std::invalid_argument("Unresolved duplicate inventory position");
+    const auto* definition=equipment_.items.find(value.type,value.type_id);if(!definition) throw std::invalid_argument("Missing loaded inventory definition");
+    auto* item=pool.allocate();if(!item) return false;
+    try {
+        item->definition=definition;value.id=definition->id;const auto craft=decode_craft(*definition,value.craft,equipment_.enchant);value.craft=craft.name;
+        item->item=value;set_ground_item_craft(*item,value.craft);item->craft_additions=craft.additions;
+        inventory_.reserve(inventory_.size()+1);retained_inventory_.reserve(retained_inventory_.size()+1);
+        inventory_.push_back(std::move(value));retained_inventory_.push_back({item->item.bag,item->item.slot,item,&pool});
+        if(item->item.bag==0 && item->item.slot<13) equipment_database_quality_[item->item.slot]=item->item.quality;
+    } catch(...) {pool.release(*item);throw;}
+    return true;
+}
+bool Actor::remove_item(std::uint8_t bag,std::uint16_t slot,InventoryRemovalWorld& world,bool notify) {
+    // Complete ItemRemove 0045f260 / ItemRemoveFree 0045f470. Only the former
+    // sends the final 0206. Both preserve the pointer until after offer cleanup.
+    if(bag>9 || slot>=24 || (bag==0 && slot>=13)) throw std::out_of_range("Invalid original inventory removal position");
+    const auto at=[&] {return std::find_if(inventory_.begin(),inventory_.end(),[&](const auto& value){return value.bag==bag && value.slot==slot;});};
+    if(at()==inventory_.end()) return false;
+    auto held=std::find_if(retained_inventory_.begin(),retained_inventory_.end(),[&](const auto& value){return value.bag==bag && value.slot==slot;});
+    if(held==retained_inventory_.end()) throw std::logic_error("Live removal requires a pooled inventory item");
+    auto* item=held->item;auto* pool=held->pool;
+    if(bag==0) {
+        if(equipment_database_quality_[slot]!=at()->quality) {net::Packet packet(9,0);put(packet,0,0x70c,2);put(packet,2,account_id_,4);packet[6]=static_cast<std::uint8_t>(slot);put(packet,7,at()->quality,2);world.send_inventory_database(packet);}
+        equipment_database_quality_[slot]=0;remove_equipment_modifiers(static_cast<std::uint8_t>(slot),*at(),world);send_equipment(static_cast<std::uint8_t>(slot));recalculate_attack(status_);
+    }
+    remove_exchange_item(bag,slot,world);
+    const auto current=at();if(current==inventory_.end()) throw std::logic_error("Inventory removed reentrantly");item->item=*current;set_ground_item_craft(*item,current->craft);inventory_.erase(current);
+    held=std::find_if(retained_inventory_.begin(),retained_inventory_.end(),[&](const auto& value){return value.item==item;});if(held==retained_inventory_.end()) throw std::logic_error("Inventory ownership changed reentrantly");retained_inventory_.erase(held);
+    struct Release {GroundItemPool& pool;GroundItem& item;~Release(){pool.release(item);}} release{*pool,*item};
+    net::Packet packet(9,0);put(packet,0,0x702,2);put(packet,2,account_id_,4);packet[6]=bag;packet[7]=static_cast<std::uint8_t>(slot);packet[8]=item->item.count;world.send_inventory_database(packet);
+    net::Packet log(152,0);const auto subject=world.money_log_subject(*this);write_game_log_main(log,subject,world.money_local_calendar());put(log,0,0x402,2);put(log,74,item->item.uid,8);put(log,82,item->definition->id,4);text(log,86,world.inventory_item_name(*item->definition),31);std::copy(item->item.gems.begin(),item->item.gems.end(),log.begin()+118);put(log,124,item->item.made_at,4);text(log,128,item->item.craft,20);log[149]=bag;log[150]=static_cast<std::uint8_t>(slot);log[151]=item->item.count;world.send_money_log(log);
+    if(notify) send_self({6,2,bag,static_cast<std::uint8_t>(slot),0,0,0});
+    return true;
+}
+bool Actor::delete_items(std::int32_t type,std::int32_t type_id,InventoryRemovalWorld& world) {
+    // ItemDelete 0045f650 rechecks the live maximum bag after each full scan.
+    for(std::int32_t bag=0;bag<=status_.skills.max_bags;++bag) {
+        if(bag>9) throw std::out_of_range("Original inventory bag count exceeds storage");
+        for(std::uint16_t slot=0;slot<24;++slot) {const auto value=std::find_if(inventory_.begin(),inventory_.end(),[&](const auto& item){return item.bag==bag && item.slot==slot;});if(value!=inventory_.end() && value->type==type && value->type_id==type_id) remove_item(static_cast<std::uint8_t>(bag),slot,world);}
+    }
+    return true;
+}
 InventoryReceipt Actor::receive_item(GroundItem& item,InventoryWorld& world,GroundItemPool& pool) {return admit_item(item,world,pool,false);}
 InventoryReceipt Actor::admit_item(GroundItem& item,InventoryWorld& world,GroundItemPool& pool,bool pickup) {
     // Complete CUser::ItemGet(CItem*) 0045df40. ID-based selection/distribution

@@ -77,6 +77,9 @@ target_compile_options(eternity-server PRIVATE -Wall -Wextra -Wpedantic -Wconver
 
 include(CTest)
 if(BUILD_TESTING)
+    add_executable(item-remove-unit tests/item_remove_unit.cpp)
+    target_link_libraries(item-remove-unit PRIVATE eternity_game)
+    add_test(NAME item-remove-unit COMMAND item-remove-unit ${CMAKE_CURRENT_SOURCE_DIR}/tests/data/item-remove-oracle.tsv)
     add_executable(item-exchange-unit tests/item_exchange_unit.cpp)
     target_link_libraries(item-exchange-unit PRIVATE eternity_game)
     add_test(NAME item-exchange-unit COMMAND item-exchange-unit ${CMAKE_CURRENT_SOURCE_DIR}/tests/data/item-exchange-oracle.tsv)

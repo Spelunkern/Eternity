@@ -8,16 +8,17 @@ LoadedActor load_actor(const PlayerSnapshot& player,const ActorLoadRules& rules,
     EffectStatus initial;initial.level=player.core.character.level;
     result.actor=std::make_unique<Actor>(player.core.character.id,std::move(initial),
         PlayerResources{player.core.character.hp,player.core.character.mp,player.core.character.sp},player.effects,scene,
-        ActorEquipmentRules{rules.items,rules.enchant,rules.mobs},player.items);
+        ActorEquipmentRules{rules.items,rules.enchant,rules.mobs},options.inventory_pool?std::vector<PlayerItem>{}:player.items);
     auto& actor=*result.actor;auto& status=actor.status();
     actor.account_id()=player.core.user_id;actor.money()=player.core.money;
+    if(options.inventory_pool) for(const auto& item:player.items) actor.load_inventory_item(item,*options.inventory_pool);
     actor.appearance().identity=user_shape_identity(player.core,options.country);
     actor.relations().guild_id=player.core.guild_id;
     actor.effects().restore(player.effects,rules.skills,player.core.character.map,options.disconnected_seconds,options.tick_ms,actor);
     result.quests=restore_quests(player,rules.quests,options.tick_ms);
     // InitEquipment 00454560 applies equipped slots, then blessing and SetAttack.
     actor.initializing(true);
-    status.skills.equipment=initialize_equipment(rules.statuses.base(player.core.character),player.items,rules.items,rules.enchant);
+    status.skills.equipment=initialize_equipment(rules.statuses.base(player.core.character),actor.inventory(),rules.items,rules.enchant);
     actor.initializing(false);
     if(options.blessing) result.blessing=initialize_blessing(status.skills,result.attack_recovery,*options.blessing,
         {status.calculated_attack[0].defense,status.calculated_attack[1].defense});
@@ -25,7 +26,7 @@ LoadedActor load_actor(const PlayerSnapshot& player,const ActorLoadRules& rules,
     // InitPassive 004899a0 suppresses notifications but preserves per-ability attack recalculations.
     actor.initializing(true);
     std::optional<std::uint8_t> weapon,shield;
-    for(const auto& item:player.items) if(item.bag==0 && (item.slot==5 || item.slot==6)) {
+    for(const auto& item:actor.inventory()) if(item.bag==0 && (item.slot==5 || item.slot==6)) {
         const auto* definition=rules.items.find(item.type,item.type_id);
         if(!definition) throw std::runtime_error("Missing original equipped item definition during actor load");
         (item.slot==5?weapon:shield)=definition->real_type;

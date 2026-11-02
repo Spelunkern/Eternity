@@ -38,6 +38,13 @@ net::Packet character_user_shape(std::uint32_t id,const UserShapeIdentity& ident
     std::copy(social.guild_name.begin(),social.guild_name.end(),packet.begin()+66+(cloak?6:0));
     return packet;
 }
+net::Packet character_equipment(std::uint32_t id,std::uint8_t slot,const PlayerItem* item) {
+    // ps_game.exe SendEquipment 004839e0: an absent cloak uses the short form.
+    if(slot>=8) throw std::invalid_argument("Invalid visible equipment slot");
+    net::Packet packet(item && slot==7?16:10,0);put(packet,0,0x507,2);put(packet,2,id,4);packet[6]=slot;
+    if(item) {packet[7]=item->type;packet[8]=item->type_id;packet[9]=enchant(*item);if(slot==7) std::copy(item->gems.begin(),item->gems.end(),packet.begin()+10);}
+    return packet;
+}
 net::Packet character_copied_user_shape(std::uint32_t id,const CopiedUserShape& shape) {
     // 00482b11..00482ca1 copies the cached fields, forces name[20]=0, uses its cached length.
     if(shape.length<67 || shape.length>97) throw std::invalid_argument("Invalid original copied-user shape length");
