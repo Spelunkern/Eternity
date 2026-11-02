@@ -10,6 +10,7 @@ namespace eternity::game {
 class MoneyWorld;
 class GroundItemPool;
 class InventoryWorld;
+class ItemPickupWorld;
 enum class InventoryReceipt;
 // Required scene/transport services. Implementations own zone binding, combat
 // and connection queues; none default to no-op.
@@ -70,6 +71,7 @@ public:
     std::uint32_t receive_money(std::uint32_t amount,MoneyWorld&);
     std::uint32_t receive_money_item(GroundItem&,MoneyWorld&,GroundItemPool&);
     InventoryReceipt receive_item(GroundItem&,InventoryWorld&,GroundItemPool&);
+    InventoryReceipt pickup_item(ZoneItems&,std::uint32_t id,bool checks,const ItemQuestLinks&,ItemPickupWorld&,GroundItemPool&);
     UserRelations& relations() noexcept {return relations_;}
     const UserRelations& relations() const noexcept {return relations_;}
     ActorAttackState& attack_state() noexcept {return attack_;}
@@ -129,6 +131,8 @@ public:
     std::optional<bool> party_kind() const noexcept override;
     void send_party(const net::Packet&) noexcept override;
 private:
+    InventoryReceipt admit_item(GroundItem&,InventoryWorld&,GroundItemPool&,bool pickup);
+    std::uint32_t credit_money(std::uint32_t amount,std::uint8_t type_id,std::uint8_t count,MoneyWorld&);
     std::uint8_t effective_shape() const;
     bool in_zone() const noexcept override {return status_.in_zone;}
     void send_view(const net::Packet&) override;

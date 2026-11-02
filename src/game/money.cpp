@@ -37,6 +37,7 @@ bool MoneyReplica::apply(std::span<const std::uint8_t> packet) {
     money_=get(6);return true;
 }
 void Actor::send_money_database(MoneyWorld& world) {world.send_money_database(money_database_packet(account_id_,money_));}
+std::uint32_t Actor::credit_money(std::uint32_t amount,std::uint8_t type_id,std::uint8_t count,MoneyWorld& world) {return receive(*this,amount,type_id,count,world);}
 std::uint32_t Actor::receive_money(std::uint32_t amount,MoneyWorld& world) {return receive(*this,amount,0,1,world);} // ItemGetMoney 0045ec70.
 std::uint32_t Actor::receive_money_item(GroundItem& item,MoneyWorld& world,GroundItemPool& pool) {
     // Money branch of ItemGet(CItem*) 0045df40, through 0045e085.

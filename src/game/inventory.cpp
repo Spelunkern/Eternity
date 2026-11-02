@@ -2,6 +2,9 @@
 #include "eternity/game/actor.hpp"
 #include "eternity/game/item_pool.hpp"
 #include <algorithm>
+#include <bit>
+#include <cmath>
+#include <limits>
 #include <stdexcept>
 
 namespace eternity::game {
@@ -37,7 +40,8 @@ net::Packet inventory_receipt_packet(std::uint8_t bag,std::uint8_t slot,const Pl
     net::Packet packet(16+(extended?item.craft.size():0),0);put(packet,0,0x205,2);packet[2]=bag;packet[3]=slot;packet[4]=item.type;packet[5]=item.type_id;packet[6]=item.count;
     if(extended) {put(packet,7,item.quality,2);std::copy(item.gems.begin(),item.gems.end(),packet.begin()+9);text(packet,15,item.craft,20);}return packet;
 }
-InventoryReceipt Actor::receive_item(GroundItem& item,InventoryWorld& world,GroundItemPool& pool) {
+InventoryReceipt Actor::receive_item(GroundItem& item,InventoryWorld& world,GroundItemPool& pool) {return admit_item(item,world,pool,false);}
+InventoryReceipt Actor::admit_item(GroundItem& item,InventoryWorld& world,GroundItemPool& pool,bool pickup) {
     // Complete CUser::ItemGet(CItem*) 0045df40. ID-based selection/distribution
     // is a separate caller. The incoming allocation must already be detached.
     if(item.zone || item.cell) throw std::invalid_argument("Inventory admission requires a detached item");
@@ -73,6 +77,30 @@ InventoryReceipt Actor::receive_item(GroundItem& item,InventoryWorld& world,Grou
         }
     }
     if(initial!=item.item.count) {party_notice(*this,item,world);loot(*this,item,world,true);}
+    if(pickup) send_self(inventory_failure_packet(1));
     (void)world.return_inventory_item(*this,item);return InventoryReceipt::returned;
+}
+net::Packet inventory_failure_packet(std::uint8_t reason) {return {5,2,0,reason};}
+std::uint32_t pickup_money_amount(std::uint32_t amount,std::uint8_t drop_type,std::int32_t amulet,std::int32_t gold_bonus) noexcept {
+    // ps_game.exe ItemGet(DWORD) 0045d36b..0045d3fa. The signed rate wraps
+    // before its test; nonpositive rates are added raw instead of converted.
+    if(drop_type!=1) return amount;
+    auto rate=static_cast<std::uint32_t>(gold_bonus);if(amulet==2) rate+=20U;else if(amulet==3) rate+=50U;
+    const auto signed_rate=std::bit_cast<std::int32_t>(rate);if(signed_rate<=0) return amount+rate;
+    const float rounded_rate=static_cast<float>(signed_rate),rounded_amount=static_cast<float>(amount);
+    const auto extra=std::trunc((static_cast<double>(rounded_rate)/100.0)*static_cast<double>(rounded_amount));
+    // x87 FISTP writes INT32_MIN on signed conversion overflow.
+    const auto converted=!std::isfinite(extra) || extra<static_cast<double>(INT32_MIN) || extra>static_cast<double>(INT32_MAX)?INT32_MIN:static_cast<std::int32_t>(extra);
+    return amount+static_cast<std::uint32_t>(converted);
+}
+InventoryReceipt Actor::pickup_item(ZoneItems& zone,std::uint32_t id,bool checks,const ItemQuestLinks& links,ItemPickupWorld& world,GroundItemPool& pool) {
+    // Complete ItemGet(DWORD) 0045d2e0. The request owns no item until the
+    // actual zone authorization/removal succeeds; errors are returned to self.
+    std::int32_t error=0;auto* item=zone.pick(*this,id,error,checks,links,world);
+    if(!item) {send_self(inventory_failure_packet(static_cast<std::uint8_t>(error)));return InventoryReceipt::rejected;}
+    if(item->item.type!=26) return admit_item(*item,world,pool,true);
+    const auto amount=pickup_money_amount(item->money,item->drop_type,status_.skills.benefits.amulet,status_.skills.benefits.mob_gold);
+    if(!money_addable(money_,amount)) {(void)world.return_inventory_item(*this,*item);send_self(inventory_failure_packet(5));return InventoryReceipt::rejected;}
+    credit_money(amount,item->item.type_id,item->item.count,world);pool.release(*item);return InventoryReceipt::money;
 }
 }

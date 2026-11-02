@@ -1174,5 +1174,38 @@ negative active-bag counts, dense/empty inventories, oversized input, craft/gem
 payloads, group changes during DB sends, all drop types, lookup variants, failed
 ground return and actual default expiry/visibility. Native consecutive admissions
 verify retained identity, later stack synchronization, pool reuse and teardown.
-The ID-based pickup/distribution overload (`0045d2e0`), durable inventory saving
-and live TCP commands remain pending.
+The ID-based pickup overload is described below; durable inventory saving and
+live TCP commands remain pending.
+
+ID pickup reconstructs the complete `CUser::ItemGet(DWORD)` (`0045d2e0`).
+`Actor::pickup_item` first uses actual zone pickup permission/removal, with its
+error word initialized to zero. Rejection sends four-byte `0205`, zero BYTE,
+reason BYTE. Ordinary admission shares the recovered stacking/storage/log path;
+if inventory is full, it sends reason 1 after any partial-transfer notices and
+before ground readmission. This preserves the difference from detached-item
+admission, which emits no inventory-full packet.
+
+Money pickups use an all-or-nothing capacity check. For drop type 1, the signed
+bonus rate starts at `SkillBenefits::mob_gold` (`CUser+58b4`), adding 20 for
+amulet mode 2 or 50 for mode 3 (`+58b0`), with DWORD wrap. A positive rate spills
+to float, divides by 100 in double precision, multiplies the unsigned amount
+rounded to float and truncates to signed DWORD through x87 semantics. Conversion
+overflow gives INT32_MIN. A nonpositive rate is added raw instead of converted;
+other drop types receive no bonus. Amount plus bonus wraps as a DWORD.
+
+If the resulting amount cannot fit, pickup returns the unchanged money item to
+the ground first, then sends reason 5, without credit/status/log/free. Otherwise
+it credits the complete amount, sends DB status, the receipt with the item's
+type-ID/count, and `0801`, then frees the item. Original drop money remains
+unchanged even when its credited amount includes a bonus. This is separate from
+the saturating programmatic money-credit overload.
+
+The oracle compares 2,048 complete original ID pickups, executing original
+permission, party lookup, distance, admission, money arithmetic and fallback
+code. It includes 392 forced successful money cases spanning all seven amulet
+states, seven signed rates and eight boundary amounts, so incorrect arithmetic
+cannot hide behind a capacity rejection. Other cases cover absence, owner/group
+protection, quest rejection, failed readmission, stack payloads, group changes and
+error/message ordering. The previous 640 detached-admission vectors regenerate
+unchanged. Live packet dispatch, full inventory ownership during loading and
+durable snapshot saving remain pending.
