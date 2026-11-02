@@ -2784,3 +2784,22 @@ signed overflow. Original list/heap operations and queries execute; allocator
 failure and locks are ports. Explicit initial fair flags are false to verify
 reset restoration; the native constructor defaults to the source's true flag.
 Production mob ownership, combat dispatch and death rewards remain pending.
+
+
+Mob experience follows `CMob::GetExp` (`ps_game.exe`, `00491690`). The definition
+projection now retains WORD Exp (original result column 4 / definition offset
+0024), including NULL-to-zero and WORD bit conversion. Level difference uses
+wrapped DWORD subtraction interpreted as signed; differences above 9 return
+zero. Otherwise the source computes base_exp * (1 + (difference+1)*0.2), with
+its double spills and truncation to a qword followed by keeping the low DWORD.
+Admin mode 1 always applies the global double multiplier; mode 2 applies it only
+when the event flag equals 1. A negative final signed result clamps to zero.
+The invalid qword conversion result contributes a zero low DWORD.
+
+The 1,024-case complete original-function fixture has no dependency ports and
+covers level limits, signed wrap, fractional/negative/large/nonfinite event
+multipliers and both event controls. The full-loader fixture also compares the
+new definition field. SQL integration verifies restored mob 1 Exp=704 and its
+same-level unmodified result of 844. This computes a candidate award; actual
+experience delivery, party/raid sharing and death reward coordination remain
+pending.
