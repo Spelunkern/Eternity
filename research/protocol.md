@@ -342,6 +342,20 @@ passive initialization suppresses them. A combined test retains the resulting
 partially filled MP after a later MP-max buff. Destruction follows
 `ResetCharacter` (`0044a050`): free active instances without reversal packets or
 replica deletion, including failed preparation. Required `ActorScene` services
-still own spatial queries, combat, equipment attack rebuilding, complex user
+still own spatial queries, combat, complex user
 shape broadcasts and element replacement. The live world does not implement
 those services yet; TCP character selection still does not enter the world.
+
+Attack-only rebuilding now follows `InitEquipment(bool)` (`00454ba0`),
+`ItemEquipmentAttackAdd` (`00456450`) and `GemEquipmentAttackAdd` (`004565b0`).
+It resets only item attack, variance, physical defense and magic defense;
+equipment uses cached quality tiers, mastery, shield, craft attack and gems in
+slots 0..12. Range, speeds, attributes, maxima and unrelated modifiers remain
+intact. Transformation uses the original mob-index lookup and first attack's
+damage/variance plus defense/magic. `MobAttackTemplates` projects those fields
+from `LoadConstMob` (`004c1720`), retaining WORD/DWORD bits and zero-HP-to-one
+normalization; this does not implement mob AI/combat loading. `Actor` owns its
+inventory and performs both rebuild paths without a scene callback. The oracle
+checks 192 original rebuilds and all resulting attack values; actor tests cover
+transformation reversal while the shape flag is still set. SQL integration checks
+the projection against the restored original definitions.

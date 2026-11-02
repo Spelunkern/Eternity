@@ -197,4 +197,61 @@ EquipmentStatus initialize_equipment(BaseStatus base,const std::vector<PlayerIte
     for(std::uint8_t slot=0;slot<13;++slot) if(slots[slot]) add_equipment(result,slot,*slots[slot],definitions,enchant);
     return result;
 }
+MobAttackTemplates MobAttackTemplates::load(const storage::ResultSet& table) {
+    // LoadConstMob 004c1720, ODBC columns 1/3/9/18/19/49/50 retain WORD/DWORD values.
+    MobAttackTemplates result;
+    for(const auto& row:table.rows) {
+        auto n=[&](std::string_view key) {
+            const auto index=column(table,key);if(index>=row.size() || !row[index]) throw std::runtime_error("Missing original mob WORD");
+            const auto& text=*row[index];std::int64_t value=0;const auto parsed=std::from_chars(text.data(),text.data()+text.size(),value);
+            if(parsed.ec!=std::errc{} || parsed.ptr!=text.data()+text.size() || value<INT16_MIN || value>UINT16_MAX) throw std::runtime_error("Invalid original mob WORD");
+            return static_cast<std::uint16_t>(value);
+        };
+        MobAttackTemplate mob;mob.id=static_cast<std::uint16_t>(n("MobID"));mob.level=static_cast<std::uint16_t>(n("Level"));
+        // SQL HP is signed int while original storage is a DWORD.
+        const auto hp_column=column(table,"HP");if(hp_column>=row.size() || !row[hp_column]) throw std::runtime_error("Missing original mob HP");
+        const auto& text=*row[hp_column];std::int64_t hp=0;const auto parsed=std::from_chars(text.data(),text.data()+text.size(),hp);
+        if(parsed.ec!=std::errc{} || parsed.ptr!=text.data()+text.size() || hp<INT32_MIN || hp>UINT32_MAX) throw std::runtime_error("Invalid original mob HP");
+        mob.hp=hp==0?1U:static_cast<std::uint32_t>(hp);mob.attack=static_cast<std::uint16_t>(n("Attack1"));mob.variance=static_cast<std::uint16_t>(n("Attackplus1"));
+        mob.physical_defense=static_cast<std::uint16_t>(n("Defense"));mob.magic_defense=static_cast<std::uint16_t>(n("Magic"));result.templates_[mob.id]=mob;
+    }
+    return result;
+}
+const MobAttackTemplate* MobAttackTemplates::find(std::uint32_t index) const {
+    // GetMobInfo 004026d0 / InitEquipment 00454bf1: index, embedded ID, HP and level must be valid.
+    if(index>65535) return nullptr;
+    const auto found=templates_.find(static_cast<std::uint16_t>(index));
+    return found!=templates_.end() && found->second.id!=0 && found->second.level!=0 && found->second.hp!=0?&found->second:nullptr;
+}
+void rebuild_transformed_attack(EquipmentStatus& status,const MobAttackTemplate* mob) {
+    // CUser::InitEquipment(bool=false) 00454ba0: clear four modifiers, even when lookup fails.
+    status.attack.item_attack=mob?mob->attack:0;status.variance=mob?mob->variance:0;
+    status.attack.physical_defense=mob?mob->physical_defense:0;status.attack.magic_defense=mob?mob->magic_defense:0;
+}
+void rebuild_equipment_attack(EquipmentStatus& status,const std::vector<PlayerItem>& items,const ItemDefinitions& definitions,const EnchantValues& enchant) {
+    // InitEquipment(bool=true) 00454ba0 and ItemEquipmentAttackAdd 00456450 use cached quality tiers.
+    rebuild_transformed_attack(status,nullptr);std::array<const PlayerItem*,13> slots{};
+    for(const auto& item:items) if(item.bag==0 && item.slot<slots.size()) {
+        if(slots[item.slot]) throw std::invalid_argument("Unresolved duplicate equipment during attack rebuild");
+        slots[item.slot]=&item;
+    }
+    for(std::size_t slot=0;slot<slots.size();++slot) if(const auto* item=slots[slot]) {
+        const auto* definition=definitions.find(item->type,item->type_id);if(!definition) throw std::runtime_error("Missing original attack rebuild item definition");
+        const auto& info=*definition;const auto quality=slot>=8?0:status.quality[slot];
+        if(quality>2) throw std::invalid_argument("Invalid cached original equipment quality tier");
+        if(slot==5 || slot>=8) {
+            status.attack.item_attack=add(status.attack.item_attack,info.effects[0][quality]);status.variance=add(status.variance,info.effects[1][quality]);
+            if(slot==5) {if(info.real_type>=20) throw std::runtime_error("Invalid original weapon mastery index");status.attack.item_attack=add(status.attack.item_attack,status.weapon_damage[info.real_type]);}
+        }
+        if(slot!=5) {
+            status.attack.physical_defense=add(status.attack.physical_defense,info.effects[2][quality]);status.attack.magic_defense=add(status.attack.magic_defense,info.effects[3][quality]);
+            if(slot==6) status.attack.physical_defense=add(status.attack.physical_defense,status.shield_value);
+        }
+        if(info.server!=0) status.attack.item_attack=add(status.attack.item_attack,decode_craft(info,item->craft,enchant).additions[9]);
+        if(slot!=7) for(const auto id:item->gems) if(const auto* gem_info=definitions.find(30,id)) {
+            status.attack.item_attack=add(status.attack.item_attack,gem_info->effects[0][0]);status.variance=add(status.variance,gem_info->effects[1][0]);
+            status.attack.physical_defense=add(status.attack.physical_defense,gem_info->effects[2][0]);status.attack.magic_defense=add(status.attack.magic_defense,gem_info->effects[3][0]);
+        }
+    }
+}
 }

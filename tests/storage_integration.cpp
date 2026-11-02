@@ -87,6 +87,9 @@ int main() {
         require(experience.bounds(1,1).previous==0 && experience.bounds(1,1).next>0,"Restored experience curve did not load");
         const auto items=eternity::game::ItemDefinitions::load(definitions.catalogs.at("Items"));
         require(items.find(5,1) && items.find(30,1),"Restored weapon/gem definitions did not load");
+        const auto mobs=eternity::game::MobAttackTemplates::load(definitions.catalogs.at("Mobs"));
+        require(mobs.find(1) && mobs.find(1)->level==38 && mobs.find(1)->hp==2765 && mobs.find(1)->attack==167 &&
+                mobs.find(1)->variance==83 && mobs.find(1)->physical_defense==38 && mobs.find(1)->magic_defense==31,"Restored mob transformation attack projection changed");
         const auto skills=eternity::game::SkillDefinitions::load(definitions.catalogs.at("Skills"));
         require(skills.find(1,1) && !skills.find(1,4),"Restored original three-level skill definitions did not load");
         eternity::game::Characters characters(database,255,std::chrono::sys_days{std::chrono::year{2024}/1/1});

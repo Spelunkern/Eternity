@@ -43,6 +43,21 @@ struct EquipmentStatus {
     std::uint8_t shield_value = 0;
     bool transformed = false,defense_attribute_skill = false;
 };
+struct MobAttackTemplate {
+    std::uint16_t id=0,level=0;
+    std::uint32_t hp=0;
+    std::uint16_t attack=0,variance=0,physical_defense=0,magic_defense=0;
+};
+// Projection used by transformation attack rebuilding; mob AI/combat loading is separate.
+class MobAttackTemplates {
+public:
+    static MobAttackTemplates load(const storage::ResultSet& mobs);
+    const MobAttackTemplate* find(std::uint32_t index) const;
+private:
+    std::map<std::uint16_t,MobAttackTemplate> templates_;
+};
+void rebuild_equipment_attack(EquipmentStatus& status,const std::vector<PlayerItem>& items,const ItemDefinitions& definitions,const EnchantValues& enchant);
+void rebuild_transformed_attack(EquipmentStatus& status,const MobAttackTemplate* mob);
 // Applies the original stat/element changes at initialization, without broadcasting equipment changes.
 void add_equipment(EquipmentStatus& status,std::uint8_t slot,const PlayerItem& item,const ItemDefinitions& definitions,const EnchantValues& enchant);
 std::uint32_t item_attribute(const PlayerItem& item,const ItemDefinitions& definitions);

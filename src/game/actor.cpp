@@ -6,8 +6,9 @@ namespace eternity::game {
 namespace {
 void append(net::Packet& packet,std::uint32_t value,unsigned int bytes) {for(unsigned int i=0;i<bytes;++i) packet.push_back(static_cast<std::uint8_t>(value>>(8*i)));}
 }
-Actor::Actor(std::uint32_t id,EffectStatus status,PlayerResources current,std::vector<PersistedEffect> replica,ActorScene& scene)
-    :id_(id),status_(std::move(status)),scene_(scene),resources_(id,current,*this),effects_(id),replica_(std::move(replica)) {}
+Actor::Actor(std::uint32_t id,EffectStatus status,PlayerResources current,std::vector<PersistedEffect> replica,ActorScene& scene,
+    ActorEquipmentRules equipment,std::vector<PlayerItem> inventory)
+    :id_(id),status_(std::move(status)),scene_(scene),resources_(id,current,*this),effects_(id),replica_(std::move(replica)),equipment_(equipment),inventory_(std::move(inventory)) {}
 Actor::~Actor() {effects_.release_all(*this);}
 std::array<std::int32_t,3> Actor::heal(std::array<std::int32_t,3> amounts) {return resources_.heal(status_.skills.equipment.base.maximum,amounts);}
 void Actor::recover(std::array<std::int32_t,3> amounts,bool send_set,bool recovering) {resources_.recover(status_.skills.equipment.base.maximum,amounts,send_set,attack_.mode,recovering);}
@@ -49,7 +50,11 @@ void Actor::stop_attack(EffectStatus& status) {
 void Actor::stop_target_mob(EffectStatus&,std::uint32_t id) {scene_.stop_target_mob(id);}
 void Actor::taunt(EffectStatus&,std::uint16_t aggro,float range) {scene_.taunt(aggro,range);}
 void Actor::detect_hidden(EffectStatus&,const SkillDefinition& skill) {scene_.detect_hidden(skill);}
-void Actor::rebuild_attack(EffectStatus& status,bool equipment) {scene_.rebuild_equipment_attack(status,equipment);recalculate_attack(status);}
+void Actor::rebuild_attack(EffectStatus& status,bool equipment) {
+    if(equipment) rebuild_equipment_attack(status.skills.equipment,inventory_,equipment_.items,equipment_.enchant);
+    else rebuild_transformed_attack(status.skills.equipment,equipment_.mobs.find(status.shape_template));
+    recalculate_attack(status);
+}
 void Actor::user_shape_changed(EffectStatus&) {scene_.send_user_shape();}
 void Actor::replace_attack_elements(EffectStatus&,std::uint8_t attribute) {scene_.replace_attack_elements(attribute);}
 void Actor::finish_periodic_heal(EffectStatus&,const SkillDefinition& skill,const EffectSource&,const std::array<std::int32_t,3>& amounts) {

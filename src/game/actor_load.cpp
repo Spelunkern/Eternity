@@ -7,7 +7,8 @@ LoadedActor load_actor(const PlayerSnapshot& player,const ActorLoadRules& rules,
     if(result.learned.invalid) return result;
     EffectStatus initial;initial.level=player.core.character.level;
     result.actor=std::make_unique<Actor>(player.core.character.id,std::move(initial),
-        PlayerResources{player.core.character.hp,player.core.character.mp,player.core.character.sp},player.effects,scene);
+        PlayerResources{player.core.character.hp,player.core.character.mp,player.core.character.sp},player.effects,scene,
+        ActorEquipmentRules{rules.items,rules.enchant,rules.mobs},player.items);
     auto& actor=*result.actor;auto& status=actor.status();
     actor.effects().restore(player.effects,rules.skills,player.core.character.map,options.disconnected_seconds,options.tick_ms,actor);
     result.quests=restore_quests(player,rules.quests,options.tick_ms);

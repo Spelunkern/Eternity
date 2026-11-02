@@ -3,8 +3,8 @@
 #include "eternity/game/resources.hpp"
 
 namespace eternity::game {
-// Required scene/transport services. Implementations own spatial queries, combat,
-// equipment attack reconstruction, and connection queues; none default to no-op.
+// Required scene/transport services. Implementations own spatial queries, combat
+// and connection queues; none default to no-op.
 class ActorScene {
 public:
     virtual ~ActorScene() = default;
@@ -20,7 +20,6 @@ public:
     virtual void stop_target_mob(std::uint32_t id) = 0;
     virtual void taunt(std::uint16_t aggro,float range) = 0;
     virtual void detect_hidden(const SkillDefinition&) = 0;
-    virtual void rebuild_equipment_attack(EffectStatus&,bool equipment) = 0;
     virtual void send_user_shape() = 0;
     virtual void replace_attack_elements(std::uint8_t attribute) = 0;
     virtual void finish_periodic_damage(EffectStatus&,const SkillDefinition&,const EffectSource&,std::uint32_t elapsed) = 0;
@@ -34,10 +33,17 @@ struct ActorAttackState {
     std::int32_t mode=0,recovery=1;
     std::uint32_t previous_tick=0,next_tick=0;
 };
+struct ActorEquipmentRules {
+    // Immutable definition/enchant sources must outlive the actor; its inventory is owned separately.
+    const ItemDefinitions& items;
+    const EnchantValues& enchant;
+    const MobAttackTemplates& mobs;
+};
 // Single actor executor; its owner must serialize commands, ticks and scene changes.
 class Actor final:public EffectRemovalWorld,public EffectObserver,private ResourceSink {
 public:
-    Actor(std::uint32_t id,EffectStatus status,PlayerResources current,std::vector<PersistedEffect> replica,ActorScene& scene);
+    Actor(std::uint32_t id,EffectStatus status,PlayerResources current,std::vector<PersistedEffect> replica,ActorScene& scene,
+        ActorEquipmentRules equipment,std::vector<PlayerItem> inventory = {});
     ~Actor(); // Bound scene must outlive this actor.
     EffectStatus& status() noexcept {return status_;}
     const EffectStatus& status() const noexcept {return status_;}
@@ -46,6 +52,7 @@ public:
     const PlayerResources& resources() const noexcept {return resources_.current();}
     EffectCycle& effects() noexcept {return effects_;}
     const EffectReplica& replica() const noexcept {return replica_;}
+    std::vector<PlayerItem>& inventory() noexcept {return inventory_;}
     void initializing(bool value) noexcept {initializing_=value;}
     void finish_loading_resources() {resources_.clamp(status_.skills.equipment.base.maximum);}
     std::array<std::int32_t,3> heal(std::array<std::int32_t,3> amounts);
@@ -85,6 +92,8 @@ private:
     ActorResources resources_;
     EffectCycle effects_;
     EffectReplica replica_;
+    ActorEquipmentRules equipment_;
+    std::vector<PlayerItem> inventory_;
     bool initializing_=false;
 };
 }

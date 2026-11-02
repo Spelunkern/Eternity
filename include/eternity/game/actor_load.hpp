@@ -11,6 +11,7 @@ struct ActorLoadRules {
     const EnchantValues& enchant;
     const SkillDefinitions& skills;
     const QuestDefinitions& quests;
+    const MobAttackTemplates& mobs;
 };
 struct ActorLoadOptions {
     std::uint32_t tick_ms=0,disconnected_seconds=0;

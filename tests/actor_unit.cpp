@@ -1,5 +1,6 @@
 #include "eternity/game/actor.hpp"
 #include "eternity/game/actor_load.hpp"
+#include "equipment_fixture.hpp"
 #include <fstream>
 #include <iostream>
 #include <sstream>
@@ -23,7 +24,6 @@ struct Scene final:ActorScene {
     void stop_target_mob(std::uint32_t) override {unexpected();}
     void taunt(std::uint16_t,float) override {unexpected();}
     void detect_hidden(const SkillDefinition&) override {unexpected();}
-    void rebuild_equipment_attack(EffectStatus&,bool) override {unexpected();}
     void send_user_shape() override {unexpected();}
     void replace_attack_elements(std::uint8_t) override {unexpected();}
     void finish_periodic_damage(EffectStatus&,const SkillDefinition&,const EffectSource&,std::uint32_t) override {unexpected();}
@@ -31,6 +31,8 @@ struct Scene final:ActorScene {
 int main(int argc,char** argv) {
     try {
         require(argc==2,"Expected actor operation oracle");std::ifstream input(argv[1]);require(input.good(),"Cannot open actor oracle");std::string line;unsigned int count=0;
+        const ItemDefinitions default_items;const EnchantValues default_enchant;const MobAttackTemplates default_mobs;
+        const ActorEquipmentRules equipment_rules{default_items,default_enchant,default_mobs};
         while(std::getline(input,line)) {
             if(line.empty() || line[0]=='#') continue;std::istringstream row(line);unsigned int op=0,s=0;row>>op>>s;
             require(static_cast<bool>(row) && op<7 && s<128,"Malformed actor vector");Scene scene;if(s&8) scene.party=(s&16)!=0;
@@ -39,7 +41,7 @@ int main(int argc,char** argv) {
             status.skills.equipment.attack_speed=static_cast<std::int32_t>(s%13)-2;status.skills.equipment.move_speed=static_cast<std::int32_t>(s%8)-2;
             status.skills.equipment.base.maximum={1000,2000,3000};status.current_target_type=2;
             const auto current=std::array<PlayerResources,4>{{{100,200,300},{999,1999,2999},{1000,2000,3000},{70000,80000,90000}}}[s%4];
-            Actor actor(9001,status,current,{},scene);actor.initializing((s&4)!=0);
+            Actor actor(9001,status,current,{},scene,equipment_rules);actor.initializing((s&4)!=0);
             actor.appearance()={(s&2)!=0,static_cast<std::int32_t>(s%4),25,77,0x78563412};
             actor.attack_state()={std::array<std::int32_t,4>{0,1,2,-1}[s%4],std::array<std::int32_t,4>{-2,0,1,7}[s%4],123,456};
             if(op==0) actor.send_shape_self();else if(op==1) actor.shape_changed(actor.status());else if(op==2) actor.send_vehicle_partner();
@@ -60,7 +62,7 @@ int main(int argc,char** argv) {
         }
         require(count==896,"Actor oracle coverage changed");
         // An expiry traverses the concrete actor adapter, mutates its DB-agent replica and releases its runtime ID.
-        Scene scene;EffectStatus status;status.skills.equipment.base.maximum={100,100,100};Actor actor(9001,status,{75,50,25},{{321,1,1},{321,1,5}},scene);
+        Scene scene;EffectStatus status;status.skills.equipment.base.maximum={100,100,100};Actor actor(9001,status,{75,50,25},{{321,1,1},{321,1,5}},scene,equipment_rules);
         SkillDefinition effect;effect.id=321;effect.level=1;effect.effect=4;effect.detail=82;effect.abilities[0]={1,10};
         const auto id=actor.allocate_id();require(id.has_value(),"Actor allocation failed");actor.effects().append(*id,{{321,1,1},1000,2000,false},effect);
         actor.initializing(true);actor.effects().initialize(actor.status(),actor);actor.initializing(false);scene.events.clear();
@@ -77,7 +79,7 @@ int main(int argc,char** argv) {
         }
         const auto skills=SkillDefinitions::load(skill_table);storage::ResultSet status_table{{"Level","Job","HP","MP","SP"},{{"1","0","1000","2000","3000"}}};
         const auto statuses=StatusRules::load(status_table);const ItemDefinitions items;const EnchantValues enchant;
-        const auto quests=QuestDefinitions::decode(net::Packet{0,0,0,0});const ActorLoadRules rules{statuses,items,enchant,skills,quests};
+        const auto quests=QuestDefinitions::decode(net::Packet{0,0,0,0});const ActorLoadRules rules{statuses,items,enchant,skills,quests,default_mobs};
         PlayerSnapshot player;auto& character=player.core.character;character.id=9001;character.level=1;character.map=1;character.strength=10;character.dexterity=20;
         character.recovery=30;character.intelligence=40;character.wisdom=50;character.luck=60;character.hp=2000;character.mp=3000;character.sp=4000;
         player.skills={{100,5,1,0,0}};player.effects={{101,1,30}};
@@ -98,6 +100,24 @@ int main(int argc,char** argv) {
         player.skills[0].id=100;player.effects={{102,1,30}};bool scene_failure=false;
         try {auto failed=load_actor(player,rules,{10000,0,0,nullptr},loading);}catch(const std::runtime_error&){scene_failure=true;}
         require(scene_failure && loading.events==std::vector<std::string>{"F101"},"Failed actor initialization leaked an allocated effect or emitted reversal packets");
+        const auto equipped_definitions=ItemDefinitions::load(item_definitions());EnchantValues equipped_enchant;
+        for(std::size_t i=0;i<21;++i) equipped_enchant.additions[i]={static_cast<std::uint16_t>(i*7),static_cast<std::uint16_t>(i*11)};
+        const auto mob_templates=MobAttackTemplates::load({{"MobID","Level","HP","Attack1","Attackplus1","Defense","Magic"},{{"1","38","2765","167","83","38","31"}}});
+        PlayerItem equipped_weapon;equipped_weapon.type=5;equipped_weapon.type_id=1;equipped_weapon.slot=5;equipped_weapon.craft="01020304050607080903";equipped_weapon.gems[0]=1;
+        PlayerItem equipped_armor;equipped_armor.type=16;equipped_armor.type_id=1;equipped_armor.slot=1;
+        EffectStatus transformed;transformed.level=30;transformed.in_zone=true;
+        transformed.skills.equipment=initialize_equipment({{100,200,300,400,500,600},{10000,20000,30000}},{equipped_weapon,equipped_armor},equipped_definitions,equipped_enchant);
+        transformed.skills.equipment.quality[5]=1;transformed.skills.equipment.weapon_damage.fill(7);
+        const auto previous_maximum=transformed.skills.equipment.base.maximum;const auto previous_range=transformed.skills.equipment.range;
+        Scene transformed_scene;Actor copied(9001,transformed,{50,60,70},{},transformed_scene,{equipped_definitions,equipped_enchant,mob_templates},{equipped_weapon,equipped_armor});
+        SkillDefinition transformation;transformation.id=200;transformation.level=1;transformation.effect=4;transformation.detail=90;transformation.change_type=7;transformation.change_level=1;
+        apply_active_effect(copied.status(),transformation,0,copied);
+        require(copied.status().shape==7 && copied.status().skills.equipment.attack.item_attack==167 && copied.status().skills.equipment.variance==83,"Actor transformation did not use its mob attack template");
+        remove_active_effect(copied.status(),transformation,{},10000,{},equipped_definitions,copied);
+        const auto& rebuilt=copied.status().skills.equipment;
+        require(copied.status().shape==0 && rebuilt.attack.item_attack==559 && rebuilt.variance==533 && rebuilt.attack.physical_defense==33 && rebuilt.attack.magic_defense==34,"Actor transformation reversal did not rebuild cached-quality equipment");
+        require(rebuilt.base.maximum.hp==previous_maximum.hp && rebuilt.base.maximum.mp==previous_maximum.mp && rebuilt.base.maximum.sp==previous_maximum.sp && rebuilt.range==previous_range,"Actor attack rebuild changed resource maxima or attack range");
+        require(transformed_scene.events==std::vector<std::string>{"C1d052923000007","C1d052923000000"},"Actor transformation view sequence changed");
         std::cout<<count<<" original actor operations and concrete effect expiry passed\n";
     } catch(const std::exception& error) {std::cerr<<error.what()<<'\n';return 1;}
 }
