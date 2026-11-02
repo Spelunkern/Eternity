@@ -28,6 +28,9 @@ def main():
             if n==72:state['fresh']+=1;fail=state['fail'] and state['fresh']%5==0
             if not fail:m.mem_write(at,bytes(n))
             m.reg_write(UC_X86_REG_EAX,0 if fail else at)
+        elif address==0x40e0d0:
+            at=state['heap'];state['heap']+=16;m.mem_write(at,bytes(16));m.reg_write(UC_X86_REG_EAX,at)
+        elif address==0x410d50:m.reg_write(UC_X86_REG_EAX,info)
         elif address==0x43ccc0:m.reg_write(UC_X86_REG_EAX,data)
         elif address==0x43f350:state['row']=-1;m.reg_write(UC_X86_REG_EAX,0xffffffff if state['fault']==-2 else 0)
         elif address==0x43f390:state['row']+=1;m.reg_write(UC_X86_REG_EAX,100 if state['row']>=len(state['rows']) else 0)
@@ -57,7 +60,7 @@ def main():
             for at in range(3,len(p),33):
                 end=p.index(0,at+12,at+33);p[end+1:at+33]=bytes(at+33-end-1)
             game_packets.append(bytes(p))
-    for at,cleanup in ((0x443986,0),(0x443c3e,0),(0x43ccc0,0),(0x43cd80,4),(0x43f350,4),(0x43f390,0),(0x43e8b0,20),(0x4327a0,8),(0x432d80,0),(0x44447f,0),(0x444dc3,0),(stop+0x100,4)):
+    for at,cleanup in ((0x40e0d0,0),(0x410d50,4),(0x443986,0),(0x443c3e,0),(0x43ccc0,0),(0x43cd80,4),(0x43f350,4),(0x43f390,0),(0x43e8b0,20),(0x4327a0,8),(0x432d80,0),(0x44447f,0),(0x444dc3,0),(stop+0x100,4)):
         db.mem_write(at,b'\xc2'+struct.pack('<H',cleanup));db.hook_add(UC_HOOK_CODE,dbhook,begin=at,end=at)
     for iat in (0x4600d4,0x4600d8):put(db,iat,stop+0x100)
     for at,cleanup in ((0x4328c0,4),(0x402710,4),(0x40a510,0),(0x4d4f10,8),(0x4d4d20,8),(0x4d9510,0),(0x505316,0),(stop+0x100,4)):
@@ -79,6 +82,12 @@ def main():
         return iid,image,sql
     def write_item(at,i,slot):
         iid,image,sql=row(i,slot);put(db,at+8,0);db.mem_write(at+16,image[:8]);put(db,at+24,iid);db.mem_write(at+28,image[9:11]+image[19:20]);db.mem_write(at+32,image[11:19]);raw=image[25:46].split(b'\0')[0].replace(b' ',b'');db.mem_write(at+40,raw+b'\0'+bytes(20-len(raw)));put(db,at+64,stamp);db.mem_write(at+68,b'M');return iid,image,sql
+    def snapshot():
+        result={}
+        for slot in range(240):
+            at=word(db,info+0x6c+slot*4)
+            if at:result[slot]=' '.join(map(str,(slot,word(db,at+8),word(db,at+24),bytes(db.mem_read(at+16,8)).hex(),bytes(db.mem_read(at+28,3)).hex(),bytes(db.mem_read(at+32,8)).hex(),bytes(db.mem_read(at+40,21)).split(b'\0')[0].hex() or '-',word(db,at+64),db.mem_read(at+68,1)[0])))
+        return result
     print(f'# ps_dbAgent.exe SHA256 {digest}; LoadStoredItemList 00427800, SendGuildBank 0040f7d0; ps_game.exe SHA256 {game_digest}; PacketGuild 00408e00, SendBankItemList 0042f250; actual lists/trim/craft; ODBC/allocator/lookup/OS/transport ports')
     for case in range(96):
         seed=(0,1,230,240)[case%4];count=(0,1,39,40,41,49,50,51,240,260)[case%10];fault=-2 if case%23==0 else count//2 if case%11==0 and count else -1;pool_count=case%4;real_type=(0,1,25,26,255)[case%5];limit=(0,1,3,255)[case%4];gid=0x80000000+case
@@ -92,9 +101,7 @@ def main():
             slot=(0 if i%3==0 else i%240) if case%3 else (239 if i%2 else 240+i)
             iid,image,sql=row(i,slot);state['rows'].append(sql);print('ROW',slot,iid,image.hex())
         result=call(db,0x427800,(gid,),((UC_X86_REG_ECX,info),));print('RETURN',result);print('POOL',word(db,0x470ac0))
-        for slot in range(240):
-            at=word(db,info+0x6c+slot*4)
-            if at:print('ITEM',slot,word(db,at+8),word(db,at+24),bytes(db.mem_read(at+16,8)).hex(),bytes(db.mem_read(at+28,3)).hex(),bytes(db.mem_read(at+32,8)).hex(),bytes(db.mem_read(at+40,21)).split(b'\0')[0].hex() or '-',word(db,at+64),db.mem_read(at+68,1)[0])
+        for item in snapshot().values():print('ITEM',item)
         call(db,0x40f7d0,(data,),((UC_X86_REG_ECX,info),))
         for p in db_packets:print('DB',p.hex())
         for repeat in range(1+case%2):
@@ -103,6 +110,24 @@ def main():
         call(game,0x42f250,(data,),((UC_X86_REG_ECX,info),(UC_X86_REG_EDI,data)))
         for p in corrections:print('CORRECTION',p.hex())
         for p in game_packets:print('CLIENT',p.hex())
+        head=data+0x5000;put(db,head,head,head);put(db,info+0x444,head);put(db,info+0x464,0);deleted_seen=0
+        for step in range(16):
+            before=snapshot();occupied=list(before);source=occupied[(case+step)%len(occupied)] if occupied else step%240
+            never_saved=[slot for slot,value in before.items() if value.split()[1]=='1']
+            if step==2 and never_saved:source=never_saved[0]
+            if step%3==0:p=struct.pack('<HIBB',0xb14,gid,source,(case*7+step)&255)
+            elif step%3==2:p=struct.pack('<HIB',0xb15,gid,source)
+            else:
+                empty=[i for i in range(240) if i not in before]
+                target=source if step%4==1 else empty[0] if step%4==2 and empty else occupied[-1] if occupied else 239
+                p=struct.pack('<HIBBBB',0xb11,gid,source,0 if step%2 else 7,target,0 if step%4==1 else 3)
+            print('CMD',p.hex());db.mem_write(data,p);call(db,0x40ba00,regs=((UC_X86_REG_EAX,data),));after=snapshot()
+            for slot in sorted(before.keys()|after.keys()):
+                if before.get(slot)!=after.get(slot):print('CHANGE',after[slot]) if slot in after else print('EMPTY',slot)
+            node=word(db,head+4);journal=[]
+            while node!=head:journal.append(struct.unpack('<Q',db.mem_read(node+8,8))[0]);node=word(db,node+4)
+            for uid in journal[deleted_seen:]:print('DELETE',uid)
+            deleted_seen=len(journal);print('POOLCMD',word(db,0x470ac0));print('ENDCMD')
         print('END')
 
 

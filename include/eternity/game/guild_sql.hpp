@@ -17,6 +17,7 @@ public:
     bool load_maximum(); // LoadMaxID 00426a00.
     bool load(); // LoadGuildNUserList 004271a0 / LoadUserList 004275d0.
     void send_npcs(); // SendGuildNpcLvList 00410cb0, after guild/bank loading.
+    InventoryReplicaResult apply(std::span<const std::uint8_t>); // Owned bank commands, PacketGuild 0040ba00.
     void send_banks(); // SendGuildBankList 00410c20.
     const std::map<std::uint32_t,GuildDbMetadata>& replicas() const noexcept {return replicas_;}
 private:

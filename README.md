@@ -85,8 +85,10 @@ retains rank-map stamps and sends original roster/application packets. Core guil
 metadata/member SQL loading now feeds the game catalog. The restored Guild2
 procedure references a missing `Guilds.Rank` column. NPC levels now load through
 SQL and reach original DB/client packets. Guild bank SQL loading, duplicate
-relocation, game item reconstruction and client bank packets are implemented;
-production startup, bank transfers/persistence and guild gameplay remain pending.
+relocation, game item reconstruction and client bank packets are implemented.
+DB bank moves, count changes and deletions retain original save markers/journals;
+production startup, character/guild transfers, bank persistence and guild gameplay
+remain pending.
 Zone selection/reuse and access rules are reconstructed; world object initialization
 and zone queue services remain required dependencies.
 Door/region templates, door operation and weather transitions are reconstructed.

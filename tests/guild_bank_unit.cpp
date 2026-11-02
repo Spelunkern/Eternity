@@ -4,6 +4,7 @@
 #include <fstream>
 #include <iomanip>
 #include <iostream>
+#include <map>
 #include <sstream>
 using namespace eternity;using namespace eternity::game;
 void require(bool value,const std::string& message) {if(!value) throw std::runtime_error(message);}
@@ -21,11 +22,11 @@ int main(int argc,char** argv) {
     try {
         require(argc==2,"Expected original guild bank oracle");std::ifstream input(argv[1]);require(input.good(),"Cannot open guild bank oracle");
         std::unique_ptr<InventoryReplicaPool> db_pool;std::unique_ptr<GuildBankReplica> db;std::unique_ptr<GroundItemPool> game_pool;std::unique_ptr<GuildBankServices> services;std::unique_ptr<GuildBank> game;ItemDefinitions definitions;EnchantValues enchant;
-        std::vector<std::string> items;std::vector<net::Packet> db_packets,client_packets,corrections;std::size_t next_item=0,next_db=0,next_client=0,next_correction=0,cases=0;unsigned int scenario=0,seed_count=0,count=0,pool_count=0,kind=0,limit=0,db_fresh=0,game_fresh=0,row_index=0;int fault=-1;bool active=false;std::uint32_t guild=0;std::string line;
+        std::vector<std::string> items,changes;std::size_t next_change=0,next_delete=0,commands=0;std::vector<net::Packet> db_packets,client_packets,corrections;std::size_t next_item=0,next_db=0,next_client=0,next_correction=0,cases=0;unsigned int scenario=0,seed_count=0,count=0,pool_count=0,kind=0,limit=0,db_fresh=0,game_fresh=0,row_index=0;int fault=-1;bool active=false;std::uint32_t guild=0;std::string line;
         while(std::getline(input,line)) {
             if(line.empty() || line[0]=='#') continue;std::istringstream row(line);std::string tag;row>>tag;
             if(tag=="CASE") {
-                game.reset();services.reset();game_pool.reset();db.reset();db_pool.reset();row>>scenario>>seed_count>>count>>fault>>pool_count>>kind>>limit>>guild;active=false;db_fresh=game_fresh=row_index=0;corrections.clear();items.clear();next_item=next_db=next_client=next_correction=0;
+                game.reset();services.reset();game_pool.reset();db.reset();db_pool.reset();row>>scenario>>seed_count>>count>>fault>>pool_count>>kind>>limit>>guild;active=false;db_fresh=game_fresh=row_index=0;next_delete=0;corrections.clear();items.clear();next_item=next_db=next_client=next_correction=0;
                 db_pool=std::make_unique<InventoryReplicaPool>([&]()->std::unique_ptr<CachedInventoryItem>{if(active && ++db_fresh%5==0 && scenario%7==0) return {};return std::make_unique<CachedInventoryItem>();});db=std::make_unique<GuildBankReplica>(*db_pool);db->begin_load();for(unsigned int i=0;i<seed_count;++i) db->load(seed(9000+i),static_cast<std::int32_t>(i));db->finish_load(true);
                 for(unsigned int i=0;i<pool_count;++i) {auto stored=std::make_unique<CachedInventoryItem>();stored->save_type=std::array<int,3>{0,1,17}[i%3];db_pool->release(std::move(stored));}active=true;db->begin_load();
                 auto table=item_definitions();table.rows[0][0]="501";table.rows[0][10]="0";table.rows[0].back()=std::to_string(limit);definitions=ItemDefinitions::load(table);
@@ -41,9 +42,18 @@ int main(int argc,char** argv) {
             else if(tag=="DB") {require(next_db<db_packets.size() && hex(db_packets[next_db])==line.substr(3),"Original guild bank DB bytes differ at case "+std::to_string(cases));++next_db;}
             else if(tag=="CORRECTION") {require(next_correction<corrections.size() && hex(corrections[next_correction])==line.substr(11),"Original game bank count correction differs at case "+std::to_string(cases));++next_correction;}
             else if(tag=="CLIENT") {require(next_client<client_packets.size() && hex(client_packets[next_client])==line.substr(7),"Original guild bank client bytes differ at case "+std::to_string(cases));++next_client;}
+            else if(tag=="CMD") {
+                std::string raw;row>>raw;std::map<unsigned int,std::string> before,after;for(const auto& item:db->snapshot()) before.emplace(item.item.slot,item_line(item).substr(5));
+                require(db->apply(decode(raw))==InventoryReplicaResult::applied,"Original guild bank mutation rejected");for(const auto& item:db->snapshot()) after.emplace(item.item.slot,item_line(item).substr(5));
+                changes.clear();next_change=0;for(unsigned int slot=0;slot<240;++slot) {const auto old=before.find(slot),current=after.find(slot);if(old==before.end() && current==after.end()) continue;if(old!=before.end() && current!=after.end() && old->second==current->second) continue;changes.push_back(current==after.end()?"EMPTY "+std::to_string(slot):"CHANGE "+current->second);}++commands;
+            }
+            else if(tag=="CHANGE" || tag=="EMPTY") {require(next_change<changes.size() && changes[next_change]==line,"Original guild bank mutation differs at command "+std::to_string(commands)+": "+(next_change<changes.size()?changes[next_change]:"<none>")+" vs "+line);++next_change;}
+            else if(tag=="DELETE") {std::uint64_t uid=0;row>>uid;require(next_delete<db->deleted().size() && db->deleted()[next_delete]==uid,"Original guild bank deletion journal differs");++next_delete;}
+            else if(tag=="POOLCMD") {std::size_t expected=0;row>>expected;require(db_pool->statistics().available==expected,"Original guild bank mutation recycling differs");}
+            else if(tag=="ENDCMD") require(next_change==changes.size() && next_delete==db->deleted().size(),"Extra native guild bank mutation/journal");
             else if(tag=="END") require(next_item==items.size() && next_db==db_packets.size() && next_client==client_packets.size() && next_correction==corrections.size() && row_index==count,"Extra native guild bank state/packets");else throw std::runtime_error("Unknown guild bank fixture row");
         }
-        require(cases==96,"Guild bank oracle coverage changed");
-        std::cout<<cases<<" original guild bank SQL/list/pool/DB packet/game receive/correction/client sequences passed\n";
+        require(cases==96 && commands==1536,"Guild bank oracle coverage changed");
+        std::cout<<cases<<" original guild bank SQL/list/pool/DB packet/game receive/correction/client sequences and "<<commands<<" bank mutations passed\n";
     }catch(const std::exception& error) {std::cerr<<error.what()<<'\n';return 1;}
 }

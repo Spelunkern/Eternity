@@ -15,11 +15,14 @@ public:
     void begin_load();
     void load(PlayerItem,std::int32_t slot);
     void finish_load(bool success); // Success relocates duplicates; failure deletes them.
+    // Caller resolves the guild envelope before dispatching these bank commands.
+    InventoryReplicaResult apply(std::span<const std::uint8_t>);
+    const std::vector<std::uint64_t>& deleted() const noexcept {return deleted_;}
     std::vector<CachedInventoryItem> snapshot() const;
     std::vector<net::Packet> packets(std::uint32_t guild) const; // SendGuildBank 0040f7d0.
 private:
     using Item=std::unique_ptr<CachedInventoryItem>;
-    InventoryReplicaPool& pool_;std::array<Item,240> slots_{};std::vector<Item> pending_;bool loading_=false;
+    InventoryReplicaPool& pool_;std::array<Item,240> slots_{};std::vector<Item> pending_;std::vector<std::uint64_t> deleted_;bool loading_=false;
 };
 struct GuildBankServices {
     const ItemDefinitions& definitions;const EnchantValues& enchant;GroundItemPool& pool;

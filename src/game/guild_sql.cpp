@@ -92,6 +92,16 @@ bool GuildSql::load_bank(std::uint32_t id,GuildBankReplica& bank) {
         bank.finish_load(true);return true;
     } catch(const std::exception& error) {bank.finish_load(false);ports_.diagnostic(error.what());return false;}
 }
+InventoryReplicaResult GuildSql::apply(std::span<const std::uint8_t> p) {
+    if(p.size()<6) return InventoryReplicaResult::rejected;
+    const auto op=std::uint32_t{p[0]}|(std::uint32_t{p[1]}<<8);const std::size_t size=op==0xb11?10:op==0xb14?8:op==0xb15?7:0;
+    if(size==0) return InventoryReplicaResult::unsupported;
+    if(p.size()!=size || p[6]>=240 || (op==0xb11 && p[8]>=240)) return InventoryReplicaResult::rejected;
+    std::uint32_t id=0;for(unsigned int i=0;i<4;++i) id|=std::uint32_t{p[2+i]}<<(8*i);
+    const auto found=replicas_.find(id);
+    if(found==replicas_.end()) {ports_.diagnostic("Guild bank command references unknown guild "+std::to_string(id));return InventoryReplicaResult::applied;}
+    return found->second.bank->apply(p);
+}
 void GuildSql::send_banks() {for(const auto& [id,replica]:replicas_) for(auto& p:replica.bank->packets(id)) ports_.send(std::move(p));}
 
 }

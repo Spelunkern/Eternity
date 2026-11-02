@@ -28,6 +28,25 @@ void GuildBankReplica::finish_load(bool success) {
     // The original error path directly deletes temporary nodes, bypassing its pool.
     pending_.clear();
 }
+InventoryReplicaResult GuildBankReplica::apply(std::span<const std::uint8_t> p) {
+    // ps_dbAgent.exe CConnection::PacketGuild 0040ba00, 0b11/0b14/0b15;
+    // GuildInfo::AddDeleteItemBank 0040f550 skips never-persisted items.
+    if(loading_ || p.size()<6) return InventoryReplicaResult::rejected;
+    const auto op=get(p,0,2);const std::size_t size=op==0xb11?10:op==0xb14?8:op==0xb15?7:0;
+    if(size==0) return InventoryReplicaResult::unsupported;
+    if(p.size()!=size || p[6]>=240 || (op==0xb11 && p[8]>=240)) return InventoryReplicaResult::rejected;
+    const auto dirty=[](Item& item){if(item->save_type==0) item->save_type=2;};
+    const auto remove=[&](Item& item){if(item->save_type!=1) deleted_.push_back(item->item.uid);pool_.release(std::move(item));};
+    auto& source=slots_[p[6]];if(!source) return InventoryReplicaResult::applied;
+    if(op==0xb14) {dirty(source);source->item.count=p[7];}
+    else if(op==0xb15) remove(source);
+    else {
+        auto& target=slots_[p[8]];
+        if(!target) {target=std::move(source);dirty(target);}
+        else {source->item.count=p[7];target->item.count=p[9];source.swap(target);dirty(source);dirty(target);if(source->item.count==0) remove(source);}
+    }
+    return InventoryReplicaResult::applied;
+}
 std::vector<CachedInventoryItem> GuildBankReplica::snapshot() const {std::vector<CachedInventoryItem> out;for(std::size_t i=0;i<240;++i) if(slots_[i]) {out.push_back(*slots_[i]);out.back().item.slot=static_cast<std::uint16_t>(i);}return out;}
 std::vector<net::Packet> GuildBankReplica::packets(std::uint32_t guild) const {
     std::vector<net::Packet> out;net::Packet p{0x0d,0x0b};append(p,guild);p.push_back(0);

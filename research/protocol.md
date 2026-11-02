@@ -2241,3 +2241,17 @@ Disposable SQL verifies the actual procedure through game/client output,
 NULL text reuse, duplicate relocation, date/quality conversion, count correction,
 cached reload and nested failure retention. Bank transfer commands and SQL saving,
 production world initialization and playable TCP entry remain pending.
+
+
+DB bank mutation now follows `CConnection::PacketGuild` (`ps_dbAgent.exe`,
+`0040ba00`, `0b11/0b14/0b15`) and `GuildInfo::AddDeleteItemBank` (`0040f550`).
+Moving into an empty slot retains count; occupied moves write both supplied
+counts, swap pointers, mark zero save states dirty and remove a zero-count source.
+Self-swaps preserve the original final target-count write. Count updates retain
+zero-count objects. Explicit deletion and swap removal journal UIDs unless save
+state is 1, then recycle the object. Other nonzero save states remain unchanged.
+The original oracle now also runs 1,536 mutations, comparing every changed slot,
+deletion journal and pool count. SQL integration routes game equipment corrections
+back into the DB replica and checks move/delete journal order and unknown-guild
+no-op diagnostics. These commands change cached state; SQL bank saving remains
+separate unfinished work.
