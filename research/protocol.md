@@ -157,7 +157,7 @@ attack categories, retaining x87 float spills, truncation and 32-bit wrap.
 The critical formula uses the original float constant `0x3e428f5c` (0.19).
 `tools/attack_oracle.py` executes that original function with Unicorn and
 regenerates 84 committed regression vectors; regular CTests need no emulator.
-Blessing, passives, effects, damage resolution and world integration remain
+Blessing, active effects, damage resolution and world integration remain
 pending. Ghidra's `EternityOffsets.java` gives anonymous
 PDB padding fields unique offset names without inferring their meaning.
 
@@ -175,3 +175,18 @@ craft, equipment, gem and element routines to regenerate 138 committed vectors;
 only Windows critical-section calls are replaced with no-ops around a supplied
 local skill list. Equipment-change broadcasts, reroll/removal, wear updates and
 combat execution are pending.
+
+Passive initialization follows `CUser::InitPassive` (`004899a0`) and
+`AddSkillPassive` (`00489a80`), including byte-sized weapon/shield mastery tables,
+bag/movement limits and low-HP ability state. Repeated masteries add the updated
+table total to equipped attack/speed, rather than only their latest increment.
+`SetSkillAbility` (`00485e00`) implements all 46 stat/benefit modifiers; effect 3
+does not change resource maxima, including stat-derived HP/MP/SP. Native billing
+flags follow `BillingApply` (`00457a70`). `LoadConstSkill` (`004bffe0`) retains
+three runtime skill levels, weapon-type caps, nonzero ability-value defaults and
+the effect overrides for detail 93/122. `GetSkillInfo` (`00402770`) requires a
+level-one definition. Original SQL definitions and loaded player skills pass
+integration tests; `tools/skill_oracle.py` regenerates 1,152 ability and 144 passive
+vectors by executing original code with state-initialization broadcasts disabled.
+Active buff/debuff dispatch, effect lifetimes, low-HP activation, billing-service
+lookup and world integration remain pending.

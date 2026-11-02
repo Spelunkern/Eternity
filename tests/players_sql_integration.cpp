@@ -1,6 +1,7 @@
 #include "eternity/game/creation.hpp"
 #include "eternity/game/player_packets.hpp"
 #include "eternity/game/equipment.hpp"
+#include "eternity/game/skills.hpp"
 #include <algorithm>
 #include <bit>
 #include <iostream>
@@ -16,6 +17,7 @@ int main(int argc,char** argv) {
         const auto experience=game::Experience::load(definitions.catalogs.at("ExpDefs"));
         const auto statuses=game::StatusRules::load(definitions.catalogs.at("StatusDefs"));
         const auto item_definitions=game::ItemDefinitions::load(definitions.catalogs.at("Items"));
+        const auto skill_definitions=game::SkillDefinitions::load(definitions.catalogs.at("Skills"));
         const auto enchant=game::EnchantValues::read(".local/server-data/ItemEnchant.ini");
         require(experience.bounds(0,1).previous==0 && experience.bounds(0,1).next==70,"Original level-one experience contract changed");
         const auto base=std::chrono::sys_days{std::chrono::year{2024}/1/1};game::Characters characters(database,1,base,catalog);
@@ -77,6 +79,17 @@ int main(int argc,char** argv) {
         const auto equipment_only=game::initialize_equipment(statuses.base(core.character),without_bags,item_definitions,enchant);
         require(equipment_only.attack.item_attack==equipment.attack.item_attack && equipment_only.base.maximum.hp==equipment.base.maximum.hp,
                 "Inventory bags contributed equipped status");
+        game::SkillStatus skill_status;skill_status.equipment=equipment;
+        game::initialize_passives(skill_status,snapshot->skills,snapshot->items,skill_definitions,item_definitions);
+        auto expected_skills=game::SkillStatus{};expected_skills.equipment=equipment;
+        const auto weapon_item=std::find_if(snapshot->items.begin(),snapshot->items.end(),[](const auto& item){return item.bag==0 && item.slot==5;});
+        require(weapon_item!=snapshot->items.end(),"Loaded player lost starter weapon");
+        const auto weapon_type=item_definitions.find(weapon_item->type,weapon_item->type_id)->real_type;
+        for(const auto& skill:snapshot->skills) if(const auto* definition=skill_definitions.find(skill.id,skill.level);definition && definition->effect==0)
+            game::add_passive(expected_skills,*definition,weapon_type,std::nullopt);
+        require(skill_status.equipment.attack.item_attack==expected_skills.equipment.attack.item_attack &&
+                skill_status.equipment.base.maximum.hp==expected_skills.equipment.base.maximum.hp && skill_status.max_bags==expected_skills.max_bags,
+                "Loaded SQL skill order/equipped mastery initialization changed");
         require(snapshot->skills.size()==2 && snapshot->skills[0].id==10 && snapshot->skills[0].number==0 && snapshot->skills[0].persisted_number==7 &&
                 snapshot->skills[1].id==11 && snapshot->skills[1].number==1 && snapshot->skills[1].delay==13,"Original player skill ordering changed");
         require(snapshot->cash_points==321 && snapshot->guild_rejoin_hours>=71 && snapshot->guild_rejoin_hours<=72,

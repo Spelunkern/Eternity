@@ -4,6 +4,7 @@
 #include "eternity/game/characters.hpp"
 #include "eternity/game/stats.hpp"
 #include "eternity/game/equipment.hpp"
+#include "eternity/game/skills.hpp"
 #include <chrono>
 #include <iostream>
 #include <stdexcept>
@@ -86,6 +87,8 @@ int main() {
         require(experience.bounds(1,1).previous==0 && experience.bounds(1,1).next>0,"Restored experience curve did not load");
         const auto items=eternity::game::ItemDefinitions::load(definitions.catalogs.at("Items"));
         require(items.find(5,1) && items.find(30,1),"Restored weapon/gem definitions did not load");
+        const auto skills=eternity::game::SkillDefinitions::load(definitions.catalogs.at("Skills"));
+        require(skills.find(1,1) && !skills.find(1,4),"Restored original three-level skill definitions did not load");
         eternity::game::Characters characters(database,255,std::chrono::sys_days{std::chrono::year{2024}/1/1});
         const auto empty_roster=characters.load(2147483000);
         require(empty_roster.new_account && empty_roster.country==2 && empty_roster.max_grow==2,
