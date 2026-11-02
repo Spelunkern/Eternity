@@ -2,7 +2,7 @@
 
 Native Linux reconstruction of the Shaiya EP4.5 server in C++20, using SQL Server.
 Complete means an original EP4 client can connect and play with original server behavior.
-SQLite migration is deferred. World endpoints and gameplay are not implemented yet.
+SQLite migration is deferred. Gameplay is not implemented yet.
 
 `originals/` contains unmodified Windows executables and matching PDB symbols for
 `ps_game`, `ps_dbAgent`, `ps_login`, `ps_session`, `ps_gameLog`, and `ps_userLog`.
@@ -12,7 +12,9 @@ Source: the EP4.5 `PSM_Server/ShaiyaServerPatch/Server` distribution, including
 its matching `ps_login.exe`. Database backups and deployment configuration are
 not included. Implemented: SQL access, original definition loaders, asynchronous
 encrypted TCP login on the available SQL path, account session replacement,
-realm handoff reservations, and the game handshake/cipher state machine.
+realm handoff reservations, game TCP handshake/ciphers, and SQL-backed character
+listings. The game listener is exercised through integration tests; the standalone
+command still starts login only. Character creation/selection is pending.
 The active MD5 login
 path needs a missing procedure; see [research](research/protocol.md).
 

@@ -20,8 +20,9 @@ Source: `originals/ps_login/ps_login.exe`, matching PDB, Ghidra 12.1.4.
 Native framing, cryptography and asynchronous TCP login are implemented and
 tested with a generated protocol peer and SQL Server. Realm selection validates
 availability, capacity and version, and reserves a single-use session handoff.
-The development endpoint advertises its world offline until a world TCP listener
-is implemented. Actual client work is deferred.
+The standalone login command still advertises its world offline. Integration
+tests run both TCP listeners with a shared session registry. Actual client work
+is deferred.
 
 `CUser::OnDispatchDB` (`00404a10`) hashes the submitted password and calls
 `GetUserMD5` (`00406e50`), which expects `usp_try_gamelogin_korea` and three
@@ -62,9 +63,20 @@ closing its world owner removes it without removing a replacement login.
 Character selection contracts: `ps_dbAgent.exe` `DBCharacter::LoadCountry`
 (`0041fdc0`) calls `usp_Read_User_MaxGrow_R`; no row means country 2 and max grow
 2, otherwise max grow is clamped to at least 2. `LoadCharacterList` (`0041d930`)
-reads `usp_Read_Chars_R` and equipment through `usp_Read_Char_Items_Simple_R`.
+reads `usp_Read_Chars_R` and equipment through `usp_Read_Char_Items_Simple_R`
+with `(CharID, 8, 0)`; equipped slot 7 supplies the six cloak bytes. It removes
+ASCII spaces from names. The creation time is a seconds offset from the world's
+base calendar, not a Unix timestamp. `CWorld::SetWorldDay` (`0040f1c0`) decodes
+the original packed calendar (year-2000, month, day, hour, minute, second).
 `ps_game.exe` `CUser::PacketUserDBChar` (`0046cf60`, case `403`) sends country
 (`0109`, 4 bytes), empty slots (`0101`, 7 bytes), then populated slots
 (`0101`, 83 bytes). There are five slots. The internal 86-byte database records
 are transformed, including map checks, into the client's 80-byte `stCharacterList`.
-Character loading and gameplay remain pending implementation.
+At `0046d318` / `0046d325`, assembly overwrites the last two bytes of `szName[21]`
+with rename and remaining-time flags (wire offsets 76 and 75 respectively).
+Native roster loading/serialization is implemented and tested against the original
+procedures, including a rolled-back populated fixture. Native TCP tests cover
+login-to-world transfer, encrypted roster, ordered asynchronous dispatch, replay
+and account replacement while connected to the world. Map normalization, legacy
+wire name encoding, pending deletions, billing-item delivery, standalone world
+startup, character commands and gameplay remain pending.

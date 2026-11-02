@@ -1,6 +1,7 @@
 #include "eternity/storage/sql_server.hpp"
 #include "eternity/auth/accounts.hpp"
 #include "eternity/game/definitions.hpp"
+#include "eternity/game/characters.hpp"
 #include <chrono>
 #include <iostream>
 #include <stdexcept>
@@ -60,6 +61,10 @@ int main() {
         require(definitions.catalogs.size() == 8 && !definitions.catalogs.at("Mobs").rows.empty(),
                 "Original definition procedures did not load");
         require(definitions.catalogs.at("Mobs").columns.size() == 69, "Original mob definition contract changed");
+        eternity::game::Characters characters(database,255,std::chrono::sys_days{std::chrono::year{2024}/1/1});
+        const auto empty_roster=characters.load(2147483000);
+        require(empty_roster.new_account && empty_roster.country==2 && empty_roster.max_grow==2,
+                "Runtime login cannot read the original character/country contracts");
         // Synthetic account and all login log writes remain inside a rolled-back transaction.
         const auto stamp = std::chrono::steady_clock::now().time_since_epoch().count() % 1000000000;
         const std::string username = "et_it_" + std::to_string(stamp);
