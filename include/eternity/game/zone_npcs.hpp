@@ -29,10 +29,12 @@ public:
     virtual ~NpcMovementWorld() = default;
     virtual bool move(Npc&,UserPosition,std::uint8_t mode) = 0;
 };
-class NpcNavigationWorld:public NpcMovementWorld {
+class NpcClock {
 public:
+    virtual ~NpcClock() = default;
     virtual std::uint32_t tick_ms() const noexcept = 0;
 };
+class NpcNavigationWorld:public NpcMovementWorld,public NpcClock {};
 // Original SSyncHeap<CNpc> uses a LIFO free list and preserves IDs/object state.
 // The owner must detach an NPC before returning it; reset is a separate operation.
 class NpcPool {

@@ -1,5 +1,6 @@
 #pragma once
 #include <cstdint>
+#include <functional>
 #include <map>
 #include <optional>
 #include <vector>
@@ -32,6 +33,8 @@ public:
     bool move_at_position(std::uint32_t id,UserPosition);
     std::optional<UserPosition> position(std::uint32_t id) const;
     void detect_hidden(std::uint32_t source,std::uint8_t range);
+    // Ordered, live iteration using the original cell's shared cursor. True stops.
+    bool visit_cell(std::int32_t x,std::int32_t z,const std::function<bool(Actor&,UserPosition)>&);
     std::size_t size() const noexcept {return users_.size();}
 private:
     struct Member {Actor* actor;UserPosition position;std::size_t cell;std::uint64_t ordinal;};

@@ -641,7 +641,7 @@ ones, and only changes it on collision. A collision returns the preceding major
 coordinate plus truncation of the current accumulator minus the slope. On success
 the output remains the start. It is not the last point traversed. Both overloads
 produce the same boolean result. Native A* search and guard navigation are
-described below; target selection and combat remain pending.
+described below; combat and the live world executor remain pending.
 
 The line oracle executes both original overloads, safe/unchecked collision and bit
 queries without replacing any function. Native validation covers 4,096 queries
@@ -667,8 +667,8 @@ A coincident start/goal immediately returns true while preserving previous path,
 cursor, found flag and scan bounds. `ResetPath` (`0048ec70`) clears path pointers
 without clearing the found flag; `Reset` (`0048ec60`) also clears it. Advancing past
 the final node clears both. `SetPath` (`004a6b20`) installs a single current node.
-The native owner must serialize these operations; target selection and combat
-remain pending. The oracle executes original tree operations, node recycling,
+The native owner must serialize these operations; combat and the live world
+executor remain pending. The oracle executes original tree operations, node recycling,
 successors, collision queries and compression, isolating allocation and locks. It
 compares 1,536 searches, 416 operations across persistent paths (including cursor,
 reset and single-point replacement), plus eight local searches on each of all 77
@@ -701,8 +701,9 @@ after the head is clear, replace the head position; otherwise suppress duplicate
 heads or push a new head. Return navigation can pop these breadcrumbs into a
 single-point A* cursor when its direct line is blocked. It stops within strictly
 1.5 units of home, clears its path/trail on arrival or blocked/unreachable home,
-and uses mode-1 native zone movement for both short and full steps. Target
-selection, attacks and the live idle/guard dispatcher remain pending.
+and uses mode-1 native zone movement for both short and full steps. Guard
+attacks and the live idle/guard dispatcher remain pending. Target queries are
+described below.
 
 The navigation oracle runs original chase/return, breadcrumb, A*, collision,
 vector and CRT routines with allocation/movement/clock/lock/TLS ports isolated.
@@ -711,3 +712,38 @@ real native zone movement. An address-based coverage check verifies 21 navigatio
 branches, including both blocked-target outcomes, A* failure, breadcrumbs, near
 and far steps, proximity, leash and deadline checks. Native and sanitizer tests
 compare complete NPC/path/trail/deadline state, clock calls and movement arguments.
+
+Guard target queries reconstruct `ps_game.exe` `CNpc::FindTarget` (`004bc180`)
+and both `SetTarget` overloads (`004bc750`, `004bc790`). The query rejects an
+invalid/blocked guard tile, then scans its clipped 3x3 cell neighborhood in row
+order. Each cell visits players first, then mobs, preserving insertion order. It
+returns the first eligible candidate; it does not select the nearest globally.
+`ZoneUsers::visit_cell` supplies actual native actors through the shared live cell
+cursor. Actors own their original runtime guard deadline (`CUser+5850`). The mob
+runtime must provide ordered cell traversal, live FSM status and its equivalent
+shared deadline (`CMob+2b0`); these are required interfaces with no default stubs.
+
+Players must have a different country, mode other than 1, zero shape, mob targeting
+enabled, and both visibility/attackability flags. Mobs require a
+different country unless the NPC country is 2, which treats every mob faction as
+an enemy; derived mob status must differ from 2. Both categories use inclusive
+20-unit distance from the guard and 30-unit distance from its current route point,
+ignoring Y. Float differences, double squares/sum/sqrt and final float spill match
+the original; NaN distances fail. No target-tile or line-of-sight check is added.
+
+The clock is sampled after distance checks, before reading the candidate's unsigned
+guard deadline. A ready candidate can make `FindTarget` return true while an
+already-attacking NPC (status 1) preserves its existing target and leaves the
+candidate deadline unchanged. Otherwise setters recheck death/live mob state,
+preserve NPC status 2, assign target kind/ID, sample the clock again and write
+`sample + 5000` with DWORD wrapping. Direct setters intentionally do not repeat
+search range, country, visibility or cooldown filters. State changes between the
+two clock samples therefore matter and are preserved natively.
+
+The oracle executes original cell lists, player filters, inline/live mob FSM
+lookups and CRT distance math, with clock/lock/TLS ports isolated. Native tests
+compare 1,024 queries, 256 direct setters and 128 rounds across shared deadlines,
+using real actors and the native user grid. Cases include boundary/NaN distances,
+neutral countries, dead/hidden/transformed/admin-filtered players, scalar/empty/
+active mob FSMs, clock wrap and changes to state or deadlines during sampling.
+Full mob objects, guard attacks and the live world dispatcher remain pending.

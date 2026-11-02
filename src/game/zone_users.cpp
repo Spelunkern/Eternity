@@ -57,6 +57,14 @@ bool ZoneUsers::move_at_position(std::uint32_t id,UserPosition position) {
 std::optional<UserPosition> ZoneUsers::position(std::uint32_t id) const {
     const auto member=users_.find(id);if(member==users_.end()) return {};return member->second.position;
 }
+bool ZoneUsers::visit_cell(std::int32_t x,std::int32_t z,const std::function<bool(Actor&,UserPosition)>& visitor) {
+    auto& cell=cells_.at(index(x,z));cell.cursor=0;
+    for(auto entry=cell.members.begin();entry!=cell.members.end();entry=cell.cursor==0?cell.members.begin():cell.members.upper_bound(cell.cursor)) {
+        cell.cursor=entry->first;const auto& member=users_.at(entry->second);
+        if(visitor(*member.actor,member.position)) return true;
+    }
+    cell.cursor=0;return false;
+}
 bool ZoneUsers::detach(std::uint32_t id) {
     const auto entry=users_.find(id);if(entry==users_.end()) return false;
     unlink(entry->second);entry->second.actor->status().in_zone=false;users_.erase(entry);return true;

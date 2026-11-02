@@ -34,8 +34,8 @@ reconstructed; world admission, broadcasts, combat and TCP world entry remain pe
 Zone selection/reuse and access rules are reconstructed; world object initialization
 and zone queue services remain required dependencies.
 Door/region templates, door operation and weather transitions are reconstructed.
-NPC definitions, initial populations, patrols, guard navigation and visibility packets
-are reconstructed; target selection, combat and the running world remain pending.
+NPC definitions, populations, patrols, guard navigation/target queries and visibility
+packets are reconstructed; mob runtime, combat and the running world remain pending.
 The active MD5 login
 path needs a missing procedure; see [research](research/protocol.md).
 

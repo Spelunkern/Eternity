@@ -59,6 +59,8 @@ public:
     const UserRelations& relations() const noexcept {return relations_;}
     ActorAttackState& attack_state() noexcept {return attack_;}
     const ActorAttackState& attack_state() const noexcept {return attack_;}
+    std::uint32_t& guard_target_after() noexcept {return guard_target_after_;}
+    std::uint32_t guard_target_after() const noexcept {return guard_target_after_;}
     const PlayerResources& resources() const noexcept {return resources_.current();}
     EffectCycle& effects() noexcept {return effects_;}
     const EffectReplica& replica() const noexcept {return replica_;}
@@ -99,6 +101,7 @@ private:
     EffectStatus status_;
     ActorAppearance appearance_;
     ActorAttackState attack_;
+    std::uint32_t guard_target_after_=0;
     UserRelations relations_;
     ActorScene& scene_;
     ActorResources resources_;
