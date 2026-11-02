@@ -119,7 +119,7 @@ and refuse counter wrap within an interval. `tools/data.py` stages the original
 server Data files locally; standalone creation reads their racial start positions.
 
 Creation integration copies the original tables, defaults, database collation
-and seven procedures into a disposable catalog. It verifies valid creation,
+and procedures into a disposable catalog. It verifies valid creation,
 occupied/duplicate names, concurrent names and rollback after failure on the
 second starter item, plus encrypted TCP faction/create, roster refresh, mode caching,
 relogin and pending deletion, then drops that catalog. Existing account/character data
@@ -128,3 +128,23 @@ and identity counters are preserved. The original starter craft label at
 the restored database's Chinese varchar procedure collation converts that label
 to five question marks. The original Windows ANSI path's collation behavior is
 not yet verified; no forced collation conversion is added to the procedure.
+
+Player loading follows `ps_dbAgent.exe` `DBCharacter::LoadCharacter` (`00420610`):
+53 core columns and 17 supporting catalogs, including inventory, bank, skills,
+effects, quests, quick slots, cash, social records and gifts. Native selection
+validates ownership and selectable flags before the detail procedure updates
+JoinDate. Duplicate items relocate to available bag/bank slots; skills renumber
+in procedure order, with the original 255-skill limit. Raw rows retain ancillary
+data for later gameplay implementation. `DBCharacter::LoadUserGiftNotify`
+(`0041f870`) consumes notifications through the original read/delete procedure.
+Disposable SQL tests cover populated loading, rejected selections, negative cash,
+gift consumption and unchanged source accounts. Only the scratch cash procedure
+redirects its Users_Master reference to a local fixture table.
+
+`ps_game.exe` `CGameData::LoadExp` (`004bfe00`) accumulates the four mode curves.
+`CUser::SendCharacterData` (`00483140`) sends opcode `0105`, 32-bit kill counters
+and a terminated guild name, totaling 59–83 payload bytes. Native serializers
+cover these layouts and preserve single-precision coordinates. This component
+is not connected to selection yet: maximum resources must first be calculated
+from definitions, equipment, honor, passives and effects, rather than copied from
+persisted current HP/MP/SP. World entry and gameplay remain pending.
