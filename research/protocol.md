@@ -1020,7 +1020,7 @@ insertion order and use live shared cursors, emitting `0401` appearance zero
 or `0402` without removing membership (`00424018..004240a7` and
 `004242be..0042431c`). Negative/nonfinite cell indices that would dereference
 invalid original memory throw; fractional negatives truncating to zero remain
-valid. Fresh native allocation and pool semantics remain separate work.
+valid. Allocation and pool semantics are described below.
 
 The oracle compares 640 persistent two-zone operations using original intrusive
 lists, admission, expiry and packet builders, with tree/clock/transport ports
@@ -1029,5 +1029,34 @@ release timing, including duplicate keys, edge cells, explicit/default lifetime,
 equality and DWORD wrap. Native checks cover removal/insertion during streaming,
 nested shared-cursor lookup and release-time removal of the next item. A concrete
 wager integration places money and two existing items in the actual zone view,
-checks metadata/notices and expires all three through that view. Pickup, object
-pool ownership and the running world's tick/transport adapter remain pending.
+checks metadata/notices and expires all three through that view. Pickup and the
+running world's tick/transport adapter remain pending.
+
+The item pool reconstructs `CObjectMgr::CreateItem/FreeItem`
+(`0040a510`/`0040a590`), `SSyncHeap<CItem>::Alloc` (`0040adb0`), the item
+constructor (`004b9f00`) and both `CItem::Init` overloads
+(`004b9f30`/`004b9f80`). The item-specific counter at `CObjectMgr+4` starts at
+1 (`0040a0e0`); a fresh item gets 2. Reuse is LIFO, preserving the runtime ID
+unless it is zero. Increment uses DWORD wrap, including a zero ID at wrap that
+is assigned again on its next allocation. This counter is independent of NPC,
+mob, persisted UID and definition ID counters. Failed fresh allocation increments
+the fresh-attempt count but consumes no ID. Null release is a no-op.
+
+Every allocation resets type, type-ID, count, quality, six gems, the first craft
+byte, creation time/type and eleven craft additions. Other fields survive,
+including definition, persisted UID, world position/expiry and drop metadata.
+Craft storage retains bytes beyond its first NUL; the native craft setter keeps
+that storage and the logical string consistent. Parameterized initialization
+uses the already-bound definition's full quality and supplied type/count/time;
+it does not look up a new definition. Fresh original memory outside initialized
+fields is unspecified; fresh native storage starts zeroed. Pool ownership and
+its ID counter are protected by one mutex; zone/actor executors still serialize
+individual item operations. Invalid attached, duplicate and foreign releases
+throw instead of corrupting the original free list.
+
+The oracle compares 640 persistent allocation/free/mutation/initialization cases
+with original pool and reset code, including allocation failure, ID wrap and
+retained craft tails. Native integration returns expired zone items to the actual
+pool and checks their subsequent reuse; four concurrent batches hold 256 distinct
+live IDs before release. Inventory transfers, pickup and runtime transport/tick
+ownership remain pending.

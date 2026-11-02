@@ -14,6 +14,8 @@ struct GroundItem {
     std::uint32_t id=0,expires_at=0; // CItem+14/+6c; id is distinct from the definition's ItemID.
     ZoneItems* zone=nullptr;
     std::optional<CellCoordinates> cell;
+    std::array<std::uint8_t,21> craft_storage{}; // CItem+4c; bytes after the first NUL survive reuse.
+    std::array<std::uint16_t,11> craft_additions{}; // CItem+84.
 };
 net::Packet ground_item_appearance(const GroundItem&,std::uint8_t appearance);
 net::Packet ground_item_removed(std::uint32_t id);
