@@ -50,8 +50,8 @@ The DB-agent inventory/bank replica applies owned item updates, moves and save/d
 markers, sharing money status with item commands. Its inventory/bank SQL phase
 preserves ordered deletions, insert recovery and commit-only acknowledgment.
 A shared character replica handles core status and appearance changes; core/body
-SQL can commit with inventory and learned/applied skills in the same transaction.
-Skill caches preserve reset/retry markers and share core skill points. Remaining
+SQL can commit with inventory, learned/applied skills and quest changes in the
+same transaction. Caches retain original reset/retry and deletion behavior. Remaining
 save phases, billing/guild transfers and scheduling remain pending.
 Actor money credits preserve unsigned limits and ordered DB-status/client/log
 messages, with money-item release to the pool. Periodic money saving and shared

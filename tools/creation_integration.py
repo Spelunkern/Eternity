@@ -40,7 +40,9 @@ def run(command, build_directory="build"):
                       "usp_Save_Char_Item_Mod_E", "usp_Save_Char_Item_Del_E", "usp_Save_User_StoredItem_Add_E",
                       "usp_Save_User_StoredItem_Mod_E", "usp_Save_User_StoredItem_Del_E",
                       "usp_Save_Char_Info_E", "usp_Save_Char_BodyChg_E",
-                      "usp_Save_Char_Skill_Add_E", "usp_Save_Char_Skill_Mod_E", "usp_Save_Char_Skill_Del_E")
+                      "usp_Save_Char_Skill_Add_E", "usp_Save_Char_Skill_Mod_E", "usp_Save_Char_Skill_Del_E",
+                      "usp_Save_Char_Quest_Add_E", "usp_Save_Char_Quest_Mod_E", "usp_Save_Char_Quest_Del_E",
+                      "usp_Save_Char_FinishedQuest_E")
         names = ",".join(literal(procedure) for procedure in procedures)
         modules = sql("""SELECT p.name,m.definition FROM sys.sql_modules m
             JOIN sys.procedures p ON p.object_id=m.object_id
@@ -59,6 +61,7 @@ def run(command, build_directory="build"):
         # A failure on the second starter item proves the outer character transaction rolls back.
         sql("ALTER TABLE dbo.CharItems ADD CONSTRAINT EternityRejectFixtureItem CHECK(ItemID<>2147483000); "
             "ALTER TABLE dbo.CharApplySkills ADD CONSTRAINT EternityRejectFixtureEffect CHECK(SkillID<>32760); "
+            "ALTER TABLE dbo.CharQuests ADD CONSTRAINT EternityRejectFixtureQuest CHECK(QuestID<>32760); "
             "CREATE USER [eternity] FOR LOGIN [eternity]; "
             "GRANT SELECT,INSERT,UPDATE,DELETE,EXECUTE ON SCHEMA::dbo TO [eternity];", name)
         subprocess.run(command + [f"{build_directory}/creation-sql-integration", name], check=True)
@@ -72,6 +75,7 @@ def run(command, build_directory="build"):
         subprocess.run(command + [f"{build_directory}/inventory-sql-integration", name], check=True)
         subprocess.run(command + [f"{build_directory}/character-core-sql-integration", name], check=True)
         subprocess.run(command + [f"{build_directory}/skill-sql-integration", name], check=True)
+        subprocess.run(command + [f"{build_directory}/quest-sql-integration", name], check=True)
     finally:
         # Only the fresh, randomly named fixture catalog is removed.
         sql(f"ALTER DATABASE {catalog} SET SINGLE_USER WITH ROLLBACK IMMEDIATE; DROP DATABASE {catalog};")

@@ -1462,3 +1462,40 @@ checks compose core, inventory and skills, proving reset/new-row boundaries,
 stored numbers, timer filtering, conversion failures and rollback/retry when
 a later applied insert fails. Quest/quick-slot/save-point/billing phases,
 max-grow saving, file fallback, scheduling and the runtime save owner are pending.
+
+
+Quest persistence reconstructs `ps_dbAgent.exe`, `PacketUserQuest` (`00406590`,
+`0a01`..`0a05`), `AddDeleteQuest` (`00405380`), and its shared LIFO quest heap
+(`0040e3f0`). Active SQL rows load with save type 2; completed rows with 0.
+Allocation failure skips a loaded row. Starting allocates first, appends an
+active type-1 row with zero counters, then consumes the first same-ID completion,
+even when the new allocation failed. Old success/delay/counter fields not written
+by a command retain pooled payloads; fresh original payloads are unspecified,
+while native fresh allocations start zeroed. Duplicate IDs remain ordered.
+
+Ending with result 2 cancels the first active match, journaling unless it is
+new type 1, then recycles it. Other results move that node to the completed
+list, preserving its save type. Direct progress/counter updates affect the
+first match without changing save type. Bulk progress makes one forward pass
+and advances after each match, including duplicate records; it never rewinds.
+Native validation checks ownership, full envelopes and three counter indices.
+
+`QuestStore` reconstructs `SaveCharacter` `004242c2..00424617`: replay FIFO
+deletions, write active type-1/type-2 inserts/updates, then write completed
+type-1 inserts or type-2 updates. Loaded completed type 0 is skipped. IDs and
+delays are zero-extended WORDs; positive values beyond SQL SMALLINT fail rather
+than wrap. Each phase requires the complete caller-owned character transaction.
+
+The full original `SaveSuccess` (`00409560`) leaves the quest deletion journal
+intact: EBP becomes zero at `00409756`, so the branch at `004097d1` bypasses
+its cleanup. It still sets active save types to 2 and completed types to 0
+(`00409879..004098fe`). Consequently, a restarted quest can be inserted after
+a queued delete on one save, deleted again on the next save, then receive a
+successful zero-row update while remaining active in memory. Native persistence
+retains this observed original behavior. A 2,048-operation fixture executes the
+original pool/list/journal, complete SaveSuccess and 26,748 SQL calls, including
+160 acknowledgments. Disposable SQL verifies progress, cancellation, finished
+insert/update, allocation failure during restart, the retained-journal effect,
+conversion failures and rollback/retry across core, inventory, skills and quests.
+Quest gameplay, quick-slot/save-point/billing phases, max-grow saving, file
+fallback, scheduling and the complete runtime save owner remain pending.
