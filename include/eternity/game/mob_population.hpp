@@ -19,6 +19,8 @@ public:
     // regular spawns even when every attempt fails; its bool result is ignored.
     // Caller supplies the zone for this map and a shared executor random source.
     bool initialize(ZoneMobs&,MobPool&,MobInitPorts&,const std::function<bool()>& linked_groups);
+    // Regular portion of UpdateMobRespawn 0041d240: at most one per record/tick.
+    void update(ZoneMobs&,MobPool&,MobInitPorts&,std::uint32_t now);
 private:
     const MapDefinition& map_;std::vector<MobPopulationArea> areas_;
 };

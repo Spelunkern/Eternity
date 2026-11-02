@@ -16,6 +16,12 @@ void RuntimeZone::update_instance_portal_country(std::int32_t portal_id,std::int
     for(auto& portal:instance_portals) if(portal.id==0 || portal.id==portal_id) {portal={portal_id,country};return;}
 }
 
+void RuntimeZone::update_mob_population(MobPool& pool,MobInitPorts& ports,std::uint32_t now,const std::function<void(std::uint32_t)>& obelisks,const std::function<void(std::uint32_t)>& linked_groups) {
+    if(!map || !mobs || !mob_population || !obelisks || !linked_groups) throw std::logic_error("Zone respawn services are not initialized");
+    mob_population->update(*mobs,pool,ports,now);
+    if(map->settings.create_type==0) obelisks(now);
+    linked_groups(now);
+}
 void RuntimeZone::release_mob_population(MobPool& pool) {
     if(!mobs) throw std::logic_error("Zone mob registry is not initialized");
     mobs->release_to_pool(pool);instance_portals.fill({});

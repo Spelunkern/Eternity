@@ -33,7 +33,7 @@ void verify_mob_population(const eternity::game::MobRuntimeTemplates& definition
         std::unique_ptr<MobBroadcast> allocate_broadcast(const eternity::net::Packet&,std::optional<std::uint8_t>) override {throw std::runtime_error("Unexpected SQL mob movement");}
     } services;
     MapDefinition map;map.size=81;map.tiles.resize((81*81+7)/8);MapMobArea area;area.box.minimum={-0.25F,7,0.75F};area.spawns={{1,2},{0,3}};map.mobs.push_back(area);
-    MobPopulation population(map,definitions);std::uint32_t serial=100;MobPool pool(serial,services);RuntimeZone runtime;runtime.mobs=std::make_unique<ZoneMobs>(map.geometry(),services);auto& zone=*runtime.mobs;MicrosoftRandom random;
+    MobPopulation population(map,definitions);std::uint32_t serial=100;MobPool pool(serial,services);ConfiguredMap runtime_map;RuntimeZone runtime;runtime.map=&runtime_map;runtime.mobs=std::make_unique<ZoneMobs>(map.geometry(),services);auto& zone=*runtime.mobs;MicrosoftRandom random;
     MobInitPorts ports{random,[&]{return services.tick_ms();},[](MobRuntime&,std::uint8_t)->bool {throw std::runtime_error("Unexpected compiled AI creation in SQL spawn fixture");},[](MobRuntime&) {throw std::runtime_error("Unexpected Lua creation in SQL spawn fixture");}};
     unsigned int linked=0;require(population.initialize(zone,pool,ports,[&]{++linked;require(zone.size()==2,"Linked groups initialized before regular SQL mobs");return false;}),"Linked-group failure changed original regular spawn result");
     require(linked==1 && services.views==2 && serial==102 && population.areas()[0].spawns[0].current==2 && population.areas()[0].spawns[1].current==0,"SQL population counts/bindings changed");
@@ -59,6 +59,16 @@ void verify_mob_population(const eternity::game::MobRuntimeTemplates& definition
     require(groups[0].spawns[0].members[0]->position.x==3 && groups[0].spawns[0].members[0]->position.z==3.5F,"SQL linked companion placement changed");
     for(auto* mob:zone.all()) require(mob->hp==2765 && mob->sp==874 && mob->mp==1578 && mob->respawn->both_source!=nullptr,"SQL linked resources/respawn binding changed");
     runtime.release_mob_population(pool);require(zone.size()==0 && pool.available()==3 && services.releases==7 && groups[0].leader.members[0]->zone==&zone && groups[0].leader.respawn.current==1 && groups[0].spawns[0].respawn.current==2,"SQL linked population release changed retained records");
+    runtime.mob_population=std::make_unique<MobPopulation>(map,definitions);auto& respawn=runtime.mob_population->areas()[0].spawns[0];
+    std::vector<char> update_order;
+    const auto obelisks=[&](std::uint32_t){update_order.push_back('O');};const auto linked_update=[&](std::uint32_t){update_order.push_back('B');};
+    runtime.update_mob_population(pool,ports,1000,obelisks,linked_update);
+    require(zone.size()==1 && respawn.current==1 && respawn.next==181000 && update_order==std::vector<char>{'O','B'},"SQL first periodic respawn/deadline/callback order changed");
+    runtime.update_mob_population(pool,ports,180999,obelisks,linked_update);require(zone.size()==1 && respawn.current==1 && serial==108,"SQL periodic respawn ignored its deadline");
+    runtime.update_mob_population(pool,ports,181000,obelisks,linked_update);
+    require(zone.size()==2 && respawn.current==2 && respawn.next==361000 && serial==109 && services.views==9,"SQL periodic respawn did not replenish one record at its deadline");
+    runtime.release_mob_population(pool);require(pool.available()==3 && services.releases==9,"SQL periodic mob release changed");
+
 
 }
 
@@ -159,7 +169,7 @@ int main() {
         require(mobs.find(1) && mobs.find(1)->level==38 && mobs.find(1)->hp==2765 && mobs.find(1)->attack==167 &&
                 mobs.find(1)->variance==83 && mobs.find(1)->physical_defense==38 && mobs.find(1)->magic_defense==31,"Restored mob transformation attack projection changed");
         const auto runtime_mobs=eternity::game::MobRuntimeTemplates::load(definitions.catalogs.at("Mobs"));const auto* first_mob=runtime_mobs.find(1);
-        require(first_mob && first_mob->level==38 && first_mob->ai==1 && first_mob->hp==2765 && first_mob->sp==874 && first_mob->mp==1578 && first_mob->dexterity==60 && first_mob->wisdom==40 && first_mob->luck==53 && first_mob->attribute==4 && first_mob->physical_defense==38 && first_mob->magic_defense==31 && first_mob->shield_defense==0,"Original runtime mob projection differs from restored SQL");
+        require(first_mob && first_mob->level==38 && first_mob->ai==1 && first_mob->hp==2765 && first_mob->sp==874 && first_mob->mp==1578 && first_mob->dexterity==60 && first_mob->wisdom==40 && first_mob->luck==53 && first_mob->attribute==4 && first_mob->physical_defense==38 && first_mob->magic_defense==31 && first_mob->shield_defense==0 && first_mob->respawn_time==180000,"Original runtime mob projection differs from restored SQL");
         verify_mob_population(runtime_mobs);
         const auto map_config=eternity::game::MapConfiguration::load(".local/server-data/Map.ini");
         const auto server_maps=eternity::game::ServerMaps::load(map_config,".local/server-data/Map");

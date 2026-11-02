@@ -27,6 +27,9 @@ MobRuntimeTemplates MobRuntimeTemplates::load(const storage::ResultSet& table) {
         const auto word=[&](std::string_view key){return static_cast<std::uint16_t>(value(table,row,key,INT16_MIN,UINT16_MAX));};
         const auto dword=[&](std::string_view key){return static_cast<std::uint32_t>(value(table,row,key,INT32_MIN,UINT32_MAX));};
         MobRuntimeTemplate m;m.id=word("MobID");m.level=word("Level");m.sp=word("SP");m.mp=word("MP");m.dexterity=word("Dex");m.wisdom=word("Wis");m.luck=word("Luc");m.physical_defense=word("Defense");m.magic_defense=word("Magic");m.hp=dword("HP");if(m.hp==0) m.hp=1;m.shield_defense=dword("Attacktime3");
+        const auto selector=value(table,row,"Attackspecial3",0,255);
+        constexpr std::array<std::uint32_t,16> times={5000,30000,60000,180000,300000,600000,900000,1800000,3600000,14400000,43200000,86400000,259200000,7200000,0,604800000};
+        m.respawn_time=times[selector>15?0:static_cast<std::size_t>(selector)];
         m.ai=static_cast<std::uint8_t>(value(table,row,"AI",0,255));m.attribute=static_cast<std::uint8_t>(value(table,row,"Attrib",0,255));if(m.attribute>4) m.attribute=0;result.records_[m.id]=m;
     }
     return result;

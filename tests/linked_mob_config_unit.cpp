@@ -9,7 +9,7 @@ void require(bool v,const char* message) {if(!v) throw std::runtime_error(messag
 void number(Bytes& b,std::uint32_t v,unsigned int n=4) {for(unsigned int i=0;i<n;++i) b.push_back(static_cast<std::uint8_t>(v>>(8*i)));}
 Bytes unhex(const std::string& h) {Bytes b;if(h=="-") return b;for(std::size_t i=0;i<h.size();i+=2) b.push_back(static_cast<std::uint8_t>(std::stoul(h.substr(i,2),nullptr,16)));return b;}
 std::vector<ConfiguredMap> maps(std::size_t count) {std::vector<ConfiguredMap> result(count);for(auto& map:result) for(int id:{1010,1010,1011}) {MapPortal p;p.id=id;map.definition.portals.push_back(p);}return result;}
-MobRuntimeTemplates definitions() {eternity::storage::ResultSet rows;rows.columns={"MobID","Level","AI","HP","SP","MP","Dex","Wis","Luc","Attrib","Defense","Magic","Attacktime3"};for(unsigned int i=1;i<4096;++i) rows.rows.push_back({std::to_string(i),i%7==0?"0":"1","0","1","0","0","0","0","0","0","0","0","0"});return MobRuntimeTemplates::load(rows);}
+MobRuntimeTemplates definitions() {eternity::storage::ResultSet rows;rows.columns={"MobID","Level","AI","HP","SP","MP","Dex","Wis","Luc","Attrib","Defense","Magic","Attacktime3","Attackspecial3"};for(unsigned int i=1;i<4096;++i) rows.rows.push_back({std::to_string(i),i%7==0?"0":"1","0","1","0","0","0","0","0","0","0","0","0","0"});return MobRuntimeTemplates::load(rows);}
 Bytes canonical(const LinkedMobConfiguration& config,const std::vector<ConfiguredMap>& maps) {
     Bytes b;number(b,static_cast<std::uint32_t>(maps.size()));
     for(std::size_t m=0;m<maps.size();++m) {const auto groups=config.for_map(static_cast<std::uint16_t>(m));number(b,static_cast<std::uint32_t>(groups.size()));for(const auto& g:groups) {

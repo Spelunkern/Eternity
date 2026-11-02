@@ -2576,3 +2576,38 @@ through allocation, entry and recycling. `--check-original-loaders` also loads
 this configuration and reports its group count; it does not start object runtime.
 Group transitions, death/respawn ticks, obelisks, live AI and complete world
 integration remain pending.
+
+
+Mob runtime definitions now include the source respawn delay from
+`CGameData::LoadConstMob` (`ps_game.exe`, `004c1720`). `Attackspecial3` (column 68)
+is a BYTE selector, with NULL ->0 and values >15 normalized to 0. The 16 delays
+in milliseconds are 5000, 30000, 60000, 180000, 300000, 600000, 900000, 1800000,
+3600000, 14400000, 43200000, 86400000, 259200000, 7200000, 0 and 604800000.
+The complete-loader/runtime fixture now compares this 14th definition field,
+covering every selector and invalid/NULL normalization. The source switch's
+15000 default is unreachable after its BYTE clamp. The restored SQL mob 1 uses
+selector 3 and therefore a 180000-ms delay.
+
+Regular periodic replenishment follows `CZone::UpdateMobRespawn` (`0041d240`).
+Each eligible record attempts one placement per call when its signed current
+count is below configured count and its unsigned deadline is <= the supplied
+tick. Definition/position/collision/allocation failure preserves both fields,
+allowing a later retry. Success initializes the native mob and position, then
+sets deadline=tick+the live definition's respawn delay and increments current
+before entry/broadcast. DWORD deadlines wrap and retain the source's ordinary
+unsigned comparison, rather than substituting a different elapsed-time rule.
+`RuntimeZone::update_mob_population` invokes regular records first, required
+obelisk updates for CreateType=0, then required linked-group updates using the
+same supplied tick. These callbacks still need their actual runtime owners.
+
+The 256-population/2,304-tick fixture executes the complete original updater,
+real allocation/constructor/runtime initialization, seeding, geometry, zone/cell
+insertion and entry formatting. Allocation failure, OS clocks/random, AI/Lua,
+obelisk/linked update boundaries and transport are ports. It compares sustained
+count/deadline state, caller tick versus initialization clocks, callback and
+packet order, missing definitions, full/negative counts, collision/NaN/boundary
+failure and ID/timer wrap. Entry observers verify mutations occur before packet
+delivery. SQL integration replenishes a record using the restored 180000-ms
+interval, checks pre-deadline rejection and due-time admission, callback order,
+reused allocation and release. Death-triggered accounting, linked transitions,
+obelisk ticking, world scheduling and gameplay dispatch remain pending.

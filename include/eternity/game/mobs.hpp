@@ -6,11 +6,11 @@
 
 namespace eternity::game {
 class ZoneMobs;
-// Projection consumed by CMob::Init/SetAttack. Mob skills, loot and complete AI
+// Projection consumed by CMob::Init/SetAttack and respawn timers. Mob skills, loot and complete AI
 // definitions remain separate owners; this does not substitute their loaders.
 struct MobRuntimeTemplate {
     std::uint16_t id=0,level=0,sp=0,mp=0,dexterity=0,wisdom=0,luck=0,physical_defense=0,magic_defense=0;
-    std::uint32_t hp=0,shield_defense=0;
+    std::uint32_t hp=0,shield_defense=0,respawn_time=5000;
     std::uint8_t ai=0,attribute=0;
 };
 class MobRuntimeTemplates {

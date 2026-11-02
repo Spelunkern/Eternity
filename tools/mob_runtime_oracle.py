@@ -23,7 +23,7 @@ def main():
     def word(at):return struct.unpack('<I',cpu.mem_read(at,4))[0]
     def put(at,*v):cpu.mem_write(at,struct.pack('<'+'I'*len(v),*[x&0xffffffff for x in v]))
     state={};events=[]
-    columns=(1,3,5,9,10,11,12,13,14,17,18,19,63)
+    columns=(1,3,5,9,10,11,12,13,14,17,18,19,63,68)
     def hook(m,address,size,context):
         sp=m.reg_read(UC_X86_REG_ESP)
         if address==0x4d3c40:m.reg_write(UC_X86_REG_EAX,database)
@@ -60,12 +60,12 @@ def main():
     rng=random.Random(0x490040)
     print(f'# ps_game.exe SHA256 {digest}; LoadConstMob 004c1720, CMob::Init 00490040, SetAttack 004902f0, InitAttack 00490290; SQL/clock/random/path/AI ports')
     for case in range(384):
-        raw=[case%63+1,rng.choice((1,38,65535)),(0,9,10,99,100,255)[case%6],rng.choice((0,-1,2765,rng.randrange(1,2147483648))),*[rng.choice((0,1,65535,rng.randrange(65536))) for _ in range(5)],rng.choice((0,4,5,8,255)),rng.randrange(65536),rng.randrange(65536),rng.choice((0,-1,2147483647))]
+        raw=[case%63+1,rng.choice((1,38,65535)),(0,9,10,99,100,255)[case%6],rng.choice((0,-1,2765,rng.randrange(1,2147483648))),*[rng.choice((0,1,65535,rng.randrange(65536))) for _ in range(5)],rng.choice((0,4,5,8,255)),rng.randrange(65536),rng.randrange(65536),rng.choice((0,-1,2147483647)),(case%18 if case%18<17 else 255)]
         if case%17==0:raw[rng.randrange(2,len(raw))]=None
         state.update(query=-1,row=-1,values=dict(zip(columns,raw)),random=rng.choice((0,1,32767,59999,60000,-1,-2147483648)),ticks=[rng.getrandbits(32),rng.getrandbits(32)],clock=0,ai_ok=case%2)
         events.clear();returned=call(0x4c1720,regs=((UC_X86_REG_ECX,game),))
         if not returned&255:raise RuntimeError('Original full mob loader rejected synthetic row')
-        info=word(game+0xa81808)+raw[0]*268;projection=[int.from_bytes(cpu.mem_read(info+o,n),'little') for o,n in ((0,2),(34,2),(38,1),(48,4),(52,2),(54,2),(56,2),(58,2),(60,2),(64,1),(66,2),(68,2),(112,4))]
+        info=word(game+0xa81808)+raw[0]*268;projection=[int.from_bytes(cpu.mem_read(info+o,n),'little') for o,n in ((0,2),(34,2),(38,1),(48,4),(52,2),(54,2),(56,2),(58,2),(60,2),(64,1),(66,2),(68,2),(112,4),(108,4))]
         seed=(case*17+0xa5)&255;cpu.mem_write(mob,bytes([seed])*3380);put(mob+0xa8,info);type_id=rng.getrandbits(32);respawn=database+0x4000 if case%2 else 0
         print('CASE',case,seed,type_id,int(bool(respawn)),state['random'],*state['ticks'],state['ai_ok']);print('ROW',*['N' if v is None else v for v in raw]);print('DEF',*projection)
         events.clear();call(0x490040,(type_id,respawn),((UC_X86_REG_ESI,mob),))

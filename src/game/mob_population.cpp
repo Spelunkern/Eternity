@@ -1,5 +1,6 @@
 #include "eternity/game/mob_population.hpp"
 #include <cmath>
+#include <bit>
 #include <stdexcept>
 
 namespace eternity::game {
@@ -40,4 +41,17 @@ bool MobPopulation::initialize(ZoneMobs& zone,MobPool& pool,MobInitPorts& ports,
     }
     static_cast<void>(linked_groups());return true;
 }
+void MobPopulation::update(ZoneMobs& zone,MobPool& pool,MobInitPorts& ports,std::uint32_t now) {
+    for(auto& area:areas_) for(auto& spawn:area.spawns) {
+        if(!spawn.definition || spawn.current>=spawn.count || spawn.next>now) continue;
+        const auto x=placement(ports.random,area.delta_x,area.box.minimum.x),z=placement(ports.random,area.delta_z,area.box.minimum.z);
+        const MapTile at{tile(x),tile(z)};
+        if(at.x<0 || at.z<0 || at.x>=map_.size || at.z>=map_.size || map_.blocked(at)) continue;
+        auto* mob=pool.allocate();if(!mob) continue;
+        mob->definition=spawn.definition;initialize_mob(*mob,spawn.definition->id,&spawn,ports);mob->position={x,area.box.minimum.y,z};
+        spawn.next=now+mob->definition->respawn_time;spawn.current=std::bit_cast<std::int32_t>(static_cast<std::uint32_t>(spawn.current)+1U);
+        static_cast<void>(zone.enter(*mob));
+    }
+}
+
 }

@@ -39,6 +39,9 @@ struct RuntimeZone {
     std::array<InstanceZonePortal,10> instance_portals{};
     std::int32_t instance_portal_country(std::int32_t portal_id) const noexcept;
     void update_instance_portal_country(std::int32_t portal_id,std::int32_t country);
+    // UpdateMobRespawn 0041d240: regular records, static-map obelisks, linked groups.
+    void update_mob_population(MobPool&,MobInitPorts&,std::uint32_t now,
+        const std::function<void(std::uint32_t)>& obelisks,const std::function<void(std::uint32_t)>& linked_groups);
     void release_mob_population(MobPool&); // MapReleaseObject 0041c3b0.
 };
 class ZoneServices {
