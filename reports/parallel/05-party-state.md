@@ -213,3 +213,61 @@ leave and unregister it without destroying active call frames. Guild-creation
 cleanup must preserve the original reset/list/pool contract behind the required
 callback. Map production transport to each exact ordered packet callback;
 refresh the live maximum before sending subsequent reward/LevelUp queries.
+
+## Block 4: real membership classification provider
+
+The repeated normal-membership assignment is already implemented in block 3.
+This block removes one remaining integration abstraction: the actual
+`ps_game.exe CUser::GetPartyType` 0048a330 (PDB/Ghidra inventory body size 180
+bytes). New `party_runtime_membership_type.hpp/cpp` implement it and supply
+the real default body of `PartyMembershipWorld::party_type`; production owners
+can inherit this behavior instead of inventing a classification callback.
+
+The user +0x173c pointer is first captured and locked. If membership disappears,
+that captured party is unlocked immediately and discarded. Membership is then
+reread and that current party is locked AGAIN, including the recursive A/A case.
+If membership changed A/B, both captured identities are retained: unlock B then
+A. Classification reads the second captured party after its lock callback;
+there is no further membership recheck. Return 2 iff count > 0 and selected
+leader slot equals this user, otherwise 1 for a captured current party and 0
+without one. Kind is ignored, and nonpositive counts still return 1 when the
+party pointer exists. Changes during unlock cannot retroactively change the
+selected return branch. As in the original, all captured party objects and a
+valid selected slot must remain alive/readable through matching unlocks.
+
+`party_runtime_membership_type_oracle.py` executes the entire unmodified
+original function, replacing only Windows critical-section ports. 1,024 cases
+inject membership/count/leader changes on each reached acquire/release across
+two parties, including detach, switch, restoration during early release,
+recursive locking and signed count boundaries. Native comparisons check every
+lock event, live state, result, and balanced final locks. Results: 428 none,
+394 member, 202 leader; 342 zero-callback, 86 two-callback and 596 four-callback
+executions. All other test-world providers fail if reached.
+
+The existing membership oracle now also supports `--real-party-type`, leaving
+GetPartyType intact and observing its returns after real lock processing.
+A separate 512-case fixture and CTest execute complete EnterNormalParty /
+LeaveNormalParty plus real ChkPartyExpByLevel AND GetPartyType. The native
+comparison delegates the classification call to the real default provider.
+The earlier observed-port fixture remains unchanged and independently tested.
+This does not supply registry/guild/transport implementations or a production
+user/party owner. Next direct membership dependency is CParty::Send 004455d0;
+manager lifetime, guild cleanup and canonical projection wiring remain open.
+
+Block 4 validation:
+
+- `python3 tools/dev.py build`: exit 0, no warnings in final incremental build
+  (`work/party-runtime-membership-type-final-build.log`).
+- `python3 tools/dev.py test`: exit 0; 124/124 pass in 37.07 seconds, including
+  all earlier party state, LevelUp and observed-port membership comparisons
+  (`work/party-runtime-membership-type-final-test.log`).
+- Focused C++20 ASAN/UBSAN builds/runs in the dev image under the shared build
+  lock: 1,024 classification and 512 live-classification membership comparisons
+  pass, exit 0, no diagnostics
+  (`work/party-runtime-membership-type-final-sanitized.log`).
+- Both new original fixtures regenerate byte-identically (`cmp`, exit 0).
+  Original EXE/PDB hashes and `git diff --check`: exit 0. Generated outputs
+  remain ignored under work/. No SQL changes or lifecycle operations; final
+  isolated SQL integration remains coordinator-owned and was not run here.
+
+Block 4 implementation commit: `d69cb64e603f0fadef8f106162be0e0d5d5cd681`.
