@@ -113,7 +113,7 @@ int main(int argc,char** argv) {try {
     auto config=MapConfiguration::decode("[BASE]\nMapCount=2\n");
     auto maps=std::make_shared<ServerMaps>(ServerMaps::load(config,argv[1]));
     auto f=std::make_shared<Frame>(maps);std::shared_ptr<MobPrimaryZones> root;unsigned frames=0;
-    MobPrimaryZoneTransport transport{[](const eternity::net::Packet&){throw std::logic_error("unexpected database");},[](const eternity::net::Packet&){throw std::logic_error("unexpected broadcast");},[](const ConfiguredMap&,ZoneMobs&,const eternity::net::Packet&){throw std::logic_error("unexpected map broadcast");}};
+    MobPrimaryZoneTransport transport{[&](const eternity::net::Packet&){++f->stats->db;},[&](const eternity::net::Packet&){++f->stats->world;},[&](const ConfiguredMap&,ZoneMobs&,const eternity::net::Packet&){++f->stats->map;}};
     LinkedFixture linked;
     VerticalWorldPorts ports{[&](MobPrimaryZones&){attach(f,root);},&f->init,[&](RuntimeZone&)->LinkedMobWorld&{return linked;},[&](RuntimeZone& z,std::uint32_t now){check(z.mobs && now==77);++frames;},[]{return 100U;}};
     auto world=VerticalWorld::create(maps,std::shared_ptr<ZoneServices>(f,&f->backend),std::move(f->pool),transport,ports);root=world->zones();check(world->start());world->frame(77);check(frames==2);
