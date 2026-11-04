@@ -6,7 +6,13 @@
 namespace eternity::game {
 // Borrowed projection from the real user definition owner, NOT a catalog.
 // Both the definition and original name storage outlive all runtimes/poll leases.
-struct UserSkillDefinition {const SkillDefinition& effect;std::string_view name;};
+struct UserSkillDefinition {
+    const SkillDefinition& effect;std::string_view name;
+    std::uint16_t required_level=0; // Original stSkillInfo +24.
+    std::uint8_t country=0,grow=0,learn_points=0,type_show=0; // +26/+2d/+2e/+2f.
+    std::array<std::uint8_t,6> jobs{}; // +27.
+};
+class UserSkillLearnWorld;
 struct UserSkillRuntimeSkill:MobCombatSchedulerSkillBinding,std::enable_shared_from_this<UserSkillRuntimeSkill> {
     std::uint32_t instance_id=0,skill_id=0,level=0,number=0;
     std::uint32_t attack_tick=0,reset_tick=0,end_tick=0,previous_tick=0,attacker_type=0,attacker_id=0;
@@ -38,6 +44,8 @@ public:
     // Complete 0504 wire packet: opcode, DWORD account, BYTE count, six-byte
     // {WORD ID,BYTE level,BYTE number,WORD delay_seconds} records.
     UserSkillLoadResult load(std::span<const std::uint8_t>,std::uint32_t admission_tick);
+    // LearnSkill 004842e0; PlayerCore supplies the same live WORD points owner.
+    void learn(PlayerCore&,std::int32_t skill_id,std::int32_t level,UserSkillLearnWorld&);
     Actor& actor() const noexcept{return *actor_;}
     std::int32_t learned_count() const noexcept{return count_;}
     std::uint32_t& selection() noexcept{return selection_;}
