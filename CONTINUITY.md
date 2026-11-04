@@ -1701,3 +1701,10 @@ Independent 03's original executable queue oracle additionally confirms the
 not an enqueue cap; system packets and snapshot batch behavior have explicit
 fixtures. The current eight-frame native policy remains a known compatibility
 limit, not a reconstruction of that threshold.
+
+The coordinator copied the completed admission build tree into the separate
+quest integration worktree using `cp -a --reflink=auto`, then started locked
+session 86245 for `vertical-quests-unit` on `7167c11` plus admission/world/gameplay
+ancestors. Docker uses `/src` for both worktrees; CMake/Ninja reconfigure and
+rebuild as needed. The worktrees do not share a mutable build directory. Result
+is pending and will not substitute for the required combined full build/SQL.
