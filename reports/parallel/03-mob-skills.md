@@ -929,3 +929,132 @@ changes. Latest validation remains 136/136 native tests (35.71 s), 16 two-map
 lifecycles and the byte-identical 64-case original map replay. Tree was clean
 before this report update; git diff --check passed. Awaiting coordinator scope,
 without repeating completed tests or claiming global completion.
+
+## Authoritative retained primary-zone lifecycle
+
+Implementation: d4ea8e5. Scope: new mob_primary_zones files and private CMake
+registration; no main, worker04, map_config, zone or other worker changes.
+
+Reused the existing ZoneRegistry/RuntimeZone authority in zones.hpp/zones.cpp.
+Its original recovery is ps_game.exe CWorld::InitZones 00414870 and
+CWorld::GetZoneByMapID 00413df0. Initialization still runs the actual registry
+across all configured maps, including instance-cache preparation. Permanent
+(create_type == 0) routes use that SAME registry; no second zone registry or
+copied map/country/configuration was introduced. Obelisk behavior uses exact
+8e4f19d composition and worker04 4db2ac3 retained maps recovery, including
+InitObelisk 00429a60/respawn 0042a6f0. Lease generations, staged close and explicit
+shutdown are native host coordination, not newly claimed original fields or a
+recovered complete world shutdown implementation.
+
+MobPrimaryZones owns the existing bound MobPool by unique ownership transfer,
+actual ZoneRegistry, retained obelisk configuration/router, shared ServerMaps
+and required shared ZoneServices assembly. Constructor validates bound skill
+runtime, an inactive pool and all three required transport providers. The same
+pool address is exposed for construction of the actual obelisk router, which
+is then transferred into the root with its configuration. No backend defaults
+or fake Init/AI/Lua/transport implementations were added.
+
+Move-only primary leases retain the root graph and execute visits under a
+recursive serialization gate shared across maps and the shared CRT executor
+RNG. No thread-affine mutex ownership escapes in a lease. Leases protect zone
+resources, not individual recycled actors. Startup, obelisk timer and reset
+methods call the actual router. Other canonical RuntimeZone work can run in
+lease.visit; serialized() protects whole-world operations. Passive primary_zone
+is a borrowed compatibility route, NOT a lease; consumers must stay in root
+serialized dispatch and must not retain its raw pointer. Source views refresh
+after successful or exceptional detach/reopen. Reentrant close stops new
+admission immediately, but physical close defers until leases and all dispatch
+frames finish. Existing leases may finish their work.
+
+Drain performs actual obelisk reset, releases remaining regular actors through
+RuntimeZone/ZoneMobs into the SAME pool, detaches obelisks while the old zone is
+alive, then invokes real backend release. Failed backend release remains hidden
+and retryable without repeating the reset clock/publications. Reopen invokes
+actual backend InitObjects on the SAME permanent RuntimeZone/map/ID; only a
+successful populated owner advances the native resource generation. Failed
+reopen remains hidden until drain cleans partial work. No new ZoneRegistry IDs
+are consumed. Pre-attachment drain handles construction failures without
+pretending an obelisk reset occurred.
+
+Important lifetime requirement: FreeMob retains raw respawn pointers. Drain
+moves the ORIGINAL MobPopulation/LinkedMobPopulation objects into retained
+backing storage, not copied records, before backend release. Router dies first;
+the actual pool then destroys every bound actor while retained spawn sources,
+registry containers, obelisk configuration, maps, catalogs/heaps/AI services are
+alive. Sources/configuration/services die afterward. Repeated reopen therefore
+retains old source allocations until pool destruction; reclamation is not
+invented without stronger actor-reference evidence. Concrete ZoneServices must
+own/alias the complete dependency assembly without owning a strong root cycle.
+Its release_objects must support partial-release retry and primary sources
+already transferred into retention. Instance-cache release remains the existing
+registry/backend contract: that backend must retain any such source objects
+borrowed by pooled actors. Concrete RuntimeZone destruction must clean partial
+Init while the pool/services are still alive. Root destruction requires every
+successfully initialized primary to have completed drain; violating that
+explicit shutdown precondition terminates rather than silently skipping world
+cleanup or inventing destructor publications.
+
+Validation:
+
+- python3 tools/dev.py build passed; final current build log
+  work/mob-primary-zones-build-verified.log has no warnings. Initial new-test
+  compilation exposed explicit unique_ptr conversion and wrong constructor
+  arguments; these were corrected before successful builds.
+- python3 tools/dev.py test: **137/137 passed**, 44.83 seconds, recorded in
+  work/mob-primary-zones-test.log.
+- Four substantive native compositions use actual original-format ServerMaps,
+  one existing ZoneRegistry, real regular/linked population initialization,
+  actual ZoneMobs, bound skill/damage pool, full stable catalog and retained
+  obelisk maps/router. They cover regular plus obelisk startup, periodic removal
+  and replenishment, shared RNG/raw-ID cadence, reset, deferred reentrant close,
+  lease self-release during dispatch, cross-map thread serialization, failed
+  release/reopen, unchanged zone IDs, absent providers, partial Init cleanup and
+  actual final AI/skill/pool destruction. Dropping external assembly/root
+  references while a lease exists retains the complete graph; final drain and
+  last release destroy it. Focused log: work/mob-primary-zones-focused-owned.log;
+  subsequent additional failure/lifetime cases passed in the full suite.
+- Focused root and test compiled with AddressSanitizer/UndefinedBehaviorSanitizer
+  passed all four compositions: work/mob-primary-zones-sanitized.log. Existing
+  linked game/storage archives were normal builds; this is not a claim that all
+  dependencies were instrumented.
+- Original execution with .local/oracle-env/bin/python tools/zones_oracle.py
+  matched tests/data/zones-oracle.tsv byte for byte. Output generated under
+  work/mob-primary-zones-original.tsv before comparison; no fixture overwritten.
+- All 12 original EXE/PDB SHA256SUMS passed
+  (work/mob-primary-zones-hashes.log); git diff --check passed. Exact ignored
+  worker04/catalog compatibility snapshots from prior milestones are reused;
+  central builds use canonical owners. No SQL access, database lifecycle work
+  or new Ghidra import. These checks do not establish a playable server.
+
+### Coordinator construction/dispatch proposal (main remains untouched)
+
+In src/main.cpp's --serve branch, before world->start()/io.run(), retain a real
+production dependency assembly and shared mutable ServerMaps. The const local
+ServerMaps in --check-original-loaders is validation only, not runtime state.
+Move the ONE bound unique MobPool into MobPrimaryZones::create with shared
+ZoneServices and actual DB/world/map publication functions. Call initialize;
+construct worker04's bind_obelisk_runtime_maps using *root as the SAME maps
+services, then construct the existing MobAppliedSkillsObeliskMaps using
+root->mob_pool(), real MobInitPorts/KC/world services and shared executor RNG.
+Transfer configuration/router with attach_obelisks; startup each permanent map.
+All borrowed catalogs/templates/skill heaps/counters/AI ports must be retained
+by the shared assembly through final pool destruction. Use weak backreferences
+to avoid cycles. Call tick for obelisk timers only; regular AI/user/NPC/combat
+frames still require their real canonical dispatch through leased RuntimeZone
+visits. Dynamic instance admission is not exposed by this primary facade;
+future integration must extend/use the SAME registry, not create another one.
+
+On shutdown first stop producers/admissions and retain root strongly. Release
+outstanding leases, dispatch drain_all using the real clock on the serialized
+executor and repost if deferred. Handle backend failure explicitly and retry
+its retained stage; do not drop the last root while primaries remain live.
+Only after completed drain release root/assembly. This ordering belongs in
+coordinator-owned serve/signal wiring; no src/main.cpp patch was applied.
+
+Remaining concrete gaps: production ZoneServices/RuntimeZone factory and partial
+Init/release contract, coherent catalog reload ownership, actual AI/Lua backend,
+KC/linked/calendar/log/DB/world/map/user providers, executor clocks/RNG and main
+startup/frame/shutdown assembly. Root zone leases do not replace actor lifetime
+leases or implement those backends. Coordinator owns full isolated SQL and final
+integration. Primary retained lifetime and dispatch are now concrete and tested;
+global gameplay completion is not claimed.
