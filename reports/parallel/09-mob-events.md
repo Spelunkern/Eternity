@@ -135,3 +135,62 @@ also mutates the stack to exercise post-callback operation ordering.
   remain coordinator work. The server remains unplayable.
 
 Implementation commit: `1c85307e090d95c8064605fa78f0a70f97151752`.
+
+## Milestone 3 — real WhileCombat update (`mob_ai_states_combat`)
+
+Evidence: original `ps_game.exe` / `CMob::WhileCombat` 004b55c0, complete
+read-only Ghidra decompilation/disassembly under the coordinator's
+`work/reverse/ps_game.exe`. Structure offsets checked against exported types.
+Original EXE/PDB SHA256 checks all pass again.
+
+Implemented the actual combat-state coordinator, usable from the previous
+`MobAiStateServices::update` combat case. It reads the tick before testing sleep
+and stun, preserves the original ineffective attack-speed gate (004b55e9..004b5603,
+including speed 0xff), and uses unsigned direct tick/deadline comparison.
+Only-Lua mode or an attack deadline in the future calls Lua `WhileCombat` through
+004b1210 when Lua is enabled, with tick, unsigned HP percentage and attacked
+count. Percentage uses original double precision, truncation and low-DWORD
+semantics, with no clamp to 100; zero maximum HP reproduces invalid FISTP's low
+DWORD zero. The function leaves current_time and function_type untouched, except
+for live provider writes. It does not reset function_type after the Lua callback.
+
+When the attack is due, it resolves the live target user. Missing users or life
+status 1 remove vision fixation before SetReTarget. Other life status values
+(including negative) enter AttackAIExp; a false result retargets, a true result
+returns. No Lua callback is added after these world operations. Snapshot tick and
+live callback-driven field changes retain original ordering.
+
+### Validation
+
+- `python3 tools/dev.py build`: exit 0, no compiler warnings;
+  `work/mob_ai_states_combat-build.log`.
+- `python3 tools/dev.py test`: exit 0; all 122 tests pass (32.68 s), including
+  `mob-ai-states-combat-unit` (0.01 s) and both previous worker suites;
+  `work/mob_ai_states_combat-tests.log`.
+- `git diff --check`: clean. SQL integration remains the coordinator's check;
+  no SQL contracts/access are introduced here.
+
+The oracle executes original WhileCombat
+instructions with observed required ports (tick, FindUser 00415f30, AttackAIExp
+004b66f0, RemApplySkillVisionFix 004a1580, SetReTarget 004b62c0 and LuaCall
+004b1210). Its 1,536 cases include unsigned HP extremes, zero maximum HP,
+32-bit tick boundaries, speed 255, missing/dead targets, attack success/failure,
+and field mutations from each provider. Windows x87 precision is explicitly 53
+bits. Fixtures regenerated twice byte-for-byte equal under ignored work.
+The native comparator runs every case through the real stack poll bridge.
+
+### Remaining integration and next work
+
+Bind `update_mob_ai_combat` in the combat-state update case, and supply actual
+serialized user lookup, AttackAIExp, vision-skill removal, SetReTarget and Lua
+execution using the required `MobAiCombatServices` boundary. No provider defaults
+to a no-op. MobAiCombatTarget is an explicit live user projection; no canonical
+headers were changed. State transitions remain owned by the called services;
+this function does not guess retarget results or substitute attack bodies.
+The next independent state work is WhileIdle 004b52c0, then WhileMove 004b5790
+and WhileReturnHome 004b5c40. Lua VM lifecycle and separate CAIFactory CKFSM are
+still outstanding. No SQL contract changed or SQL lifecycle operation was run;
+final shared SQL integration belongs to the coordinator. Server playability is
+still incomplete.
+
+Implementation commit: `30434d6c67dc3b088ada40978bc0fe4b50ff7cfd`.
