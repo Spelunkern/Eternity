@@ -2041,3 +2041,15 @@ Combined entry session 69040 passed its retained-roster targeted unit with the
 later uncommitted raw-roster representation in independent 01, or a live Actor
 entry. Combined system protocol session 96503 passed its first unit test and is
 waiting for the TCP/zone handoff target checks; not a completed test chain yet.
+
+Coordinator created `coordinator/entry_owner` at Eternity-entry-owner from
+entry-flow and added `vertical_entry_select_persisted` (`d803dc7`). It runs the
+existing retained-roster/0104 gate and one `Players::load`, restores the real
+CharacterReplica from that same snapshot and actual product store/pools, then
+hands both to the caller. It propagates failures and leaves original lifecycle,
+owner retention and teardown to required real services. The disposable SQL
+fixture now uses that adapter and checks consumed latch plus a later gift remains
+unconsumed, then mutates/saves/reloads the replica. Session 21247 runs full build
+then isolated SQL; results pending. This branch has the earlier bool roster fields,
+not independent 01's later raw-field draft; no production WorldApplication,
+ActorLoad or live client path is wired. Dashboard updated.
