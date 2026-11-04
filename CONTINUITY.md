@@ -1781,3 +1781,14 @@ to `remaining_time`; these bools cannot represent every signed source value.
 The original DB-agent roster fields and their actual SQL-to-memory conversions
 must be traced before asserting whether this loses observable gate behavior.
 Worker 01 is investigating; its draft is not integrated.
+
+Independent 03 `f2869c3` TCP handoff test passed 1/1 with actual admission,
+Actor and zone owners and test external ports; it explicitly waits for both
+zone and cipher barriers and cannot prove original pre-switch zone dispatch or
+actual frame insertion before release. Coordinator independently regenerated
+`vertical_protocol_selection_queue_oracle.py` and verified the fixture by `cmp`:
+selection-batch 0201 is ignored, world-wait retains it, zone-wait enters, and
+the modeled publication gap ignores it. This original-instruction fixture has
+intercepted DB/zone/crypto/OS ports and is not a live-client trace. Independent
+04's staged canonical Actor accessor test also passed 1/1; coordinator/movement
+has its own separate combined test pending. No full live entry claim follows.
