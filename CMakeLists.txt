@@ -1420,3 +1420,10 @@ if(BUILD_TESTING)
     target_link_libraries(user-skill-runtime-persist-unit PRIVATE eternity_game)
     add_test(NAME user-skill-runtime-persist-unit COMMAND user-skill-runtime-persist-unit ${CMAKE_CURRENT_SOURCE_DIR}/tests/data/user-skill-runtime-persist-oracle.tsv)
 endif()
+
+# Worker 09: original integer comparison matrix and real transition truth counts.
+if(BUILD_TESTING)
+    add_executable(mob-ai-states-compare-unit tests/mob_ai_states_compare_unit.cpp)
+    target_link_libraries(mob-ai-states-compare-unit PRIVATE eternity_game)
+    add_test(NAME mob-ai-states-compare-unit COMMAND mob-ai-states-compare-unit ${CMAKE_CURRENT_SOURCE_DIR}/tests/data/mob_ai_states_compare-oracle.tsv)
+endif()
