@@ -19,6 +19,11 @@ def main():
     actual = subprocess.check_output(['git', '-C', str(root), 'rev-parse', '--show-toplevel'], text=True).strip()
     if Path(actual).resolve() != root or not (root / 'CMakeLists.txt').is_file():
         parser.error('worktree must be an Eternity repository root')
+    main = Path(__file__).resolve().parents[1]
+    def common(directory):
+        return subprocess.check_output(['git', '-C', str(directory), 'rev-parse', '--path-format=absolute', '--git-common-dir'], text=True).strip()
+    if Path(common(root)).resolve() != Path(common(main)).resolve():
+        parser.error('worktree must share Eternity Git history')
     name = 'eternity-target-' + uuid.uuid4().hex
     command = ['docker', 'run', '--rm', '--name', name, '--mount', f'type=bind,source={root},target=/src',
                'eternity-dev:bookworm', 'sh', '-c',
