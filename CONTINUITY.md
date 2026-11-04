@@ -2034,3 +2034,10 @@ Session 86997 runs full build then isolated SQL sequentially on this revision;
 results pending. This is a composed SQL fixture, not a production connection,
 ActorLoad, live zone or original-client test. Do not conflate it with the newer
 uncommitted raw-roster field changes in independent 01.
+
+Combined entry session 69040 passed its retained-roster targeted unit with the
+2,048 original cases (`Eternity-entry/.local/composed-entry-roster.log`) on
+`6e57801`; its full build is running and SQL follows. This does not validate the
+later uncommitted raw-roster representation in independent 01, or a live Actor
+entry. Combined system protocol session 96503 passed its first unit test and is
+waiting for the TCP/zone handoff target checks; not a completed test chain yet.
