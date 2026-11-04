@@ -2147,3 +2147,113 @@ merge/reset or ignored production snapshot was added. Next independent proposal:
 recover exact weapon-table/shield checks and real item-type indexing in the
 eligibility middle, then compose cost+equipment+readiness against that canonical
 borrow API when its integration dependency is available. Overall objective open.
+
+## Equipment middle and complete eligibility composition — 2026-11-04
+
+Implementation **a0db59e**. Read current main continuity/parallel notes and prior
+`fa43aba/f291bfb`. Recovered the missing equipment middle and composed existing
+resource/readiness owners. No Actor/inventory/main edits, competing item/skill
+store, catalog, ID generator or ignored-snapshot dependency. Changes stay in
+user_skill_runtime files/private CMake/report.
+
+Original `ps_game.exe` complete Ghidra/PDB evidence: **EnableUseSkillUser
+0044eb40** equipment **0044ec05..0044ece3**, **EnableUseSkillMob 0044ee50**
+equipment **0044ef15..0044ef5d**, **SendUseSkillError 0044ea30**, **GetItemRType
+004bdad0**, **LoadConstSkill 004bffe0**, loader normalization **004c0a6e..004c0a98**.
+Reuses existing ItemDefinition.real_type cached by the canonical equipment loader;
+no second type classifier. Its original domain is0..27, with0 unknown.
+
+Exact recovered middle:
+
+- stSkillInfo BYTE+43 is final entry of the16-byte need_weapon array +34..+43.
+  Nonzero selects shield PRESENCE at Actor bag0/slot6 (+1dc); no weapon or item-
+  definition/type check is performed in this branch. Native checks only pointer
+  presence too. Zero selects weapon bag0/slot5 (+1d8); absence fails reason7.
+- Present weapon reads actual CItem info+30 -> stItemInfo real-type DWORD+a0.
+  Permission is raw definition BYTE **+33 + real_type**, not a bounds-clamped
+  lookup into sixteen flags. Original adjacent-field behavior is preserved:
+  type0 -> TypeDetail high byte;1..16 -> need_weapon;17/18 -> SP cost bytes;
+ 19/20 -> MP cost bytes;21 -> ready byte;22 -> padding+49;23/24 -> reset WORD
+  bytes;25 -> range;26 -> state-type+4d;27 -> attribute+4e. Nonzero permits.
+  No count/durability/weapon-category restriction is silently introduced.
+- State-type+4d is NOT canonical normalized defense category. Loader bounds
+  state-type at15, while separate defense/attack categories normalize1..3 to0..2.
+  Added distinct borrowed state_type metadata; tests deliberately hold defense
+  category2 while state-type0/15. Attribute uses existing shared attribute field.
+- Padding+49 is explicitly optional metadata: if a real-type22 lookup requires it
+  and provider has no recovered byte, fail with missing-capability error. Do not
+  invent global original padding0 from SQL logical fields. Tests supply controlled
+  original padding0/a5; no production padding-initialization claim is made.
+  Real type beyond canonical0..27 fails rather than emulating arbitrary memory.
+- Failure is exact20-byte reason7, user0511/mob0517. User direct missing-pointer
+  and incompatible-helper paths produce same bytes. No Actor/resource mutation;
+  no item dereference follows synchronous error delivery.
+
+`UserSkillRuntimeEligibilityServices` now FINAL-implements actual user/mob
+eligibility as resource prefix -> equipment middle -> readiness suffix, capturing
+original runtime definition ONCE before those stages. It inherits existing use/
+attack/range/clock interfaces, leaving real equipment borrow, targets, action,
+spend and transport providers REQUIRED. This closes the recovered coordinator
+sequence without installing a synthetic always-true eligibility provider in the
+use adapter. No new private Actor/equipment state is used.
+
+Validation:
+
+- **1344 whole original overload comparisons** cover both functions, all28 real
+  types, weapon/shield present/absent, shield-flag branch and three flag patterns.
+  Original SP/MP are max signed with zero reductions; suffix has valid deadline,
+  no required skill/block/target. Whole resource/middle/suffix/error/cookie paths
+  execute; only self transport is ported. Native compares middle outcomes, exact
+  borrow branch5/6 and exact failure packets. Raw definition adjacent bytes,
+  including controlled padding and state-type15, are observable original inputs.
+- Native equipment pointers refer to actual existing GroundItemPool objects and
+  ItemDefinition. Shield has no definition in the fixture, proving the source
+  does not dereference it. Borrow provider is explicitly a test input projection,
+  NOT a claim of canonical Actor publication/binding on this old worker base.
+- **14 combined native eligibility compositions** exercise success and first
+  rejection at resources, equipment, own cooldown, required-skill clock, attack
+  block and range, for both target kinds. Check short-circuit borrow/clock/range
+  ordering using actual existing Actor resources and UserSkillRuntime slots.
+  Additional probe requires missing-padding failure, explicit-zero rejection and
+  explicit-nonzero permission without accidental extra packets.
+- Initial matrix suite142/142,45.46s passed. Loader audit then corrected the
+  in-progress state-type projection (separate from defense category), upgraded
+  state vector to15 and added missing-padding probe before final verification.
+- Final independent oracle regeneration byte-identical (`cmp`,exit0); generated
+  under work/ and copied only after initial readers completed. Original executable/
+  PDB SHA256SUMS exit0; `work/user-skill-runtime-equipment-hashes.log`.
+- Final `python3 tools/dev.py build`: exit0,no warnings;
+  `work/user-skill-runtime-equipment-final-build.log`.
+- Final sequential `python3 tools/dev.py test`: exit0,**142/142 passed,43.08s**;
+  `work/user-skill-runtime-equipment-final-tests.log`. All previous owner/learn/
+  output/validation/use/casting/disable/scheduler/zone checks pass.
+  `git diff --check`: exit0. Shared wrappers respected. SQL unchanged; coordinator
+  owns final full isolated SQL integration. Server remains unplayable.
+
+Precise canonical borrow connection (main inspected read-only): Actor.hpp already
+provides retained_inventory_item and inventory_slot_empty; inventory.cpp returns
+actual retained pointer/pool and deliberately distinguishes value-only rows.
+Root's required equipped(actor,slot) implementation should do exactly:
+
+    auto held = actor.retained_inventory_item(0, slot);
+    if (held) return held->item;
+    if (!actor.inventory_slot_empty(0, slot))
+        throw std::logic_error("Equipment has no retained runtime owner");
+    return nullptr;
+
+Retain Actor, original item definition and pool through reads; accessor is a
+side-effect-free borrow, not a new owner/list or fallback mirror lookup. No item
+access remains after error callbacks. Root must not reinterpret missing retained
+backing as absence/success. This worker's old shared Actor header lacks the API;
+those files stay02-exclusive, so no unauthorized copy/edit/rebase was introduced.
+No additional shared field is requested; instantiate that actual adapter centrally.
+
+Full stable user-definition provider must supply actual16 need_weapon bytes,
+state-type and (only when required) raw padding, alongside earlier fields. Do not
+infer table permissions from passive IDs or fabricate a second mobAI catalog.
+Complete eligibility coordination is recovered; gameplay still requires actual
+borrow/range/clock/action/resource/transport providers and shared manager/root
+assembly. Next independent proposal: recover **SendUseSPMP 00481ca0** actual
+resource writes/packet order and map them to the existing Actor resource owner;
+never substitute availability checking or negative healing without evidence.
+Overall objective remains open.
