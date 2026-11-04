@@ -1053,3 +1053,39 @@ Reviewed1b6b0c1/d1e0929 sameActor optionalmetadata owner, initializeonce require
 ## Seventeenth batch validated; metadata checkpoint reviewed
 
 Session44687 exited0:build275/275tests89.69s/fullisolatedSQL/fullbindingcatalog/realstreamSQL allpassed at8681196. Logs.local/seventeenth-batch-*.log. Freeze released; publish validated batch. Reviewedf3368dd doc-only metadata checkpoint no new runtime/tests. ActualActorconstruction/admission/reuse must supply explicit inherited metadata and resetatcorrectstage;no zeroseed/shadowpool/SQLcolumns. New queued snapshots excluded from275validation. Objective remainsopen.
+
+## Reviewed worker09 158d5233 — finite operand float arithmetic
+
+Reviewed50da97b/effd181 sameFSMstack/map numericbinary arithmetic,float32integercoercion then53bitoperation/typedresult/truncatingFISTinvalidbits.6144originalcalls146/146tests36.65s reported. Finiteinputs can generateinfinity/negativeQNaN;nonfiniteinputpropagation explicitlyunsupported. Floatcompound/functions/nonnumericcomparison/factory/rootremainopen. Exactcommits queued aftervalidatedpublishedc071248.
+
+## Reviewed worker09 6651c8d4 — finite floating compound updates
+
+Reviewed242e935/7c138da sameFSMmapstack floatcompound updates with originaltwo-popunary/coercion/metadata/pushbeforeVariableIDwrite.5466originalcalls147/147tests38.95s reported. Admittedfiniteinputs only;generatednonfinitevaluesnotreusedaslaterarithmeticinputs. Nonfinitepropagation/functions/factory/rootremainopen;workerproposesactualTravelConditionfunctiondispatch next. Exactcommits queued,latestvalidatedpublishedc071248.
+
+## Eighteenth batch integrated/sourcefreeze
+
+Reviewed933f471/3e265c8 ChkKeepSkill tailonly,strictdeadline/freshclock/livespeed/deathguardcleanup512originalcomparisons140tests reported. Actual periodic/protect/detect visitor prefix+unlock remainsrequired,never substituteexpire/count. Integratedreviewedqueue through 2515956ace68b3a182fb831654ead80fb5f42bfd including map/poolcomposition,deathmetadata,attackdispatch,numericfloatVM. CMake conflicts combined/nesting audited. Freeze during .local/eighteenth-batch-{build,tests,sql,bindings-sql,stream-sql}.log. Latestvalidatedpublishedc071248,newbatchunvalidated.
+
+## Reviewed worker09 80c00ec9 — zeroargument system dispatch
+
+Reviewedb3c480c/94b0988 real TravelCondition virtualdispatch and sixMobRuntimequeries, including consumingattack_at_moment and clampingattacked_count.1536originalexecutions2282actualDoFunctioncalls148/148tests47.92s reported. Must bindcatalog/dispatcher to actualconditionowner+48/+58,not containingFSMsubject or compiledstateactions;factoryassemblystillmissing. CalculateParam/F_OUT/otherIDs/nonfinite/rootremainopen. Exactcommits queued during eighteenthsourcefreeze;382actionbuildpassed.
+
+## Eighteenth initial failure; invitations reviewed
+
+Initialpipeline281/282tests87.64s failed user-skill-runtime-disable-unit missingrequired0902transport; SQL notstarted. Preserve eighteenth-batch logs. Coordinator migratesfixtureScene recordingtransportonly;retryfullpipeline eighteenth-retry logs. Reviewed31db02a/8a0c3e6 raid14/15/18 samepartycreation/invites/responses2048requests99nested139tests+sanitizers. Queued outsidefrozenretry. Explicit05expandedownership existingregistryauto_join byte/rawserialization and normalmembershipkind!=1validation, no secondowner.
+
+## Reviewed worker01 b1eb0bd7 — skill use preparation
+
+Reviewedfa43aba/f291bfb actual UseSkillUser/Mob ready/instant/rejected state/runtime paths and concrete scheduler adapter,1024originalcomparisons4nativepipelines141/141tests40.64s reported. Eligibilityrequiredactualcost->retainedweapon/shield->readiness; no synthetictrue. Captureddefinitions/targets/Actorservicesmustoutlivecallbacks;originalviewexclusionsrequired. Fullaction/spending/periodic/rootremainopen. Exactcommits queued during eighteenthretryfreeze,tests running.
+
+## Reviewed worker08 babe195b — ordinary Death only
+
+Reviewed97087b8/806e118 ordinary/fallbackDeath1552originaltraces16reentrant132/132tests42.86s+ASAN/UBSAN reported;separatecanonicalactualActorrawresources/ledger0902ordering verified. Playermaximumbranch raises explicitrequired exception after originalprefix/GetMax;mustcontinuefromthatpoint,neverrerunprefix orinstallasfullDeath. Rootexchange/shop/vehicle/PvP/corpse/drop/partyexclusion/transport remainrequired. Fourmetadataowner1b6b0c1 nowdeliveredpendingintegration;bindactualActorrefs with explicitheritedcontext. Exactcommitsqueued duringeighteenthretryfreeze.
+
+## Reviewed worker09 07f3f7a1 — CalculateParam values
+
+Revieweda14f20d/a84f256 CalculateParam value-only subset privatecapacity20stack/sharedconditioncursor/sameownermap, calleroutput preserved onexhaustion/invalidtop.2047originalcalls149/149tests42.78s reported after explicittypedvectorinit fixed initialbuildfailure. Operators/nestedcalls/vectorownership/F_OUT/systempositiveparamintegration remainopen. Exactcommitsqueued during eighteenthretryfreeze.
+
+## Eighteenth retry validated; PvP helper reviewed
+
+Session17870 exited0:build282/282tests90.26s/fullisolatedSQL/fullcatalog/realstreamSQL passed49f51f1. Preserve initial281/282failure in eighteenth-batch logs;passing eighteenth-retry logs. Freeze released. Reviewed945a074/40df026 completePvPGetDeathType8192originalcases133/133tests40.55s+sanitizers reported. Actualidentity/asymmetricsubjectduelbeforeguild/rawIDs;forcedPvPDeath branch differsandstillmissing. ActualPvPowner/root/rewardcontinuationrequired;do notrerunpublishedDeathprefix. Exactcommitsqueued,newdeliveriesexcludedfrom282validation.
