@@ -16,17 +16,19 @@ struct HandoffApp final:net::WorldApplication {
     std::shared_ptr<HandoffState> state;net::WorldChannel channel;ItemDefinitions items;EnchantValues enchant;MobAttackTemplates mobs;Scene scene;EffectStatus status;
     Actor actor{42,status,{1,1,1},{},scene,{items,enchant,mobs}};ConfiguredMap map;RuntimeZone zone;ZoneEntryState pos;ZoneActorEntryServices entry;
     Services services;WorldAdmission world;WorldAdmissionUser user;VerticalEntrySession session;
+    std::optional<net::Packet> pending_entry;std::optional<VerticalEntryRequest> outcome;
     HandoffApp(std::shared_ptr<HandoffState> s,net::WorldChannel c):state(std::move(s)),channel(std::move(c)),services(zone,actor,pos,entry),world(services),session(world,user){
         map.settings.id=20;map.definition.size=81;zone.map=&map;zone.users=std::make_unique<ZoneUsers>(map.definition.geometry(),0);zone.environment=ZoneEnvironment::prepare(map);pos.character_id=42;pos.position={40,0,40};
         entry.send_view=[](CellCoordinates,net::Packet){};entry.cell_info=[](CellCoordinates){};entry.obelisks=[](){};entry.nprotect=[](){};entry.diagnostic=[](){};entry.close=[](std::uint32_t){};
         actor.account_id()=11;user.user_id=11;user.map=20;world.track_selection(user);
+        services.on_packets=[this](WorldAdmissionUser& queued){check(&queued==&user,"wrong admission user");if(pending_entry){auto packet=std::move(*pending_entry);pending_entry.reset();outcome=session.receive(packet);}};
     }
     void open() override {}
     void receive(const net::Packet& p) override {
         if(p==net::Packet{4,1,42,0,0,0}) {
             channel.send({4,1,0,42,0,0,0});
             channel.pause_input([s=state](bool ok){std::lock_guard lock(s->mutex);s->pause=ok;s->cv.notify_all();});
-            state->wait([&]{return state->pause;});check(session.wait(),"real wait failed");state->release(state->waiting);
+            state->wait([&]{return state->pause;});check(session.wait(),"real wait failed");const auto before=services.events.size();world.update_zone_wait_packets(zone);check(services.events.size()==before,"zone processed a world-wait user");state->release(state->waiting);
             state->wait([&]{return state->first;});
             if(state->mode_first){
                 channel.enter_world();channel.send({0x77,0x77,1});state->wait([&]{return state->second;});
@@ -37,7 +39,7 @@ struct HandoffApp final:net::WorldApplication {
                 channel.set_admission_dispatch(true);pos.position.x=state->bad_position?81.0F:40.0F;channel.send({0x77,0x77,0});channel.resume_input();
             }
         } else if(p==net::Packet{1,2}) {
-            const auto result=session.receive(p);{std::lock_guard lock(state->mutex);++state->entries;state->failed=result==VerticalEntryRequest::rejected;check(result!=VerticalEntryRequest::unhandled,"gate ignored");if(state->failed)check(user.location==3 && world.zone_waiting_count(zone)==1,"failed entry lost queue");state->cv.notify_all();}
+            pending_entry=p;outcome.reset();world.update_zone_wait_packets(zone);check(outcome.has_value(),"zone-wait owner did not dispatch frame");const auto result=*outcome;{std::lock_guard lock(state->mutex);++state->entries;state->failed=result==VerticalEntryRequest::rejected;check(result!=VerticalEntryRequest::unhandled,"gate ignored");if(state->failed)check(user.location==3 && world.zone_waiting_count(zone)==1,"failed entry lost queue");state->cv.notify_all();}
             if(result==VerticalEntryRequest::entered)channel.send({0x79,0x77});else channel.disconnect();
         } else if(p==net::Packet{9,1,55}) {channel.send({0x7a,0x77});}
         else throw std::runtime_error("unexpected inbound packet");

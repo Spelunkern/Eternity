@@ -15,9 +15,9 @@ struct Scene final:ActorScene {
     void finish_periodic_damage(EffectStatus&,const SkillDefinition&,const EffectSource&,std::uint32_t) override {}
 };
 struct Services final:WorldAdmissionServices {
-    RuntimeZone& zone;Actor& actor;ZoneEntryState& state;ZoneActorEntryServices& entry;std::vector<std::string> events;
+    RuntimeZone& zone;Actor& actor;ZoneEntryState& state;ZoneActorEntryServices& entry;std::vector<std::string> events;std::function<void(WorldAdmissionUser&)> on_packets;
     Services(RuntimeZone& z,Actor& a,ZoneEntryState& s,ZoneActorEntryServices& e):zone(z),actor(a),state(s),entry(e) {}
-    void packets(WorldAdmissionUser&) override {events.emplace_back("packets");} RuntimeZone* select_zone(WorldAdmissionUser&) override {events.emplace_back("select");return &zone;}
+    void packets(WorldAdmissionUser& user) override {events.emplace_back("packets");if(on_packets) on_packets(user);} RuntimeZone* select_zone(WorldAdmissionUser&) override {events.emplace_back("select");return &zone;}
     void register_world(WorldAdmissionUser&) override {events.emplace_back("register");} bool enter_zone(WorldAdmissionUser&,RuntimeZone& z) override {events.emplace_back("enter");return enter_zone_actor(z,actor,state,entry);}
     void close(WorldAdmissionUser&,std::uint32_t) override {events.emplace_back("close");} void diagnostic(WorldAdmissionUser&,WorldAdmissionError) override {events.emplace_back("diagnostic");}
     std::optional<std::uint32_t> rank_window(RuntimeZone&) override {throw std::logic_error("unexpected rank");} bool lock_guild(WorldAdmissionUser&) override {throw std::logic_error("unexpected guild");} void unlock_guild(WorldAdmissionUser&) override {throw std::logic_error("unexpected guild");}
