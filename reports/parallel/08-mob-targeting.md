@@ -1330,3 +1330,31 @@ call sites. Remaining work is actual root user/zone/catalog lifetime and
 serialization, real FSM Lua/update/error/clock services and eventual full player
 death/rebirth coordination. No new canonical patch is requested. Original-client
 playability is not established by this owner correction or these test counts.
+
+## Shared-state assignment completion / integration checkpoint
+
+Reviewed current main continuity/coordination notes and 5b9602c/3645232. The
+repeated +142c reconciliation assignment is complete: original PDB/disassembly,
+Stop/UpdateAttack/PvP/target/Death/Rebirth offset evidence, concrete existing-mode
+delegation, production constructor and original raw-state/Stop comparisons.
+The earlier request for a new Actor life field/accessor remains WITHDRAWN.
+
+Read-only main inspection still finds the previous explicit-life-provider-only
+adapter, without MobTargetingActorModeLife or the single-Actor constructor.
+Main is in tenth-batch validation freeze. Actor ownership is now explicitly
+worker02; ZoneUsers remains worker01. No edits to those owners, main, or shared
+runtime/pool files were made. There is no further independent missing life
+mapping to implement within this completed assignment.
+
+Concrete next task: coordinator integrates 5b9602c/3645232 after validation and
+uses MobTargetingActorUser(retained_actor) at actual root targeting call sites.
+Explicitly assign retained root user/zone/FSM service composition if this worker
+should own the next block. Future player Death/Rebirth coordination must write
+existing attack_state().mode to original 1/0, not add another life value; its
+complete implementation is outside the present targeting adapter scope.
+
+Documentation-only checkpoint: git diff --check clean. Unchanged native tests,
+original fixtures, ASAN/UBSAN and SQL checks were not rerun. Latest validation
+remains 129/129 tests, 400 original target paths and 138 original Stop/target
+sequences, plus focused sanitizer success. No main changes, SQL lifecycle,
+merges, resets or pushes. Original-client playability remains unverified.
