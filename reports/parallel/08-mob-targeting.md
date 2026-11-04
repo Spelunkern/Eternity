@@ -2035,3 +2035,107 @@ Exact root contracts / remaining work:
   Exchange/shop/vehicle2/corpse and production admission/transport assembly remain
   explicit required owners. No full player-death or playable-server completion
   is claimed from these local and canonical checks.
+
+
+## Milestone 19 — user GetExp and individual Death rewards
+
+Implementation: `9e7c0d8`. Source: `ps_game.exe`, complete CUser::GetExp
+004581b0..0045823e and Death's selected individual reward region
+004588c3..00458934. Existing AddExpFromUser 00458240, LevelUpStatus 0048a5e0,
+CGameData::GetExp 00458180 and SendDBExp 0046c6c0 execute in the new original
+region oracle; their native owners are reused rather than copied.
+
+Recovered behavior:
+
+- GetExp uses victim WORD+136 and recipient raw signed DWORD level. The 32-bit
+  subtraction/addition wrap before signed comparisons. Difference >9 returns0;
+  otherwise calculate level*50*((difference+1)*0.2+1), preserving the original
+  binary64 stores/53-bit operations, truncate to signed QWORD, retain low DWORD
+  and apply signed max(1). This is not the mob experience helper's min-zero rule.
+  Supported original floating environment is masked nearest/53-bit x87 027f;
+  native non-nearest input is an explicit error, not guessed arithmetic. FP
+  exception-status equivalence and alternate precision/rounding are not claimed.
+- The selected no-party branch multiplies that result by original binary64 1.2
+  and truncates once more. It ALWAYS invokes AddExpFromUser with the caller's
+  source DWORD from Death frame+168 and skip-modifiers=false, then KillPCFrom
+  0045b050 (recipient,victim), then ItemDropByUser 0045a180 (victim,recipient).
+  Zero experience or level-cap rejection does not skip attribution/drop.
+  Do not substitute victim/recipient IDs for the raw source argument.
+- Concrete bridge queries existing Actor levels and delegates directly to
+  Actor::gain_experience with the retained PlayerCore, StatusRules and Experience
+  owners. It samples the real experience_double/experience_half_bonus/amulet
+  benefits. Pure serialized owner queries between the no-party check and award
+  cannot admit a party; normal-party-seven extra is therefore false on this
+  selected branch. No second player/experience catalog/life/resource owner.
+- Nonnull party at entry is explicitly rejected before reward publication.
+  has_party means current pointer identity is present, even for an empty or
+  invalid-kind group; it must not be implemented as count>0. General Death has
+  already published its prefix at this continuation point, so never retry that
+  prefix after this error.
+
+Validation:
+
+- 8192 COMPLETE original GetExp executions without hooks/patches compare across
+  WORD victim levels and full raw signed recipient range, wrap/minimum/gap
+  boundaries. Original x87 control word is checked restored to 027f.
+- 1024 original bounded Death reward-region executions compare ordered DB/self/
+  level-notice/attribution/drop events and complete recipient level/stat/skill/
+  experience/attribute/base-resource state. GetExp, AddExpFromUser and actual
+  LevelUpStatus/SendDBExp run in full; KillPCFrom, ItemDropByUser, LevelUp notice
+  and transports are explicit ports. This is NOT complete Death execution.
+  Explicit fixture data: zero status table, cumulative level*1000 curve, grows
+  0..4, raw level/cap/experience-wrap inputs, billing123 and varying raw source.
+- Every reward-region case uses ACTUAL native Actor::gain_experience, loaded
+  StatusRules/Experience and the same retained PlayerCore. Callback assertions
+  require Actor's live level to be synchronized before DB/level notice. Selected
+  coordinator does not change life, casting, target ID or current resources;
+  the required production LevelUp callback can perform its original resource/
+  attack/scene recovery, which the fixture records as a boundary rather than
+  fabricating. Party rejection and provider-exception partial publication are
+  checked separately. No default empty world provider was introduced.
+- Initial native run: 135/136 passed, 43.81 s. ALL original comparisons passed;
+  the new manual provider-failure assertion incorrectly expected60 rather than
+  72 (GetExp(1,1)=60, then solo factor1.2). Original region case7 confirms72.
+  Corrected only that assertion; implementation and original fixture data were
+  unchanged. Initial log work/mob-targeting-lifecycle-experience-tests.log kept.
+- tools/dev.py build initial149 actions plus final assertion-source rebuild2,
+  exit0, no warnings/errors; work/mob-targeting-lifecycle-experience-build.log
+  and work/mob-targeting-lifecycle-experience-verified-build.log.
+- Final tools/dev.py test exit0, 136/136 passed, 44.75 s; new unit0.08 s;
+  work/mob-targeting-lifecycle-experience-verified-tests.log.
+- ASAN/UBSAN under shared build lock exit0, all8192+1024 original comparisons
+  and Actor/owner/failure checks passed, no diagnostics. New module/test and
+  actual Actor/resources/effect cycle/effects/skills/experience_award/stats
+  sources instrumented; work/mob-targeting-lifecycle-experience-sanitized.log.
+- Both original fixtures regenerated into work/ byte-identically; all12 original
+  EXE/PDB SHA256SUMS pass; git diff --check clean. No main/shared-owner changes,
+  SQL data-path/lifecycle writes or unchanged SQL fixture regeneration. Canonical
+  Actor::gain_experience was inspected read-only and has the same binding/sync
+  contract; no separate canonical archive execution is claimed for this block.
+
+Root/remaining contract:
+
+Return authoritative retained PlayerCore/StatusRules/Experience/award-port
+references, not temporaries or per-command definition copies. Preserve existing
+Actor::gain_experience character-ID/live-level consistency checks; do not rewrite
+IDs to bypass them. Bind DB/self/LevelUp ports to the real billing/connection and
+actual level-up recovery owners. The raw Death source is independent of the
+existing award owner's DB user/billing contract. Queue results ignored by the
+original must not be turned into invented rollback/transaction behavior; the
+native throwing-provider check concerns exception propagation after experience
+publication, not equivalence to an ignored original enqueue failure.
+
+Retain both Actors, PlayerCore, scenes, definition owners and inventory/drop pools
+through all award/level-up/attribution/drop callbacks on the existing world
+executor. Borrowed ZoneUsers lookup is not an owner lease. KillPCFrom and
+ItemDropByUser remain mandatory REAL backends, not optional attribution success.
+No new Actor field/accessor is needed for the recovered calculation/award bridge.
+
+Next: live normal/raid reward branch 00458939..00458ca9, including captured party
+lock+118, raw kind+114, live count+10 and user entries+18/stride8, EnableApplyRange
+0045de60 with range100, CParty::GetPartyExpByLevel 00444e40, original normal/raid
+rate tables and attribution after unlock. KillPCFrom/KillPCTo and drop backends
+also remain to recover/compose. Finally join these continuations with the
+published Death prefix, special routes and common log/tail exactly once. Existing
+exchange/shop/vehicle2/corpse/admission/transport services remain required. No
+full player-death, production level-up or playable-server completion is claimed.
