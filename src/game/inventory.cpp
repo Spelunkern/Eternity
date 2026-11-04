@@ -59,6 +59,58 @@ bool Actor::load_inventory_item(PlayerItem value,GroundItemPool& pool) {
     } catch(...) {pool.release(*item);throw;}
     return true;
 }
+namespace {
+void inventory_position(std::uint8_t bag,std::uint16_t slot) {
+    if(bag>9 || slot>=24) throw std::out_of_range("Invalid retained inventory position");
+}
+}
+bool Actor::inventory_slot_empty(std::uint8_t bag,std::uint16_t slot) const {
+    inventory_position(bag,slot);
+    return std::none_of(inventory_.begin(),inventory_.end(),[&](const auto& value){return value.bag==bag && value.slot==slot;}) &&
+        std::none_of(retained_inventory_.begin(),retained_inventory_.end(),[&](const auto& value){return value.bag==bag && value.slot==slot;});
+}
+std::optional<ActorInventoryItem> Actor::retained_inventory_item(std::uint8_t bag,std::uint16_t slot) {
+    inventory_position(bag,slot);
+    const auto held=std::find_if(retained_inventory_.begin(),retained_inventory_.end(),[&](const auto& value){return value.bag==bag && value.slot==slot;});
+    if(held==retained_inventory_.end()) return std::nullopt;
+    return ActorInventoryItem{held->item,held->pool};
+}
+bool Actor::claim_inventory_item(std::uint8_t bag,std::uint16_t slot,GroundItem& item,GroundItemPool& pool) {
+    inventory_position(bag,slot);
+    if(item.zone || item.cell || !item.definition) throw std::invalid_argument("Raw inventory claim requires detached defined item");
+    if(!inventory_slot_empty(bag,slot) || std::any_of(retained_inventory_.begin(),retained_inventory_.end(),[&](const auto& value){return value.item==&item;})) return false;
+    auto mirror=item.item;mirror.id=item.definition->id;mirror.bag=bag;mirror.slot=slot;
+    inventory_.reserve(inventory_.size()+1);retained_inventory_.reserve(retained_inventory_.size()+1);
+    // All potentially allocating work precedes transfer. Publish the already
+    // allocated pointer without CItem reset or a second pool allocation.
+    item.item.id=mirror.id;item.item.bag=bag;item.item.slot=slot;
+    inventory_.push_back(std::move(mirror));retained_inventory_.push_back({bag,slot,&item,&pool});return true;
+}
+bool Actor::sync_inventory_item(std::uint8_t bag,std::uint16_t slot,GroundItem* expected) {
+    const auto held=retained_inventory_item(bag,slot);if(!held || (expected && held->item!=expected)) return false;
+    const auto mirror=std::find_if(inventory_.begin(),inventory_.end(),[&](const auto& value){return value.bag==bag && value.slot==slot;});
+    if(mirror==inventory_.end()) throw std::logic_error("Retained inventory mirror missing");
+    if(!held->item->definition) throw std::logic_error("Retained inventory definition missing");
+    auto value=held->item->item;value.bag=bag;value.slot=slot;value.id=held->item->definition->id;
+    *mirror=std::move(value);return true;
+}
+bool Actor::set_inventory_item_count(std::uint8_t bag,std::uint16_t slot,std::uint8_t count,GroundItem* expected) {
+    const auto held=retained_inventory_item(bag,slot);if(!held || (expected && held->item!=expected)) return false;
+    const auto mirror=std::find_if(inventory_.begin(),inventory_.end(),[&](const auto& value){return value.bag==bag && value.slot==slot;});
+    if(mirror==inventory_.end()) throw std::logic_error("Retained inventory mirror missing");
+    held->item->item.count=count;mirror->count=count;return true;
+}
+bool Actor::release_inventory_item(std::uint8_t bag,std::uint16_t slot,GroundItem* expected) {
+    const auto held=retained_inventory_item(bag,slot);if(!held || (expected && held->item!=expected)) return false;
+    const auto mirror=std::find_if(inventory_.begin(),inventory_.end(),[&](const auto& value){return value.bag==bag && value.slot==slot;});
+    if(mirror==inventory_.end()) throw std::logic_error("Retained inventory mirror missing");
+    // FreeItem retains payload, including the old count on multi-stack quest
+    // consumption. Do not copy the mirror over the authoritative pooled item.
+    held->pool->release(*held->item);
+    inventory_.erase(mirror);
+    const auto retained=std::find_if(retained_inventory_.begin(),retained_inventory_.end(),[&](const auto& value){return value.item==held->item;});
+    retained_inventory_.erase(retained);return true;
+}
 void Actor::prepare_equipment_removal(std::uint16_t slot,InventoryRemovalWorld& world) {
     const auto at=[&] {return std::find_if(inventory_.begin(),inventory_.end(),[&](const auto& value){return value.bag==0 && value.slot==slot;});};
     if(slot>=13 || at()==inventory_.end()) throw std::logic_error("Missing original equipment removal slot");

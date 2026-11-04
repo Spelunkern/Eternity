@@ -18,6 +18,7 @@ class InventoryRemovalWorld;
 class ItemDropWorld;
 enum class ItemDropResult;
 enum class InventoryReceipt;
+struct ActorInventoryItem {GroundItem* item;GroundItemPool* pool;};
 // Required scene/transport services. Implementations own zone binding, combat
 // and connection queues; none default to no-op.
 class ActorScene {
@@ -77,6 +78,24 @@ public:
     std::uint32_t receive_money(std::uint32_t amount,MoneyWorld&);
     std::uint32_t receive_money_item(GroundItem&,MoneyWorld&,GroundItemPool&);
     bool load_inventory_item(PlayerItem,GroundItemPool&); // Resolved SQL row, no DB/client notices.
+    // Serialized raw ownership primitives, QuestAddItem 0047e6f0 / QuestFindItem
+    // 0047f790/0047f8e0. Borrowed pointers survive only until release/reuse; retain
+    // Actor, definition and owning pool through callbacks, and revalidate identity.
+    // inventory() value-only rows still occupy slots but have no retained borrow.
+    bool inventory_slot_empty(std::uint8_t bag,std::uint16_t slot) const;
+    std::optional<ActorInventoryItem> retained_inventory_item(std::uint8_t bag,std::uint16_t slot);
+    // Claim an exclusively owned, detached, already allocated item from this pool.
+    // Caller guarantees pool membership and no other Actor/zone ownership. No
+    // allocation, merge, craft decoding, packets, exchange or equipment effects.
+    bool claim_inventory_item(std::uint8_t bag,std::uint16_t slot,GroundItem&,GroundItemPool&);
+    // Pointer payload remains authoritative after claim (default craft follows
+    // publication). Sync full mirror before DB send; count sync precedes both
+    // DB/client callbacks. Neither operation sends/applies persistence packets.
+    bool sync_inventory_item(std::uint8_t bag,std::uint16_t slot,GroundItem* expected=nullptr);
+    bool set_inventory_item_count(std::uint8_t bag,std::uint16_t slot,std::uint8_t count,GroundItem* expected=nullptr);
+    // Release directly through the bound pool, preserving the pointer's current
+    // count. Invoke after required DB/client sends. No ItemRemove side effects.
+    bool release_inventory_item(std::uint8_t bag,std::uint16_t slot,GroundItem* expected=nullptr);
     ItemDropResult drop_item(std::uint8_t bag,std::uint16_t slot,std::int32_t count,ItemDropWorld&,GroundItemPool&);
     bool remove_item(std::uint8_t bag,std::uint16_t slot,InventoryRemovalWorld&,bool notify=true);
     bool delete_items(std::int32_t type,std::int32_t type_id,InventoryRemovalWorld&);
