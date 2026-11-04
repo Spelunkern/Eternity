@@ -1,4 +1,8 @@
 #include "eternity/game/mob_targeting_lifecycle_death.hpp"
+#if __has_include("eternity/game/mob_drops_effect_transport.hpp")
+#include "eternity/game/mob_drops_effect_transport.hpp"
+#define ETERNITY_LIFECYCLE_EFFECT_DB 1
+#endif
 #include <fstream>
 #include <iostream>
 #include <sstream>
@@ -60,10 +64,20 @@ struct Case final:MobTargetingNpcDeathServices {
     void unlock_party(PartyRegistryParty* p) noexcept override {event('U',std::to_string(token(p)));mutate('U');}
     void send_party(PartyRegistryParty* p,const eternity::net::Packet& b) override {event('B',std::to_string(token(p))+":"+hex(b)+":9001");if(fail) throw std::runtime_error("Injected party transport failure");mutate('B');}
 };
-struct Scene final:ActorScene,ActorEffectDatabase {
-    std::vector<eternity::net::Packet> effect_database_packets;
-    void send_effect_database(const eternity::net::Packet& packet) noexcept override {effect_database_packets.push_back(packet);}
+struct Scene final:ActorScene
+#ifdef ETERNITY_LIFECYCLE_EFFECT_DB
+    ,ActorEffectDatabase
+#endif
+{
     std::vector<unsigned> released;
+    Actor* observed=nullptr;bool database_order=true;
+    std::vector<eternity::net::Packet> database;
+#ifdef ETERNITY_LIFECYCLE_EFFECT_DB
+    void send_effect_database(const eternity::net::Packet& p) noexcept override {
+        database.push_back(p);
+        database_order=database_order && observed && observed->replica().snapshot().size()==1 && !observed->effects().contains(33) && released.empty();
+    }
+#endif
     void send_self(const eternity::net::Packet&) noexcept override {std::terminate();}
     void send_nearby(const eternity::net::Packet&) override {throw std::runtime_error("Unexpected proximity delivery");}
     void send_cell_view(const eternity::net::Packet&) override {throw std::runtime_error("Unexpected cell delivery");}
@@ -149,6 +163,10 @@ int main(int argc,char** argv) {
         {
             EffectStatus state;state.skills.equipment.base.maximum={100,200,300};
             Actor actor(9001,state,{130,20,30},{{55,1,6},{66,1,6}},scene,{items,enchant,attacks});
+            actor.account_id()=12345;scene.observed=&actor;
+#ifdef ETERNITY_LIFECYCLE_EFFECT_DB
+            check(actor.effect_database_bound(),"Actual required Actor database transport not bound");
+#endif
             actor.effects().append(33,{{55,1,6},0,6000,false},normal);actor.effects().append(34,{{66,1,6},0,6000,false},keep);
             actor.initializing(true);actor.effects().initialize(actor.status(),actor);actor.initializing(false);
             check(actor.status().skills.equipment.base.maximum.hp==150,"Actual effect initialization failed");
@@ -158,9 +176,16 @@ int main(int argc,char** argv) {
             check(threw && w.steps==std::vector<char>({'L','P','R'}),"Missing real ledger provider was hidden or order changed");
             check(actor.attack_state().mode==1 && actor.resources().hp==100 && actor.resources().mp==20 && actor.resources().sp==30 && actor.actions().pending_move==77 && w.deadline==88 && w.code==99,"Native failure ran later death stages or zeroed resources");
             check(actor.status().current_target==77 && actor.replica().snapshot().size()==1 && scene.released==std::vector<unsigned>{33},"Actual effect owner/replica or target semantics differ");
+#ifdef ETERNITY_LIFECYCLE_EFFECT_DB
+            check(scene.database_order && scene.database==std::vector<eternity::net::Packet>{{2,9,0x39,0x30,0,0,55,0,1}},"Actual 0902 replica/database/release order differs");
+#endif
             mob_targeting_death_by_npc(actor,3,1,npcs,w);check(w.steps.size()==3,"Dead reentry queried missing providers");
         }
+        scene.observed=nullptr;
         check(scene.released==std::vector<unsigned>({33,34}),"Actual retained effect release lifetime differs");
+#ifdef ETERNITY_LIFECYCLE_EFFECT_DB
+        check(scene.database.size()==1,"Shutdown sent an extra database removal");
+#endif
         {
             Actor actor(9001,{}, {120,20,30},{},scene,{items,enchant,attacks});FailureWorld w;threw=false;
             try {mob_targeting_death_by_npc(actor,3,1,npcs,w);}catch(const std::runtime_error& e) {threw=std::string(e.what()).starts_with("Injected actual Actor");}

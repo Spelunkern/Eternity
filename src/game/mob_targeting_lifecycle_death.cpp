@@ -1,6 +1,7 @@
 #include "eternity/game/mob_targeting_lifecycle_death.hpp"
 #include <algorithm>
 #include <bit>
+#include <stdexcept>
 namespace eternity::game {
 namespace {
 void put(net::Packet& p,std::size_t at,std::uint32_t n,unsigned size) {for(unsigned i=0;i<size;++i) p[at+i]=static_cast<std::uint8_t>(n>>(8*i));}
@@ -38,6 +39,10 @@ void mob_targeting_death_by_npc(MobTargetingDeathState& s,std::int32_t type,std:
     mob_targeting_npc_death_finish(s,type,id,w);
 }
 namespace {
+template<class T> void reset_actor_damage(T& actor) {
+    if constexpr(requires(T& a) {a.reset_damage_ledger();}) actor.reset_damage_ledger();
+    else throw std::logic_error("Missing canonical Actor::reset_damage_ledger lifecycle API");
+}
 class ActorBridge final:public MobTargetingNpcDeathServices {
 public:
     ActorBridge(Actor& a,const NpcDefinitions& n,MobTargetingNpcDeathWorld& w):actor(a),npcs(n),world(w) {read();}
@@ -72,6 +77,7 @@ private:
     Actor& actor;const NpcDefinitions& npcs;MobTargetingNpcDeathWorld& world;
 };
 }
+void MobTargetingNpcDeathWorld::reset_damage(Actor& a) {reset_actor_damage(a);}
 void mob_targeting_death_by_npc(Actor& a,std::int32_t type,std::uint32_t id,const NpcDefinitions& n,MobTargetingNpcDeathWorld& w) {
     if(a.attack_state().mode==1) return;
     ActorBridge bridge(a,n,w);mob_targeting_death_by_npc(bridge.state,type,id,bridge);bridge.write();

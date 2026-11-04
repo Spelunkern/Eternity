@@ -60,7 +60,7 @@ public:
     virtual void send_game_log(const net::Packet&)=0;
     virtual void pvp_leave_by_death(Actor&)=0;
     // Actual Actor ledger Reset, not end_duel/recover or another ledger.
-    virtual void reset_damage(Actor&)=0;
+    virtual void reset_damage(Actor&); // Concrete canonical reset_damage_ledger, or explicit missing-interface error.
     virtual void enter_dead(Actor&)=0;
     virtual void send_death_view(Actor&,const net::Packet&,std::uint32_t excluded_user)=0;
     virtual void lock_party(PartyRegistryParty*)=0;
