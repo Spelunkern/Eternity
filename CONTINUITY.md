@@ -1824,3 +1824,10 @@ Actor movement state and all ingress/world/quest ancestors. Log
 `Eternity-movement/.local/composed-movement-dispatch.log`. This covers only the
 speed-check stage and ownership checks, not full 0501 gates, visibility, actual
 movement or production dispatch.
+
+World integration session 28365 finished exit 0: both
+`vertical-world-unit` and `vertical-mobs-cursor-unit` passed on `30d9e66`;
+logs `.local/composed-world-frame.log` and `.local/composed-mob-cursor.log` in
+`Eternity-world`. This combines real zone/world owners and the original cursor
+fixture but not the later MobPool retention draft, real production services,
+scheduler or an original client.
