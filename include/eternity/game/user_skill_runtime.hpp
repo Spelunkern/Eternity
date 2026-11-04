@@ -17,6 +17,7 @@ struct UserSkillDefinition {
     std::uint16_t sp_cost=0,mp_cost=0; // +44/+46.
     std::uint16_t disable_seconds=0; // +50.
     std::uint8_t target_kind=0; // +56, distinct from WORD TypeDetail.
+    std::uint8_t ready_time=0; // +48, units of 250 milliseconds.
 };
 class UserSkillLearnWorld;
 struct UserSkillRuntimeSkill:MobCombatSchedulerSkillBinding,std::enable_shared_from_this<UserSkillRuntimeSkill> {
