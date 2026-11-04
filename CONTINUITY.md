@@ -565,3 +565,47 @@ Reviewed 96af8bc/9a0bdd4 read-only SQL/original/native targeting comparison runn
 Session 40893 exited 0: build, 174/174 tests (45.48 seconds), complete isolated SQL including character save and final disposable guild catalog checks. Validated source e24398d includes unaccounted QuestRuntime insertion and ownership assertions. Logs .local/fourth-batch-{build,tests,sql}.log. Source freeze released; publish before further edits. Queue marks validated entries separately from newer pending handoffs. Restored targeting binding comparison tooling 96af8bc remains pending integration and central reproduction.
 
 Reviewed worker 08 documentation checkpoint 8f3faf1 (96829c23); queued exact snapshot without new test claims. Explicitly assigned ReLoadConstMobSkill 004c50c0/ReLoadConstMob 004c20c0 under mob_targeting_reload, stable in-place pointers and partial-failure publication. Next canonical work: actual owner adapters and shared inventory/visitor/UID interfaces. Server objective open, production gameplay incomplete.
+
+## Reviewed integration queue: worker 07 2a7fbb54
+
+Reviewed f40c155/f1a2c98 QuestEnd/Select with canonical reward/removal composition: failure client/remove/log ordering, wrapped minimum gate, pending selection, descending variants and inventory query. Reported 1,536 original paths and 125 tests after undefined log tails normalized; initial failed test not counted as pass. Exact snapshot/commits queued. Central build must link canonical owners directly, not private worktree snapshot fallback. Captured definition and retained/pool-reused quest payload must survive all callbacks. Actor direct inventory ownership/count/release plus real rewards/transport/log adapters remain integration blockers. Last validated central publication 06f2b75 (174 tests/full SQL), no pipeline active.
+
+## Reviewed handoffs: skills 01f0edba and start grants 4b676918
+
+Reviewed/queued 3d8b480/5906478 Keep/Sleep actual list owner: reported 640 original traces, 126 tests. Shared cursor/status, real TimeDamage, view under lock and sleep reentry after unlock preserved; production scheduler/speed remains pending. Reviewed/queued 68a3fca/78e2c4e persistent three-start-grant evidence: 240 sequences/384 items/24 middle failure recoveries, 125 tests. QuestRuntime unaccounted insertion dependency resolved in e24398d; Actor retained-item claim/access/mirror/release and shared UID remain next canonical work. Exact snapshots/ordered commits retained in integration queue. Latest published validated source 06f2b75; no pipeline active.
+
+## Reviewed integration queue: worker 05 5d9301d7
+
+Reviewed df2e00b/8003285 direct user/roster send: initial buffer reference transferred to worker, no broadcast increment/release; disconnect gate before allocation and no later socket recheck. Reported 1,024 original direct/512 complete membership comparisons, 128 tests and focused ASAN/UBSAN. Original unsafe 2047/2048 copy is explicitly rejected safely, not emulated; >2048 error/close ordering recovered. Exact snapshot/commits queued. Assigned party_runtime_registry creation/Init/manager lifetime next. Actual connection/pool/worker services remain required; no central pipeline active, last publication 06f2b75.
+
+## Reviewed handoffs: combat 4ecd6a35 and Lua lifecycle 8fd05a71
+
+Reviewed b0f4a04/d8853b4 normal mob attack polling on real Actor: 1,536 reported comparisons,125 tests. Resume gate, transform/weapon checks, naming context, post-hit status and final deadline/cancel/motion ordering reviewed; real skill/PvP/world providers remain explicit. Worker continues StatusNextAttack within scheduler scope. Reviewed 121cf33/5a22b4d Lua/FSM lifecycle:768 reported comparisons,126 tests with actual MobPool release. VM backend remains required; default MobPool destruction lacks retained VM/stack cleanup, needs canonical exactly-once destructor hook with service lifetime. Avoid calling whole release wrapper inside pool release_stack_ai (duplicate flags/close). Exact snapshots/commits queued. Latest validated publication 06f2b75; no pipeline active.
+
+## Reviewed integration queue: worker 04 90c70e9c
+
+Reviewed 16f1e66/cd5586a local calendar pack/unpack and SubTimeSecond binary64/truncation arithmetic plus ownership clock adapter. Reported 2,005 original comparisons/126 tests; OLE import responses captured from Wine11.20, not Microsoft DLL equivalence. Actual local-calendar/OLE platform services remain mandatory. Preserve second-operand-first conversion and low DWORD of signed truncation; generic rounded civil seconds would differ. Exact snapshot/commits queued. Initial regeneration polluted by lock stdout corrected, not claimed passed. Production configuration/calendar/world dispatch remains open. Last validated publication 06f2b75; no central pipeline active.
+
+## Fifth reviewed batch integrated — validation freeze
+
+Reviewed ec6ea4c/495eced StatusNextAttack: 2,048 reported original cases,126 worker tests; live self-send reentry/phase/backup targets retained. Integrated pending queue through e41707b04b1cfdaa2cc825136bfd117c1e6da891, resolving CMake append conflicts with both complete blocks preserved. Completion test uses canonical owners when present; snapshot fallback remains for old worker bases only.
+
+NEW SOURCE FREEZE: pipeline build/test/full isolated SQL then read-only targeting restored SQL/original comparison. Logs .local/fifth-batch-build.log, .local/fifth-batch-tests.log, .local/fifth-batch-sql.log, .local/fifth-batch-bindings-sql.log. Do not modify canonical sources or cherry-pick while active. Review new handoffs into pending queue. Publish only after all checks pass; latest published validated source remains 06f2b75. Actual inventory/UID/visitor/Lua/world adapters remain incomplete; objective open.
+
+## Reviewed integration queue: worker 02 4a134709
+
+Reviewed 050179d/cc67d6e real pooled drop delivery bridge: canonical definition identity/recipient validation, actual Actor::receive_item and ZoneItems entry, sequence make V and required log/transport services. Reported 512 original paths,128 tests and read-only SQL regression. Initial merged-stack assertion expected wrong 0702; corrected to established 0707 contract, initial run not passed. Exact snapshot/commits queued during source freeze. Death dispatch/shared RNG/UID/live party and world sinks remain required. Pipeline session 28976 .local/fifth-batch-* currently waiting for build capacity; no source mutations while active. Latest validated publication remains 06f2b75.
+
+## Reviewed integration queue: worker 09 9972ace7
+
+Reviewed 295840f/e6a3c41 configured CKFSM Start/Execute/Evaluate: programs before callbacks, live counts/action reload, wrapped full-result sums without short-circuit and captured transition publication after exit/enter. Reported 768 original comparisons/127 worker tests. Exact snapshot/commits queued during freeze. TravelCondition/token mapping, factory/assets/function registry remain required; configured mainFSM must be owned separately from fixed state_stack. Active ranges/state lifetime must survive callbacks. Central build completed224 actions; session28976 tests/full SQL/restored binding SQL still pending. Do not mutate canonical sources while pipeline active.
+
+## Reviewed integration queue: worker 03 938abe74
+
+Reviewed 5c91dc3/ee9f0cd applied-skill admission/refresh/replacement/debuff on retained owner: equal-level refresh preserves definition/effects, replacement detaches/reverses/reuses ID before relink. Reported1,536 original operations/127 worker tests. Exact snapshot/commits queued during freeze. Full stable mob-skill catalog (name/keep/abilities/time damage) remains required, distinct from user skills; damage-producing replacement reentrancy not covered by this fixture. SendSpeed middle bytes remain unresolved, no guessed ID. Current central build and185/185 tests passed(41.95s); session28976 full SQL and restored binding comparison still pending/running. No source edits during active validation.
+
+## Fifth batch validated — 185 tests, full SQL and restored bindings
+
+Session28976 exited0: build,185/185 tests(41.95s), complete isolated SQL and read-only restored SQL/original/native targeting comparison. Source e41707b. Logs .local/fifth-batch-{build,tests,sql,bindings-sql}.log. Binding result:355 skill rows/356 slots,2747 mob rows/slots,2746 nonzero definitions,1871 links including20 disabled; all matched original execution. Freeze released; publish verified batch before new edits.
+
+Reviewed/queued 87abafd/a99fd79 live reload:432 reported original traces,126 tests and focused ASAN/UBSAN. Typed projections preserve existing pointers; actual owner needs mutable allocated-slot APIs/full normalized bytes under quiescence, real R2 SQL/pool/log providers. Do not const_cast const owner or replace arrays; do not clear existing skill links merely because a skill reload changes effect. Exact snapshot retained. New reload and other pending queue entries are not covered by this completed batch. Production owner/connection/inventory/UID/Lua/world adapters remain incomplete; server objective open.
