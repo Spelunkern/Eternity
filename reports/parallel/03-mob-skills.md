@@ -149,6 +149,8 @@ contract with actual owner operations and stable retained storage.
 
 | `ce03a18ddc7ae1b07469e048a43b17205b7738e6` | Actual retained mob-pool binding, Init/reset/death/destructor lifetime | 64 original resets + 64 retained pool compositions; 132/132 tests, 39.89 s. |
 
+| `4d8e1edde2bf1e30716b0bdb41716d2f5f02e0aa` | Raw heap/manager split and real obelisk composition | 128 original scenarios / 2,816 operations; 64 obelisk compositions; 134/134 tests, 27.84 s. |
+
 ## Vision cleanup milestone
 
 `MobAppliedSkills::remove_vision_fix(MobRuntime&)` now operates directly on the
@@ -521,3 +523,102 @@ Documentation-only checkpoint: latest implementation validation remains
 retained pool compositions. No new build, original execution or SQL run; no
 source/test/fixture changes. Clean tree before report update and git diff --check
 passed. Global completion is not claimed. Awaiting next assignment.
+
+## Raw heap versus manager preparation milestone
+
+Implementation commit: `4d8e1edde2bf1e30716b0bdb41716d2f5f02e0aa`.
+
+Assignment explicitly expands the existing exclusive MobPool paths. Read current
+main coordination and worker04 report, especially the InitObelisk raw-pool
+integration dependency; no worker04/09/08 source or main was modified.
+
+Existing MobPool now exposes allocate_raw() and prepare_allocated(MobRuntime&).
+allocate() composes exactly those operations. Raw allocation performs the old
+fresh construction/damage/skill/lifetime binding or LIFO retained reuse, without
+manager preparation; reuse leaves ID/random state and counter untouched. Fresh construction still has
+its own original Unix-time sample. Preparation increments the manager counter,
+writes that ID, then samples Unix time and seeds the existing ServerRandom with
+time XOR ID. It neither constructs nor replaces a skill/damage owner. Reused IDs
+and random words remain untouched until preparation; counter wrap includes zero.
+
+Outstanding raw allocations are tracked by this SAME pool. A foreign, released,
+already prepared or zone-attached actor is rejected without counter/clock/random
+writes. These are explicit host ownership guards, not claimed original error
+branches. FreeMob cancels pending preparation while retaining payload/owners.
+Clock and teardown providers must obey the existing serialized nonthrowing
+runtime contract; a provider exception is not an implicit retry authorization.
+No new pool, default no-op preparation or second counter was introduced.
+
+### Original evidence
+
+ps_game.exe SSyncHeap<CMob>::Alloc **0040ab80**, CMob constructor **0048fd50**,
+CObjectMgr::CreateMob **0040a5e0** (preparation tail **0040a5f2..0040a61d**),
+FreeMob **0040a630**, CMap::InitObelisk **00429a60** and ObeliskRespawn
+**0042a6f0**. Startup raw principal preparation is at **00429acf..00429b05**;
+complete-respawn raw companion preparation at **0042a96b..0042a99d**. Worker04
+already recovered that startup uses raw allocation for both principal and
+companions, while complete respawn uses manager preparation for its principal.
+
+The new oracle executes actual constructor/heap/FSM/Lua-release/damage/random
+code. R calls raw Alloc; P enters the exact manager tail with its original saved
+register stack, without allocating again. Manager A executes complete CreateMob.
+128 scenarios / 2,816 operations include allocation failure, fresh raw state,
+out-of-order raw preparation, retained ID/random state, LIFO reuse, raw release
+without preparation, complete manager allocation and DWORD counter/time wrap.
+Snapshots compare payload, events, attempts/counter/free membership and random
+state after preparation. Source MT words before first seeding are
+uninitialized; both projections mask those words instead of guessing values.
+The constructor explicitly writes index 625 at 0048fe96, which is compared.
+The constructor's actual seed/time sample remains compared.
+
+### Actual obelisk composition
+
+New native test invokes existing initialize_obelisks and respawn_obelisk with
+real bound MobPool, stable catalog/shared skill heap/counter, initialize_mob and
+ZoneMobs. The explicit world maps allocate(true) to pool.allocate(), false to
+pool.allocate_raw(), and prepare_companion to pool.prepare_allocated(). Each
+initialization checks preparation already happened exactly once. It verifies
+startup versus respawn raw/manager/time counts, ID wrap, zero-to-three companions,
+three countries, absent-zone gate, failed startup principal, actual leave/release/
+reuse, stable bound owner identity, real entry and destructor service lifetime.
+It also checks rejected duplicate/released/foreign/attached preparation attempts.
+World/KC/VM/combat providers outside these paths fail explicitly in the fixture.
+This is new native owner composition; it does not claim the combined world ran
+in the original process. Original worker04 startup/respawn evidence is preserved.
+
+Old branch lacks worker04 owners: four exact files (obelisk_runtime.hpp,
+obelisk_runtime_publication.hpp and corresponding cpp) are read-only mode 0444
+under ignored work/mob_applied_skills_runtime_obelisk_snapshot, extracted from
+commit 03e120f4f7ad626c7c1f322a5734ed1a82eb1294. Private CMake uses them only if
+the canonical obelisk header is absent; central builds use existing normal
+owners. No snapshot is copied over the branch or committed.
+
+- Native build passed. Full recompilation emitted existing unrelated guild
+  warnings; no new adapter diagnostic. Logs:
+  work/mob-applied-skills-runtime-raw-build.log and
+  work/mob-applied-skills-runtime-raw-build-consistent.log.
+- Tightened fixture comparison to include the explicitly initialized index 625,
+  retaining only undefined word masking; final build exit 0, no warnings:
+  work/mob-applied-skills-runtime-raw-build-verified.log.
+- Final python3 tools/dev.py test: exit 0, **134/134 passed**, 27.84 seconds.
+  New raw suite: 128 scenarios / 2,816 original operations, 0.10 seconds;
+  real obelisk composition suite: 64 cases, 0.01 seconds. Existing bound skill,
+  death/reset/destructor and legacy manager allocation regressions all pass.
+  Log: work/mob-applied-skills-runtime-raw-test-verified.log.
+  Earlier full passes (38.86 s, then 28.41 s after additional constructor/reuse
+  assertions) remain in raw-test.log and raw-test-final.log; no failed tests.
+- All four ignored worker04 files match commit bytes and mode 0444; oracle
+  py_compile, fixture repeat and git diff --check pass.
+
+Raw objects must be prepared before gameplay random draws or zone entry.
+Original fixture generated twice identically and
+copied from work/ before native readers. All twelve EXE/PDB SHA256SUMS pass:
+work/mob-applied-skills-runtime-raw-hashes.log. Locked Ghidra process export passed
+with required JDK/Ghidra/output: work/mob-applied-skills-runtime-raw-export.log.
+Oracle py_compile and git diff --check passed. No SQL access or sanitizer run.
+
+Worker04 can now bind its two allocation/preparation ports directly to the real
+pool methods above. Real configuration/definition flags, world initialization,
+zone/transport, Lua/AI backend and root service construction remain required;
+no new canonical fields are needed for this split. Full isolated SQL and central
+integration remain coordinator-owned. The server is not claimed playable.
