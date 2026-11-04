@@ -66,4 +66,9 @@ void respawn_obelisk(ObeliskRuntimeMap&,ObeliskRuntime&,ObeliskRuntimeWorld&);
 // principal current < 1, and never replenishes that group's companions that tick.
 void update_obelisk_respawns(ObeliskRuntimeMap&,std::span<ObeliskRuntime>,
                              std::uint32_t now,ObeliskRuntimeWorld&);
+// CMap::ObeliskReset 0042aa40. Clock is sampled once after the zone guard,
+// including an empty map. remove_by_id must execute actual zone removal,
+// including any nested destroy callback while reset_send is true.
+void reset_obelisks(ObeliskRuntimeMap&,std::span<ObeliskRuntime>,
+                     const std::function<std::uint32_t()>& tick,ObeliskRuntimeWorld&);
 }
