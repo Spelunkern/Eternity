@@ -783,3 +783,37 @@ Reviewed/queuedba9d25b doc-only prior Actor adapter checkpoint, no new execution
 Session45156 exited0:build,217/217tests57.50s,complete isolatedSQL incl character/guild disposable checks,full restored binding comparison. Sourcea33b64a; logs .local/ninth-batch-{build,tests,sql,bindings-sql}.log. Freeze released; publish verified batch. Pending new handoffs not covered.
 
 Reviewed/queued3c576f5/08c4f17 ordinary obelisk parser:45reported original parser cases+64binder compositions,134tests. Partial writes,case/numeric/textmode/EOF duplicate-last-zone semantics retained; fixedcapacity overflow rejected. Portal/linked parsing and production config/definition flag remain open. Exact snapshot retained. mobs/mob_pool03,zone_users01,zone_mobs08,sql_server02 exclusive branches unchanged. Objective remains open; no playableclaim.
+
+## Reviewed worker03 6b21a3d6 — canonical runtime/pool ownership
+
+Reviewedce03a18/670f70d actual MobRuntime retained skill owner/boundMobPool constructor, AI/VM teardown and destructor damage-before-skill deletion. Reported64originalResetAttack/64nativepoolcycles,132tests. Exact snapshot/commits queued. Bound runtime cannot move; services/catalog/pools/counter and context outlive pool including available objects. FreeMob retains skills/damage,Init helper does not clear,Death callback clears after damage reset. Close extant VM once,stack-only callback not whole wrapper. Root must select bound constructor and provide real ports. Latest validatedf0bafb5; integrating reviewed pendingbatch next.
+
+## Tenth reviewed batch locally integrated — source freeze
+
+Integrated pending queue through 03e120f4f7ad626c7c1f322a5734ed1a82eb1294 including canonical MobRuntime/MobPool skills/lifetime,Actor targeting adapters,obsolete checkpoint docs and obelisk parser. NEW SOURCE FREEZE during build/test/fullisolatedSQL/fullcatalog compare in .local/tenth-batch-{build,tests,sql,bindings-sql}.log. No source/CMake edits/cherry-picks while active; review handoffs into pending queue. Publish only on all checks passing; last validatedf0bafb5. Bound rootworld/services and Actorinventory remain incomplete; exclusive branch ownership unchanged.
+
+## Reviewed triple delivery — SQLstream/ZoneUsers/compiledruntime
+
+Reviewedbc0b0b8/6cb4b94 actual retainedSQLcursor and MobItemsR2 completed-row publication:132tests+3focused,real4conversion failures/5selectiveSQLreloads. BufferedAPI retained; full central storage compatibility check required. Reviewed71febf3/cf52e64 ZoneUsers shared live cursor/recursive membership locking and actual scheduler:256original traces/131tests. Real aliasingActor leases required,detach before deferred destruction; no second list. Assigned01 activeCSkill/equipment concrete bindings under mob_combat_scheduler_bindings,sharedActor/skills/inventory read-only pending accessor evidence. Reviewedf7f2c8a/2f1161a unified compiled runtime/Debug/final startup:768neworiginal sequences,135tests and priorcallbackfixtures; fullfactory/assets/interpreter still open. Exact snapshots/commits queued during freeze. Session66021 tenthbatch currently waiting buildcapacity;no source changes during pipeline.
+
+## Worker02/03 completion checkpoints — inventory/raw pool expanded scopes
+
+Reviewed/queued8ed5c3d/6cd40fa doc-only scope checkpoints,no new tests. Assigned02 EXCLUSIVE actor.hpp/inventory.cpp plus tests: retained-item borrow/countsync/directrelease/rawclaim primitives for quest06/07, no duplicate inventory/no receive_item fallback/no transport sideeffects. Coordinator/others must avoid these files. Previous02SQLcursor scope complete, preserve commits. Assigned03 existing exclusive mobs/mob_pool rawallocate/prepare split preserving manager allocate via composition, real skill/damage/lifetime owner and obelisk startup ordering. No fakeLua/root assembly. Existing01zone_users/08zone_mobs remain exclusive. Current session66021 build345actions observed40;sourcefreeze active, no main source edits.
+
+## Reviewed integration queue: worker04 d21a1d25
+
+Reviewedea242b5/6541a72 stable portal/config target-map binding:64reported original cases/135tests. Exact snapshot/commits queued during freeze. Retain ordinary records and actual country fields, same globalnextID,firsttarget/ordinalreferences/sidecompaction;target_map routes actual destination,zone_present stays live through map lifecycle. Parser/assetcomparison/maproot services remain open. mobs/mob_pool03exclusive unchanged. Current session66021 buildcompleted345actions;tests/fullSQL/fullcatalog pending. No source changes while active.
+
+## Reviewed worker08 e17d9d91 — life dependency closed
+
+Reviewed5b9602c/3645232 concrete targeting life delegates existing Actor.attack_state.mode(+142c),no extra state/accessor. Reported400original targetpaths/138Stop sequences,129tests/ASAN. Exact snapshot/commits queued during freeze. Full userDeath/Rebirth currently missing; assigned08 mob_targeting_lifecycle recovery/composition with actual Actor mode/effect/resource owners,sharedActor/inventory02 andzone_users01 read-only. No backend/world completion claimed. Current221test suite observed173passing;session66021 SQL/fullcatalog pending. Sourcefreeze active.
+
+## Reviewed worker08 3e3b3318 — older life checkpoint
+
+Reviewed/queued836cc99 documentation-only +142c completion, no new tests. New playerDeath/Rebirth assignment already supersedes olda0b6a6b5scope;retain newer task,do not repeat life mapping. Central221/221tests passed61.79s;session66021 fullSQL/fullcatalog running,sourcefreeze active. Last publicationf0bafb5.
+
+## Tenth batch validated —221tests/fullSQL/fullcatalog
+
+Session66021 exited0:build,221/221tests61.79s,fullisolatedSQLinclcreation/character/guild,fullrestoredcatalogcompare. Source03e120f; logs .local/tenth-batch-{build,tests,sql,bindings-sql}.log. Freeze released;publish verifiedbatch. Newer queuedSQLcursor/ZoneUsers/userlife/etc not covered.
+
+Reviewed/queueda2c2a37/d3f91e3/322feff evidence-only112original requests/48nativepolls,132tests. Actual userCSkill owner absent,not private-only; assigned01 canonical user_skill_runtime256stable slots/signedcount/liveDWORDselection/sharedmanagerpool contract and actual scheduler handle. Actor/inventory02exclusive remains read-only; report minimal singleowner attachment. Retained weaponbag0slot5 needs actual item accessor,02task addresses it. No fake runtime/projection equivalence. Existing exclusive branches03mobs/mob_pool,08zone_mobs,01zone_users,userSkillnewfiles,02Actorinventory remain. Objective open.
