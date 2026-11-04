@@ -1,7 +1,7 @@
 # Worker 02: mob drops
 
-Status: loot algorithms, catalogs, selective reload, creation and eligibility are
-reconstructed. Delivery connects actual pool/Actor/ZoneItems owners. Production
+Status: loot algorithms, catalogs, incremental typed SQL reload, creation and
+eligibility are reconstructed. Delivery connects actual pool/Actor/ZoneItems owners. Production
 death/world routing and required services remain open; the server is not playable.
 Only owned files and private CMake registrations were changed.
 
@@ -75,7 +75,8 @@ Validation:
   Log: `work/mob-drops-reload-test.log`.
 - New Python oracles pass `py_compile`; `git diff --check` passes.
 
-Important native SQL boundary: SqlServer::query buffers its entire result, so a
+Historical milestone 7 boundary (resolved for MobItemsR2 in milestone 10):
+SqlServer::query buffers its entire result, so a
 transport/fetch error occurs before any row publication. `MobDropReloadCursor`
 already supports the original streaming failure semantics, but exact production
 mid-fetch publication requires a canonical statement/cursor interface delivering
@@ -338,3 +339,102 @@ assign retained quest/drop provider assembly explicitly, with the SAME ItemIds
 shared_ptr already supplied to CharacterCommands. SQL lifecycle and production
 world assembly remain outside this assignment. Waiting for integration/new scope;
 no main edits, duplicate implementation or repeated validation performed.
+
+
+## Milestone 10: actual retained typed SQL cursor / MobItemsR2 streaming
+
+Implementation commit: `bc0b0b8e13cc8302c3b6769cebd8cedf583e6eba`.
+
+Latest continuity explicitly authorizes existing storage/sql_server.hpp/cpp and
+new mob_drops_stream files. CharacterCommands migration is already integrated in
+main's frozen 27df258 batch; its historical checkpoint is superseded. No main,
+other-worker, credential, schema or database-lifecycle files were edited.
+
+Evidence: ps_game.exe ReLoadConstMobItem 004c2e70, completed-row write block
+004c3043..004c3105, SDatabase::GetData 004e15b0 and Fetch 004e2090. Locked focused
+Ghidra export completed in work/exports/02-mob-drops; log
+work/mob-drops-stream-ghidra.log. All twelve immutable EXE/PDB hashes pass.
+Original column reads use SQL_C_SHORT/SQL_C_TINYINT/SQL_C_SHORT/SQL_C_LONG,
+widths 2/1/2/4. Original wrappers normalize SQL_SUCCESS_WITH_INFO to success.
+
+Existing SqlServer now exposes cursor(sql, parameters, column_projection) with
+TypedSqlCursor::next(Row/End/Error). It reads the actual ODBC statement incrementally;
+only a completed typed row replaces the output vector. End/error are sticky and
+leave output untouched. SQL NULL remains explicit; the MobItems projection rejects
+it rather than guessing original uninitialized buffer values. Numeric signed
+reads are projected back to original WORD/DWORD bits by the existing reload engine.
+Unexpected extra rowsets fail explicitly; trailing update-count results are skipped.
+
+The cursor retains statement, copied input parameters, Unicode binding buffers
+and the existing connection/environment handles. It survives destruction of the
+SqlServer facade and supports move ownership. Statement disposal precedes binding
+buffer destruction and connection disposal. An active transaction is rolled back
+when the final retained connection is disposed, after statement release. No new
+connection/credential owner is created by opening a cursor: the supplied existing
+connection is shared through an internal lifetime lease. Facade diagnostics update
+while it is alive; the cursor retains structured SqlError independently afterward.
+
+Connections remain externally serialized. While a cursor exists, other query,
+cursor or transaction operations on its facade fail explicitly instead of allowing
+the driver to discard a live result. Destroy the cursor before reusing the
+connection, including after End/Error. This is a new cursor lifetime rule; buffered
+callers need no API changes. Existing query() still buffers all sets with the same
+NULL, diagnostic, transaction and parameter contracts. Its original execution/
+parameter binding code is shared with the cursor: UTF-16 text, signed bigint,
+double and explicit NULL bindings retain their original widths/types.
+
+reload_mob_drop_sql now opens the actual typed cursor and calls the existing
+reload_mob_drop_rows through the concrete mob_drops_stream projection. Completed
+rows publish in original order; a later fetch/GetData failure preserves earlier
+writes and counter increments. The failing row is never partially published.
+Initial statement/query failure reports query failure; later errors report row
+failure. Stable definition storage, absent slots and cumulative signed counter
+behavior remain unchanged. The buffered-result compatibility helper is retained.
+
+Validation:
+
+- 512 existing complete original ReLoadConstMobItem fixtures now pass through
+  actual native SqlServer binding, statement/connection ownership, numeric cursor
+  and reload engine with controlled ODBC boundary responses. Exact full tables,
+  counters, diagnostics and pointer stability match, including 383 partial/query
+  failures and all four GetData failure columns. No abstract-only SQL substitute.
+- Controlled additional cases verify SQLFetch failure, unchanged output on every
+  partial-row failure, sticky status, explicit NULL, trailing-result error,
+  blocked overlapping query, move/destruction after facade release, statement->
+  connection->environment cleanup order and deferred transaction rollback once.
+  Buffered Unicode/bigint/double/NULL binding types are checked independently.
+- New original wrapper oracle executes complete GetData/Fetch instructions over
+  12 raw ODBC return cases (0,1,100,-1,-2,2). Raw ODBC results/diagnostic lookup are
+  ports. Native cursor outcomes compare against original normalization, including
+  success-with-info; this does not claim a byte-identical SDatabase object layout.
+- Full native suite: exit 0, 132/132 passed in 51.10 seconds;
+  work/mob-drops-stream-tests.log. Original-wrapper fixture/assertions were added
+  afterward without production changes; final focused check passes 3/3 in 0.09
+  seconds, exit 0, including all 12 original wrapper normalization outcomes;
+  work/mob-drops-stream-focused.log.
+- Successful build/retry and final storage/SQL test build exit 0:
+  work/mob-drops-stream-build-retry.log and work/mob-drops-stream-final-build.log.
+  No warnings in changed storage/stream paths. Broad header rebuild exposed
+  existing misleading-indentation warnings in unchanged guild files; not edited.
+  Initial build failed on assigning optional<SqlError> (const diagnostic members);
+  changed to emplace before successful builds. Initial failure is not a pass.
+  Wrapper-only final test rebuild: work/mob-drops-stream-wrapper-build.log.
+- Real isolated read-only SQL, shared SQL lock, exit 0:
+  work/mob-drops-stream-sql.log. Each of the four actual GetData conversions fails
+  on a later malformed row, preserving the completed first reload row/counter.
+  Signed/byte extremes, explicit NULL, extra result rejection, buffered multi-set
+  API, Unicode/INT64_MIN/double/NULL parameters, read-only transaction commit and
+  reading after SqlServer facade destruction all pass.
+- The same locked run compares five real MobItemsR2 reloads: 45 rows, 2747 retained
+  definitions/27470 slots, cumulative counter 17->107. All full-table/counter hashes
+  match original instruction execution; repeated reload is idempotent. Numeric
+  snapshot stays ignored at work/mob-drops-stream-sql.json. No database writes,
+  DDL, resets, provisioning or lifecycle operations.
+- New oracle passes py_compile and git diff --check passes. Prior original fixtures
+  were reused rather than regenerating/repeating completed selection evidence.
+
+Remaining: coordinator shared full-SQL integration and actual serialized definition/
+connection owner assembly; production death/world/quest/drop services still need
+real providers and the same retained ItemIds. Streaming mid-row publication is
+implemented and verified here; uncontrolled network loss/timing equivalence and
+original undefined NULL buffers are not claimed. No gameplay completion claim.
