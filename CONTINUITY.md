@@ -1652,3 +1652,12 @@ next deadline `now+1000` without catchup; the separate attack cadence is 500ms.
 Its canonical MobPool retention draft is uncommitted and under review, especially
 nested callbacks and throwing deferred cleanup. No scheduler or safety claim is
 made until the real owner and exception behavior are validated.
+
+Independent 06 reports original world-thread FP evidence in `6b8c657`/`8a23aae`:
+`_threadstart` calls an image-default no-op initializer, preserving the incoming
+x87 word in the original-instruction oracle. Main-thread CRT default precision
+does not establish the new Windows thread's control word. The 53-bit nearest,
+masked normal hit/damage implementation remains conditionally validated, not
+proven for every original gameplay thread; do not silently bind it universally.
+The original Windows thread context and post-packet/Lua callback control words
+remain unobserved. No new runtime combat behavior is claimed by this trace.
