@@ -879,3 +879,11 @@ if(BUILD_TESTING)
     target_link_libraries(mob-combat-scheduler-unit PRIVATE eternity_game)
     add_test(NAME mob-combat-scheduler-unit COMMAND mob-combat-scheduler-unit ${CMAKE_CURRENT_SOURCE_DIR}/tests/data/mob-combat-scheduler-oracle.tsv)
 endif()
+
+# Worker 09: retained Lua VM and compiled stack FSM lifecycle.
+target_sources(eternity_game PRIVATE src/game/mob_ai_states_lifecycle.cpp)
+if(BUILD_TESTING)
+    add_executable(mob-ai-states-lifecycle-unit tests/mob_ai_states_lifecycle_unit.cpp)
+    target_link_libraries(mob-ai-states-lifecycle-unit PRIVATE eternity_game)
+    add_test(NAME mob-ai-states-lifecycle-unit COMMAND mob-ai-states-lifecycle-unit ${CMAKE_CURRENT_SOURCE_DIR}/tests/data/mob_ai_states_lifecycle-oracle.tsv)
+endif()
