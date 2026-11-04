@@ -1624,3 +1624,10 @@ if(BUILD_TESTING)
     target_link_libraries(mob-ai-states-finite-arithmetic-unit PRIVATE eternity_game)
     add_test(NAME mob-ai-states-finite-arithmetic-unit COMMAND mob-ai-states-finite-arithmetic-unit ${CMAKE_CURRENT_SOURCE_DIR}/tests/data/mob_ai_states_finite_arithmetic-oracle.tsv)
 endif()
+
+# Worker 09: finite numeric compound updates on the existing local variable map.
+if(BUILD_TESTING)
+    add_executable(mob-ai-states-finite-compound-unit tests/mob_ai_states_finite_compound_unit.cpp)
+    target_link_libraries(mob-ai-states-finite-compound-unit PRIVATE eternity_game)
+    add_test(NAME mob-ai-states-finite-compound-unit COMMAND mob-ai-states-finite-compound-unit ${CMAKE_CURRENT_SOURCE_DIR}/tests/data/mob_ai_states_finite_compound-oracle.tsv)
+endif()

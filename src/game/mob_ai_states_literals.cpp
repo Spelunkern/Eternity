@@ -1,4 +1,4 @@
-#include "eternity/game/mob_ai_states_finite_arithmetic.hpp"
+#include "eternity/game/mob_ai_states_finite_compound.hpp"
 #include "eternity/game/mob_ai_states_bindings.hpp"
 #include <algorithm>
 #include <bit>
@@ -107,7 +107,7 @@ bool finite_arithmetic(MobAiParameter& result,const MobAiParameter& first,const 
 }
 
 }
-static std::int32_t interpret_values(MobAiConfiguredFsm& owner,MobAiConfiguredCondition& condition,bool local_reads,ComparisonMode comparisons,bool arithmetic,bool assignment=false,bool compound=false,bool numeric_assign=false,bool finite=false){
+static std::int32_t interpret_values(MobAiConfiguredFsm& owner,MobAiConfiguredCondition& condition,bool local_reads,ComparisonMode comparisons,bool arithmetic,bool assignment=false,bool compound=false,bool numeric_assign=false,bool finite=false,bool floating_compound=false){
     auto& stack=owner.value_stack;
     if(stack.capacity<0||static_cast<std::size_t>(stack.capacity)>stack.slots.size())throw std::logic_error("Mob AI literal stack requires its retained capacity/storage");
     stack.top=-1;condition.words[2]=0;std::uint32_t passed=0;
@@ -140,18 +140,27 @@ static std::int32_t interpret_values(MobAiConfiguredFsm& owner,MobAiConfiguredCo
             const auto first=pop(stack);const auto second=pop(stack);
             assign(numeric,second);numeric_type_known=true;
             if((assignment&&token.opcode==10)||(compound&&token.opcode>=11&&token.opcode<=16)){
-                if(!(numeric_assign&&token.opcode==10)&&((first.type!=1&&first.type!=3)||(second.type!=1&&second.type!=3)))throw std::logic_error("Mob AI assignment requires the unrecovered noninteger matrix");
+                if(!(numeric_assign&&token.opcode==10)&&!floating_compound&&((first.type!=1&&first.type!=3)||(second.type!=1&&second.type!=3)))throw std::logic_error("Mob AI assignment requires the unrecovered noninteger matrix");
+                if(floating_compound&&token.opcode!=10){
+                    if(first.type<1||first.type>3||second.type<1||second.type>3)throw std::logic_error("Mob AI compound update requires numeric operands");
+                    if((first.type==2&&!std::isfinite(first.real))||(second.type==2&&!std::isfinite(second.real)))throw std::logic_error("Mob AI nonfinite compound operands are not recovered");
+                }
                 const auto bits=first.type==1?static_cast<std::uint32_t>(first.integer):first.dword;
                 if(token.opcode==10){
                     if(numeric_assign)numeric_assignment(numeric,first);
                     else if(second.type==1)numeric.integer=std::bit_cast<std::int32_t>(bits);else numeric.dword=bits;
                 }else if(token.opcode==13||token.opcode==14){
-                    const auto left=second.type==1?static_cast<std::uint32_t>(second.integer):second.dword;
-                    const auto value=token.opcode==13?left+1U:left-1U;
-                    if(second.type==1)numeric.integer=std::bit_cast<std::int32_t>(value);else numeric.dword=value;
+                    if(floating_compound&&second.type==2){
+                        MobAiParameter one(1);one.integer=1;
+                        finite_arithmetic(numeric,one,second,token.opcode==13?6:7);
+                    }else{
+                        const auto left=second.type==1?static_cast<std::uint32_t>(second.integer):second.dword;
+                        const auto value=token.opcode==13?left+1U:left-1U;
+                        if(second.type==1)numeric.integer=std::bit_cast<std::int32_t>(value);else numeric.dword=value;
+                    }
                 }else{
                     const auto binary=token.opcode==11?6:token.opcode==12?7:token.opcode==15?8:9;
-                    integer_arithmetic(numeric,first,second,binary);
+                    if(floating_compound)finite_arithmetic(numeric,first,second,binary);else integer_arithmetic(numeric,first,second,binary);
                 }
                 push(stack,numeric);
                 const auto target=owner.variables.find(second.variable_id);
@@ -192,4 +201,8 @@ std::int32_t interpret_mob_ai_numeric_assignment(MobAiConfiguredFsm& owner,MobAi
 
 namespace eternity::game {
 std::int32_t interpret_mob_ai_finite_arithmetic(MobAiConfiguredFsm& owner,MobAiConfiguredCondition& condition){return interpret_values(owner,condition,true,ComparisonMode::numeric,true,true,true,true,true);}
+}
+
+namespace eternity::game {
+std::int32_t interpret_mob_ai_finite_compound(MobAiConfiguredFsm& owner,MobAiConfiguredCondition& condition){return interpret_values(owner,condition,true,ComparisonMode::numeric,true,true,true,true,true,true);}
 }
