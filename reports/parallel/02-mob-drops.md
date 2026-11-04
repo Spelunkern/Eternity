@@ -321,3 +321,20 @@ Remaining: coordinator full creation SQL/TCP validation and real quest/drop/worl
 provider assembly with this retained shared owner and authoritative clock. This
 block removes the snapshot UID caller from CharacterCommands; it does not claim
 all runtime item producers are assembled or that the server is playable.
+
+
+## CharacterCommands continuation checkpoint
+
+Re-read current main continuity/parallel instructions and reviewed 9d6d134/1b78fc8.
+The repeated caller-migration assignment is implemented and verified by milestone
+9 above. Read-only main inspection still finds identifiers_->next(clock_()) in
+CharacterCommands, so this delivery has not yet reached that caller. No additional
+independent caller behavior was identified within the authorized paths. No new
+runtime changes or test results are claimed; documentation diff check passes.
+
+Next task proposal: coordinator integrates 9d6d134 and runs the updated existing
+creation-network-integration in its disposable-catalog full SQL pipeline. Then
+assign retained quest/drop provider assembly explicitly, with the SAME ItemIds
+shared_ptr already supplied to CharacterCommands. SQL lifecycle and production
+world assembly remain outside this assignment. Waiting for integration/new scope;
+no main edits, duplicate implementation or repeated validation performed.
