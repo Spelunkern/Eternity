@@ -2042,3 +2042,108 @@ Next independent user_skill_runtime task proposal: recover **UseSkillUser
 0044f110 / UseSkillMob 0044f2d0** preparation and their actual state/runtime writes,
 composing validated eligibility and the existing resolved attack coordinators;
 do not duplicate effect/damage/resource ownership. Overall objective stays open.
+
+## UseSkill preparation and complete owned use/cast adapter — 2026-11-04
+
+Implementation **fa43aba**. Read current main continuity/parallel notes and
+`933f471/3e265c8`; continued the proposed preparation block. Existing learned
+runtime, Actor attack state, resolved attacks and scheduler are reused. No new
+Actor/skill/effect/target store or ID generator. Changes stay in owned
+user_skill_runtime files, private CMake and this report; shared/main untouched.
+
+Original evidence: `ps_game.exe` complete Ghidra/PDB exports,
+**UseSkillUser 0044f110..0044f2cd**, **UseSkillMob 0044f2d0..0044f4b6**,
+**SendAttackStart 004826f0**, resolved **AttackUser 00451c80/AttackMob 00450cf0**,
+attack delay table **005424e0**. Native functions now coordinate actual retained
+handles through eligibility, preparation or instant execution and continuation.
+
+Recovered behavior:
+
+- Mandatory eligibility service receives the SAME captured runtime, target and
+  caller tick. Native code does not default to success or replace full eligibility
+  with resource/readiness helpers lacking retained-equipment checks. On success,
+  fetch runtime->definition AFTER callback, not a stale pre-validation view.
+- Rejection with previous_tick0: mode0/dead1 unchanged; other modes become0 and
+  recovery floors at1. Preserve phase/deadline/previous fields; calling the broader
+  StatusAttackStop would incorrectly clear them. With previous_tick nonzero,
+  USER rejection sets phase1 ONLY, while MOB rejection resumes normal state.
+- Definition BYTE ready_time **+48** is in **250ms** units. Nonzero preparation
+  changes mode2->3 only; other modes stay as they are. Build exact13-byte user
+ 0510/mob0516 packet from live runtime ID/level and actual target ID. Actual zone
+  view is required when in-zone: radius60/channel5, user excludes source+target,
+  mob excludes source only. Without zone, no delivery but timing still advances.
+- After view callback reread ORIGINAL captured definition ready_time, even if
+  runtime now references another definition. Set resume_tick=caller_tick+byte*250
+  with DWORD wrap. A callback changing byte to0 still remains in this chosen
+  preparation branch, and its prior deadline write is overwritten. Its mode
+  write survives; no unprompted mode correction after the callback.
+- Zero ready_time executes the actual previously recovered resolved-attack
+  coordinator with SAME runtime, then decides continuation from LIVE previous_tick
+  and mode after effects. With previous0 use the limited idle transition above;
+  otherwise resume normal mode/phase. Resume preserves mode1/2, changes other
+  modes to2; only original mode0 sends actual Actor self0212 and floors recovery
+  at2 AFTER callback. This later mode2 write overwrites a nested send's mode;
+  nested previous_tick changes survive because continuation does not recheck it.
+- Instant deadline is always caller_tick + current raw attack-speed table delay,
+  clamp0..9, AFTER effects/start callbacks. It does not use disabled GetAttackSpeed
+  or a stale speed sample. No full StatusNextAttack substitution: that owner has
+  different forced-stop/self-target restoration behavior. These helpers mutate
+  existing Actor fields only, without owning another attack state machine.
+
+`UserSkillRuntimeUseWorld` extends the previous casting adapter with FINAL actual
+use_runtime_user/mob methods. All use/casting coordination now binds actual
+UserSkillRuntime handles, while actual eligibility/effects/spending/routing and
+normal attack/lookup providers remain required/abstract. `UserSkillUseServices`
+inherits real resolved-attack services and adds full eligibility and typed cast
+view delivery; no no-op world adapter. Ready branch requires a real nonnull target;
+invalid runtime/definition/ready target fails explicitly rather than emulating
+original invalid memory access or fabricating target0.
+
+Validation:
+
+- **1024 complete original/native comparisons** run WHOLE both UseSkill functions,
+  actual instant resolved Attack functions and actual SendAttackStart/cookie
+  paths. Eligibility, actual effect bodies and transport are explicit fixture
+  ports. Native comparison does NOT claim executing complete EnableUseSkill,
+  damage, spending or zone transport bodies through these ports.
+- Cover admitted/rejected paths, six initial modes including negative/dead,
+  previous0/nonzero, recovery boundaries, raw speed outside0..9, ready0/1/255,
+  wrapped ticks and zone absence. Reentrant eligibility changes definition/mode/
+  previous; view changes captured ready byte/current runtime definition/ID/level/
+  mode/deadline; instant effect changes previous/mode/speed/reset; self0212 changes
+  mode/recovery/previous/speed/deadline. Compare exact ordered state snapshots,
+  complete packets and final owner/runtime state. Original actual view route
+  arguments/source-target exclusions are asserted at the transport port.
+- **4 native actual scheduler pipelines** cover user/mob instant and ready paths.
+  Ready path mode2 -> preparation deadline350 -> mode3 resolution at350 -> runtime
+  reset7350, mode0/deadline2600/motion1. Instant path reset7100/deadline2350.
+  Check eligibility invoked once and actual resolved action once. This is native
+  composition, not a new whole-original combined UpdateAttack fixture claim.
+- Original executable/PDB SHA256SUMS exit0;
+  `work/user-skill-runtime-use-hashes.log`. Independent oracle regeneration
+  byte-identical (`cmp`,exit0); generated under work/ and copied before readers.
+- `python3 tools/dev.py build`: exit0,no warnings;
+  `work/user-skill-runtime-use-build.log`.
+- Sequential `python3 tools/dev.py test`: exit0,**141/141 passed,40.64s**;
+  `work/user-skill-runtime-use-tests.log`. All prior runtime/learn/output/cost/
+  readiness/attack/disable/scheduler/zone tests pass. `git diff --check`: exit0.
+- Shared wrappers respected. No SQL changes/lifecycle actions; full isolated SQL
+  integration and whole-server checks remain coordinator-owned. Not playable.
+
+Production contract: root retains Actor/UserSkillRuntime/scene, actual target,
+original/current definition backing and services throughout nested eligibility,
+view, effect and self sends. Eligibility must execute actual cost -> retained
+weapon/shield -> readiness sequence, not return synthetic true. Bind cast views
+with original exclusions/position/radius/channel, not generic unfiltered broadcast.
+Actual effects/spend retain the original definition for their complete frame;
+use/cast adapters alone do not supply damage/resource/network implementations.
+The strong-Actor external owner remains cycle-free; no global side map introduced.
+
+Remaining central dependencies stay explicit: shared CSkill manager/full stable
+user definitions, real action/transport/periodic prefix, retained-equipment middle
+and root update/admission/save assembly. Main has retained_inventory_item but
+worker base lacks it; shared Actor/inventory stay02-exclusive and no header copy,
+merge/reset or ignored production snapshot was added. Next independent proposal:
+recover exact weapon-table/shield checks and real item-type indexing in the
+eligibility middle, then compose cost+equipment+readiness against that canonical
+borrow API when its integration dependency is available. Overall objective open.
