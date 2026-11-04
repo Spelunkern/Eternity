@@ -1389,3 +1389,120 @@ recursive locks, real scene/log/guild/pool/worker/close services remain required
 No main edits, SQL lifecycle or guessed heap recycling; full isolated SQL stays
 with coordinator. Request implementation and passing fixtures do not establish
 client playability or global completion.
+
+## Block 18 — actual raid invitations, response and party creation composition
+
+Recovered complete `ps_game.exe CUser::PacketParty 004676c0` branches
+0b14 (00467e85..00467fec), 0b15 (00467ff1..004680f8) and 0b18
+(00468233..0046838c), plus full IsPartySubBoth 00444ed0..00444f19.
+New party_runtime_raid_requests_invites files extend the SAME request world,
+PartyMembershipUser binding, 30-slot registry, actual CreateParty and normal/raid
+entry owners. No second user/party state, transport body or synthetic creation.
+
+Recovered behavior:
+
+- ID invite0b14: self then source activity guards run BEFORE lock. Under original
+  captured source CPartyLock, a party member must be leader with live count<30
+  OR subleader with live count<30. A full leader still invokes SubBoth before
+  rejecting. SubBoth tests NONZERO kind BEFORE its internal lock and captures
+  count/selected-pointer equality before unlock. No source party bypasses roles.
+- Then same-zone UID lookup, country check, existing-party/pending check, target
+  activity check. Errors use raid0b19, DWORD reasons4/1/2/3/5 and requested UID.
+  Same-party reason5 uses source's CURRENT party against captured target party.
+  Store inviter UID BEFORE tick, deadline=tick+30000 DWORD wrap, then send0b14
+  with LIVE source UID read AFTER tick. There is no extra phase/zone-equality
+  guard in this ID branch beyond the actual zone lookup.
+- Name invite0b18: force byte22 NUL BEFORE captured source lock, then use the
+  existing FindUserZoneMove name provider BEFORE role/capacity/activity checks.
+  These errors deliberately use ordinary0b03 (BYTE reason), not raid0b19.
+  Check self, target state4, same zone identity/instance, country, occupancy and
+  target activity in original order. Same-party reason5 uses the source party
+  captured after the role checks. Store pending before tick; reply0b18 contains
+  LIVE source name after tick. Short-name unspecified original stack padding
+  remains deterministic zero in native, consistent with existing packet owners;
+  fixtures use full20-byte names, including clock-mutated names.
+- Response0b15: pending0 or existing member returns early WITHOUT clearing.
+  Otherwise lookup saved inviter in requester's zone, then clear inviter DWORD
+  and deadline AFTER lookup, including a failed lookup. Either user's activity
+  sends raid error1 to INVITER with live requester UID. Nonzero reject byte
+  sends error0 there. No deadline/country/zone-equality revalidation is added.
+- Accept captures original lock on inviter. No party calls actual manager
+  CreateParty with division1, including normal first-member entry BEFORE map
+  publication. This creates a NORMAL party; it does not guess a raid conversion.
+  Existing party uses leader OR subleader predicate on the SAME captured party,
+  then actual EnterUser selection: kind==1 raid, otherwise normal entry.
+  Failure sends error1 to inviter AFTER the outer lock releases. Success uses
+  membership packets/scenes/logs, not a fabricated0b15 acknowledgement. Pending
+  byte +1744 and inviter DWORD/deadline remain separate authoritative fields.
+
+The ordinary error serializer is exposed through a wrapper of its EXISTING
+normal-request implementation; raid errors reuse Block17. All known ordinary
+PacketParty raid opcodes now have recovered handlers for modeled kind0/1 and
+bool auto_join0/1. The pure remaining provider is reserved for unsupported raw
+flag storage, not a default successful handler for missing gameplay.
+
+Validation:
+
+- 512 retained sequences; 2,048 whole original PacketParty calls plus99 literal
+  nested0b15 accepts from original invite-send callbacks. Saved-register x86
+  trampolines use the real response opcode and original RET8 send boundary.
+  Oracle asserts EACH nested accept actually joined immediately after the outer
+  invite returned, not merely that a callback occurred. Native invokes the SAME
+  dispatcher and retained target binding. No membership body is patched.
+- Covers fresh normal creation, existing normal/raid joins, subleader permission,
+  full normal/raid capacity, self/busy/country/other-party/same-party/pending and
+  missing lookups, decline, expired-looking deadline without inferred expiry,
+  source UID/name mutation during tick, membership clear during lookup, and
+  response pending overwrite during lookup followed by original clearing.
+- Traces: 103 ID and103 name invites, 241 raid and153 ordinary error packets;
+  every reason0/1/2/3/4/5 expected for those paths is covered, including eight
+  same-party reason5 packets in EACH format. Original heap performs114 object
+  allocation attempts,109 constructors and5 explicit allocation failures;
+  342 entry logs and2,565 disband logs compose with real registry/map owners.
+- Full callback-state hashes, all packet bytes, mutable input terminator,
+  final30-slot/index/count/role/max/cursor/request state, original return
+  sentinels and native recursive-lock balance match. Required lookup, clock,
+  send/scene/log/guild/OS/pool providers are explicit observations. This request
+  matrix observes send boundaries; it does not advertise an unverified live-send
+  mode. Existing pooled transport evidence is unchanged in Block13.
+- First harness generation failed before a case because clock initialisation
+  was scoped incorrectly; fixed before final fixture generation. First build's
+  misleading-indentation warning was corrected; final build is clean.
+- Locked native final build exits0, no diagnostics
+  (`work/party-runtime-raid-requests-invites-verified-build.log`).
+- Locked native tests:139/139 passed,60.09s,exit0
+  (`work/party-runtime-raid-requests-invites-final-test.log`). Earlier139/139
+  pass47.35s preceded the dedicated same-party reason5 projections.
+- Locked focused C++20 ASAN/UBSAN compile and final matrix: exit0, no diagnostics
+  (`work/party-runtime-raid-requests-invites-sanitized.log`, final expanded run
+  `work/party-runtime-raid-requests-invites-final-sanitized.log`).
+- Repeated original exact fixture cmp, EXE/PDB manifest and git diff check:
+  exit0 (`work/party-runtime-raid-requests-invites-final-hashes.log`). Generator
+  Python compile check exits0. Generated files remain ignored in work/.
+  No SQL operations; full isolated SQL remains coordinator-owned.
+
+Implementation commit: `31db02a0d42cfe1b62da89f079c92daab13058b1`.
+
+Concrete remaining owner changes, outside current raid/request file allowance:
+
+1. Authorize existing include/eternity/game/party_runtime_registry.hpp field
+   auto_join bool -> uint8_t, and current raid/request serializers to emit the
+   RAW value. Evidence: CParty+115 request stores00467cb1/00467db8, raw reads
+   00467cd5/00467dcb and roster00445ca9. Remove the explicit raw>1 fallback ONLY
+   after the SAME owner can retain0..255. Do not add a competing flag cache.
+2. For the full noncanonical kind-byte range, existing normal membership owner
+   validation currently demands kind==0. Original EnterUser00445a10 selects
+   EnterNormalParty00445fe0 for EVERY kind!=1, and that original normal body
+   has no kind guard. To verify kind2..255 response compositions, authorize
+   src/game/party_runtime_membership.cpp's projection validation to reflect that
+   evidence (retain safe count/nonnull bounds), with its API contract updated.
+   This block verifies regular normal0/raid1; it does not silently substitute
+   raid entry for other kinds or claim full raw-byte compatibility.
+
+Actual retained Actor/root bindings and real active/zone-move/zone lookups,
+recursive locks, scene/log/guild/pool/worker/close providers remain required as
+before. No canonical Actor/zone/inventory edit, main edit or guessed heap return
+was made. Next concrete scope is those SAME-owner raw-byte corrections and
+original full-range request comparisons; it requires expanding the allowed
+existing registry/membership files. Passing component tests is not client
+playability or global completion.
