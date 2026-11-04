@@ -9,9 +9,10 @@ void require(bool value,const std::string& message) {if(!value) throw std::runti
 struct Services final:WorldAdmissionServices {
     WorldAdmission* world=nullptr;RuntimeZone zone;ConfiguredMap map;std::atomic<std::uint32_t> counter{0};std::vector<std::string> events;
     unsigned int fail=0,wait_mask=0,guild_mask=0;bool success=false,open=false,vanish=false;
+    std::function<void(WorldAdmissionUser&)> on_packets;
     Services() {zone.map=&map;}
     static unsigned int index(const WorldAdmissionUser& u) {return u.user_id-1;}
-    void packets(WorldAdmissionUser& u) override {const auto i=index(u);events.push_back("PACKETS "+std::to_string(i));if(i<2 && (wait_mask&(1U<<i))) {wait_mask&=~(1U<<i);world->wait(u);}}
+    void packets(WorldAdmissionUser& u) override {const auto i=index(u);events.push_back("PACKETS "+std::to_string(i));if(i<2 && (wait_mask&(1U<<i))) {wait_mask&=~(1U<<i);world->wait(u);}if(on_packets) on_packets(u);}
     RuntimeZone* select_zone(WorldAdmissionUser& u) override {const auto i=index(u);events.push_back("SELECT "+std::to_string(i));return fail&(1U<<i)?nullptr:&zone;}
     void register_world(WorldAdmissionUser& u) override {events.push_back("REGISTER "+std::to_string(index(u)));}
     bool enter_zone(WorldAdmissionUser& u,RuntimeZone&) override {events.push_back("ENTER "+std::to_string(index(u)));return success;}
@@ -35,6 +36,19 @@ int main(int argc,char** argv) {
             else if(tag!="END") throw std::runtime_error("Unknown admission oracle row");
         }
         require(cases==1024 && steps==7168,"World admission oracle coverage changed");
+        // The world-wait list is not visited until world transfer; once in the
+        // zone-wait list, a successful client entry removes the current node.
+        world.reset();Services s;WorldAdmission combined(s);s.world=&combined;
+        WorldAdmissionUser first,second;first.user_id=1;second.user_id=2;
+        combined.track_selection(first);combined.track_selection(second);
+        require(combined.wait(first) && combined.wait(second),"Cannot queue zone users");
+        s.events.clear();combined.update_zone_wait_packets(s.zone);
+        require(s.events.empty(),"World-wait users dispatched by zone");
+        combined.update_packets();s.events.clear();s.success=true;
+        s.on_packets=[&](WorldAdmissionUser& u){require(combined.client_enter(u),"Zone entry failed");};
+        combined.update_zone_wait_packets(s.zone);
+        require(s.events==std::vector<std::string>{"PACKETS 0","ENTER 0","PACKETS 1","ENTER 1"},"Zone cursor lost a user after current removal");
+        require(first.location==4 && second.location==4 && combined.zone_waiting_count(s.zone)==0,"Zone wait not drained");
         std::cout<<cases<<" original world admission sequences / "<<steps<<" list/wait/client/world entry operations passed\n";
     }catch(const std::exception& error) {std::cerr<<error.what()<<'\n';return 1;}
 }

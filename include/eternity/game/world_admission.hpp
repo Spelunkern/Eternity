@@ -47,6 +47,9 @@ public:
     void untrack(WorldAdmissionUser&);
     bool wait(WorldAdmissionUser&);
     void update_packets();
+    // CZone::UpdatePackets 004215e0: visit that zone's waiting users with the
+    // shared cursor. The caller owns the zone update cadence and serialization.
+    void update_zone_wait_packets(RuntimeZone&);
     bool client_enter(WorldAdmissionUser&); // CUser::ZoneEnterUserMove 0044b8a0.
     bool world_enter(WorldAdmissionUser&); // CWorld::ZoneEnterUserMove 0040d000.
     std::size_t connected_count() const;
