@@ -1181,6 +1181,7 @@ if(BUILD_TESTING)
     add_test(NAME mob-combat-scheduler-bindings-unit COMMAND mob-combat-scheduler-bindings-unit ${CMAKE_CURRENT_SOURCE_DIR}/tests/data/mob-combat-scheduler-bindings-oracle.tsv)
 endif()
 
+if(BUILD_TESTING)
     add_executable(obelisk-runtime-portal-config-parser-unit tests/obelisk_runtime_portal_config_parser_unit.cpp)
     target_link_libraries(obelisk-runtime-portal-config-parser-unit PRIVATE eternity_game)
     add_test(NAME obelisk-runtime-portal-config-parser-unit COMMAND obelisk-runtime-portal-config-parser-unit ${CMAKE_CURRENT_SOURCE_DIR}/tests/data/obelisk-runtime-portal-config-parser-oracle.tsv)
