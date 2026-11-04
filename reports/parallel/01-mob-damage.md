@@ -123,3 +123,88 @@ Remaining work: production mob/provider integration remains external to this
 worker's writable scope. A next evidence candidate within mob combat is tracing
 original combat callers to establish the relative order of individual Damage
 and aggregate DamageParty calls. The server remains non-playable.
+
+## Follow-up block: user-hit and party-credit caller composition
+
+Implementation commit: `0a2c753` (`Compose recovered user mob hit and party credit call ordering`).
+
+Added `mob_combat_attack.hpp/cpp`: an explicit user projection and required
+StatusAttackStop/Death service ports compose party credit, native triple damage,
+attack stop, and death notification. This is the hit segment, not complete attack
+validation, damage calculation, skill execution, packets or secondary-hit guards.
+No canonical headers were changed.
+
+Read Ghidra disassembly for all six direct DamageParty references in ps_game.exe.
+The original-execution oracle runs these caller slices, including real
+DamageParty 00490e40 and Damage 00490ee0 bodies; Add, status, clock, FSM,
+retarget, StatusAttackStop and Death are observed ports.
+
+| Caller | Executed slice (end exclusive) | Party call | Damage call |
+| --- | --- | --- | --- |
+| CUser::AttackMob 0044ce10 | 0044cf04–0044cf61 | 0044cf19 | 0044cf3f |
+| CUser::AttackMob 0044fd90 | 0044ff7c–0044ffe8 | 0044ff95 | 0044ffc4 |
+| same, primary vector +18 | 0045009a–00450108 | 004500b3 | 004500e4 |
+| same, secondary vector +24 | 004501a2–00450223 | 004501ce | 004501ff |
+| same, primary vector +24 | 00450359–004503c1 | 00450374 | 0045039d |
+| same, secondary vector +18 | 0045045b–004504d6 | 00450489 | 004504b2 |
+
+The offsets +18/+24 in this table refer to caller ESP, not mob/user fields.
+All six credit the party before damaging the mob. They reload the party ID after
+DamageParty even when its boolean result is false, then pass user type 1, user
+ID (+dc), party membership and aggro inputs to Damage. A present party with ID
+zero is distinct from no party and still receives a type-5 record. Aggro is
+`CUser(+1230) * 10 + skill(+64)` with 32-bit wrapping arithmetic; the skill field
+is zero-extended from 16 bits, and normal AttackMob uses zero for that term.
+
+The two secondary slices deliberately pass the PRIMARY vector to DamageParty,
+but their secondary vector (skill +76/+78/+7a) to Damage. The native helper
+therefore requires an explicit `party_damage`, separate from applied HP damage.
+One original case credits party 77 with 99 while crediting the user's secondary
+hit with 137. Do not replace this input with `damage[0]` automatically.
+
+On a true Damage result, each caller invokes CUser::StatusAttackStop 00489ed0,
+then reloads the user ID and invokes CMob::Death 004910f0 with type 1. The helper
+preserves that order and ID reload. It does not directly implement either service
+or infer reward completion. Earlier fatal FSM event 3 still runs before the
+individual fatal credit; this caller-level Death call runs after that credit.
+
+Validation:
+
+- `sha256sum -c SHA256SUMS`: exit 0 for all immutable executables/PDBs.
+- 768 original caller cases (128 per slice), regenerated twice byte-identically
+  with `cmp`, exit 0. Each slice finishes at its declared boundary with balanced
+  ESP. Final records, resources, state, timer, user ID and ordered port snapshots
+  match the native composition. There are 214 observed conditional Death calls.
+- Initial `tools/dev.py test` run: exit 1 (CTest exit 8), 121/122 passed,
+  `work/mob-combat-attack-test.log`. Case 0 exposed an old object using the
+  previous aggro argument mapping: source changes followed that object's build.
+  This run was not a pass. No fixture expectation was changed to conceal it.
+- Recompiled current sources with `python3 tools/dev.py build`: exit 0,
+  no compiler warnings; `work/mob-combat-attack-final-build.log`.
+- Final `python3 tools/dev.py test`: exit 0, **122/122 passed**, 35.56 seconds,
+  including all 768 caller cases, 768 earlier damage cases and 512 callback cases.
+  Log: `work/mob-combat-attack-final-test.log`.
+- `git diff --check`: exit 0.
+
+Integration requirements: supply the live attacker ID, optional party identity
+and +1230 aggro bonus; call with zero base aggro for normal attacks and the
+zero-extended skill +64 value for these skill slices. Supply the primary HP
+amount explicitly for a secondary hit's party credit. Use the same mob-owned
+ledger for pre-credit and damage; bridge required stop/death ports to real owners.
+A caller must honor its original primary-result guard before a secondary hit.
+No SQL contracts changed; isolated SQL integration remains with the coordinator.
+
+Remaining work: production attack validation/calculation, packets, actual
+StatusAttackStop and canonical owner/provider integration are outside the current
+four-function assignment. This block supplies their recovered hit boundary.
+The server remains non-playable.
+
+
+Next assignment/dependency: the four assigned CMob functions and their recovered
+user-hit boundary are now covered. Production integration requires canonical
+mob/actor ownership changes and concrete world providers described above; those
+files remain outside this worker's write scope. Proposed next scope under the
+same prefix: CMob::Aggro 00491080, its positive-aggro/status/HP guards and native
+ledger/retarget coordination, leaving targeting bodies with worker 08. An
+alternative integration assignment is CUser::StatusAttackStop 00489ed0 plus a
+coordinator-supplied canonical combat-owner interface.
