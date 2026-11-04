@@ -1864,3 +1864,11 @@ Coordinator additionally cherry-picked 04 movement prefix `e86fa79` as
 `1a000f4` into `coordinator/movement` and queued session 61285 to validate its
 576 original movement-gate/correction cases and prior canonical dispatch test in
 sequence. The full movement continuation and live dispatch remain open.
+
+Movement integration session 61285 exited 0: both
+`vertical-movement-prefix-unit` (576 original gate/correction cases) and
+`vertical-movement-dispatch-unit` passed on `1a000f4` in the combined movement
+worktree. Logs `.local/composed-movement-prefix.log` and
+`.local/composed-movement-prefix-dispatch.log`. This does not implement the
+zone move, cell visibility, production packet dispatch or all continuations.
+Desktop dashboard state was updated with the validated milestone.
