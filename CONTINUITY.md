@@ -2078,3 +2078,13 @@ current revision's pass; earlier 308/SQL milestone remains clearly historical.
 Protocol session 96503 finished exit 0: system unit, system TCP and handoff TCP
 passed on `c14ea5c` in the combined protocol worktree. Pre-auth NProtect and
 original queued threshold remain unresolved; no production equivalence claimed.
+
+Coordinator created `coordinator/foundation` at Eternity-foundation from the
+single-load entry owner (`d803dc7`) and cherry-picked system/NProtect routing
+and retained Actor scene as `c1d98c0..9d6799e`, preserving both CMake target sets.
+This combines entry, persistence, scene, protocol, world, quests, movement and
+combat branches without changing main or active test worktrees. Session 31303
+runs targeted scene, system TCP and roster tests using a copied completed protocol
+build; results pending. Full build/SQL and live connection/world assembly remain
+required; pre-auth NProtect, queue threshold and original scheduler limitations
+are unchanged. Existing entry-owner session 21247 tests its earlier exact source.
