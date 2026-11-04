@@ -1,4 +1,5 @@
 #include "eternity/game/vertical_persistence.hpp"
+#include "eternity/game/vertical_entry.hpp"
 #include "eternity/game/creation.hpp"
 #include <iostream>
 
@@ -24,7 +25,13 @@ int main(int argc,char** argv) {
             "INSERT "+prefix+"Users_Product(UserUID,Slot,ItemID,ItemCount,ProductCode,OrderNumber,VerifyCode,BuyDate) VALUES(9951,4,5001,3,'persist_product',99,100,'20240101'); "
             "INSERT "+prefix+"PointGiftNotify(UserUID,ProductCode,SendCharName,RecvDate) VALUES(9951,'persist_gift','GiftSender','20240101');");
         Players players(db,1,catalog);PointItemStore products(db,1,catalog);InventoryReplicaPool pool;
-        auto snapshot=players.load(9951,created.character_id,"persistuser");require(snapshot.has_value(),"Selection failed");
+        auto roster=characters.load(9951);CharacterSelectionState selection{9951,0,true};
+        std::optional<PlayerSnapshot> snapshot;
+        VerticalEntryPorts entry{[&](PlayerSnapshot p){snapshot=std::move(p);},
+            []{throw std::runtime_error("Retained selection unavailable");},
+            [](std::uint32_t){throw std::runtime_error("Retained selection closed");}};
+        net::Packet request{0x04,0x01};put(request,created.character_id,4);
+        require(vertical_entry_select(selection,request,roster,players,"persistuser",entry)==CharacterSelectionResult::requested && !selection.enabled && snapshot.has_value(),"Retained 0104 selection failed");
         require(snapshot->catalogs.at("GiftNotifications").rows.size()==1,"Selection did not retain consumed gift");
         db.query("INSERT "+prefix+"PointGiftNotify(UserUID,ProductCode,SendCharName,RecvDate) VALUES(9951,'after_select','GiftSender','20240101');");
         auto cache=vertical_persistence_restore_with_products(*snapshot,products,2,pool);
