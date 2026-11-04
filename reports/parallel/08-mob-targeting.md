@@ -590,3 +590,33 @@ The minimal canonical owner/lifetime and positional patch contract in milestone
 in-place or quiescent reload and production resolver/world wiring still belong
 to integration. Passing this read-only data comparison is not a running world
 or original-client playability.
+
+## Binding assignment completion / integration dependency checkpoint
+
+Reviewed current main CONTINUITY.md/PARALLEL_WORK.md and latest delivery
+96af8bc/9a0bdd4. The repeated expanded assignment has already been fulfilled:
+owned binding decoder, complete original loader/Init comparisons, positional SQL
+and lifetime contract, and restored SQL distribution comparison are committed.
+Main has reviewed the initial decoder milestone; the SQL comparison commits
+must also be integrated/revalidated before enabling a production resolver.
+
+Read-only inspection still finds no targeting-binding owner/resolver or shared
+cell visitor declarations in canonical mobs.hpp, skills.hpp and zone_mobs.hpp.
+The coordinator is now prioritizing canonical owner interfaces, and a new central
+source validation freeze is active. No additional independent change is needed
+for the requested startup binding decoder. Repeating its completed fixtures or
+adding another data/world owner would not connect production behavior.
+
+Concrete next task: coordinator integrates 96af8bc/9a0bdd4 after the freeze,
+retains MobTargetingBindingCatalog in the persistent canonical game-data owner,
+and supplies the required resolver/visitor interfaces. Then assign this worker
+production targeting composition against those interfaces. Alternatively assign
+explicit live ReLoadConstMobSkill 004c50c0 / ReLoadConstMob 004c20c0 recovery if
+stable in-place reload is the next desired binding behavior; it is not claimed
+by the startup decoder and needs its own failure/publication evidence.
+
+Documentation-only checkpoint: git diff --check clean; native and SQL checks
+were not repeated with unchanged code/data. Previous exact validation and the
+initial login-network failure remain recorded in milestone 7. No main changes,
+SQL lifecycle actions, merges or pushes. Waiting for a concrete owner-interface
+resolution or a new scoped assignment; server playability remains incomplete.
