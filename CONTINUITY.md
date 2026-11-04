@@ -2094,3 +2094,11 @@ selection/ownership test (`Real SQL selection, ownership failure and 0104 latch
 passed`) inside its disposable fixture; remaining SQL suites and process exit
 are pending. This is not the newer raw-roster draft or the separate single-load
 entry-owner SQL test. Dashboard records the partial checkpoint accurately.
+
+Independent 02 now has an uncommitted `VerticalWorldThread` draft tied to the
+existing MobPrimaryZones/ZoneRegistry and its single enqueue owner. Coordinator
+review found its current `remove` checks only active/wait state, not which thread
+owns a RuntimeZone link; a wrong-owner remove can corrupt foreign links and
+counts. Requested exact owner identity and cross-owner/destruction/reentrancy
+tests. Draft is not integrated or validated. Dynamic lease/recycling, actual
+scheduler passes and admission lifetime remain separate required work.
