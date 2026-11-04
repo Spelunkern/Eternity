@@ -133,3 +133,65 @@ come from the canonical mob/skill definitions described above, and production
 help/FSM providers and combat call sites must be connected. The native bridge
 preserves provider scene transitions but does not implement scene handler bodies.
 No global gameplay completion is claimed.
+
+
+## Milestone 3: ally help selection
+
+Recovered the three direct SetTarget/Ex help callees: `CMob::FindHelpNormal`
+0049ff70, `FindHelpNormal2` 004a0200 and `FindHelpAttack` 004a0470 in ps_game.exe.
+`mob_targeting_help.hpp/cpp` implements their user gates, bounded 3x3 cell
+selection in Z-major/X-minor order, effective-status gate, variant filters,
+original X/Z distance calculation and inclusive range comparison. Normal needs
+the same uint16 mob type; Attack needs candidate AI 1 or 3; Normal2 needs neither.
+No variant excludes the source mob by identity. The source zone user-list count
+(+130) must be positive; user country must differ from source definition nCountry
+(+78); life status must differ from 1, HP ability byte must be zero, and admin
+attackable/visible bytes must be nonzero.
+
+The chase-range byte (+69) is captured once before scanning. Source position and
+mob type are live reads for each candidate. Squared distance uses float deltas,
+double products/sum/sqrt, then a float distance; NaN never qualifies. A required
+world provider traverses each selected cell synchronously under its lock and
+advances the live intrusive cursor after callbacks. The selection coordinator
+invokes required SetTarget(current candidate, original user, false), preserving
+source mutations. Production list ownership/locking and native SetTarget wiring
+remain required; there is no fallback empty traversal or no-op acquisition.
+
+New original-execution oracle runs the actual three helper bodies, inline
+GetStatus/deque traversal, intrusive cell cursor loops and CRT sqrt. Only locks,
+CRT thread-local storage and SetTarget(false) are ports. The fixture contains
+1,536 cases, including all three variants, active empty/nonempty and inactive
+FSM, all input user gates, multiple map edges/dimensions, equal/outside/zero
+radii, NaN/infinity, and SetTarget-driven source position/type/range mutations.
+It records 1,570 balanced lock pairs and 289 acquisitions: Normal 79, Attack 55,
+Normal2 155. The port asserts original user identity and initialize=false.
+The fixture models one candidate per cell; concurrent/removing multi-candidate
+world lists still need provider integration coverage.
+
+Needed canonical integration additions: definition nCountry (signed int at +78)
+and byChaseRange (uint8 at +69), plus the existing mob type/position/cell and
+current zone user count. User projection needs country (+12d), life (+142c), HP
+ability (+1366), visible (+5774) and attackable (+5775). The world owner must
+provide synchronous lock-held live-cursor mob traversal per cell; a copied
+`in_cell` vector cannot claim the original removal/reentrancy semantics. Bind
+SetTarget(false) to the current live candidate and original user through the
+runtime bridge already implemented. No shared canonical files were changed.
+
+Implementation commit: `10b54f0` (workers/08-mob-targeting).
+
+Validation:
+
+- `python3 tools/dev.py build`: exit 0, no warnings;
+  `work/mob-targeting-help-build.log`.
+- `python3 tools/dev.py test`: exit 0, all 122 native tests passed (33.65 s).
+  `mob-targeting-help-unit` passed in 0.01 s;
+  `work/mob-targeting-help-test.log`.
+- Regenerated fixture under `work/mob-targeting-help-final.tsv`, byte-identical
+  to tracked fixture. Original twelve EXE/PDB hashes passed SHA256SUMS again.
+- `git diff --check`: clean. No SQL changes/calls; isolated SQL integration
+  remains coordinator-owned.
+
+Remaining work: connect the required world list and live SetTarget providers,
+recover/validate multi-candidate removal/reentrant cursor semantics, and supply
+the canonical definition/user bindings above. Original-client playability is
+still not achieved.
