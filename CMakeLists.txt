@@ -1036,3 +1036,11 @@ if(BUILD_TESTING)
     target_link_libraries(obelisk-runtime-portal-unit PRIVATE eternity_game)
     add_test(NAME obelisk-runtime-portal-unit COMMAND obelisk-runtime-portal-unit ${CMAKE_CURRENT_SOURCE_DIR}/tests/data/obelisk-runtime-portal-oracle.tsv)
 endif()
+
+# Worker 09: compiled selected movement with native map/trail/status owners.
+target_sources(eternity_game PRIVATE src/game/mob_ai_states_selected.cpp)
+if(BUILD_TESTING)
+    add_executable(mob-ai-states-selected-unit tests/mob_ai_states_selected_unit.cpp)
+    target_link_libraries(mob-ai-states-selected-unit PRIVATE eternity_game)
+    add_test(NAME mob-ai-states-selected-unit COMMAND mob-ai-states-selected-unit ${CMAKE_CURRENT_SOURCE_DIR}/tests/data/mob_ai_states_selected-oracle.tsv)
+endif()
