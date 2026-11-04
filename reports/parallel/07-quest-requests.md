@@ -74,3 +74,75 @@ or fixtures change. This subsystem has no SQL connection and does not make the
 server playable.
 
 Implementation commit: `60be7af9ad8e99411e8fb06b39ce59870096481d`.
+
+## Milestone 2: complete request/item/replica flow
+
+New evidence block: `tools/quest_requests_flow_oracle.py` executes the original
+`QuestEndRequest` **0047f2a0**, completion checks and **real** `QuestFindItem`
+**0047f8e0** together. Unlike the initial dispatch oracle, the item routine is not
+replaced. Required external boundaries remain observed providers: active lookup,
+zone NPC lookup, transport, locks, item release and coordinator QuestEnd.
+The inline effect-27 release is observed at **0047fccd** before the original pool
+insertion; ordinary whole-stack release is observed at `CObjectMgr::FreeItem`
+**0040a590**. Both expose the retained stack count before ownership release.
+
+512 deterministic scenarios produce 209 QuestEnd calls, 899 DB/client packet
+pairs and 680 item releases. The fixture captures counter aliasing, consumption
+suppression for pending user selection, ordinary and effect-27 stack removal,
+reward-dependent consumption, missing/mismatched NPCs, inactive/bounded quests,
+zero NPC, zero unlocked bags and all five unlocked bags. Counts are positive;
+zero-to-255 single-item behavior remains covered by milestone 1.
+
+`tests/quest_requests_flow_unit.cpp` compares the entire original event stream,
+final inventory and live quest counters. It composes the actual native request
+and item routines with `GroundItemPool` and `InventoryReplica`, including UID
+preservation, ordered deletion journals and exact pool release counts. Equipment
+and a locked bag contain matching sentinel items and must remain unchanged.
+The completion provider observes synchronized live inventory and DB cache.
+This is an in-process cache/pool integration test, not SQL or production wiring.
+
+### Integration dependency clarified
+
+`Actor::inventory()` exposes value rows, while actual objects/pools are private
+`Actor::retained_inventory_` (`actor.hpp`). `Actor::load_inventory_item`
+(`inventory.cpp`) retains both copies. A production quest adapter must update both
+counts before forwarding DB/client callbacks and release the retained ownership
+only after those callbacks, preserving the old count for multi-item whole-stack
+release. Evidence: **0047f812**, **0047fc80..0047fccd** and
+**0047feb6..0047ff0d**. The new fixture checks that release-visible count exactly.
+
+Do not implement the quest release provider with `Actor::remove_item`: that method
+also cleans exchange offers, sends its own 0702, logs removal and may send 0206
+(`inventory.cpp`, ItemRemove **0045f260** / ItemRemoveFree **0045f470**).
+QuestFindItem directly releases through the pool and does not call ItemRemove.
+Doing so would duplicate packets and introduce original-unobserved side effects.
+
+Needed canonical interface (coordinator-owned): serialized access to the retained
+`GroundItem` and its pool by bag/slot, a count update that synchronizes both the
+value row and retained object without packets, and a direct release/unlink that
+removes both copies without exchange/log/transport side effects. An equivalent
+world inventory owner is acceptable. Then a `quest_requests` adapter can bind the
+existing required providers. No shared Actor header or implementation was edited.
+
+Milestone 2 validation:
+
+- `.local/oracle-env/bin/python tools/quest_requests_flow_oracle.py`: exit 0;
+  fixture generated under `work/` before copying into tests/data.
+- `python3 -m py_compile tools/quest_requests_flow_oracle.py`: exit 0.
+- `python3 tools/dev.py build`: exit 0, no warnings;
+  `work/quest-requests-flow-build.log`.
+- `python3 tools/dev.py test`: exit 0, **122/122 passed**, 43.82 seconds;
+  `work/quest-requests-flow-test.log`. New test output confirms 512 original
+  flows, 209 completions and 680 pool releases with matching DB replica/journals.
+- `sha256sum -c SHA256SUMS`: exit 0, all entries OK;
+  `work/quest-requests-flow-hashes.log`.
+- `git diff --check`: exit 0. No SQL contracts/fixtures or lifecycle changed;
+  shared SQL validation remains coordinator-owned.
+
+Milestone 2 implementation/evidence commit: `6ea92573fe00c7822f2696a425fa74e4187bf08e`.
+
+Remaining task proposal: coordinator supplies the serialized canonical live-item
+access/count/direct-release interface above; then worker 07 implements the
+`quest_requests` production inventory adapter. All currently assigned original
+request/check/item bodies are reconstructed and compared; core QuestEnd/Select
+and canonical Actor ownership remain outside this worker's write scope.
