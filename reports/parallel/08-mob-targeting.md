@@ -268,3 +268,69 @@ Remaining integration: the proposed canonical visitor, skill/country/range/user
 bindings, and production SetTarget/help/FSM world wiring. The cursor evidence
 allows a shared implementation instead of a duplicate membership projection.
 No playable-server completion is claimed.
+
+
+## Milestone 5: first-user acquisition search
+
+Added `mob_targeting_find.hpp/cpp` for the immediate acquisition callers,
+`CMob::Targeting` 0049fcf0 and `CMob::FindTarget` 0049fd20 in ps_game.exe.
+Evidence is the existing full Ghidra decompilation/disassembly, especially
+0049fe10..0049feb2 (user gates/distance), 0049ff3a..0049ff66 (SetTarget(true)
+inside the cell lock, then unlock and return the original selected actor).
+
+Targeting only calls FindTarget for AI 1 or 3. Direct FindTarget has no AI gate.
+FindTarget requires positive zone user count, scans a clamped 3x3 neighborhood
+Z-major then X-minor in each cell's current user-list order, and stops at the
+FIRST eligible user, without sorting by distance. It excludes life status 1,
+nonzero shape byte (+1354), nonzero HP ability byte (+1366), and zero attackable/
+visible flags (+5775/+5774). Range is inclusive and uses the same original
+float-delta / double squared-sum / sqrt / float-distance rounding. Unlike help,
+chase range is read for each candidate. NaN/infinity/out-of-range are rejected.
+There is NO country, fixed-vision or mob-status selection gate. After choosing,
+it calls SetTarget(source, actor, true) under the user-cell lock, then returns the
+chosen identity even when SetTarget rejected its status/fixed-vision gate.
+Targeting therefore can return true without changing the target fields.
+
+The new required provider synchronously traverses live user lists under their
+cell locks, stops immediately when the visitor returns false, and unlocks before
+returning. It supplies a nonzero opaque actor token (not CharID, which can have
+independent values) and resolves it for SetTarget(true). Native world ownership,
+user-list locking, actor lifetime and source bindings remain provider work;
+no no-op/empty traversal or fake users were added. No shared headers changed.
+
+New oracle executes both original entry points, REAL original SetTarget/GetStatus
+and CRT sqrt. Help bodies, OS user-cell locks and CRT TLS remain observed ports;
+attack definitions are disabled for this search-focused fixture. 2,048 cases
+contain two users per occupied cell, all AI gates, zero/positive zone counts,
+rectangular dimensions/edges, user eligibility flags and same-country users,
+zero/exact/adjacent-float/large ranges, NaN/infinity/large coordinates, changes to
+source position/range during lock acquisition, and status/fixed-vision rejection
+after selection. It records 2,357 balanced locks, 432 SetTarget(true) calls and
+63 help calls. Native tests compose search with the real native SetTarget,
+checking return value, final target/status/movement fields and ordered callbacks.
+
+Needed canonical integration: a synchronous early-stop user-cell visitor using
+the shared user-list cursor, current shape/HP/admin/position projections, source
+zone count/cell/position and live definition AI/chase range. Wire selected tokens
+to existing MobRuntime SetTarget overloads and existing required runtime services.
+Do not add hostility filtering to FindTarget because help has such a filter, or
+interpret a successful Targeting return as proof the target was changed.
+
+Implementation commit: `667e37a` (workers/08-mob-targeting).
+
+Validation:
+
+- `python3 tools/dev.py build`: exit 0, no warnings;
+  `work/mob-targeting-find-build.log`.
+- `python3 tools/dev.py test`: exit 0; all 124 native tests passed (45.15 s).
+  New `mob-targeting-find-unit`: pass in 0.03 s;
+  `work/mob-targeting-find-test.log`.
+- Regenerated original fixture under `work/mob-targeting-find-repeat.tsv`;
+  byte-identical to tracked oracle. All twelve original EXE/PDB hashes pass.
+- `git diff --check`: clean. This search has no SQL calls or schema changes;
+  isolated SQL integration remains coordinator-owned.
+
+Remaining work: production user/mob visitor integration, source/skill/user
+bindings and actual world/FSM/helper services. The original native acquisition
+search is implemented through mandatory providers, not a live world scheduler.
+The server remains unplayable.
