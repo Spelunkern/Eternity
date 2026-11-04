@@ -1267,3 +1267,11 @@ PacketMaininterface 0205 pickup-handler fixture. It executes original packet
 handler with patched cancellation/shop/pickup boundaries, including packet ID
 mutation during callbacks. Reproduction passed; native implementation remains
 uncommitted and its build/test is queued, so no pickup or SQL validation claim.
+
+`tools/targeted.py` supplies a locked, isolated container build of one CMake
+target followed by its exact CTest name, with no-tests=error and interrupted
+container cleanup. This avoids a full 859-target initial build for focused worker
+checks without bypassing shared locks. It accepts only Eternity Git worktrees.
+Command construction was mock-checked; a real container run remains to verify.
+All nine sessions were notified to use it only after their current builds finish.
+Full SQL and integrated regression validation remain separate requirements.
