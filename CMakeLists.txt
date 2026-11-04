@@ -1201,3 +1201,11 @@ if(BUILD_TESTING)
     target_link_libraries(party-runtime-requests-unit PRIVATE eternity_game)
     add_test(NAME party-runtime-requests-unit COMMAND party-runtime-requests-unit ${CMAKE_CURRENT_SOURCE_DIR}/tests/data/party-runtime-requests-oracle.tsv)
 endif()
+
+# Worker 09: retained named-state admission and deep native container ownership.
+target_sources(eternity_game PRIVATE src/game/mob_ai_states_admission.cpp)
+if(BUILD_TESTING)
+    add_executable(mob-ai-states-admission-unit tests/mob_ai_states_admission_unit.cpp)
+    target_link_libraries(mob-ai-states-admission-unit PRIVATE eternity_game)
+    add_test(NAME mob-ai-states-admission-unit COMMAND mob-ai-states-admission-unit ${CMAKE_CURRENT_SOURCE_DIR}/tests/data/mob_ai_states_admission-oracle.tsv)
+endif()

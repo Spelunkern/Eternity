@@ -15,18 +15,26 @@ struct MobAiConfiguredTransition {
     std::uint32_t target=0;
     std::int32_t expected_sum=0;
     std::vector<MobAiConfiguredCondition> conditions;
+    std::int32_t id=0,calc_count=0;
+    std::string start_text{},end_text{},output_text{};
 };
 using MobAiConfiguredAction=std::function<void(MobRuntime&,MobAiConfiguredFsm&)>;
 struct MobAiConfiguredProgram {
     bool enabled=false;
     std::int32_t count=0;
     std::vector<MobAiConfiguredCondition> expressions;
+    std::string text{};
 };
 struct MobAiConfiguredState {
     // Empty callbacks preserve the original null member-function slots.
     MobAiConfiguredAction enter,update,exit;
     MobAiConfiguredProgram enter_program,update_program,exit_program;
     std::vector<MobAiConfiguredTransition> transitions;
+    std::string name{};
+    std::uint32_t state_code=0;
+    // Original pKFSM (+f4) is borrowed and copied, never rebound by AddState.
+    // Null keeps the legacy direct-input projection bound to its containing FSM.
+    MobAiConfiguredFsm* condition_owner=nullptr;
 };
 struct MobAiSignedCodeLess {bool operator()(std::uint32_t a,std::uint32_t b) const noexcept{return std::bit_cast<std::int32_t>(a)<std::bit_cast<std::int32_t>(b);}};
 struct MobAiConfiguredFsm {
