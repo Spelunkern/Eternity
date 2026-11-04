@@ -1,6 +1,7 @@
 # Quest admission and start
 
-Status: implemented standalone admission/start coordinator; production quest/world
+Status: implemented admission/start, complete start-log serialization and QuestAdd
+state transitions; production quest/world
 ownership adapters remain required. This does not make the server playable.
 
 ## Evidence
@@ -52,7 +53,7 @@ Canonical integration changes needed:
 - Project user level (`+136`), country (`+12e`), grow (`+12f`), job (`+134`), last
   use deadline (`+57d0`) and item (`+57d4`), plus finished ID/success entries.
 - Supply positional quest records and live NPC runtime handle/type/ID.
-- Implement `QuestStartWorld::add` with the canonical quest owner. Evidence
+- Connect `QuestStartWorld::add` through Block 3 and the canonical owner. Evidence
   `QuestAdd` **0047e010**: allocation failure returns false; initializes success
   and three counters to zero, start tick, optional end tick using wrapping
   `minutes*60000+tick`, optional success tick, active-list insertion, kill-PC/MOB
@@ -151,3 +152,83 @@ worker's code with that owner and the item-requirement/grant owners. Proposed
 next assignment: a production `QuestStartWorld` adapter under `quest_start`, once
 canonical runtime, inventory and log transport interfaces are available in this
 worker's base. Do not duplicate QuestRuntime ownership or QuestAddItem here.
+
+## Block 3: actual QuestAdd state transitions
+
+New ownership prefix: `quest_start_add`. `quest_start_add.hpp/cpp` implements
+`ps_game.exe`, `CUser::QuestAdd` **0047e010** (focused locked Ghidra re-export:
+`work/exports/06-quest-start/ps_game.exe`). Allocation, clock, insertion/ownership
+and DB delivery are required ports; none has a default no-op implementation.
+
+On allocation failure, returns false with no clock, list, accounting or DB work.
+On success, binds the supplied immutable `QuestDefinition`, sets ID, success and
+three counters, reads the clock exactly once, and computes start/end/success
+states using wrapping 32-bit `minutes*60000+tick`. Zero maximum/minimum minutes
+produce zero end/success ticks respectively; the portable timed flag depends on
+maximum minutes, even if the calculated end tick wraps to zero. Admission,
+duplicate checks, capacity checks, client sends and items do not belong here.
+
+The original inserts at the active list tail and increments its list count
+inside the active-list critical section (**0047e098..0047e0d7**). It increments
+player-kill count for end type 3 or mob-kill count for type 2 only after leaving
+that section (**0047e0dd..0047e0f3**). Other types do not change either count.
+The exact 10-byte DB packet is `0x0a01`, current billing ID (u32), definition ID
+(u16), and low 16 bits of maximum minutes. It is sent after insertion/accounting
+(**0047e0f9..0047e12c**); return true does not depend on transport acknowledgement.
+
+`QuestStartAddUser` contains references to live billing/counters. Tests include
+insertion-boundary callbacks changing these fields; the later count increment
+and DB packet observe the changed values. Counts wrap without C++ signed UB.
+The insertion port owns append/claim and active-list count only. Pool and
+immutable definitions must outlive the inserted quests.
+
+### Exact canonical adapter contract
+
+Read-only main `quest_runtime.hpp/cpp` was inspected. Its current
+`QuestRuntime::add_active` BOTH claims/appends AND increments end-type counters.
+**Do not call it directly from `QuestStartAddWorld::insert_active`: that would
+increment twice and expose incorrect values at the insertion boundary.**
+
+Coordinator change needed: expose a primitive such as
+`QuestRuntime::add_active_unaccounted(RestoredQuest&)` that validates/binds pool
+ownership and appends once, without changing mob/player counters. Keep the
+existing `add_active` accounting behavior for restoration/other callers by
+having it call the primitive and then its existing counter logic. Adapter:
+
+- `allocate` -> canonical `QuestRuntimePool::allocate`.
+- `insert_active` -> that new unaccounted insertion primitive.
+- `QuestStartAddUser` references -> live billing ID,
+  `runtime.mob_kill_quests()`, `runtime.player_kill_quests()`.
+- `send_database` -> actual DB-agent transport; all visible state is already
+  updated when it is called.
+- `QuestStartWorld::add` -> bind the positional definition to its canonical
+  `QuestDefinition`, then invoke `quest_start_add` once. No copied runtime owner
+  or compensating counter decrement is needed or recommended.
+
+This worker did not modify/copy the canonical owner. The insertion port remains
+a production dependency until that coordinator change and adapter are supplied.
+
+Validation: `python3 tools/dev.py build`: exit 0, 132 steps, no warnings.
+`python3 tools/dev.py test`: exit 0; **122/122** tests in **40.01 s**.
+`quest-start-add-unit`: **512** original cases and **438** allocations/real DB
+replica adds match. Logs: `work/quest-start-add-build.log`,
+`work/quest-start-add-test.log`, `build/Testing/Temporary/LastTest.log`.
+
+The new oracle executes the COMPLETE
+original **0047e010** including actual linked-list writes and count increments.
+512 fixtures cover retained payload, allocation failure, existing active nodes,
+all end-type branches, tick/minute overflow, signed counter boundaries, IDs
+0/32768/65535, DB minute truncation and live insertion-boundary mutations.
+Snapshots verify initialization before the clock and accounting around insertion
+and DB delivery. Native DB packets also apply to the real `QuestReplica`.
+Repeated fixture generation is byte-for-byte identical; original EXE/PDB hashes,
+Python compilation and `git diff --check` pass. SQL lifecycle/full integration
+remain reserved for the coordinator; this block changes no SQL contract/schema.
+
+Block 3 implementation commit: `0e2cb1bfd044ee6ca20e27522c93f1f599de784f`.
+
+Concrete next work within `quest_start_add`: compose the already-recovered
+request checks with the actual new add function in original/native fixtures,
+removing the previous QuestAdd observation port. This can validate DB delivery
+before client/log/start-item effects and consumed-item allocation failure without
+copying canonical ownership or changing the earlier milestone implementations.
