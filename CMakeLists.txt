@@ -1638,3 +1638,11 @@ if(BUILD_TESTING)
     target_link_libraries(user-skill-runtime-disable-unit PRIVATE eternity_game)
     add_test(NAME user-skill-runtime-disable-unit COMMAND user-skill-runtime-disable-unit ${CMAKE_CURRENT_SOURCE_DIR}/tests/data/user-skill-runtime-disable-oracle.tsv)
 endif()
+
+# Worker 09: zero-argument system expressions and actual CMob query dispatch.
+target_sources(eternity_game PRIVATE src/game/mob_ai_states_system.cpp)
+if(BUILD_TESTING)
+    add_executable(mob-ai-states-system-unit tests/mob_ai_states_system_unit.cpp)
+    target_link_libraries(mob-ai-states-system-unit PRIVATE eternity_game)
+    add_test(NAME mob-ai-states-system-unit COMMAND mob-ai-states-system-unit ${CMAKE_CURRENT_SOURCE_DIR}/tests/data/mob_ai_states_system-oracle.tsv)
+endif()

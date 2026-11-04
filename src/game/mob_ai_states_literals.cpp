@@ -1,4 +1,4 @@
-#include "eternity/game/mob_ai_states_finite_compound.hpp"
+#include "eternity/game/mob_ai_states_system.hpp"
 #include "eternity/game/mob_ai_states_bindings.hpp"
 #include <algorithm>
 #include <bit>
@@ -107,7 +107,7 @@ bool finite_arithmetic(MobAiParameter& result,const MobAiParameter& first,const 
 }
 
 }
-static std::int32_t interpret_values(MobAiConfiguredFsm& owner,MobAiConfiguredCondition& condition,bool local_reads,ComparisonMode comparisons,bool arithmetic,bool assignment=false,bool compound=false,bool numeric_assign=false,bool finite=false,bool floating_compound=false){
+static std::int32_t interpret_values(MobAiConfiguredFsm& owner,MobAiConfiguredCondition& condition,bool local_reads,ComparisonMode comparisons,bool arithmetic,bool assignment=false,bool compound=false,bool numeric_assign=false,bool finite=false,bool floating_compound=false,const std::function<MobAiParameter(const MobAiToken&)>& system_call={}){
     auto& stack=owner.value_stack;
     if(stack.capacity<0||static_cast<std::size_t>(stack.capacity)>stack.slots.size())throw std::logic_error("Mob AI literal stack requires its retained capacity/storage");
     stack.top=-1;condition.words[2]=0;std::uint32_t passed=0;
@@ -136,6 +136,10 @@ static std::int32_t interpret_values(MobAiConfiguredFsm& owner,MobAiConfiguredCo
             if(value==owner.variables.end())throw std::logic_error("Mob AI local read requires a factory-populated typed variable");
             if(value->second.type==4&&std::find(value->second.text.begin(),value->second.text.end(),'\0')==value->second.text.end())throw std::logic_error("Mob AI local string has no retained terminator");
             push(stack,value->second);
+        }else if(token.type==4&&system_call){
+            const auto result=system_call(token);
+            if(result.type==4&&std::find(result.text.begin(),result.text.end(),'\0')==result.text.end())throw std::logic_error("Mob AI system result has no retained string terminator");
+            push(stack,result);
         }else if(token.type==8&&arithmetic){
             const auto first=pop(stack);const auto second=pop(stack);
             assign(numeric,second);numeric_type_known=true;
@@ -205,4 +209,21 @@ std::int32_t interpret_mob_ai_finite_arithmetic(MobAiConfiguredFsm& owner,MobAiC
 
 namespace eternity::game {
 std::int32_t interpret_mob_ai_finite_compound(MobAiConfiguredFsm& owner,MobAiConfiguredCondition& condition){return interpret_values(owner,condition,true,ComparisonMode::numeric,true,true,true,true,true,true);}
+}
+
+namespace eternity::game {
+std::int32_t interpret_mob_ai_zero_argument_calls(MobAiConfiguredFsm& owner,MobAiConfiguredCondition& condition,MobAiSystemCatalog& catalog,MobAiSystemDispatcher& dispatcher){
+    const auto call=[&](const MobAiToken& token){
+        const auto before=catalog.find(token.function_id);
+        if(before==catalog.end())throw std::logic_error("Mob AI system call requires a factory-populated function definition");
+        if(before->second.parameter_count>0)throw std::logic_error("Mob AI system call requires unrecovered CalculateParam argument piping");
+        auto result=dispatcher.invoke(owner,token.function_id);
+        // Original reloads the token ID and definition after the virtual call.
+        const auto after=catalog.find(token.function_id);
+        if(after==catalog.end())throw std::logic_error("Mob AI system callback removed its retained function definition");
+        if(after->second.parameter_count>0)throw std::logic_error("Mob AI system callback requires unrecovered output parameter piping");
+        return result;
+    };
+    return interpret_values(owner,condition,true,ComparisonMode::numeric,true,true,true,true,true,true,call);
+}
 }
