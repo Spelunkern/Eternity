@@ -5,6 +5,7 @@
 #include <bit>
 #include <functional>
 #include <map>
+#include <string>
 namespace eternity::game {
 struct MobAiConfiguredFsm;
 // KFSMCondition is seven DWORDs (0x1c). TravelCondition's expression/token
@@ -33,6 +34,8 @@ struct MobAiConfiguredFsm {
     MobAiConfiguredFsm(std::uint32_t current_code,std::uint32_t start_code):current(current_code),start(start_code){}
     std::uint32_t current,start;
     MobAiVariables variables;
+    // CMob retained CFunctionPointerList (+114): ConnectToFSM appends each call.
+    std::vector<std::pair<std::string,MobAiConfiguredAction>> compiled_functions;
     std::map<std::uint32_t,MobAiConfiguredState,MobAiSignedCodeLess> states;
 };
 class MobAiConfiguredServices {

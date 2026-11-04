@@ -980,3 +980,11 @@ if(BUILD_TESTING)
     target_link_libraries(mob-ai-states-locals-unit PRIVATE eternity_game)
     add_test(NAME mob-ai-states-locals-unit COMMAND mob-ai-states-locals-unit ${CMAKE_CURRENT_SOURCE_DIR}/tests/data/mob_ai_states_locals-oracle.tsv)
 endif()
+
+# Worker 09: retained compiled callback registry and exact named state binding.
+target_sources(eternity_game PRIVATE src/game/mob_ai_states_bindings.cpp)
+if(BUILD_TESTING)
+    add_executable(mob-ai-states-bindings-unit tests/mob_ai_states_bindings_unit.cpp)
+    target_link_libraries(mob-ai-states-bindings-unit PRIVATE eternity_game)
+    add_test(NAME mob-ai-states-bindings-unit COMMAND mob-ai-states-bindings-unit ${CMAKE_CURRENT_SOURCE_DIR}/tests/data/mob_ai_states_bindings-oracle.tsv)
+endif()
