@@ -56,7 +56,18 @@ int main(int argc,char** argv) {try {
         std::istringstream row(line);char tag;row>>tag;
         if(tag=='I') {
             unsigned episode;std::uint32_t account,mob,pc;std::string block,payload;row>>episode>>account>>mob>>pc>>block>>payload;
-            state=std::make_unique<Episode>(account,QuestDefinitions::decode(decode(block)));state->load(decode(payload));state->runtime.mob_kill_quests()=std::bit_cast<std::int32_t>(mob);state->runtime.player_kill_quests()=std::bit_cast<std::int32_t>(pc);++episodes;
+            state=std::make_unique<Episode>(account,QuestDefinitions::decode(decode(block)));state->load(decode(payload));
+            { // Admission appends before QuestAdd performs its live accounting.
+                Services heap;QuestRuntimePool pool(heap);QuestRuntime owner(account,pool);
+                auto* admitted=pool.allocate();check(admitted!=nullptr,"Admission allocation failed");
+                admitted->definition=state->definitions.find(1);admitted->packet.id=1;
+                owner.mob_kill_quests()=17;owner.player_kill_quests()=23;
+                owner.add_active_unaccounted(*admitted);
+                check(owner.find_active(1)==admitted && owner.active().size()==1 && owner.mob_kill_quests()==17 && owner.player_kill_quests()==23,"Unaccounted admission changed accounting or ownership");
+                bool rejected=false;try {owner.add_active_unaccounted(*admitted);}catch(const std::invalid_argument&) {rejected=true;}
+                check(rejected && owner.active().size()==1,"Admission accepted duplicate ownership");
+            }
+            state->runtime.mob_kill_quests()=std::bit_cast<std::int32_t>(mob);state->runtime.player_kill_quests()=std::bit_cast<std::int32_t>(pc);++episodes;
         } else if(tag=='R') {
             unsigned identity,success,reentry;row>>identity>>success>>reentry;state->world.events.clear();state->world.reentry=static_cast<std::uint16_t>(reentry);
             state->runtime.remove(*state->services.records.at(identity),static_cast<std::uint8_t>(success),state->world);++removals;

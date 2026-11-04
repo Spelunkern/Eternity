@@ -43,6 +43,8 @@ public:
     QuestRuntime(std::uint32_t user,QuestRuntimePool& pool):user_id_(user),pool_(pool) {}
     ~QuestRuntime();
     QuestRuntime(const QuestRuntime&)=delete;QuestRuntime& operator=(const QuestRuntime&)=delete;
+    // QuestAdd appends under the list lock, then accounts outside it.
+    void add_active_unaccounted(RestoredQuest&);
     void add_active(RestoredQuest&);
     void add_finished(RestoredQuest&);
     RestoredQuest* load_active(const RestoredQuest&);

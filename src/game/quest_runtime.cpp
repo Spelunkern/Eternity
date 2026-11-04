@@ -36,10 +36,13 @@ void QuestRuntimePool::discard(RestoredQuest& quest) {
     owners_.erase(&quest);storage_.erase(at);
 }
 QuestRuntime::~QuestRuntime() {for(auto* quest:active_) pool_.discard(*quest);for(auto* quest:finished_) pool_.discard(*quest);}
-void QuestRuntime::add_active(RestoredQuest& quest) {
+void QuestRuntime::add_active_unaccounted(RestoredQuest& quest) {
     if(!quest.definition) throw std::invalid_argument("Active quest lacks definition");
     pool_.claim(quest,this);
     try {active_.push_back(&quest);}catch(...) {pool_.unclaim(quest);throw;}
+}
+void QuestRuntime::add_active(RestoredQuest& quest) {
+    add_active_unaccounted(quest);
     if(quest.definition->end_type()==2) mob_kill_=changed(mob_kill_,1);
     else if(quest.definition->end_type()==3) player_kill_=changed(player_kill_,1);
 }
