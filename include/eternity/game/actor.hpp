@@ -178,6 +178,8 @@ public:
     void stop_casting(ActorActionWorld&);
     void clear_duel_debuffs();
     void enter_zone_lifecycle(UserPosition,std::uint16_t map,const std::function<void()>& nprotect);
+    // Serialized actor executor only; mutate the retained movement-check owner.
+    ZoneMovementCheck& movement_check() noexcept {return zone_lifecycle_.movement;}
     const ZoneMovementCheck& movement_check() const noexcept {return zone_lifecycle_.movement;}
     void end_duel();
     void leave_duel_on_attack(DuelWorld&);
