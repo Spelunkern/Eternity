@@ -151,6 +151,8 @@ contract with actual owner operations and stable retained storage.
 
 | `4d8e1edde2bf1e30716b0bdb41716d2f5f02e0aa` | Raw heap/manager split and real obelisk composition | 128 original scenarios / 2,816 operations; 64 obelisk compositions; 134/134 tests, 27.84 s. |
 
+| `a48542ab8ed71b1a935050dd2d2645dd7628bba3` | Concrete obelisk allocation/Init/entry adapter | 48 real-owner compositions; original startup/timers fixtures regenerated; 135/135 tests, 38.85 s. |
+
 ## Vision cleanup milestone
 
 `MobAppliedSkills::remove_vision_fix(MobRuntime&)` now operates directly on the
@@ -643,3 +645,113 @@ Latest worker validation remains 134/134 tests (27.84 s), 2,816 original operati
 and 64 actual obelisk compositions. Clean tree before this report update and
 whitespace check passed. Central integration/SQL and global playability remain
 unresolved; awaiting coordinator assignment rather than repeating completed work.
+
+## Concrete obelisk allocation/Init/entry adapter milestone
+
+Implementation commit: `a48542ab8ed71b1a935050dd2d2645dd7628bba3`.
+
+New prefix mob_applied_skills_obelisk; worker04 sources remain read-only.
+MobAppliedSkillsObelisk is a constructible final ObeliskRuntimeWorld implementation
+that performs allocation, preparation, initialization, entry and random sampling
+on the EXISTING bound MobPool, canonical initialize_mob/MobInitPorts and ZoneMobs.
+It does not create a pool, zone, catalog, list or AI backend. The remaining ten
+world boundaries are mandatory named callables; constructor validation rejects
+missing transport/KC/log/portal/removal/name services and incomplete Init ports.
+There is no second abstract world layer requiring another allocation/Init stub.
+
+Exact routing: allocate(false) -> allocate_raw, allocate(true) -> allocate,
+prepare_companion -> prepare_allocated once. initialize validates this pool's
+live prepared actor, assigns the borrowed definition and calls initialize_mob
+with definition.id and the original respawn reference. enter delegates to the
+same ZoneMobs, preserving actual registration/publication and Lua-entry order.
+random uses init.random directly, sharing the same executor stream consumed by
+Init's movement delay instead of using per-mob ServerRandom or an extra stream.
+Two small read-only MobPool queries expose bound-context presence and live
+prepared ownership; no other canonical owner behavior changed.
+
+Missing binding, foreign/free/raw-pending Init/entry and rejected coordinates
+produce explicit errors. Allocation failure still returns null to the original
+obelisk coordinator. Entry rejection does NOT silently recycle, undo consumed
+IDs or clear a source record that may already reference the actor. If a backend
+throws after canonical registration, that registered membership remains live;
+callers must inspect/recover the actual owner state. The adapter propagates the
+error rather than reporting success or inventing transactional rollback.
+
+### Original ordering and evidence limits
+
+ps_game.exe CMap::InitObelisk 00429a60, UpdateRespawnObelisk 00429da0,
+ObeliskRespawn 0042a6f0, CMob::Init 00490040 and CZone::EnterMob 00416860.
+At 00429b09..00429b1e the original assigns the definition and passes its WORD ID
+and stable respawn to Init, then writes position/source membership before entry.
+Worker04's original startup and timers fixtures were regenerated read-only via
+Python -B into work/ and match retained main fixtures byte-for-byte: 768 startup
+plus retained-tick cases and 768 timer cases. Their Init/Enter ports are observed
+boundaries; this is not original execution of a complete live world backend.
+New native composition crosses those ports into the actual existing owners.
+
+Serialized Ghidra export recovered the three obelisk coordinators and Init;
+EnterMob decompilation is marked FAILED in both focused and existing complete
+exports. Its complete original disassembly remains available, along with prior
+ZoneMobs comparisons. No missing EnterMob body was guessed or reimplemented here.
+Log: work/mob-applied-skills-obelisk-export.log. Four ignored, mode-0444 worker04
+snapshot files used by the old branch match current main exactly; central builds
+use normal existing owners. Previous catalog/snapshot contracts are unchanged.
+
+### Native composition and corrections
+
+48 cases execute startup, an actual unfair companion Death, actual corpse
+accounting/recycling, periodic manager replenishment, forced principal/companion
+removal and complete respawn through the NEW adapter. They share real bound skill
+heap/counter/catalog, per-mob damage ledgers and one ZoneMobs. Three distinct
+country definitions and one-to-three companions check live country mutation
+from entry/name callbacks, membership-before-entry notification, exact RNG/Unix
+cadence, ID wrap, pointer/skill retention across FreeMob/Init and deletion at final
+pool destruction. No source/configuration snapshot is retained across callbacks.
+
+Failure cases reject missing backend/Init services and legacy unbound pools
+without allocation side effects; reject Init before preparation; propagate
+coordinate rejection; and propagate an entry transport exception while retaining
+actual registered ownership for explicit cleanup. A test cleanup guard keeps
+zone and actor lifetimes valid even on failed assertions.
+
+Initial compile failed on mixed signed/unsigned auto declaration in the new test;
+corrected to separate declarations (work/mob-applied-skills-obelisk-build.log). Initial native suites
+were 134/135, failing the new test's name-provider expectation: forced Destroy
+asks for a still-retained but unlinked subject, and reset=true still emits log
+and conditional country-change DB/portal publication. Corrected fixture ports
+and asserted those real calls, without changing adapter logic. Initial logs:
+work/mob-applied-skills-obelisk-test.log and
+work/mob-applied-skills-obelisk-test-diagnostic.log.
+Focused corrected test passes all 48 cases using tools/dev.py's SAME shared
+resource_lock/IMAGE under a focused container invocation:
+work/mob-applied-skills-obelisk-focused.log.
+
+- Corrected python3 tools/dev.py build: exit 0, no warnings:
+  work/mob-applied-skills-obelisk-build-corrected.log.
+- Final python3 tools/dev.py test: exit 0, **135/135 passed**, 38.85 seconds;
+  new 48-case adapter suite passed in 0.01 seconds. Existing original raw/manager,
+  retained skill/catalog and bound destructor suites all pass.
+  Log: work/mob-applied-skills-obelisk-test-final.log.
+- Original startup/timer fixture comparisons, twelve EXE/PDB SHA256SUMS and
+  git diff --check passed. Hash log: work/mob-applied-skills-obelisk-hashes.log.
+  No sanitizer run; no failures are counted as successful validation.
+
+### Production construction and remaining services
+
+Retain catalog, shared skill/damage heaps and counters, source/configuration,
+map/zone, AI/VM/transport/KC/log/portal backends and their callables through every
+mob and synchronous callback. Use prior ce03a18/4d8e1ed bound/raw pool APIs; supply
+one shared MobInitPorts executor RNG/clock and actual compiled/Lua initialization.
+Construct MobAppliedSkillsObelisk(pool, zone, init_ports, services), then pass it
+to the existing initialize_obelisks/update_obelisk_respawns/respawn_obelisk.
+The adapter's zone must be the source map's actual zone. Serialize all world
+operations and reload publication; defer subject destruction/recycling until
+callbacks and enclosing owner operations return. The adapter owns no backend
+lifecycle and introduces no global lock or automatic teardown policy.
+
+Name results must borrow stable actual definition/name storage. Removal callbacks
+must use actual zone/removal owners, including nested destroy/publication. Reset
+is not authorization for no-op log/DB/portal services. Actual Lua execution,
+compiled factory/backend, transport and production root construction remain open;
+no playable-server or real DB-delivery claim. No SQL access in this block;
+complete isolated SQL and integrated normal-owner builds remain central checks.
