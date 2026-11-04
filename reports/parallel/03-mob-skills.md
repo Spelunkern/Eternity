@@ -492,3 +492,32 @@ AI/VM/combat/log/world owners, route full ResetAttack to the new adapter and fin
 Death clear to the retained bridge. No further canonical fields are needed by
 this binding; real Lua/backend, scheduler/transport assembly and playability are
 not claimed complete.
+
+## Runtime scope completion checkpoint
+
+The repeated retained-runtime assignment is implemented by ce03a18/670f70d.
+Read current main continuity/parallel notes and inspected canonical mobs/mob_pool
+APIs read-only again; main already exposes the bound constructor and retained
+owner accessors. Do not repeat the completed pool/Init/death/reset/destructor
+comparisons or add a second service/data owner. No new independent behavior is
+identified within the current binding scope.
+
+Concrete dependency: production construction must select the bound constructor
+and provide the actual retained compiled FSM/stack/VM release implementations,
+clock, combat, log and transport owners. The pool now supplies the destruction
+boundary requested by worker09, but that does not create a Lua VM backend or the
+root world assembly. Those missing providers cannot be replaced with defaults.
+
+Proposed next assignment: explicitly authorize a production AI lifetime adapter
+that delegates release_compiled_ai/release_stack_ai to worker09's actual retained
+owners, with designated authoritative owner APIs and a real VM-close provider.
+Keep worker09 sources read-only; the coordinator should designate the production
+construction site before any root wiring. Alternatively reassign selective
+skill cancellation recovery under a new explicit scope. No unauthorized edits
+or new tests are needed merely to wait for that ownership decision.
+
+Documentation-only checkpoint: latest implementation validation remains
+132/132 native tests, 39.89 seconds, plus 64 original reset comparisons and 64
+retained pool compositions. No new build, original execution or SQL run; no
+source/test/fixture changes. Clean tree before report update and git diff --check
+passed. Global completion is not claimed. Awaiting next assignment.
