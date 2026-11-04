@@ -12,6 +12,9 @@ struct VerticalEntryPorts {
 };
 // Synchronous DB-agent boundary: exceptions propagate to the connection owner.
 // A rejected load does not fabricate a DB 0407 response or client success.
+// ps_dbAgent.exe CUser::PacketUserChar 0040591f and LoadCharacter 00404b89
+// use state-dependent teardown; the caller owns that missing lifecycle. SQL
+// ownership checks do not replace the original retained DB-agent roster gate.
 CharacterSelectionResult vertical_entry_select(CharacterSelectionState&, std::span<const std::uint8_t>,
     Players&, const std::string& username, const VerticalEntryPorts&);
 }

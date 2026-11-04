@@ -1895,3 +1895,8 @@ if(BUILD_TESTING)
     target_link_libraries(vertical-combat-magic-skill-damage-unit PRIVATE eternity_game)
     add_test(NAME vertical-combat-magic-skill-damage-unit COMMAND vertical-combat-magic-skill-damage-unit ${CMAKE_CURRENT_SOURCE_DIR}/tests/data/vertical_combat_magic_skill_damage_oracle.tsv)
 endif()
+
+if(BUILD_TESTING)
+    add_executable(vertical-entry-sql-integration tests/vertical_entry_sql_integration.cpp)
+    target_link_libraries(vertical-entry-sql-integration PRIVATE eternity_game)
+endif()
