@@ -609,3 +609,74 @@ transport services. Configuration/source binding, raw allocation/preparation
 split for startup/respawn, and platform calendar providers remain separate open
 dependencies from prior milestones. SQL is unchanged; final isolated SQL checks
 belong to the coordinator. The server is not playable.
+
+## Portal ownership provider — both update passes and actual publication
+
+Implementation commit: `a8ee553eb8f48d84554cf9491248750a0cfded68`.
+
+Recovered **ps_game.exe, CMap::UpdatePortalLink 0042a000** and
+**SendPortalLinkChange 0042b2c0** as `update_obelisk_portal_links` and
+`publish_obelisk_portal_change`. This supplies the previously missing required
+portal coordination provider called after Destroy/Reset changes ownership.
+The owning world's `update_portal_links` can now delegate to this function over
+its retained global portal-link array. No canonical interface change is needed.
+
+The projection retains each link's nullable target country, two open flags,
+two counts, all eight obelisk references, publication IDs and target-zone
+presence. Update traverses the global link table without a calling-map zone guard.
+The country matching reads `last_destroy_country`, not current
+country. Side zero takes priority whenever its count is positive; side one is
+considered only otherwise. All matching opens a closed side, zero matching
+closes an open side, and partial matching preserves it. Country conversion
+preserves the original four portal states, including out-of-range input rules.
+Opening side zero marks the next link; opening side one marks the previous
+link. A separate second pass closes marked neighbors. Missing targets skip
+both passes. The original twelve-element stack flag array is explicit: larger
+arrays fail before publication instead of reproducing stack corruption.
+
+Actual native packet assembly now preserves DB 0207 (base ID, raw country byte,
+zero timestamp), target-map 2102 (full DWORD local ID, translated country), and
+world 2104 (WORD portal ID, old/new translated countries), in original order.
+Translations are 0->103, 1->101, 2->102, otherwise100. Map publication is skipped
+when its zone is absent; DB and world publication remain required services.
+The DB callback precedes live map reads; both precede the live global transition
+packet reads. Storage and bindings must remain stable throughout callbacks.
+Existing persisted ownership views can bind to this link's country/open fields.
+
+1,024 original-execution scenarios run both actual original functions, observing
+only three transport boundaries. They include 0/1/2/3/4/6/11/12 links, nullable
+portals/references, signed counts, both country lists, partial matches, existing
+open flags, invalid initial country values, absent map zones, and live country/
+last-destroy mutation at the first transport. Dedicated all-matching scenarios
+exercise both neighbor directions: 1,747 records publish twice in a call.
+The final fixture includes 4,400 DB, 2,936 map and 4,400 world packets and 4,992
+final portal-state snapshots. Initial structures are explicit input projections;
+map loading and transport delivery are not claimed.
+
+The first full run failed the new test (128/129 passed, 34.17 seconds): native
+scenario38 diverged. I initially misread the address arithmetic for country-one
+references. Instructions **0042a06f–0042a07b** multiply side by four before the
+12-byte entry stride; the corrected implementation uses `[side*4+n]`. The
+original oracle was unchanged by that native correction. Its final fixture adds
+stronger two-pass transitions; the initial failure log is preserved.
+
+Validation:
+
+- `python3 tools/dev.py build`: exit 0, no warnings
+  (`work/obelisk-portal-final-build.log`).
+- Corrected `python3 tools/dev.py test`: exit 0, **129/129 passed**, 35.48 seconds
+  (`work/obelisk-portal-final-tests.log`). Initial failed run remains in
+  `work/obelisk-portal-tests.log`.
+- Independent original regeneration and `cmp`: exit 0, byte-identical to retained
+  fixture (`work/obelisk-runtime-portal-final-repeat.tsv`).
+- Locked focused Ghidra export: exit 0 (`work/obelisk-portal-ghidra.log`).
+- `sha256sum -c SHA256SUMS`: all original EXE/PDB files passed
+  (`work/obelisk-portal-hashes.log`). `git diff --check`: clean.
+
+Remaining: wire this provider into the production world together with stable
+configured map/portal records and required DB/map/world transports. A combined
+original/native Death->Destroy->portal update fixture can next replace the
+previous composition fixture's observed portal callback. Raw pool preparation,
+configuration loading, calendar/KC and other production world dependencies from
+prior blocks remain open. SQL is unchanged and final isolated SQL validation
+remains coordinator-owned. The server is not playable.
