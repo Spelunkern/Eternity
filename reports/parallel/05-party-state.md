@@ -601,3 +601,101 @@ disband path are now recovered. A concrete next scope is canonical serialized
 party-handle access followed by CUser::PacketParty 004676c0 request dispatch;
 canonical Actor/connection headers remain coordinator-owned. No gameplay
 completion is inferred from these comparisons.
+
+## Block 9: retained normal party request dispatch
+
+Expanded `party_runtime_requests` recovers immutable ps_game.exe
+`CUser::PacketParty` 004676c0 normal request caller paths. Source: full Ghidra
+exports in the read-only coordinator reverse tree; focused assembly is ignored
+under `work/party-runtime-requests-asm.txt`. New request code reuses the existing
+registry CreateParty, normal entry/leave, experience, scene/log emitters and
+required membership transport. It does not introduce another membership owner.
+
+`PartyRequestUser` holds references to the SAME PartyMembershipUser and persistent
+PartyRequestState, plus a required shared lifetime pin to their Actor/connection
+context. Copies copy the pin/references only. Lookup and retain_member providers
+must return these retained live views; an expulsion retainer changing member
+identity is rejected explicitly. No canonical Actor/connection header was edited.
+
+Recovered behavior:
+
+- 0b02 ID invitation: self/activity checks precede CPartyLock; leader/count <7
+  checks precede zone lookup. Errors are 0b03 + reason BYTE + UID DWORD: self/
+  missing/country 4, activity 1, leader/capacity 2, occupied/pending 3, same party
+  5. Target invitation word +1740 is written BEFORE GetTickCount; deadline +5834
+  gets wrapped tick +30000. Reply rereads inviter UID after that callback.
+- 0b09 name invitation forces input byte 22 to NUL BEFORE locking. Global
+  FindUserZoneMove(name) precedes leadership/activity checks; EqualZone 0044bd20
+  checks TARGET state ==4, zone identity and instance, then country. The name
+  reply is 23 bytes and rereads inviter name after clock sampling. Native unused
+  name padding is zeroed, as in the existing serializers.
+- 0b03 returns early without clearing pending data if no inviter or already in
+  party. Otherwise it looks up the saved inviter in the current zone, then clears
+  inviter/deadline even on a missing result. It does not check expiry here.
+  Activity errors/rejections are sent to the inviter with responder UID. Zero
+  accepts; any nonzero byte rejects with reason 0. It locks the inviter's captured
+  party, creates a normal party if absent, verifies existing leadership and enters
+  through the existing owner. Failure unlocks before error 1 delivery.
+- 0b05 leaves directly; 0b0d takes the captured-membership guard first. The guard
+  matches CPartyLock 00444d20: it retains the original party lock, rechecks null
+  membership after acquisition and releases that captured identity on exit.
+- 0b07 uses recovered IsPartyBoth 00444e90 / SetPartyBoth 00445470 ordering.
+  Leader notification broadcasts while locked, then reloads new/old leader slots
+  after the send callback and emits their scene updates after inner unlock.
+  Failed selection replies with 0b07/UID 0. 0b06 preserves leader and FindUser
+  00445520 guards, including reload of the selected slot AFTER lookup unlock;
+  its ExpelUser 00447120 body remains a mandatory explicit provider.
+- 0b0c is the original no-op. Unknown normal codes close with reason 9/detail 0.
+  Known raid control codes 0b0e..0b18 and 0b1a are explicit full-dispatch providers;
+  normal accept/leave encountering kind 1 requires actual raid enter/leave
+  providers. No fake success or fallback normal membership is supplied.
+
+Original fixture executes the ENTIRE unmodified PacketParty caller, actual
+CPartyLock/leader/find/SetPartyBoth/EqualZone/error helpers, registry create/map,
+normal membership and GetPartyType. Ports are lookup, OS/raw memory, transport/
+log context and explicitly missing expulsion/raid bodies. A saved-register x86
+trampoline enters real nested PacketParty(0b03) from invitation send, not a
+modeled join. Each such case verifies a real joined party, then sends a second
+real PacketParty leave against the same retained registry/users. Tests include
+self-invite precedence, busy/full/nonleader/pending/country/zone/missing cases,
+reject/accept, allocator failure, captured-lock detachment and live clock-field
+updates. Whole function returns are checked at the original return sentinel.
+
+Block 9 validation:
+
+- Final `python3 tools/dev.py build`: exit 0, no warnings
+  (`work/party-runtime-requests-final-build.log`). Initial build failed because
+  optional reference-bearing bindings are nonassignable; corrected via emplace.
+  The failed compile is not counted as success.
+- Final `python3 tools/dev.py test`: exit 0, all 131 pass in 42.94 seconds
+  (`work/party-runtime-requests-final-test.log`). The preceding 1,024-request
+  fixture suite also passed (44.05 seconds) before self/leave extension.
+- Final fixture: 1,024 cases / 1,070 top-level whole PacketParty invocations /
+  46 literal nested accepts (1,116 original PacketParty executions total), with
+  46 follow-up leave requests on those same live owners. Each nested accept
+  asserts actual membership before the following leave; it is not a success port.
+- Focused C++20 ASAN/UBSAN in dev containers under the shared build lock: exit 0,
+  the complete extended comparison passes, no diagnostics
+  (`work/party-runtime-requests-final-sanitized.log`).
+- Repeated final original generation, including exact return-sentinel checks,
+  matches byte for byte (`cmp`, exit 0). Original EXE/PDB manifest and
+  `git diff --check`: exit 0. Generated outputs remain ignored under work/.
+  No SQL/schema/lifecycle operation; full isolated SQL remains coordinator-owned
+  and was not run in this worker block.
+
+Block 9 implementation commit: `02d44c22b7c5cf8074a2c6a0dd8a3c1a3f206085`.
+
+Minimal canonical binding contract after read-only Actor review: expose a retained
+`PartyRequestUser retain_party_user(actor_uid)` on the existing connection/user
+owner, referring to one persistent PartyMembershipUser and PartyRequestState.
+The pin must retain Actor, its bound scene and those records across all nested
+calls. Existing ActorScene::party_kind/send_party must use that SAME member.party
+handle; the current flag/send-only interface cannot supply a retained handle.
+Bind original UID (+dc), live level/name/resources/instance and request metadata
+(+12d country, +15e0 activity, +5758 state, +e0 zone identity, +1740 inviter,
++5834 deadline) through the serialized owner. Update authoritative records in
+place during Actor/world changes; never build a detached per-lookup member copy.
+Member.pending_request (+1744) is separate from the inviter DWORD. The dispatcher
+requires validated decoded packet sizes; malformed/truncated shapes and the
+remaining expiry scheduler are not claimed as recovered here. Normal ExpelUser,
+full raid dispatch and production adapters remain substantive next work.
