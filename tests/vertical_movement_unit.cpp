@@ -2,6 +2,11 @@
 #include <array>
 #include <bit>
 #include <cstdint>
+#include <cfenv>
+#include <limits>
+#if defined(__x86_64__) && defined(__SSE2__)
+#include <xmmintrin.h>
+#endif
 #include <fstream>
 #include <iostream>
 #include <sstream>
@@ -30,5 +35,26 @@ int main(int argc,char** argv) {
         ++cases;
     }
     if(cases!=4096) throw std::runtime_error("Incomplete movement oracle");
-    std::cout<<cases<<" original movement checks passed\n";
+    auto unsupported=[](ZoneMovementCheck s, UserPosition p, float speed, unsigned expected_calls) {
+        const auto before=words(s);unsigned calls=0;bool rejected=false;
+        try {vertical_movement_update(s,p,speed,[&]{++calls;return 0U;});} catch(const std::logic_error&) {rejected=true;}
+        if(!rejected || words(s)!=before || calls!=expected_calls) throw std::runtime_error("Unsupported movement input/environment changed state or clock ordering");
+    };
+    const auto saved_round=std::fegetround();
+    if(std::fesetround(FE_DOWNWARD)!=0) throw std::runtime_error("Cannot set rounding mode");
+    unsupported({}, {}, 1, 0);
+    if(std::fegetround()!=FE_DOWNWARD || std::fesetround(saved_round)!=0) throw std::runtime_error("Rounding mode changed");
+#if defined(__x86_64__) && defined(__SSE2__)
+    const auto mxcsr=_mm_getcsr();
+    for(unsigned mask: {0x8000U,0x0040U,0x2000U}) {
+        _mm_setcsr(mxcsr|mask);unsupported({}, {}, 1, 0);
+        if(_mm_getcsr()!=(mxcsr|mask)) throw std::runtime_error("MXCSR changed");
+    }
+    _mm_setcsr(mxcsr);
+#endif
+    unsupported({}, {std::numeric_limits<float>::infinity(),0,0}, 1, 0);
+    unsupported({}, {}, std::numeric_limits<float>::quiet_NaN(), 0);
+    ZoneMovementCheck overflow;overflow.previous.x=std::numeric_limits<float>::max();
+    unsupported(overflow, {-std::numeric_limits<float>::max(),0,0}, 1, 1);
+    std::cout<<cases<<" original movement checks and environment guards passed\n";
 }
