@@ -194,3 +194,70 @@ final shared SQL integration belongs to the coordinator. Server playability is
 still incomplete.
 
 Implementation commit: `30434d6c67dc3b088ada40978bc0fe4b50ff7cfd`.
+
+## Milestone 4 — real WhileIdle (`mob_ai_states_idle`)
+
+Ghidra process export (serialized wrapper):
+`work/exports/09-mob-events/ps_game.exe/{decompiled.c,disassembly.txt}`.
+Sources: `CMob::WhileIdle` 004b52c0, GetMoveSpeed 004908c0/00490900,
+SVector::Distance2 0041b1f0 and RotateY 0049f750, original ps_game.exe.
+All twelve EXE/PDB hashes checked successfully again.
+
+Recovered complete idle coordination: tick/current-time update, new-target
+cooldown clearing, FindTargetEx and event 0 with live target ID; obelisk and
+movement deadline gates; event 4 when home distance is strictly greater than
+0.5 with a chase path, or greater than 10 regardless of path. Stop/sleep/stun,
+AI 4, zero definition movement speed/normal step and hold position prevent
+wandering, but still schedule a retry (10000 + rand%30000 + current time).
+
+Wandering preserves three CRT draws and the original arithmetic: angle
+rand%10000 times float 0x3c8efa35, integral (rand%500)/100, clamped runtime
+movement-speed index into {-4,-2,0,2,4} at 00542538 plus definition normal step,
+float rotation and destination addition. Zone presence, destination distance
+strictly less than 10 and EnableLine gate MoveMob(mode=0). Coordinates passed
+to line checking use original signed FISTP truncation, including INT_MIN on
+invalid conversion. The wandering deadline also includes definition normal_time,
+even when the candidate is rejected. Live provider changes to definition,
+movement speed, current time and zone availability preserve original ordering.
+
+### Validation
+
+- `python3 tools/dev.py build`: exit 0, no compiler warnings; final log
+  `work/mob_ai_states_idle-final-build.log`.
+- `python3 tools/dev.py test`: exit 0, all 123 tests pass (29.07 s), including
+  `mob-ai-states-idle-unit` (0.01 s) and all previous worker suites;
+  `work/mob_ai_states_idle-tests.log`.
+- `git diff --check`: clean. SQL integration remains a coordinator check;
+  this block introduces no SQL access/contracts.
+
+The oracle executes WhileIdle, GetMoveSpeed,
+Distance2, RotateY and actual original CRT sqrt/sin/cos; only Windows CRT errno
+TLS storage is supplied. Target/dispatch/random/line/move/tick are observed
+required boundaries. 1,536 original traces include 348 target-found events,
+248 return-home events, 441 scheduled retries, 52 line checks and 33 moves,
+plus unsigned timer boundaries, range equalities, negative/large coordinates,
+and mutations from callbacks. Regeneration is byte-identical. Native comparison
+uses real stack poll and dispatch, verifies resulting combat/return-home state,
+full provider order, exact float destination bits and final live fields.
+
+### Required integration / next scope
+
+`MobAiIdleProjection` explicitly supplies missing native template fields:
+AI byte +26 (already represented by template.ai), normal_time DWORD +5c,
+normal_step byte +60, movement-speed byte +68 and obelisk bool +7c. The latter
+is the definition flag, not merely the respawn owner's obelisk flag. Coordinator
+must add/load these missing canonical definition fields from recovered contracts.
+Project chase-path presence from CMob+0xa4 / the live ChaseTrail owner, and zone
+availability from CMob+0x60 / mob.zone; refresh the live projection when providers
+change those owners. No canonical header or loader was edited here.
+
+Bind update_mob_ai_idle in the idle update case and supply actual FindTargetEx,
+serialized CRT random, stack dispatch, map EnableLine and zone MoveMob providers.
+They are required pure virtual methods, never production no-ops. Map line output
+scratch coordinates and MoveMob's boolean result are not consumed by WhileIdle.
+WhileMove 004b5790 and WhileReturnHome 004b5c40 remain the next substantive state
+work. Lua lifecycle and the separate CAIFactory CKFSM remain missing. No SQL
+contract/access changed; coordinator retains final SQL integration/lifecycle.
+The server is still not playable.
+
+Implementation commit: `c20b2e639f4efd5a5cf6f009a65e1287f00f4924`.
