@@ -582,3 +582,98 @@ casting/skill-after-transform remainder stages with recovered skill dispatch
 that invokes this continuation at the original boundaries, then recover normal
 user eligibility/dispatch. Production zone/connection/world wiring remains open.
 The server remains non-playable.
+
+## Scheduler skill phases: live selection, targeting and continuation
+
+Implementation commit: `47c290e`
+(`Recover skill and casting dispatch on live actor scheduler owners`).
+
+Recovered the remaining skill/cast coordinator paths of ps_game.exe
+CUser::UpdateAttack **0048ca50** from the same Ghidra/PDB evidence:
+mode-2 phase-2 dispatch **0048cab9–0048cbc8**, casting dispatch
+**0048ce23–0048cf7e**. New MobCombatSchedulerSkillWorld implements these two
+remainder stages while retaining the existing Actor scheduler entry. Normal-user
+attack remains a mandatory separate provider. No canonical source/header changed.
+
+Actual required action boundaries remain explicit:
+
+| Path | User target | Mob/area target |
+| --- | --- | --- |
+| mode 2, phase 2 | UseSkillUser 0044f110 | UseSkillMob 0044f2d0 |
+| mode 3 | AttackUser skill overload 00451c80 | AttackMob skill overload 00450cf0 |
+
+The module does not implement those skill bodies or duplicate damage/FSM/targeting
+owners. It supplies recovered ordering around them:
+
+- Mode-2 phase 2 arrives after the existing speed/transform prefix; casting
+  arrives after the initial deadline guard only. Neither prefix is repeated.
+- Missing initial selected skill invokes existing stop and reason-10 0502
+  delivery, returns false, and does not run continuation/cancellation. Missing
+  mob/user lookup stops and returns false without an extra failure packet.
+- Selection comes from live CUser +1444 and the +ac4 slot table. Mob lookup and
+  IsBothmob precede a fresh skill read for naming/action. User eligibility
+  00456780 receives the INITIAL selected definition's zero-extended +32 target
+  type, then the skill is reloaded after lookup for the action. A callback can
+  therefore change which skill executes without rerunning the earlier eligibility
+  request. No stale selected skill is cached across those boundaries.
+- For named mobs, actual user name and the current skill's definition name
+  (+3) are copied before action. After action only byte zero of each previous
+  attack context is cleared. Full retained tails survive. Area type 4 invokes
+  the mob overload with a null target and the initial selected skill. Other
+  target kinds perform no skill action, but still follow the continuation tail.
+- Target completion is mob live state 2 or user +142c state 1 after the action.
+  Mode-2 phase 2 skips StatusNextAttack if the callback leaves the actor in mode
+  3. Otherwise it continues. It does NOT recalculate the attack deadline.
+- Casting always invokes the recovered StatusNextAttack, then computes the live
+  speed deadline from the supplied tick. Both accepted paths cancel movement
+  and finally write motion +1448 = 1, overriding callback changes to that byte
+  while retaining callback deadline changes after the deadline write.
+- No normal weapon or normal-range check is added to these skill paths; actual
+  skill bodies retain responsibility for their own application rules.
+
+The selected binding is a non-owning projection (target type and string view),
+not another skill catalog/runtime owner. Existing canonical passive
+SkillDefinition lacks these active-dispatch fields. Production must bind each
+view to its actual retained CSkill and immutable definition, and map action
+providers back to that same runtime owner. Do not use the mob-AI skill catalog
+or guess a user skill from passive-effect IDs. A disappeared selected binding on
+an otherwise required reload is explicitly rejected, not silently treated as a
+successful no-op. This unsupported lifetime transition is not claimed equivalent
+to undefined/invalid original world state. Overlong names that exceed retained
+32-byte context buffers are rejected rather than emulating a buffer overwrite.
+
+Original fixtures: 2,048 COMPLETE UpdateAttack entry-to-return executions over
+mob, user, area and no-action target kinds. Real SetPrevAttack 0048c920,
+StatusNextAttack 0048c970, SendAttackStart 004826f0, StatusAttackStop 00489ed0,
+GetAttackSpeedNow, CancleMove (zero pending move), and cookie returns execute.
+Effects, eligibility/lookup, skill bodies and transport are observed required
+ports. There are 913 skill actions, 1,365 cancellation tails and 278 sends.
+Synthetic callback selection changes, mode/speed changes, self-target restoration
+and cancellation/send mutations audit the live ordering; they are not assertions
+about side effects of the real provider bodies. Native comparisons use the same
+actual Actor/MobRuntime/target-Actor owners and recovered continuation, with
+unexpected normal attack/range/movement services rejected by the test probe.
+
+Validation:
+
+- Original SHA256SUMS verified, exit 0.
+- Generated under work/ before copying; independent oracle regeneration matches
+  byte-for-byte (`cmp`, exit 0).
+- `python3 tools/dev.py build`: exit 0, no compiler warnings;
+  `work/mob-combat-scheduler-skills-build.log`.
+- `python3 tools/dev.py test`: exit 0, **127/127 passed**, 31.47 seconds,
+  including all 2,048 new skill/cast traces and previous normal/next/hit suites;
+  `work/mob-combat-scheduler-skills-test.log`.
+- `git diff --check`: exit 0. Shared wrappers/locks respected; no SQL changes or
+  lifecycle commands. Final isolated SQL integration remains coordinator-owned.
+
+Production contract: instantiate the expanded world to activate these recovered
+stages, supplying real active-skill selection, action and eligibility providers.
+Keep actor, target actor/mob, definition/name storage and action-selected runtime
+skill valid through action and subsequent context cleanup/state read. Queries
+must read current selection rather than a frame-entry snapshot. Continue with
+the same Actor/action owners after nested delivery; no copy-back or inferred
+recovery/reset beyond the original writes. Actual user-skill slot/index binding
+and connection/zone dispatch remain owner-adapter dependencies. Normal PvP
+eligibility and normal AttackUser coordination are the next independent work
+within mob_combat_scheduler. The server remains non-playable.
