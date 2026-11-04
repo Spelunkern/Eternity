@@ -1843,3 +1843,78 @@ assuming host expressions are equivalent. SQL/contracts did not change;
 coordinator owns isolated SQL and full integration. The server is not playable.
 
 Implementation commit: `057dc304dfc0ba1bdb835c3387eb640ce2bc1ea2`.
+
+## Milestone 27 — finite float binary arithmetic with original staging
+
+### Evidence / behavior
+
+`ps_game.exe`, `CKFSM<CMob>::TravelCondition` `00498cf0`: binary add
+`004991d0..00499456`, subtract `0049945b..004996d9`, multiply
+`004996de..0049993d`, divide `00499942..00499b9b`. Full Ghidra export and
+original instructions recover the numeric matrix and temporary storage.
+
+When either operand is float, signed/unsigned integer operands first pass
+through retained float32 coercion. The original performs arithmetic at x87
+precision 53, then stores float32 for a float destination or uses signed
+truncating FISTP dword for int/DWORD destinations. The result retains the second
+operand's type, inactive payloads and VariableID. Int/DWORD-only paths continue
+to use wrapped integer arithmetic and signed division only for int/int.
+
+Added `MobAiFiniteArithmeticServices` on the existing retained map/stack owner.
+For finite float inputs, all four binary operations support mixed types,
+float32 overflow/underflow, signed zero, and masked division-by-zero results.
+Finite-input 0/0 produces original negative quiet NaN bits ffc00000. Int/DWORD
+conversion of invalid/out-of-range floating results gives bits 80000000.
+Arithmetic pushes results without variable writeback and adds no truth count;
+existing comparisons consume them and produce actual transition counts.
+
+This provider requires nearest host rounding for floating arithmetic and a
+53-bit IEEE double implementation. Nonfinite float arithmetic operands,
+including a generated infinity/NaN reused as a later arithmetic operand, remain
+explicit errors pending original propagation recovery. Existing nonfinite
+assignment and comparison support remains available. Float compound updates
+remain errors. Floating status flags/unmasked exception delivery are not claimed
+equivalent; the original fixtures use masked x87 control word 027f.
+
+### Validation
+
+- 3,072 retained sequences / 6,144 full original TravelCondition executions.
+  Covers all nine numeric type pairings and four operations, extrema/high-bit
+  integers, float32 coercion boundaries, fractions, subnormals, signed zero,
+  float overflow, division by signed zero, generated infinities/negative NaN,
+  and masked FISTP indefinite results. Declared-count truncation, local/literal
+  inputs, scratch reuse and repeated calls are included. Comparisons return
+  truth counts 0/1/2/3. Every retained stack/map byte, cursor/top and count matches.
+- Real original map construction, local lookup and destruction execute with
+  all 9,216 allocations freed and poisoned. Maps remain byte-identical because
+  binary arithmetic does not write variables. Only allocation/free/security
+  cookie imports are adapted; no arithmetic/stack/map result port. Undefined
+  operand reads and faulting integer division paths are excluded.
+- Actual configured Evaluate multiplies float HP by 3 and compares the result
+  against float 20: HP 5.25 stays, then HP 10.5 enters the target state through
+  existing transition/entry publication. Narrower providers remain tested.
+- Original x87 control word is restored after every call. Oracle regenerates
+  byte-identically; original SHA256SUMS pass; diff check clean.
+- Build exit 0, no compiler warnings;
+  `work/mob_ai_states_finite_arithmetic-build.log`.
+- `python3 tools/dev.py test`: exit 0, 146/146 tests pass (36.65 s),
+  finite arithmetic test 2.18 s;
+  `work/mob_ai_states_finite_arithmetic-tests.log`.
+
+### Required integration / remaining work
+
+Keep the configured owner's single map and retained stack. Preserve float32
+integer coercion before 53-bit arithmetic and preserve mixed unsigned integer
+division; direct double conversion from integer operands changes results.
+No canonical header or MobRuntime change was needed. Factory-created typed
+entries and valid writeback destinations remain required for supported assignment
+programs; missing target insertion is not claimed equivalent.
+
+Nonfinite arithmetic operand propagation, float compound updates, system function
+invocation/parameter piping, nonnumeric comparisons, full factory/asset decoding
+and actual root world/Lua/scheduling/destruction remain open. Next independent
+block can recover original nonfinite propagation or float compound updates from
+actual execution. SQL/contracts did not change; coordinator owns isolated SQL
+and full integration validation. The server is not playable.
+
+Implementation commit: `50da97b2a99f167afc4837461c038adb64be082f`.
