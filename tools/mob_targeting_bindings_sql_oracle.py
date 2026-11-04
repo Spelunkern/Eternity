@@ -19,7 +19,7 @@ def main():
         subprocess.run(command,cwd=ROOT,check=True)
         print('Execute original loaders over the exact restored numeric rows',flush=True)
         with original.open('w') as output:
-            subprocess.run([str(ROOT/'.local/oracle-env/bin/python'),str(ROOT/'tools/mob_targeting_bindings_oracle.py'),'--sql-rows',str(rows)],cwd=ROOT,stdout=output,check=True)
+            subprocess.run([str(ROOT/'.local/oracle-env/bin/python'),str(ROOT/'tools/mob_targeting_bindings_oracle.py'),'--sql-rows',str(rows),'--full-skills'],cwd=ROOT,stdout=output,check=True)
         print('Compare the complete native binding catalog with original execution',flush=True)
         subprocess.run(command+['work/'+original.name],cwd=ROOT,check=True)
 

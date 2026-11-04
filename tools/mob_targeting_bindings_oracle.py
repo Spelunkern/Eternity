@@ -9,7 +9,7 @@ from unicorn.x86_const import UC_X86_REG_EAX,UC_X86_REG_ECX,UC_X86_REG_EBX,UC_X8
 from original_oracle import load_game
 
 
-def synthetic_scenarios():
+def synthetic_scenarios(full=False):
     rng=random.Random(0x4c1720)
     for case in range(256):
         skillmax=8;mobmax=4;skills=[];mobs=[]
@@ -23,6 +23,16 @@ def synthetic_scenarios():
                 c=45+j*8;row[c:c+8]=[(0,1,2,3,4,5,6,7,8,10,65535)[(case+i+j)%11],rng.choice((0,-1,1,2147483647)),rng.choice((0,60,61,255)),rng.randrange(65536),rng.randrange(65536),(0,1,2,4,5,255)[(case+i+j)%6],rng.choice((0,1,15,16,255)),(0,1,2,128,255,None)[(case//5+i+j)%6]]
             mobs.append(row)
         if case%5==0:mobs.append(mobs[0].copy());mobs[-1][44]=7
+        if full:
+            names=[b'',b'A',b'Name with spaces',b'x'*29,'Habilidad \u00f1'.encode(),b'A\0tail']
+            for i,row in enumerate(skills):
+                for j in range(1,82):
+                    if j not in (2,16,17,37):row[j]=rng.randrange(256)
+                row[1]=(0,1,3,100,255)[(case+i)%5];row[2]=names[(case+i)%len(names)]
+                for j in (37,47,58,59,60,65,67,69,73,74,75):row[j]=(0,1,32768,65535,None)[(case+i+j)%5]
+                row[79]=(0,1,2,255)[(case+i)%4]
+            for i,row in enumerate(mobs):
+                row[1]=names[(case+i)%len(names)];row[7]=(1001,None,2001,None)[i%4]
         yield case,mobmax,skillmax,skills,mobs
 
 
@@ -33,7 +43,7 @@ def sql_scenario(path):
         parts=line.split()
         if parts[0]=='S':header=list(map(int,parts[1:]));continue
         if parts[0] in ('K','M'):
-            (skills if parts[0]=='K' else mobs).append([None if x=='N' else int(x) for x in parts[1:]])
+            (skills if parts[0]=='K' else mobs).append([None if x=='N' else bytes.fromhex(x[1:]) if x.startswith('H') else int(x) for x in parts[1:]])
         elif parts[0]!='E':raise RuntimeError('Unexpected SQL snapshot operation')
     if header is None or len(header)!=3:raise RuntimeError('Missing SQL MaxID snapshot')
     if any(row[c] is not None and (row[c]&65535)==header[2]+1 for row in mobs for c in (45,53,61)):
@@ -44,8 +54,9 @@ def sql_scenario(path):
 def main():
     parser=argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--sql-rows',type=Path,help='Ignored positional snapshot from read-only native SQL test')
+    parser.add_argument('--full-skills',action='store_true',help='Extended skill data, names and complete normalized record comparisons')
     options=parser.parse_args()
-    scenarios=sql_scenario(options.sql_rows) if options.sql_rows else synthetic_scenarios()
+    scenarios=sql_scenario(options.sql_rows) if options.sql_rows else synthetic_scenarios(options.full_skills)
     cpu,digest=load_game();stack=0x20000000;game=0x30000000;database=0x32000000;mobdata=0x33000000;skilldata=0x34000000;mob=0x35000000;stop=0x10000000
     for at in (stack,database,mob,stop):cpu.mem_map(at,0x10000)
     for at in (mobdata,skilldata):cpu.mem_map(at,0x200000)
@@ -69,7 +80,9 @@ def main():
                 if key in calls and calls[key]!=shape:raise RuntimeError('SQL binding shape changed')
                 calls[key]=shape
             if v is not None:
-                if kind==1:c.mem_write(dest,b'Binding\0')
+                if kind==1:
+                    name=v if isinstance(v,bytes) else b'Binding'
+                    c.mem_write(dest,name[:n-1]+b'\0')
                 else:
                     width={4:4,5:2,-6:1}[kind];c.mem_write(dest,(v&((1<<(width*8))-1)).to_bytes(width,'little'))
             c.reg_write(UC_X86_REG_EAX,0)
@@ -91,8 +104,8 @@ def main():
     for case,mobmax,skillmax,skills,mobs in scenarios:
         if (mobmax+1)*268>0x200000 or (skillmax+1)*160>0x200000:raise RuntimeError('Original oracle allocation mapping exceeded')
         print('S',case,mobmax,skillmax)
-        for row in skills:print('K',*('N' if v is None else v for v in row))
-        for row in mobs:print('M',*('N' if v is None else v for v in row))
+        for row in skills:print('K',*('N' if v is None else 'H'+v.hex() if isinstance(v,bytes) else v for v in row))
+        for row in mobs:print('M',*('N' if v is None else 'H'+v.hex() if isinstance(v,bytes) else v for v in row))
         state.update(service='skill',max=skillmax,rows=skills,query=-1,row=-1)
         if not call(0x4c0be0,((UC_X86_REG_EBX,game),)):raise RuntimeError('Original skill loader failed')
         if get(game+0xa8181c)!=skillmax+1 or get(game+0xa81820)!=skilldata:raise RuntimeError('Skill allocation binding differs')
@@ -112,6 +125,13 @@ def main():
             before=bytes(cpu.mem_read(p,268));cpu.mem_write(mob,bytes(3380));put(mob+0xa8,p);put(mob+0x1b8,111,222,333)
             call(0x490040,((UC_X86_REG_ESI,mob),),(i,0))
             if get(mob+0xa8)!=p or bytes(cpu.mem_read(p,268))!=before or any(get(mob+0x1b8+k*4) for k in range(3)):raise RuntimeError('Original Init changed definition bindings/timer reset differs')
+        if options.full_skills:
+            for i in range(skillmax+1):print('T',i,bytes(cpu.mem_read(skilldata+i*160,160)).hex())
+            for i in range(mobmax+1):
+                raw=bytearray(cpu.mem_read(mobdata+i*268,268))
+                for j in range(3):
+                    at=144+j*20;pointer=struct.unpack_from('<I',raw,at)[0];struct.pack_into('<I',raw,at,(pointer-skilldata)//160 if pointer else 0)
+                print('U',i,raw.hex())
         print('I',checked);print('E')
     for (service,col),shape in sorted(calls.items()):print('# SQL',service,col,*shape)
 if __name__=='__main__':main()
