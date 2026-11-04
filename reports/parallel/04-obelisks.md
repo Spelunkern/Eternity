@@ -1165,3 +1165,53 @@ lifecycle routing still needs coordinator-owned assembly. Raw allocation/
 preparation remains worker03's exclusive canonical task. Root-world/KC/calendar/
 transport providers remain open. No canonical files or SQL changed; final
 isolated SQL checks remain coordinator-owned. The server is not playable.
+
+## Initial portal persistence list — fixed country and live chunk reads
+
+Implementation commit: `528926fc31e9be32313b5e0167a8fa28e9f25ea2`.
+
+`publish_obelisk_portal_database_list` recovers **ps_game.exe,
+CMap::SendDBPortalLinkList 0042b460**. It sends opcode0206 with a BYTE record
+count and nine bytes per row: live DWORD base ID, **constant country byte3**
+(**0042b497**) and zero DWORD timestamp. This must not reuse the individual
+portal change serializer, whose country is live. No target-country/portal/map
+zone/open-flag read or guard belongs to the initial list function.
+
+Rows are sent in groups of100 (903-byte packets), followed by a nonempty partial
+packet; empty input sends nothing and an exact100 multiple has no empty tail.
+Base IDs after a full-chunk transport callback are read live. Caller/provider
+must preserve the table/storage and count while publishing; replacement of the
+original global table or live count changes are outside this stable-span API.
+The mandatory DB service remains supplied by ObeliskRuntimePortalWorld.
+
+96 original execution fixtures compare168 packets and11,768 records. Counts
+cycle0/1/2/12/99/100/101/199/200/201/255/301; alternate blocks mutate all later
+base IDs during the first DB callback. Original target pointers include null,
+0xdeadbeef and0xffffffff without faults, proving the source never dereferences
+them. Native cases use absent targets and invalid country values and reject
+unexpected map/world service calls. Large table cases stress this serializer
+only: they do not remove UpdatePortalLink's separate twelve-flag safety bound.
+Only DB transport is observed; the complete original serializer/loop executes.
+
+Validation:
+
+- `python3 tools/dev.py build`: exit0, no warnings
+  (`work/obelisk-portal-database-build.log`).
+- `python3 tools/dev.py test`: exit0, **139/139 passed**, 34.77 seconds
+  (`work/obelisk-portal-database-tests.log`).
+- Independent original regeneration/`cmp`: exit0, byte-identical96 cases
+  (`work/obelisk-runtime-portal-database-repeat.tsv`).
+- Locked focused Ghidra export: exit0 (`work/obelisk-portal-database-ghidra.log`).
+- All original EXE/PDB SHA256SUMS passed
+  (`work/obelisk-portal-database-hashes.log`); `git diff --check`: clean.
+
+Integration: **CWorld::SendDBObeliskList 00413b90** calls the portal list first,
+then each map's ordinary obelisk list. Preserve this order when connecting the
+two recovered publishers to the real DB connection. Do not normalize initial
+portal country3 to current country or suppress it based on map zone presence.
+No canonical interface change is needed. Worker03 now owns the concrete actual
+pool/init/zone ObeliskRuntimeWorld adapter assignment, so that work was not
+duplicated. Mutable retained ServerMaps portal-country/lifecycle routing and
+root-world/KC/calendar/transport assembly remain dependencies from prior blocks.
+Canonical files and SQL were unchanged; final isolated SQL validation remains
+coordinator-owned. The server is not playable.
