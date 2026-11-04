@@ -609,3 +609,53 @@ Reviewed 5c91dc3/ee9f0cd applied-skill admission/refresh/replacement/debuff on r
 Session28976 exited0: build,185/185 tests(41.95s), complete isolated SQL and read-only restored SQL/original/native targeting comparison. Source e41707b. Logs .local/fifth-batch-{build,tests,sql,bindings-sql}.log. Binding result:355 skill rows/356 slots,2747 mob rows/slots,2746 nonzero definitions,1871 links including20 disabled; all matched original execution. Freeze released; publish verified batch before new edits.
 
 Reviewed/queued 87abafd/a99fd79 live reload:432 reported original traces,126 tests and focused ASAN/UBSAN. Typed projections preserve existing pointers; actual owner needs mutable allocated-slot APIs/full normalized bytes under quiescence, real R2 SQL/pool/log providers. Do not const_cast const owner or replace arrays; do not clear existing skill links merely because a skill reload changes effect. Exact snapshot retained. New reload and other pending queue entries are not covered by this completed batch. Production owner/connection/inventory/UID/Lua/world adapters remain incomplete; server objective open.
+
+## Worker08 checkpoint852331dd and stable full mob-skill assignment
+
+Reviewed/queued f2f9c68 documentation-only checkpoint; no new test claims. Earlier fifth freeze has completed and publication23a66ca validated185 tests/full SQL/restored bindings. Explicit expanded assignment now authorizes worker08 to extend its existing mob_targeting_bindings owner in its worktree: full name/keep/ability/time-damage fields, stable per-slot compatible views, owner-controlled mutable allocated slots and complete normalized records where evidenced. No second user-skill map; shared mobs.hpp/skills.hpp remain coordinator-owned. Preserve lifetime/reload pointer identity, compare full original loader and restored SQL under shared lock. This resolves a concrete applied-skills catalog dependency rather than repeating completed reload tests. Canonical Actor retained inventory/shared UID/visitors still pending.
+
+## Reviewed integration queue: worker01 8008757b
+
+Reviewed47c290e/a56b483 skill/casting dispatch on existing Actor: initial target eligibility then live selection reload, context lifetime, mode3 continuation gate and casting-only deadline ordering. Reported2048 original comparisons/127 tests. Exact snapshot/commits queued. Bind actual retained active user CSkill/definition views; mob-AI or passive skill maps do not substitute. Real skill action bodies/world providers remain required; disappeared live selection fails explicitly. Worker continues normal PvP within scheduler scope. Latest central validated publication23a66ca(185tests/fullSQL/restored bindings); no pipeline active.
+
+## Reviewed integration queue: worker04 3b51c632
+
+Reviewed df1a39c/96e6ddb forced obelisk removal via actual ZoneMobs::remove_by_id/MobPool and MobRemovalOwners. Reported256 retained original sequences,768 recycling callbacks,512 reuses and127 tests. Exact snapshot/commits queued. Bind stable primary-map records/source pointers and linked owners; world callback delegates without extra decrement/recycle. Combat Death retains separate country/reset semantics. One-past original index rejected explicitly. Raw allocation/prepare split remains separate startup dependency; production configuration/world/transport remains open. Last validated publication23a66ca; no central pipeline active.
+
+## Reviewed integration queue: worker09 c675b3ac
+
+Reviewed55a91cd/029bf89 typed retained local variables and configured ClearVariable/ResetFSM/onResetUser composition. Reported832 original comparisons/128 tests. Exact snapshot/commits queued. Constructor preserves type/text, clear follows current type and duplicate IDs; missing original map type/text are uninitialized, so factory-populated locals required and missing entries rejected explicitly. Retain variables with configured FSM separate from fixed stack. Factory/catalog/interpreter/world scheduling remain open. Latest validated publication23a66ca; no pipeline active.
+
+## Reviewed integration queue: worker05 d5b54a00
+
+Reviewedf472fc0/0c9e43f party registry creation/lookup/removal/shutdown and recursive membership composition. Reported64 retained lifetimes/1248 original calls,129 tests on clean retry,ASAN/UBSAN. Prior world-network close timeout failed128/129, cause unproven; not counted as success. Exact snapshot/commits queued. Critical: unregister only erases current ID key; does not delete/reset/recycle, even for duplicate-ID mapping. Borrowed party must survive recursive callbacks. Shutdown frees only available chain; producer returning parties remains unrecovered, no guessed recycling. Actual lock/allocation/connection/guild/world owners remain required. Latest central publication23a66ca; no pipeline active.
+
+## Reviewed integration queue: worker01 b284299f
+
+Reviewed942357c/f9a49bf normal PvP scheduler on actual Actor/same_team: directional team check, captured lookup target, range-before-attack and live post-action state/deadline tail. Reported2048 original comparisons/128 tests. Exact snapshot/commits queued. Retain source/target across nested callbacks; real lookup bound to zone/instance, range/attack and connection providers required. Worker continues GetAttackSpeed0048a460. Last validated publication23a66ca; pending queue not yet centrally validated.
+
+## Sixth reviewed batch locally integrated — source freeze
+
+Integrated pending milestones through b19f469ae285bda44b0e0526a90f1b7c2409601a, including normal PvP scheduler, stable reload, applied-skill admission, real drop/obelisk owner bridges, configured FSM variables and party registry. CMake append conflicts preserved both module/test blocks. Latest published validated source remains23a66ca.
+
+NEW SOURCE FREEZE: native build/test/full isolated SQL and restored binding comparison running in .local/sixth-batch-{build,tests,sql,bindings-sql}.log. Do not change canonical sources/CMake or cherry-pick while active. Review new handoffs into pending queue. Publish only after all checks pass. After validation prioritize Actor retained inventory/shared UID and real data/world owner adapters; disconnected reconstruction alone does not achieve original-client playability.
+
+## Reviewed integration queue: worker02 301c06d5
+
+Reviewed940a1f9/c4ef600 selective MobItemsR2 reload/in-place grade/rate counter updates and live slot access. Reported512 original cases,129 worker tests,5 read-only SQL requests/45rows. Exact snapshot/commits queued during freeze. Important limit: buffered SqlServer query errors before row publication; original mid-fetch partial publication needs canonical typed streaming Row/End/Error cursor. No streaming equivalence claimed. Retained definitions must not resize; UID/death/world wiring remains pending. Current central build passed and194-test suite observed through192 passing; session34814 SQL/bindings checks pending. No source edits while active.
+
+## Worker02 checkpoint73fe2c08 — exclusive shared UID owner task
+
+Reviewed/queued5652e56 documentation-only dependency checkpoint, no new execution claims. Explicitly assigned existing ItemIds correction to original shared GenID under mob_drops_uid. Worker02 exclusively owns item_ids.hpp/cpp and their tests in its worktree until delivery; coordinator/others must not concurrently edit those paths. No second quest/drop generator. Recover original baseline/counter/DWORD deadline/local-calendar/server semantics and migrate existing callers with complete original/interleaved tests. Main source freeze remains active; no main edits authorized. Central194/194 tests passed(54.82s); session34814 fullSQL/restored bindings running. Actor retained inventory/world visitors remain coordinator priorities after validation.
+
+## Reviewed worker09 f9e416e7; sixth SQL retry
+
+Reviewed5ff40b2/1f6b02d SetFSM local admission phase only:512 reported original traces/129 tests after fixing conditional type4 text copy. First duplicate/existing value retained; full SetFSM/interpreter remains pending. Exact snapshot/commits queued.
+
+Sixth pipeline34814 FAILED isolated creation-network integration: Timed out reading login packets, exit1. Build and194/194 tests passed54.82s; SQL not passed and bindings not reached. Original failure .local/sixth-batch-sql.log preserved. Verified failed disposable catalog Eternity_Test_Creation_21a3d0f57460 absent (sys.databases count0); cleanup completed. Complete SQL retry plus binding check running session57061, logs .local/sixth-batch-sql-retry.log and .local/sixth-batch-bindings-sql.log. Source freeze remains active; no publication until successful final results. Do not repeat build/tests without new changes/failure evidence.
+
+## Sixth batch validated after SQL retry —194 tests
+
+Build and194/194 tests passed54.82s for sourceb19f469. Initial session34814 SQL failed login-packet timeout; failed disposable catalog verified absent. Complete retry session57061 exited0: full isolated SQL including final guild disposable checks AND restored targeting binding comparison. Logs .local/sixth-batch-sql-retry.log/.local/sixth-batch-bindings-sql.log; original failure retained .local/sixth-batch-sql.log. Bindings355 skills/2746 definitions/1871 links(20disabled) matched original. Freeze released; publish this verified batch, retain failure history.
+
+Reviewed/queued7ecf7f3/821f7f1 evidence-only damage/reentrant replacement:256 reported original flows/128 tests after fixing initial previous-name test setup. Production code unchanged; detached selected node survives damage/death/view before outer admission. Exact snapshot/commits queued and NOT covered by completed batch. Worker03 continues selective vision-fix cleanup in existing scope. Canonical inventory/visitor/Lua adapters remain open; worker02 exclusively owns ItemIds correction on its branch. Objective not complete.
