@@ -38,7 +38,6 @@ struct World final:MobCombatSchedulerWorld,ActorActionWorld {
         out<<static_cast<std::uint32_t>(a.mode)<<','<<static_cast<std::uint32_t>(a.recovery)<<','<<static_cast<std::uint32_t>(s.current_target_type)<<','<<s.current_target<<','<<a.previous_tick<<','<<a.next_tick<<','<<a.resume_tick<<','<<static_cast<unsigned>(a.motion)<<','<<static_cast<std::uint32_t>(s.skills.equipment.attack_speed)<<','<<bindings.weapon_present<<','<<static_cast<std::uint32_t>(mob.status)<<','<<hex(mob.previous_attack_user)<<','<<hex(mob.previous_attack_skill);return out.str();
     }
     void event(char tag,const std::string& arg="") {if(!events.empty())events+='|';events+=std::string(1,tag)+':'+snapshot();if(!arg.empty())events+=','+arg;}
-    std::int32_t attack_speed(Actor&) override{event('Q');return blocked?255:4;}
     void remove_mob_transform(Actor& a) override{event('T');if(mutation&1)bindings.weapon_present=false;if(mutation&2)a.attack_state().next_tick=3;}
     MobRuntime* enable_mob(Actor&,std::uint32_t id) override{event('E',std::to_string(id));return found?&mob:nullptr;}
     bool in_range(Actor&,MobRuntime&) override{event('R');return range!=0;}
@@ -98,8 +97,13 @@ int main(int argc,char**argv) {
             Actor actor(42,status,{}, {},scene,rules);scene.calls=0;actor.appearance().identity.name="Hero";
             auto& attack=actor.attack_state();attack.mode=std::bit_cast<std::int32_t>(mode);attack.recovery=std::bit_cast<std::int32_t>(recovery);attack.previous_tick=55;attack.next_tick=next;attack.resume_tick=resume;attack.motion=0xa5;
             MobRuntime mob;mob.previous_attack_user.fill(0xa5);mob.previous_attack_skill.fill(0x5a);MobCombatSchedulerBindings bindings{weapon!=0};World world(actor,mob,bindings);
-            world.blocked=blocked;world.found=found;world.range=range;world.both=both;world.post=post;world.mutation=mutation;
-            const bool actual=mob_combat_scheduler(actor,bindings,now,world);if(events=="-")events.clear();
+            actor.status().action_block_b=static_cast<std::int32_t>(blocked);world.blocked=blocked;world.found=found;world.range=range;world.both=both;world.post=post;world.mutation=mutation;
+            const bool actual=mob_combat_scheduler(actor,bindings,now,world);if(events!="-") {
+                std::istringstream trace(events);std::string event,filtered;
+                while(std::getline(trace,event,'|'))if(!event.starts_with("Q:")){if(!filtered.empty())filtered+='|';filtered+=event;}
+                events=filtered;
+            }
+            if(events=="-")events.clear();
             if(actual!=static_cast<bool>(result)||world.snapshot()!=final||world.events!=events||scene.calls!=0)
                 throw std::runtime_error("scheduler mismatch "+std::to_string(count)+" actual "+world.snapshot()+" expected "+final+"\nactual events "+world.events+"\nexpected events "+events);
             ++count;

@@ -35,7 +35,6 @@ struct World final:MobCombatSchedulerUserWorld,ActorActionWorld {
         out<<static_cast<std::uint32_t>(a.mode)<<','<<static_cast<std::uint32_t>(a.recovery)<<','<<static_cast<std::uint32_t>(s.current_target_type)<<','<<s.current_target<<','<<a.previous_tick<<','<<a.next_tick<<','<<a.resume_tick<<','<<static_cast<unsigned>(a.motion)<<','<<static_cast<std::uint32_t>(s.skills.equipment.attack_speed)<<','<<peer.id()<<','<<static_cast<std::uint32_t>(peer.attack_state().mode)<<','<<peer.appearance().visible<<','<<peer.appearance().attackable<<','<<static_cast<unsigned>(peer.status().shape);return out.str();
     }
     void event(char tag,const std::string& extra="") const {if(!events.empty())events+='|';events+=std::string(1,tag)+':'+snapshot();if(!extra.empty())events+=','+extra;}
-    std::int32_t attack_speed(Actor&) override{event('Q');return 4;}
     void remove_mob_transform(Actor&) override{event('T');}
     Actor* find_attack_user(Actor&,std::uint32_t id) override {
         event('F',std::to_string(id));if(mutation&1){actor.status().current_target=42;actor.status().skills.equipment.attack_speed=9;}
@@ -80,7 +79,12 @@ int main(int argc,char**argv) {
             else if(relation==2||relation==4){actor.relations().guild_id=1;peer.relations().guild_id=2;actor.relations().opposing_guild_id=2;peer.relations().opposing_guild_id=relation==2?1:9;actor.relations().guild_duel_ready=1;peer.relations().guild_duel_ready=1;}
             else if(relation==3){peer.relations().duel_state=4;peer.relations().duel_opponent=42;}
             World world(actor,peer);world.found=found;world.range=range;world.mutation=mutation;world.team_mode=static_cast<std::int32_t>(map_mode);
-            MobCombatSchedulerBindings bindings{true};const bool actual=mob_combat_scheduler(actor,bindings,now,world);if(events=="-")events.clear();
+            MobCombatSchedulerBindings bindings{true};const bool actual=mob_combat_scheduler(actor,bindings,now,world);if(events!="-") {
+                std::istringstream trace(events);std::string event,filtered;
+                while(std::getline(trace,event,'|'))if(!event.starts_with("Q:")){if(!filtered.empty())filtered+='|';filtered+=event;}
+                events=filtered;
+            }
+            if(events=="-")events.clear();
             if(actual!=static_cast<bool>(result)||world.snapshot()!=final||world.events!=events||scene.calls!=0)
                 throw std::runtime_error("normal-user scheduler mismatch "+std::to_string(count)+" actual "+world.snapshot()+" expected "+final+"\nactual events "+world.events+"\nexpected events "+events);
             ++count;

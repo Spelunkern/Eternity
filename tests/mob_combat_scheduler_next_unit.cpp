@@ -43,7 +43,6 @@ struct World final:MobCombatSchedulerWorld {
         if(mutation&16){a.mode=3;s.current_target_type=7;event('N',actor);mob_combat_scheduler_next(actor,true,*this);event('n',actor);}
     }
     void unused() const {if(!polling)throw std::runtime_error("StatusNextAttack invoked an unexpected world service");}
-    std::int32_t attack_speed(Actor&) override{unused();return 4;}
     void remove_mob_transform(Actor&) override{unused();}
     MobRuntime* enable_mob(Actor&,std::uint32_t id) override{unused();if(id!=77)throw std::runtime_error("restored target not used");return &mob;}
     bool in_range(Actor&,MobRuntime&) override{unused();return true;}

@@ -7,7 +7,6 @@ struct MobCombatSchedulerBindings {bool weapon_present=false;};
 class MobCombatSchedulerWorld {
 public:
     virtual ~MobCombatSchedulerWorld()=default;
-    virtual std::int32_t attack_speed(Actor&)=0; // GetAttackSpeed 0048a460
     virtual void remove_mob_transform(Actor&)=0; // RemApplySkillToMOB 00489560
     virtual MobRuntime* enable_mob(Actor&,std::uint32_t id)=0; // 0044cd80
     virtual bool in_range(Actor&,MobRuntime&)=0; // 0044c030, argument 0

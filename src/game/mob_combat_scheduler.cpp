@@ -23,7 +23,7 @@ bool mob_combat_scheduler(Actor& actor,MobCombatSchedulerBindings& bindings,std:
     if(attack.resume_tick>now)return false; // unsigned absolute comparison
     if(attack.mode==3)return world.remainder(actor,now,MobCombatSchedulerRemainder::casting);
     if(attack.mode!=2)return true;
-    if(world.attack_speed(actor)==255){mob_combat_stop(actor);failure(actor,10,world);return false;}
+    if(eternity::game::attack_speed(actor.status())==255){mob_combat_stop(actor);failure(actor,10,world);return false;}
     world.remove_mob_transform(actor);
     if(attack.next_tick==2)return world.remainder(actor,now,MobCombatSchedulerRemainder::skill_after_transform);
     if(attack.next_tick!=1)return true;

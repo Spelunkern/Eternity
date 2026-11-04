@@ -38,7 +38,6 @@ struct World final:MobCombatSchedulerSkillWorld,ActorActionWorld {
     }
     void event(char tag,const std::string& extra=""){if(!events.empty())events+='|';events+=std::string(1,tag)+':'+snapshot();if(!extra.empty())events+=','+extra;}
     const MobCombatSchedulerSkillBinding* selected_skill(const Actor&) const override{return present?&skills[index]:nullptr;}
-    std::int32_t attack_speed(Actor&) override{event('Q');return 4;}
     void remove_mob_transform(Actor&) override{event('T');}
     MobRuntime* enable_mob(Actor&,std::uint32_t id) override{event('E',std::to_string(id));if(mutation&1)index=1;return found?&mob:nullptr;}
     Actor* enable_skill_user(Actor&,std::uint32_t id,std::uint16_t target) override{event('e',std::to_string(id)+','+std::to_string(target));if(mutation&1)index=1;return found?&peer:nullptr;}
@@ -76,7 +75,12 @@ int main(int argc,char**argv) {
             auto& attack=actor.attack_state();attack.mode=static_cast<std::int32_t>(mode);attack.recovery=std::bit_cast<std::int32_t>(recovery);attack.previous_tick=previous;attack.next_tick=2;attack.resume_tick=resume;attack.motion=0xa5;
             actor.actions().previous_target_type=2;actor.actions().previous_target=77;
             MobRuntime mob;mob.previous_attack_user.fill(0xa5);mob.previous_attack_skill.fill(0x5a);World world(actor,peer,mob);world.present=present;world.found=found;world.both=both;world.post_mob=post_mob;world.post_user=post_user;world.mutation=mutation;
-            MobCombatSchedulerBindings bindings;const bool actual=mob_combat_scheduler(actor,bindings,now,world);if(events=="-")events.clear();
+            MobCombatSchedulerBindings bindings;const bool actual=mob_combat_scheduler(actor,bindings,now,world);if(events!="-") {
+                std::istringstream trace(events);std::string event,filtered;
+                while(std::getline(trace,event,'|'))if(!event.starts_with("Q:")){if(!filtered.empty())filtered+='|';filtered+=event;}
+                events=filtered;
+            }
+            if(events=="-")events.clear();
             if(actual!=static_cast<bool>(result)||world.snapshot()!=final||world.events!=events||scene.calls!=0)
                 throw std::runtime_error("skill scheduler mismatch "+std::to_string(count)+" actual "+world.snapshot()+" expected "+final+"\nactual events "+world.events+"\nexpected events "+events);
             ++count;
