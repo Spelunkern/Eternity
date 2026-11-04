@@ -1301,3 +1301,13 @@ SQL integration have not run. Its focused runner is waiting on a build slot.
 Keep unintegrated until validation and review of actual action/shop/Actor/zone
 bindings. Main serialized-transition validation session 69227 also remains live
 and waiting; do not restart while its handle is active.
+
+Independent 04 full suite failed `world-network-unit`: peer observed replacement
+socket EOF while Registry still contained the login. Coordinator found
+`LoginServer::Connection::close` closed the socket before release_login. Main
+55c1644 moves guarded release before the socket shutdown; session identity and
+location checks remain in Registry. No validation claim yet. Cancelled main
+session 69227 while it was still waiting on the build lock (no container was
+started) because source changed. Replacement session 53983 tests world-network,
+world-application (including pipelined 0201), then builds and tests relevant
+network/combat targets plus isolated SQL. Preserve original failing worker log.
