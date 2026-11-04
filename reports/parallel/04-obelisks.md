@@ -858,3 +858,65 @@ The loader's top-KC thresholds and retained counters are explicit state inputs,
 not fabricated defaults. Full text loading, portal binding, raw pool preparation
 and world assembly remain open. SQL is unchanged; final isolated SQL validation
 remains coordinator-owned. The server is not playable.
+
+## Ordinary obelisk text parser and materialization composition
+
+Implementation commit: `3c576f5a4575d0a8219752df77f38d875477d1c0`.
+
+`parse_obelisk_runtime_configuration` supplies the missing ordinary-obelisk
+parser from **ps_game.exe, CMap::LoadObelisk 00427300**. Its output feeds the
+existing stable configuration binder. It recovers case-insensitive zone/
+obelisk/mob labels, mode changes at Portal/BothMob headers, delimiter/numeric
+rules, wrapped base IDs, partial writes into uncommitted record/group slots,
+and commit only after the final required token. Portal and linked-group
+contents remain separate providers; this parser only observes their mode gates.
+Fixed original capacities (64 zones/records/groups) have explicit unsupported
+bounds errors instead of reproducing memory corruption.
+
+Windows text input semantics include CRLF translation, Ctrl-Z termination,
+8191-byte chunks and embedded NUL handling. The original loop ignores failed
+fgets and reexamines the tokenized last buffer (**00427ed4–00427eef**). Most
+records cannot recommit because only their first token remains, but a final
+newline-terminated zone header needs only that token: it creates a second empty
+zone. A header without the final newline creates one. Native behavior retains
+this distinction. Empty-file fixtures explicitly zero the original stack buffer;
+arbitrary uninitialized original stack contents are not an equivalence claim.
+Numeric fixtures cover signed/wrapped integers, decimal D exponents and original
+non-finite/hex-prefix handling rather than accepting host atof extensions.
+
+45 original parser fixtures stop at **00427eef**, before materialization mutates
+temporary country fields. Original strtok/atoi/atof execute; file/CRT/TLS/locks/
+cookie and exact temporary-array resets remain observed boundaries. Cases cover
+comments, mixed case/whitespace, repeated zones, section switches, truncated
+parent/group retries, pending group retention, unknown lines, EOF variants and
+64 groups. A separate native overflow check rejects a65th group. A second test
+composes text->native parser->actual native binder against the prior64 complete
+original loader/materialization scenarios, retaining shared-definition marking
+and stable source-pointer checks. No source-template or world owner is duplicated.
+
+Validation:
+
+- Final `python3 tools/dev.py build`: exit0, no warnings
+  (`work/obelisk-config-parser-final-build.log`). Shared-slot waits respected.
+- Final `python3 tools/dev.py test`: exit0, **134/134 passed**, 35.50 seconds
+  (`work/obelisk-config-parser-final-tests.log`). The earlier43-case iteration
+  also passed134/134 in40.89 seconds; final fixture expansion was validated anew.
+- Independent original parser regeneration/`cmp`: exit0, byte-identical45 cases
+  (`work/obelisk-runtime-config-parser-final-repeat.tsv`). Previous complete
+  configuration fixture regeneration still matches byte-for-byte
+  (`work/obelisk-runtime-config-parser-regression.tsv`).
+- All original EXE/PDB SHA256SUMS passed
+  (`work/obelisk-config-parser-final-hashes.log`); `git diff --check`: clean.
+- Existing focused Ghidra LoadObelisk export was reused; no SQL behavior changed
+  or SQL lifecycle action ran.
+
+Integration: feed complete Obelisk.ini bytes to this parser, then pass its result
+to `ObeliskRuntimeConfiguration::bind` with actual map sizes, retained templates,
+shared bObelisk mutation provider and original KC/counter state. Keep the owner
+alive through startup, respawn, death, removal and portal callbacks. Remaining
+configuration work is portal-link parsing/binding and recovered asset-wide
+comparison, plus production root-world assembly. The required shared definition
+flag setter and raw pool preparation changes from prior blocks remain canonical
+owner dependencies; worker03 now exclusively owns mobs/mob_pool and was not
+edited. SQL is unchanged; final isolated SQL validation remains coordinator-owned.
+The server is not playable.
