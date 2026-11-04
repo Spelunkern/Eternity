@@ -2053,3 +2053,11 @@ unconsumed, then mutates/saves/reloads the replica. Session 21247 runs full buil
 then isolated SQL; results pending. This branch has the earlier bool roster fields,
 not independent 01's later raw-field draft; no production WorldApplication,
 ActorLoad or live client path is wired. Dashboard updated.
+
+Combined protocol session 96503 has passed system unit and system TCP tests on
+`c14ea5c`; its handoff regression remains pending. The pre-auth NProtect and
+original FIFO threshold limitations still apply. Combined entry session 69040
+passed the 2048-case roster test and completed its full 689-step build on
+`6e57801`; isolated SQL remains queued/running. Main session 39827's SQL log
+has passed the selected persistence mutation/save/reload fixture, but the full
+integration and cleanup have not yet completed; do not report exit success yet.
