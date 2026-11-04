@@ -1327,3 +1327,9 @@ boundaries are present, with the documented restriction to 53-bit precision.
 Native worker evidence remains 306/306 and isolated SQL; root binding and
 AttackDamage are absent. 06 was assigned AttackDamage 0044d540. Main network
 application test session 53983 remains live, waiting for the shared build slot.
+
+Coordinator independently executed 06's original FP oracle: AttackSuccess
+returns different results for controls 027f vs 037f and for 027f vs 067f, as
+reported. The CRT default-precision helper behavior also reproduced, but that
+alone does not establish each real combat thread's control word. Requested
+worker 06 trace actual combat executor initialization before production binding.
