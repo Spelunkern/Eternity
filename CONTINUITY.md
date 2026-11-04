@@ -1234,3 +1234,11 @@ behavior and revalidate. Its frame ordering remains under review. Worker 05
 received a bounded assignment to recover the actual ZoneMobs shared-cursor
 iteration with canonical owner/lifetime semantics; no integration claim yet.
 Central validation session 99411 remains live and waiting for a build lock.
+
+Independent 03's in-progress original packet-gate fixture indicates location 3
+accepts opcode 0201 for world entry. Current `WorldProtocol::receive` drops the
+non-01 opcode family while in character selection, so the connection must move
+its protocol/cipher state at the original transition before that packet arrives.
+Coordinator requested exact transition and crypto evidence plus a TCP test from
+03. The fixture and adapter remain uncommitted/unvalidated; do not infer entry
+works from this gate alone. Session 99411 remains live waiting on build locks.
