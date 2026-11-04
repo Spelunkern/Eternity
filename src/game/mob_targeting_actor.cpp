@@ -5,6 +5,9 @@
 #include <limits>
 #include <stdexcept>
 namespace eternity::game {
+std::int32_t MobTargetingActorModeLife::life_status(const Actor& a) const {return a.attack_state().mode;}
+namespace {const MobTargetingActorModeLife shared_mode_projection;}
+MobTargetingActorUser::MobTargetingActorUser(const Actor& a):MobTargetingActorUser(a,shared_mode_projection) {}
 MobTargetingActorUser::MobTargetingActorUser(const Actor& a,const MobTargetingActorLife& l):actor_(a),life_(l) {}
 MobTargetingUser MobTargetingActorUser::target() const {return {actor_.id(),life_.life_status(actor_)};}
 MobTargetingHelpUser MobTargetingActorUser::help() const {

@@ -5,17 +5,23 @@ namespace eternity::game {
 class Actor;
 class ZoneUsers;
 class MobAiStateServices;
-// CUser+142c is independent of current HP. Canonical Actor presently lacks its
-// owner/accessor: the retained life owner MUST supply it, never infer it from HP.
+// CUser+142c is the shared life/action state, represented by the existing
+// ActorAttackState::mode. Preserve this interface for explicit provider users;
+// normal production assembly uses the concrete mode delegation below.
 class MobTargetingActorLife {
 public:
     virtual ~MobTargetingActorLife()=default;
     virtual std::int32_t life_status(const Actor&) const=0;
 };
+class MobTargetingActorModeLife final:public MobTargetingActorLife {
+public:
+    std::int32_t life_status(const Actor&) const override;
+};
 // Borrows a retained canonical Actor and its life owner; reprojects every read.
 // Both must outlive all synchronous help/target callbacks on the zone executor.
 class MobTargetingActorUser final:public MobTargetingZoneUser {
 public:
+    explicit MobTargetingActorUser(const Actor&); // Existing shared +142c owner.
     MobTargetingActorUser(const Actor&,const MobTargetingActorLife&);
     MobTargetingUser target() const override;
     MobTargetingHelpUser help() const override;

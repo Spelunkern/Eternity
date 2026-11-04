@@ -24,10 +24,6 @@ struct Scene final:ActorScene {
     UserShapeSocial user_shape_social() override {throw std::runtime_error("Unexpected shape");}
     void finish_periodic_damage(EffectStatus&,const SkillDefinition&,const EffectSource&,std::uint32_t) override {throw std::runtime_error("Unexpected damage");}
 };
-struct Life final:MobTargetingActorLife {
-    const Actor* actor=nullptr;std::int32_t value=0;
-    std::int32_t life_status(const Actor& a) const override {check(&a==actor,"Life queried another actor");return value;}
-};
 struct Cells final:ZoneMobServices {
     std::uint32_t tick_ms() override {throw std::runtime_error("Unexpected movement tick");}
     void send_cell_view(CellCoordinates,const eternity::net::Packet& p) override {check(p.size()==17,"Unexpected entry packet");}
@@ -57,16 +53,32 @@ int main(int argc,char** argv) {
         auto catalog=MobTargetingBindingCatalog::load(1,1,{},{});
         auto record=catalog.mutable_mob_record(1);put(record,0,1,2);put(record,38,1);put(record,105,255);put(record,120,1,4);catalog.publish_mob_record(1);
         MobRuntimeTemplate definition;definition.id=1;
-        std::ifstream input(argv[1]);check(input.good(),"Cannot read original fixture");std::string line;unsigned scenarios=0;
+        std::ifstream input(argv[1]);check(input.good(),"Cannot read original fixture");std::string line;unsigned scenarios=0,stops=0;
         while(std::getline(input,line)) {
             if(line.empty() || line[0]=='#') continue;
+            if(line.starts_with("S ")) {
+                std::istringstream row(line.substr(2));std::int32_t raw=0,stopped=0;bool before=false,after=false;row>>raw>>stopped>>before>>after;
+                check(static_cast<bool>(row),"Malformed shared-state stop trace");
+                Actor actor(42,{}, {0,0,0},{},scene,equipment);actor.attack_state().mode=raw;
+                actor.attack_state().recovery=0;actor.attack_state().previous_tick=9;actor.attack_state().next_tick=11;actor.status().current_target_type=7;
+                MobTargetingActorUser user(actor);MobTargetingActorModeLife mode;
+                check(mode.life_status(actor)==raw && user.help().life_status==raw,"Concrete owner normalized a raw state");
+                MicrosoftRandom random(1);Fsm fsm;ZoneUsers users(1,1,0);MobRuntime m;ZoneMobs mobs(MapGeometry(1),cells);
+                MobTargetingActorWorld world(mobs,users,random,fsm);MobTargetingZone zone(mobs,catalog,world);m.definition=&definition;
+                const auto acquire=[&] {m.state_stack=std::vector<std::int32_t>{0};m.status=42;m.target_kind=7;m.target_id=0;zone.set_target(m,user,false);return m.target_id==42;};
+                check(acquire()==before,"Original raw state target gate differs");
+                actor.stop_attack(actor.status());
+                check(user.target().life_status==stopped && user.help().life_status==stopped,"Real Actor stop not reflected in both projections");
+                check(acquire()==after,"Original post-stop state target gate differs");
+                ++stops;continue;
+            }
             std::istringstream row(line);int initial=0,move=0,life=0,fixed=0,lua=0;std::uint32_t id=0;
             row>>initial>>move>>life>>fixed>>lua>>id;char bar=0;row>>bar;check(bar=='|',"Malformed original input");
             int status=0,target_kind=0;std::uint32_t target_id=0;std::uint32_t timeout=0,nextmove=0,discriminator=0;std::array<std::uint32_t,3> times{};unsigned n=0;row>>status>>target_kind>>target_id>>timeout>>nextmove>>times[0]>>times[1]>>times[2]>>discriminator>>n;
             std::vector<std::int32_t> stack(n);for(auto& s:stack) row>>s;
             row>>bar;check(bar=='|',"Malformed original output");unsigned calls=0;std::uint32_t tick=0,argument=0;row>>calls>>tick>>argument;unsigned observed_count=0;row>>observed_count;std::vector<std::int32_t> observed(observed_count);for(auto& s:observed) row>>s;check(static_cast<bool>(row),"Missing callbacks");
-            Actor actor(id,{}, {0,0,0},{},scene,equipment);Life owner;owner.actor=&actor;owner.value=life;
-            MobTargetingActorUser user(actor,owner);MicrosoftRandom random(1);Fsm fsm;ZoneUsers users(1,1,0);MobRuntime m;
+            Actor actor(id,{}, {0,0,0},{},scene,equipment);actor.attack_state().mode=life;
+            MobTargetingActorUser user(actor);MicrosoftRandom random(1);Fsm fsm;ZoneUsers users(1,1,0);MobRuntime m;
             ZoneMobs mobs(MapGeometry(1),cells);MobTargetingActorWorld world(mobs,users,random,fsm);MobTargetingZone zone(mobs,catalog,world);
             m.definition=&definition;m.state_stack=std::vector<std::int32_t>{initial};m.status=42;m.move_mode=move;m.vision_fixed_user=fixed;m.lua_ai=lua;m.target_kind=7;m.target_id=12345;m.combat_timeout=8765;m.next_move=777;m.attack_times={111,222,333};
             zone.set_target(m,user,false);
@@ -75,16 +87,16 @@ int main(int argc,char** argv) {
             check(fsm.calls==calls && fsm.when==tick && fsm.argument==argument && fsm.ticks==calls && fsm.observed==observed,"Original event callback trace differs");
             ++scenarios;
         }
-        check(scenarios==160,"Original coverage changed");
-        Actor actor(9001,{}, {0,0,0},{},scene,equipment);Life life;life.actor=&actor;life.value=2;
-        MobTargetingActorUser user(actor,life);
+        check(scenarios==400 && stops==138,"Original coverage changed");
+        Actor actor(9001,{}, {0,0,0},{},scene,equipment);actor.attack_state().mode=2;
+        MobTargetingActorUser user(actor);
         check(user.target().life_status==2,"Zero HP was incorrectly treated as dead");
         actor.appearance().identity.country=255;actor.appearance().visible=false;actor.appearance().attackable=false;
         actor.status().no_mob_targeting=true;actor.status().skills.hp_ability_applied=false;
         auto projected=user.help();check(projected.country==255 && projected.hp_ability==1 && !projected.visible && !projected.attackable && projected.life_status==2,"Canonical Actor live flags differ");
         actor.status().no_mob_targeting=false;actor.status().skills.hp_ability_applied=true;
         check(user.help().hp_ability==0,"Unrelated HP trigger was used as immunity");
-        life.value=0;actor.appearance().identity.country=0;actor.appearance().visible=actor.appearance().attackable=true;
+        actor.attack_state().mode=0;actor.appearance().identity.country=0;actor.appearance().visible=actor.appearance().attackable=true;
         std::array<MobRuntime,3> m;ZoneMobs mobs(MapGeometry(1),cells);ZoneUsers users(1,1,0);MicrosoftRandom random(17),control(17);Fsm fsm;
         MobTargetingActorWorld world(mobs,users,random,fsm);MobTargetingZone zone(mobs,catalog,world);
         check(world.user_count(mobs)==0,"Empty real user grid differs");users.attach(actor,0,0,{});check(world.user_count(mobs)==1,"Real attached count differs");
@@ -93,13 +105,13 @@ int main(int argc,char** argv) {
         MobAiConfiguredFsm configured(0,0);unsigned entered=0;
         configured.states[0].update=[&](MobRuntime& subject,MobAiConfiguredFsm&) {
             check(subject.target_id==actor.id() && subject.state_stack->back()==0,"Configured callback sees wrong publication/order");
-            life.value=1;actor.appearance().visible=false;
+            actor.attack_state().mode=1;actor.appearance().visible=false;
         };
         configured.states[0].transitions.push_back({1,0,{}});configured.states[1].enter=[&](MobRuntime&,MobAiConfiguredFsm&) {++entered;};
         fsm.callback=[&](MobRuntime& subject) {execute_mob_ai_configured(subject,configured,fsm);evaluate_mob_ai_configured(subject,configured,fsm);};
         zone.find_help(m[0],user,MobTargetingHelpKind::normal);
         check(m[1].target_id==actor.id() && *m[1].state_stack==std::vector<std::int32_t>({0,1}) && m[2].target_id==0 && configured.current==1 && entered==1,"Live help/fixed/configured owner composition differs");
-        life.value=0;actor.appearance().visible=true;actor.appearance().identity.country=1;
+        actor.attack_state().mode=0;actor.appearance().visible=true;actor.appearance().identity.country=1;
         zone.find_help(m[0],user,MobTargetingHelpKind::normal);check(m[2].target_id==0,"Live country mutation ignored");
         actor.appearance().identity.country=0;actor.appearance().attackable=false;
         zone.find_help(m[0],user,MobTargetingHelpKind::normal);check(m[2].target_id==0,"Live attack permission ignored");
@@ -118,6 +130,6 @@ int main(int argc,char** argv) {
         m[2].status=100;const auto delay=static_cast<std::uint32_t>(control.next()%2000);zone.set_target(m[2],user,false);
         check(m[2].attack_times[0]==0xfffffff0U+delay && random.state()==control.state(),"Shared CRT/clock targeting timer differs");
         bool rejected=false;ZoneMobs other(MapGeometry(1),cells);try {world.user_count(other);}catch(const std::invalid_argument&) {rejected=true;}check(rejected,"Cross-zone count owner accepted");
-        std::cout<<scenarios<<" original SetTarget-to-FSM paths and live canonical Actor/configured/grid/CRT/clock composition passed\n";
+        std::cout<<scenarios<<" original SetTarget-to-FSM paths and "<<stops<<" shared-state stop/gate sequences and live canonical Actor/configured/grid/CRT/clock composition passed\n";
     }catch(const std::exception& e) {std::cerr<<e.what()<<'\n';return 1;}
 }
