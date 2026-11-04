@@ -1350,3 +1350,10 @@ aborted with `terminate called without an active exception`; see worker
 idle/death/respawn order and rerun. `5c3819a` is not ready to integrate despite
 its successful build. Main session 53983 remains live waiting for shared build
 slot; current 01/02 worker suites hold both slots.
+
+Main `world-application-unit` passed the new TCP pipelined-transition regression
+in `.local/world-serialized-application-test-final.log`; the focused runner built
+and executed the exact test under the shared lock. Main session 53983 continues
+with the full native build, focused network/combat regression and isolated SQL;
+those remaining phases have not passed yet. This TCP test does not establish
+original-client world entry or complete correctness of production admission.
