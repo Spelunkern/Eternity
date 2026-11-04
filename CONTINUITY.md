@@ -1520,3 +1520,13 @@ AttackSuccess tests also passed. The caller composition test is still queued in
 `.local/vertical-combat-damage-caller.log`, and its isolated SQL run is in
 progress; no complete validation or production combat claim yet. Main 53983 is
 still live waiting for the shared build slot after its successful build.
+
+Coordinator isolated integration branch `coordinator/ingress` now contains
+reviewed 03 protocol commits (through TCP `9847b8d`) and 09 persistence commits
+(through `5bcdda2`), cherry-picked through `bf2603c`; combined CMake conflict
+preserves both targets. `c1d6aea` adds the 09 SQL reload executable to the existing
+unique disposable creation fixture. Copied runtime env and server assets into
+the worktree's ignored .local. Session 69947 runs sequential focused protocol,
+gate, TCP and persistence tests, then full build and isolated SQL; it is live,
+not yet passed. This remains separate from main's still-running 53983 pipeline.
+No live WorldApplication, ActorScene, root admission or playable-server claim.
