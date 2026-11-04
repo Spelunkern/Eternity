@@ -23,9 +23,11 @@ struct WorldChannel {
     std::function<void(Packet)> send;
     std::function<void()> enter_world;
     std::function<void()> enter_character_selection;
-    // Keep inbound frames in the existing bounded connection queue while the
-    // world owner transfers the user between selection and zone-wait lists.
-    std::function<void()> pause_input;
+    // Completion runs on the socket executor after the pause is applied. The
+    // world owner must await true before transferring the user to zone-wait;
+    // false means that the connection was already closed. Completion must not
+    // block and must hand work back to the serialized world executor.
+    std::function<void(std::function<void(bool)>)> pause_input;
     std::function<void()> resume_input;
     std::function<void()> disconnect;
 };

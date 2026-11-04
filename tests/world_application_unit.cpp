@@ -11,7 +11,7 @@ struct State {
     std::mutex mutex;
     std::condition_variable changed;
     Behavior behavior=Behavior::normal;
-    bool entered=false,released=false;
+    bool entered=false,released=false,pause_confirmed=false;
     unsigned int opens=0,receives=0,closes=0,destroyed=0;
     session::LoginSession identity{};
     net::WorldChannel channel;
@@ -46,7 +46,10 @@ public:
         if(state->behavior==Behavior::receive_error) throw std::runtime_error("Test receive failure");
         ++sequence;
         if(packet.at(2)==1) {
-            if(state->behavior==Behavior::pause_entry) channel.pause_input();
+            if(state->behavior==Behavior::pause_entry) channel.pause_input([state=state](bool active){
+                if(!active) throw std::runtime_error("Pause failed");
+                std::lock_guard lock(state->mutex);state->pause_confirmed=true;state->changed.notify_all();
+            });
             channel.send({9,1,static_cast<std::uint8_t>(sequence)});
             channel.enter_world();channel.send({1,2,static_cast<std::uint8_t>(sequence)});
         } else if(packet.at(2)==2) {
@@ -147,6 +150,7 @@ int main() {
             peer.command(1);
             require(peer.selection()==Packet({9,1,1}),"Selection packet order changed");
             require(peer.in_world()==Packet({1,2,1}),"World mode marker missing");
+            fixture.state->wait([&]{return fixture.state->pause_confirmed;});
             Packet entry{1,2,0};peer.outgoing.crypt(entry);peer.socket.write(net::frame(entry));
             net::WorldChannel retained;
             {

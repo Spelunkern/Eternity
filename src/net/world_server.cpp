@@ -132,8 +132,14 @@ struct WorldServer::Impl::Connection : std::enable_shared_from_this<Connection> 
                 try {self->protocol->enter_character_selection();} catch(...) {self->close();}
             });
         };
-        result.pause_input=[weak,executor] {
-            asio::post(executor,[weak] {if(auto self=weak.lock();self && !self->closed) self->input_paused=true;});
+        result.pause_input=[weak,executor](std::function<void(bool)> done) {
+            if(!done) throw std::invalid_argument("Input pause requires completion");
+            asio::post(executor,[weak,done=std::move(done)] {
+                const auto self=weak.lock();
+                const bool active=self && !self->closed;
+                if(active) self->input_paused=true;
+                try {done(active);} catch(...) {if(active) self->close();}
+            });
         };
         result.resume_input=[weak,executor] {
             asio::post(executor,[weak] {
