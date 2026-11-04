@@ -13,22 +13,37 @@ int main(int argc,char** argv) {try {
     check(rows.size()==1 && rows[0].rows.size()==2,"Missing original player fixtures");
     const auto own=static_cast<std::uint32_t>(std::stoul(*rows[0].rows[0][1]));
     const auto foreign=static_cast<std::uint32_t>(std::stoul(*rows[0].rows[1][1]));
-    game::Players players(db,1,argv[1]);game::CharacterSelectionState state{7001,0,true};
+    game::Players players(db,1,argv[1]);game::Characters characters(db,1,std::chrono::sys_days{std::chrono::year{2024}/1/1},argv[1]);auto roster=characters.load(7001);game::CharacterSelectionState state{7001,0,true};
     std::optional<game::PlayerSnapshot> loaded;unsigned unavailable=0,closed=0;
     game::VerticalEntryPorts ports{[&](game::PlayerSnapshot p){loaded=std::move(p);},[&]{++unavailable;},[&](std::uint32_t r){check(r==9,"Wrong close reason");++closed;}};
     auto packet=select(own);packet.push_back(0xaa);
-    check(game::vertical_entry_select(state,packet,players,"load_user",ports)==game::CharacterSelectionResult::requested && !state.enabled && loaded && loaded->core.user_id==7001 && loaded->core.character.id==own && !unavailable && !closed,"Owned 0104 did not reach real SQL loader");
+    check(game::vertical_entry_select(state,packet,roster,players,"load_user",ports)==game::CharacterSelectionResult::requested && !state.enabled && loaded && loaded->core.user_id==7001 && loaded->core.character.id==own && !unavailable && !closed,"Owned 0104 did not reach real SQL loader");
     loaded.reset();
-    check(game::vertical_entry_select(state,select(foreign),players,"load_user",ports)==game::CharacterSelectionResult::ignored && !loaded && !unavailable && !closed,"Consumed latch performed a second load");
+    check(game::vertical_entry_select(state,select(foreign),roster,players,"load_user",ports)==game::CharacterSelectionResult::ignored && !loaded && !unavailable && !closed,"Consumed latch performed a second load");
     state.enabled=true;
-    check(game::vertical_entry_select(state,select(foreign),players,"load_user",ports)==game::CharacterSelectionResult::requested && !state.enabled && !loaded && unavailable==1 && !closed,"Foreign selection did not reach unavailable boundary");
+    check(game::vertical_entry_select(state,select(foreign),roster,players,"load_user",ports)==game::CharacterSelectionResult::requested && !state.enabled && !loaded && unavailable==1 && !closed,"Foreign selection did not reach unavailable boundary");
+    // SQL revalidation is intentionally later than the retained roster gate.
+    // Exercise stale retained state against the disposable catalog, then restore it.
+    for (const auto* change : {"Del=1", "Slot=5", "RenameCnt=1", "RemainTime=1", "UserUID=7002", "ServerID=2"}) {
+        db.query("UPDATE "+prefix+"Chars SET "+change+" WHERE CharID="+std::to_string(own)+";");
+        state.enabled=true;const auto before=unavailable;
+        check(game::vertical_entry_select(state,select(own),roster,players,"load_user",ports)==game::CharacterSelectionResult::requested && !state.enabled && unavailable==before+1 && !loaded,"SQL revalidation accepted a stale retained roster");
+        db.query("UPDATE "+prefix+"Chars SET Del=0,Slot=0,RenameCnt=0,RemainTime=0,UserUID=7001,ServerID=1 WHERE CharID="+std::to_string(own)+";");
+    }
+    for (auto& slot:roster.slots) if(slot && slot->id==own) {
+        state.enabled=true;slot->rename=true;
+        check(game::vertical_entry_select(state,select(own),roster,players,"load_user",ports)==game::CharacterSelectionResult::requested && !state.enabled && unavailable==8 && !loaded,"Retained rename gate did not reject");
+        slot->rename=false;slot->remaining_time=true;state.enabled=true;
+        check(game::vertical_entry_select(state,select(own),roster,players,"load_user",ports)==game::CharacterSelectionResult::requested && !state.enabled && unavailable==9 && !loaded,"Retained pending-deletion gate did not reject");
+        slot->remaining_time=false;
+    }
     state.enabled=true;state.country=2;
-    check(game::vertical_entry_select(state,select(own),players,"load_user",ports)==game::CharacterSelectionResult::closed && state.enabled && closed==1 && unavailable==1 && !loaded,"Country gate changed latch or reached SQL");
+    check(game::vertical_entry_select(state,select(own),roster,players,"load_user",ports)==game::CharacterSelectionResult::closed && state.enabled && closed==1 && unavailable==9 && !loaded,"Country gate changed latch or reached SQL");
     state.country=0;
-    check(game::vertical_entry_select(state,net::Packet{4,1,0},players,"load_user",ports)==game::CharacterSelectionResult::closed && state.enabled && closed==2 && unavailable==1 && !loaded,"Truncated request reached SQL or consumed latch");
+    check(game::vertical_entry_select(state,net::Packet{4,1,0},roster,players,"load_user",ports)==game::CharacterSelectionResult::closed && state.enabled && closed==2 && unavailable==9 && !loaded,"Truncated request reached SQL or consumed latch");
     bool invalid=false;
-    try {game::vertical_entry_select(state,select(0),players,"load_user",ports);} catch(const std::invalid_argument&) {invalid=true;}
-    check(invalid && !state.enabled && unavailable==1 && closed==2 && !loaded,"Loader exception was hidden or latch restored");
+    try {game::vertical_entry_select(state,select(0),roster,players,"load_user",ports);} catch(const std::logic_error&) {invalid=true;}
+    check(invalid && !state.enabled && unavailable==9 && closed==2 && !loaded,"Unrepresentable empty slot was hidden or latch restored");
     std::cout<<"Real SQL selection, ownership failure and 0104 latch passed\n";
     return 0;
 } catch(const std::exception& e) {std::cerr<<e.what()<<'\n';return 1;}}

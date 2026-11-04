@@ -1,8 +1,20 @@
 #include "eternity/game/vertical_entry.hpp"
 
 namespace eternity::game {
+bool vertical_entry_roster_allows(const CharacterRoster& roster, std::uint32_t character_id) {
+    // ps_dbAgent.exe PacketUserChar 004059e2..00405a32: first matching slot,
+    // rename count > 0 and remaining time != 0 reject before DB job 7.
+    for (const auto& slot : roster.slots) {
+        if (!slot) {
+            if (character_id==0) throw std::logic_error("Empty roster slot status residue is unavailable");
+            continue;
+        }
+        if (slot->id==character_id) return !slot->rename && !slot->remaining_time;
+    }
+    return false;
+}
 CharacterSelectionResult vertical_entry_select(CharacterSelectionState& state, std::span<const std::uint8_t> packet,
-    Players& players, const std::string& username, const VerticalEntryPorts& ports) {
+    const CharacterRoster& roster, Players& players, const std::string& username, const VerticalEntryPorts& ports) {
     if (!ports.loaded || !ports.unavailable || !ports.close)
         throw std::invalid_argument("Incomplete character entry handoff");
     CharacterSelectionPorts gate;
@@ -14,7 +26,9 @@ CharacterSelectionResult vertical_entry_select(CharacterSelectionState& state, s
             for (unsigned int i=0;i<4;++i) value|=std::uint32_t(request[offset+i])<<(8*i);
             return value;
         };
-        auto snapshot=players.load(read(2),read(6),username);
+        const auto id=read(6);
+        if (!vertical_entry_roster_allows(roster,id)) {ports.unavailable();return;}
+        auto snapshot=players.load(read(2),id,username);
         if (snapshot) ports.loaded(std::move(*snapshot));
         else ports.unavailable();
     };
