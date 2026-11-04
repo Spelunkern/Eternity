@@ -7,7 +7,10 @@ PartyMembershipUser*& slot(PartyRegistryParty& p,std::int32_t i) {
     return i<7?p.slots[static_cast<std::size_t>(i)]:p.extra_slots[static_cast<std::size_t>(i-7)];
 }
 void refresh(PartyRegistryParty& p) {
-    if(p.count<0 || p.count>30) throw std::invalid_argument("Invalid expulsion count");
+    // Reentrant removal can exhaust the party before the outer decrement.
+    // Original ChkPartyExpByLevel retains its value for every count <= 1.
+    if(p.count<=1) return;
+    if(p.count>30) throw std::invalid_argument("Invalid expulsion count");
     std::array<std::optional<std::uint16_t>,30> levels{};
     for(std::int32_t i=0;i<p.count;++i) if(auto* u=slot(p,i)) levels[static_cast<std::size_t>(i)]=u->level;
     p.experience.check_experience_level(std::span(levels).first(static_cast<std::size_t>(p.count)));
@@ -18,7 +21,7 @@ bool expel_party_request_user(PartyRegistryParty& p,const PartyRequestUser& targ
     w.lock(p);
     std::int32_t index=0;
     while(index<p.count && slot(p,index)!=&user) ++index;
-    if(index==p.count) {w.unlock(p);return false;}
+    if(index>=p.count) {w.unlock(p);return false;}
     user.party=nullptr;
     net::Packet packet{6,0xb};
     for(unsigned i=0;i<4;++i) packet.push_back(static_cast<std::uint8_t>(user.id>>(8*i)));

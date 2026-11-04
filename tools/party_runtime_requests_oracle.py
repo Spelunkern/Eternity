@@ -53,6 +53,20 @@ def main():
         cpu.mem_write(nested_packet,b'\x03\x0b\x00')
         prefix=b'\x9c\x60\x68'+struct.pack('<I',u)+b'\xb9'+struct.pack('<I',nested_packet)
         cpu.mem_write(code,prefix+b'\xe8'+struct.pack('<I',(0x4676c0-(code+len(prefix)+5))&0xffffffff)+b'\x61\x9d\xc2\x08\x00')
+    # Actual nested PacketParty leave, preserving the interrupted original ABI.
+    # CParty::Send uses RET 0; CZone::SendView uses RET 12.
+    for cleanup,offset in ((0,0x8000),(12,0xa000)):
+        for i,u in enumerate(users):
+            code=0x31000000+offset+i*0x100;leave_packet=0x31006000+i*0x100
+            cpu.mem_write(leave_packet,b'\x05\x0b')
+            prefix=b'\x9c\x60\x68'+struct.pack('<I',u)+b'\xb9'+struct.pack('<I',leave_packet)
+            cpu.mem_write(code,prefix+b'\xe8'+struct.pack('<I',(0x4676c0-(code+len(prefix)+5))&0xffffffff)+b'\x61\x9d\xc2'+struct.pack('<H',cleanup))
+    def nested_leave(machine,cleanup):
+        if not ctx.get('record') or ctx['nested']:return
+        selected=next((i for i in (2,0) if get(users[i]+0x173c)),None)
+        if selected is None:return
+        ctx['nested']=True;event('W',struct.pack('<I',100+selected))
+        machine.reg_write(UC_X86_REG_EIP,0x31000000+(0xa000 if cleanup else 0x8000)+selected*0x100)
     def lookup_mutation():
         if not ctx.get('record') or ctx['mutated']:return
         root=users[ctx['root']]
@@ -89,12 +103,16 @@ def main():
                 for u in users:
                     if bytes(cpu.mem_read(u+0x188,21)).split(b'\0')[0]==bytes(name):found=u;break
             machine.reg_write(UC_X86_REG_EAX,found)
-        elif at==0x4455d0:event('P',bytes(machine.mem_read(machine.reg_read(UC_X86_REG_ECX),machine.reg_read(UC_X86_REG_EAX))))
+        elif at==0x4455d0:
+            payload=bytes(machine.mem_read(machine.reg_read(UC_X86_REG_ECX),machine.reg_read(UC_X86_REG_EAX)));event('P',payload)
+            if ctx['mutation']==6 and payload[:2]==b'\x06\x0b':nested_leave(machine,0)
         elif at==0x4d4d20:
             u=machine.reg_read(UC_X86_REG_ECX);payload=bytes(machine.mem_read(get(sp+4),get(sp+8)));event('U',struct.pack('<I',uid(u))+payload)
             if ctx.get('record') and ctx['mutation']==4 and not ctx['nested'] and payload[:2] in (b'\x02\x0b',b'\x09\x0b'):
                 ctx['nested']=True;event('V',struct.pack('<I',uid(u)));machine.reg_write(UC_X86_REG_EIP,0x31000000+users.index(u)*0x100)
-        elif at==0x4208c0:event('S',bytes(machine.mem_read(get(sp+8),get(sp+12))))
+        elif at==0x4208c0:
+            event('S',bytes(machine.mem_read(get(sp+8),get(sp+12))))
+            if ctx['mutation']==5:nested_leave(machine,12)
         elif at==0x45b0d0:
             i=uid(machine.reg_read(UC_X86_REG_EDI));event('F',struct.pack('<I',i));cpu.mem_write(machine.reg_read(UC_X86_REG_ESI),bytes((i+j)&255 for j in range(74)))
         elif at==0x4d4e50:event('L',bytes(machine.mem_read(get(sp+4),get(sp+8))))
@@ -109,16 +127,18 @@ def main():
         for r,v in ((UC_X86_REG_ESP,stack),(UC_X86_REG_ECX,ecx),(UC_X86_REG_ESI,esi)):cpu.reg_write(r,v)
         cpu.emu_start(at,stop,count=1000000)
         assert cpu.reg_read(UC_X86_REG_EIP)==stop, "Original request did not return"
-    print(f'# ps_game.exe SHA256 {digest}; entire PacketParty 004676c0 normal request paths; actual lock/leader/find/change-leader, registry create/map, normal entry/leave, experience and GetPartyType bodies. Ports: lookup, OS, raw memory, transport/log, raid enter/leave; actual ExpelUser 00447120. V is literal nested PacketParty accept via saved-register trampoline, not a modeled join.')
+    print(f'# ps_game.exe SHA256 {digest}; entire PacketParty 004676c0 normal request paths; actual lock/leader/find/change-leader, registry create/map, normal entry/leave, experience and GetPartyType bodies. Ports: lookup, OS, raw memory, transport/log, raid enter/leave; actual ExpelUser 00447120. V is literal nested PacketParty accept via saved-register trampoline, not a modeled join. W is literal nested PacketParty leave from expulsion broadcast or scene callback.')
     print('# S case profile flags mutation missing alloc_fail raid_success clock; T actor packet_hex or E actor identity_byte (direct ExpelUser); R final_packet_hex_or_return_byte state_hex events_hex; Z')
     opcodes=(0xb02,0xb03,0xb05,0xb0d,0xb09,0xb07,0xb06,0xb0c,0xb08)
-    for case in range(2048):
+    for case in range(2560):
         cpu.mem_write(base,bytes(0xef000));cpu.mem_write(manager,bytes(84));cpu.mem_write(0,bytes(0x10000))
         profile=(case//9)%9;flags=(0,1,2,4,8,16,32,64,128,256)[(case//81)%10];mutation=(case//29)%5
 
         if case>=1024:profile=(case//9)%10;flags|=512
+        if case>=2048:
+            profile=(1,3,4,7)[case%4];mutation=5+case%2;flags=512
         missing=(case//17)%11==0;alloc_fail=(case//23)%13==0;raid_success=(case//31)%2;clock=(0,0xfffffff0,0x7fffffff,2000)[case%4]
-        if mutation==4 and case%9 in (0,4):profile=(0,1,4)[(case//9)%3];flags=0;missing=False;alloc_fail=False
+        if case<2048 and mutation==4 and case%9 in (0,4):profile=(0,1,4)[(case//9)%3];flags=0;missing=False;alloc_fail=False
         ctx.update(record=False,events=b'',raw=2,nodes=0,alloc_fail=alloc_fail,clock=clock,ticks=0,mutation=mutation,mutated=False,nested=False,missing=missing,raid_success=raid_success,root=0)
         for i,u in enumerate(users):
             put(u+0xdc,100+i);cpu.mem_write(u+0x136,struct.pack('<H',10+i));cpu.mem_write(u+0x134,bytes([i%6]));cpu.mem_write(u+0x188,f'user-{i:015}'.encode()+b'\0');cpu.mem_write(u+0x1744,b'\x09');put(u+0xe0,base+0x60000);put(u+0x5758,4)
@@ -159,7 +179,7 @@ def main():
         ctx.update(record=True,events=b'',root=root,mutated=False,nested=False)
         cpu.mem_write(packet,data);call(0x4676c0,(users[root],),ecx=packet)
         print('T',root,data.hex());print('R',bytes(cpu.mem_read(packet,len(data))).hex(),state().hex(),ctx['events'].hex() or '-')
-        if ctx['nested']:
+        if ctx['nested'] and mutation==4:
             assert get(users[1]+0x173c)!=0, 'Nested accept did not actually join'
             data=struct.pack('<H',0xb05);ctx.update(events=b'',root=1)
             cpu.mem_write(packet,data);call(0x4676c0,(users[1],),ecx=packet)

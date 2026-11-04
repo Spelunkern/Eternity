@@ -79,9 +79,13 @@ struct World final:PartyRequestWorld,PartyRegistryPorts,PartyMembershipWorld {
     void unlock(PartyNormalMembership& p) noexcept override {unlock_registry(PartyRegistryLock::party,static_cast<PartyRegistryParty*>(&p));}
     void lock_effects(PartyMembershipUser& u) override {Bytes b;append(b,3);append(b,uid(&u));event('[',b);}
     void unlock_effects(PartyMembershipUser& u) noexcept override {Bytes b;append(b,3);append(b,uid(&u));event(']',b);}
-    void send_party(PartyNormalMembership&,const Bytes& p) override {event('P',p);}
+    void nested_leave() {
+        if(nested)return;
+        for(unsigned i:{2U,0U})if(users[i]->member.party){nested=true;Bytes b;append(b,100+i);event('W',b);Bytes leave{5,0xb};dispatch_party_request(binding(i),leave,*this);return;}
+    }
+    void send_party(PartyNormalMembership&,const Bytes& p) override {event('P',p);if(mutation==6 && p.size()>=2 && p[0]==6 && p[1]==0xb)nested_leave();}
     void send_user(PartyMembershipUser& u,const Bytes& p) override {Bytes b;append(b,uid(&u));b.insert(b.end(),p.begin(),p.end());event('U',b);if(mutation==4 && !nested && p.size()>=2 && (p[0]==2 || p[0]==9) && p[1]==0xb){nested=true;Bytes n;append(n,uid(&u));event('V',n);Bytes accept{3,0xb,0};dispatch_party_request(binding(uid(&u)-100),accept,*this);}}
-    void send_scene(PartyMembershipUser&,const Bytes& p) override {event('S',p);}
+    void send_scene(PartyMembershipUser&,const Bytes& p) override {event('S',p);if(mutation==5)nested_leave();}
     void unregister_party(PartyNormalMembership& p) override {unregister_registry_membership(reg,p,*this);}
     void cleanup_guild_creation(PartyMembershipUser&) override {throw std::logic_error("Unexpected guild dependency");}
     void fill_log(PartyMembershipUser& u,std::span<std::uint8_t> p) override {auto id=uid(&u);Bytes b;append(b,id);event('F',b);for(std::size_t i=0;i<p.size();++i)p[i]=static_cast<std::uint8_t>(id+i);}
@@ -106,6 +110,6 @@ int main(int argc,char** argv) {
             }
             check(line=="Z");nested+=world.nested?1:0;++cases;
         }
-        check(cases==2048 && nested>0);std::cout<<cases<<" cases / "<<requests<<" whole original requests / "<<expulsions<<" direct original expulsions / "<<nested<<" literal nested accepts passed\n";
+        check(cases==2560 && nested>0);std::cout<<cases<<" cases / "<<requests<<" whole original requests / "<<expulsions<<" direct original expulsions / "<<nested<<" literal nested requests passed\n";
     } catch(const std::exception& e){std::cerr<<e.what()<<'\n';return 1;}
 }
