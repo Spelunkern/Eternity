@@ -564,3 +564,11 @@ if(BUILD_TESTING)
     target_link_libraries(mob-combat-callbacks-unit PRIVATE eternity_game)
     add_test(NAME mob-combat-callbacks-unit COMMAND mob-combat-callbacks-unit ${CMAKE_CURRENT_SOURCE_DIR}/tests/data/mob-combat-callbacks-oracle.tsv)
 endif()
+
+# Worker 05: recovered party experience state and reward eligibility.
+target_sources(eternity_game PRIVATE src/game/party_runtime.cpp)
+if(BUILD_TESTING)
+    add_executable(party-runtime-unit tests/party_runtime_unit.cpp)
+    target_link_libraries(party-runtime-unit PRIVATE eternity_game)
+    add_test(NAME party-runtime-unit COMMAND party-runtime-unit ${CMAKE_CURRENT_SOURCE_DIR}/tests/data/party-runtime-oracle.tsv)
+endif()
