@@ -1283,3 +1283,14 @@ retry is observed. Coordinator requested review of nearest rounding, FTZ/DAZ,
 nonfinite and sqrt assumptions against original x87 before integration. Worker
 06 is adding explicit floating-environment guards to its uncommitted AttackSuccess
 follow-up; review that final source and tests before integration.
+
+Coordinator identified a network transition race: `Connection::read` decoded and
+filtered frames while a previous application call was still changing selection/
+world state on its worker strand. A pipelined AES 0201 could be discarded before
+`enter_world` reached the socket executor. Main now queues up to eight undecoded
+frames and processes them after the preceding application call and its ordered
+channel posts. Added a TCP application regression that sends a world frame while
+the selection transition is blocked. Validation pipeline session 69227 runs
+focused target, build, relevant network/combat tests and isolated SQL; it is
+waiting for the shared build lock. This remains unvalidated until it finishes;
+original timing and complete playable entry still require further evidence.
