@@ -1774,3 +1774,10 @@ lost. Worker 04 was informed that coordinator already applied its proposed
 mutable Actor accessor in `a4e413a`; its next priority is actual 0501 gates,
 movement/correction continuation and synchronized visibility, not a duplicate
 accessor. The mobility test on coordinator/movement remains pending.
+
+Roster review: `src/game/characters.cpp:127` currently maps SQL row 21 with
+`byte(...) != 0` to `CharacterSummary::rename` and row 22 with `integer(...) != 0`
+to `remaining_time`; these bools cannot represent every signed source value.
+The original DB-agent roster fields and their actual SQL-to-memory conversions
+must be traced before asserting whether this loses observable gate behavior.
+Worker 01 is investigating; its draft is not integrated.
