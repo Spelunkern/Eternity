@@ -1707,3 +1707,68 @@ SQL access/contracts did not change; coordinator owns isolated SQL and complete
 integration validation. The server is not playable.
 
 Implementation commit: `73dc722dc68ece0583a51ee709f2065315551ee8`.
+
+## Milestone 25 — integer compound writeback and two-pop increment/decrement
+
+### Evidence / behavior
+
+`ps_game.exe`, `CKFSM<CMob>::TravelCondition` `00498cf0`, kind-8
+opcodes 11..16: add-assign `00499d38`, subtract-assign `00499f50`,
+increment `0049a160`, decrement `0049a2d0`, multiply-assign `0049a440`,
+divide-assign `0049a645..0049a835`. Full Ghidra export plus original
+instructions confirm the retained second operand supplies result type,
+inactive numeric payloads and embedded VariableID. Shared operand extraction
+still pops twice even for increment/decrement; the first operand's numeric
+value is ignored for these two operations. Int/DWORD wrap is retained.
+Division is signed only for int/int, unsigned for mixed/DWORD pairs.
+
+Result push precedes map lookup and `AI_Param::operator=` writeback: shared
+compound tail `0049a12c..0049a15b`, increment tail `0049a29c..0049a2cb`,
+decrement tail `0049a40c..0049a43b`. Alias destinations use the second
+operand's VariableID, not its source-name hash. Destination text bytes are
+retained on integer writes. Compound operations add no truth count; later
+literal scratch reuse and local reads observe their retained results.
+
+Explicit `MobAiIntegerCompoundServices` extends the prior assignment/numeric
+provider. Existing narrower providers retain their contracts. Missing writeback
+targets, undefined operand storage, noninteger arithmetic, zero divisors and
+signed divide overflow remain explicit errors rather than invented results.
+
+### Validation
+
+- 1,536 original sequences / 3,072 full TravelCondition executions, spanning
+  all six operations and int/DWORD operand combinations, wrapped extrema,
+  positive/negative signed division and mixed unsigned division, literal/local
+  sources, alias destinations, repeated calls, declared-count truncation and
+  retained numeric scratch reuse. 816 final maps change. All retained map and
+  stack bytes, cursor/top and return counts are compared with native behavior.
+- Real original tree construction/lookup/writeback/destruction execute; all
+  4,608 allocations are freed and poisoned. Only allocation/free/security
+  cookie imports are adapted; no interpreter/map result is supplied by a port.
+  Faulting integer divisions and undefined operand-storage reads are excluded.
+- A configured entry program performs add-assign on the actual borrowed owner;
+  subsequent evaluation of that same FSM sees the mutation and transitions.
+  Existing narrower assignment/arithmetic/numeric providers remain tested.
+- Regenerated oracle is byte-identical; original SHA256SUMS pass; diff check clean.
+- `python3 tools/dev.py build`: exit 0, no compiler warnings;
+  `work/mob_ai_states_compound-build.log`.
+- `python3 tools/dev.py test`: exit 0, 144/144 tests pass (42.08 s),
+  compound test 1.68 s; `work/mob_ai_states_compound-tests.log`.
+
+### Required integration / remaining work
+
+Keep the value stack and local map in the existing configured owner; preserve
+both pops even for unary-looking increment/decrement and preserve VariableID
+alias routing. Do not replace unsigned mixed division with signed arithmetic.
+No shared canonical header or MobRuntime change was needed in this block.
+Existing typed writeback targets remain a provider admission requirement;
+original insertion with indeterminate retained text is not claimed equivalent.
+
+Float arithmetic/assignment, system function invocation/parameter piping,
+nonnumeric comparisons, full factory/asset decoding and actual root world/Lua/
+scheduling/destruction remain open. Next independent block can recover float
+arithmetic with the actual original x87 staging and conversion behavior; do not
+assume host expressions are equivalent. SQL/contracts did not change; coordinator
+owns isolated SQL and complete integration validation. The server is not playable.
+
+Implementation commit: `55abbe4734a304e75dd645cd9890cce735dfca05`.
