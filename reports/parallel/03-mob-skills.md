@@ -153,6 +153,8 @@ contract with actual owner operations and stable retained storage.
 
 | `a48542ab8ed71b1a935050dd2d2645dd7628bba3` | Concrete obelisk allocation/Init/entry adapter | 48 real-owner compositions; original startup/timers fixtures regenerated; 135/135 tests, 38.85 s. |
 
+| `8e4f19d450e3e9bea75aa5ef13cf5da2118f19fa` | Retained ServerMaps/primary-zone composition | 16 real two-map lifecycles; 64 original map cases regenerated; 136/136 tests, 35.71 s. |
+
 ## Vision cleanup milestone
 
 `MobAppliedSkills::remove_vision_fix(MobRuntime&)` now operates directly on the
@@ -778,3 +780,128 @@ Latest worker validation remains 135/135 tests (38.85 s), 48 actual adapter
 compositions and byte-identical original startup/timer regeneration. Tree was
 clean before this report update; git diff --check passed. No main/other-worker
 edits, SQL access or global completion claim. Awaiting coordinator assignment.
+
+## Retained primary-map composition milestone
+
+Implementation commit: `8e4f19d450e3e9bea75aa5ef13cf5da2118f19fa`.
+
+This assignment supersedes checkpoint 2244a0a. Reviewed exact worker04 code
+4db2ac3bf6b6137e7ad71c4156d628b4e8ad4d66 and report 7b0a529 through git show.
+New MobAppliedSkillsObeliskMaps borrows the ONE existing ObeliskRuntimeMaps,
+ServerMaps, coherent runtime/full catalogs, SAME MapsServices primary-zone
+provider, bound pool, Init ports and shared KC array. It lazily constructs only
+host bindings for actual primary zones; it owns no map record, country table,
+zone, catalog, actor pool or independent random stream.
+
+Each binding reuses the actual MobAppliedSkillsObelisk actor adapter,
+ObeliskRuntimeZoneRemoval and ObeliskRuntimeDeathOwnership. Actor calls query the
+live authoritative primary pointer again after callbacks; a changed route fails
+explicitly before another allocation/Init/entry/random operation. Absence between
+operations returns false without clock/RNG/ID consumption. Boolean true means
+original coordination was invoked, not that every original spawn succeeded.
+No rollback or second source snapshot is invented. Top-level operations refresh
+the EXISTING Maps liveness views on success and exception unwind.
+
+Publication routes are concrete: change -> owner.publish_change(map,index), DB
+-> owner.database, world -> owner.broadcast, portals -> owner.update_portals.
+Removal uses the actual zone/removal owner and bound pool, including nested
+Destroy and linked delegation. Names borrow the actual full mob record, with
+runtime-template identity/full-row checks; no constant name or temporary
+definition conversion is supplied. Required remaining backends are game log,
+KC add/subtract/status and the actual linked removal owner. Init AI/Lua, map/DB/
+world transport and passive primary-zone lifecycle still use required real ports.
+Calendar/restore/user/persistence remain on the retained Maps owner, not copied
+into another adapter. No canonical owner fields were added or edited.
+
+### Lifecycle and production construction
+
+The configured maps and their tile/portal storage, both coherent catalogs,
+configuration Maps owner and shared state must stay fixed and outlive the bound
+MobPool, including AVAILABLE objects with retained respawn/definition pointers.
+Shared heap/counters, AI/VM/skill services outlive all pool objects. Router/backend
+closures and zone storage remain alive through every synchronous operation;
+serialize publication and defer destruction/recycle through callbacks.
+
+Use the SAME MapsServices instance for bind_obelisk_runtime_maps and this router.
+The template projection and full catalog must describe the same admitted data;
+coherent loading/reload publication is a root responsibility. This class does
+not synthesize or replace either projection. Minimal composition:
+
+```cpp
+auto records = bind_obelisk_runtime_maps(server_maps, templates, full_catalog,
+    ini, state, map_services);
+// Retain records/catalogs beyond pool destruction, including recycled actors.
+MobPool pool(mob_ids, pool_services, shared_skill_binding);
+MobAppliedSkillsObeliskMaps runtime(server_maps, templates, full_catalog,
+    *records, map_services, pool, shared_init_ports, state.kill_count_add, backends);
+runtime.startup(primary_map);
+runtime.tick(primary_map, now);
+runtime.reset(primary_map, tick_provider);
+runtime.detach_primary(primary_map); // Requires drained actual zone/source refs.
+```
+
+Reset is the actual recovered operation, with its real publications; it is not
+an implicit destructor policy. Drain all primary-zone actors, detach while that
+zone is still the authoritative live object, then destroy/replace it. A different primary pointer
+without detach is rejected without using the old zone; detach with live actors
+is rejected. Pointer checks do not implement generation/lease ownership and
+cannot detect allocator address reuse; explicit pre-destruction detach is required. A route hidden during a callback must retain storage until return;
+partial allocated/registered state remains owned and requires explicit recovery.
+The router destructor only destroys host bindings, never frees source records or
+sends gameplay traffic. Death wrappers preserve the existing caller-side
+accounting: the actual mob_death does its exactly-once sentinel/count update.
+
+### Evidence and validation
+
+Source contracts remain ps_game.exe LoadObelisk 00427300, InitObelisk 00429a60,
+UpdateRespawnObelisk 00429da0, ObeliskRespawn 0042a6f0, ObeliskReset 0042aa40,
+ObeliskDestroy 0042a410, SetKeepObelisk 00413bd0, Death 004910f0 and
+MobRemoveByID 0041e910. This block adds host-owner composition rather than
+inventing a new original map owner. Worker04's exact 64-case original map fixture
+was independently executed and matched byte-for-byte:
+work/mob-applied-skills-obelisk-maps-original.tsv / -expected.tsv.
+Those original cases have absent reset principals; the new native cases below
+supply actual mobs. Full combined-world original execution is not claimed.
+
+The native test runs 16 two-map compositions with actual original-format map
+files loaded by ServerMaps, actual template/full catalog loaders, shared bound
+pool/skill/damage owners and real ZoneMobs. It verifies absent primary guards,
+shared executor RNG state, constructor/preparation Unix cadence, global ID wrap,
+actual source pointer/country/terrain identity, shared bObelisk writes and no
+second configuration-ID consumption. It executes native Death/ownership/corpse
+cleanup/respawn, reset with nested removal/publications, live later-map mutation,
+DB callback route loss, exception-view refresh, legal detach/rebind, rejected
+foreign context/live detach/unannounced replacement and final pool destruction
+while source configuration/services are still alive. Active skill deletion is
+checked after router destruction, while teardown services observe the actual
+configuration owner still alive.
+
+Old-branch compatibility uses 29 exact mode-0444 worker04 headers/sources under
+ignored work/mob_applied_skills_obelisk_maps_snapshot. Private CMake substitutes
+those target sources, including the new mutable-country map_config implementation,
+only when the canonical Maps header is absent; it never edits/replaces the live
+branch files. Consistent public snapshot declarations avoid mixing two
+ServerMaps definitions. Normal integrated builds use canonical modules and no
+snapshot. All 29 files verified against exact 4db2ac3 bytes; source ownership
+map_config/worker04 is unchanged.
+
+- python3 tools/dev.py build: passed. Initial full recompilation emitted existing
+  unrelated guild warnings; no new-module warnings. Final build exit 0, no warnings:
+  work/mob-applied-skills-obelisk-maps-build-final.log.
+- Focused native composition: 16/16 passed under tools/dev.py's shared lock:
+  work/mob-applied-skills-obelisk-maps-focused.log.
+- python3 tools/dev.py test: **136/136 passed**, 35.71 seconds; new map suite
+  passed in 0.37 seconds. No failed builds/tests in this block:
+  work/mob-applied-skills-obelisk-maps-test.log.
+- Compatibility source-filter consistency build passed without binary work:
+  work/mob-applied-skills-obelisk-maps-build-consistent.log.
+- Original fixture comparison, all 12 original EXE/PDB SHA256SUMS and
+  git diff --check passed. Hash log: work/mob-applied-skills-obelisk-maps-hashes.log.
+  No SQL access or sanitizer run. Prior Ghidra/source evidence is retained;
+  worker04's exact recovery is reused, not reported as a fresh decompilation.
+
+Remaining root gaps: actual passive primary-zone lifecycle/leases, coherent
+catalog loading/reload, real AI/Lua/backend factory, shared clocks/RNG, KC/linked
+world services, DB/world/map/user connections and startup/tick/reconnect dispatch.
+The per-primary composition itself is implemented; real backend assembly and full
+isolated SQL remain coordinator work. No global completion/playability claim.
