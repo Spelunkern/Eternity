@@ -677,3 +677,94 @@ recovery/reset beyond the original writes. Actual user-skill slot/index binding
 and connection/zone dispatch remain owner-adapter dependencies. Normal PvP
 eligibility and normal AttackUser coordination are the next independent work
 within mob_combat_scheduler. The server remains non-playable.
+
+## Scheduler normal-user branch / canonical team relations
+
+Implementation commit: `942357c`
+(`Recover normal user attack scheduler using canonical team relations`).
+
+Recovered normal-user CUser::UpdateAttack **0048cce0–0048ce20** from the full
+ps_game.exe Ghidra/PDB disassembly. MobCombatSchedulerUserWorld completes the
+normal-user remainder on top of the previously recovered mob/skill/cast paths.
+The expanded world now supplies all UpdateAttack coordinator branches; this is
+not a claim that required world/attack/connection providers are connected.
+
+New required providers are same-zone FindUser **00415f30**, a pure live map team
+flag query, user EnableAttackRange **0044bf90** (argument zero), and normal
+AttackUser **00456870**. Team decisions reuse existing canonical `same_team`
+(CUser::IsTeam(CUser*) **0044bdf0**), not a second relations implementation.
+Read canonical Actor/ZoneUsers source; existing appearance/status/relations
+fields suffice. No shared source/header or other owner changed.
+
+Recovered behavior:
+
+- The existing normal prefix rejects a requested self ID before lookup. This
+  branch captures the requested ID, then finds the target in the requester's
+  current zone. Failed lookup stops and returns false without a packet or new
+  deadline.
+- Ordered rejection guards after lookup: target +142c state 1; invalid visible/
+  attackable flags (+5774/+5775) unless captured request equals own ID; raw shape
+  +1354 == 13; actual returned target ID equals own ID; then same-team relation.
+  Each rejection stops and returns false without a failure packet. Permission
+  checks use the captured requested ID even if lookup changes current_target.
+- Use raw Actor.status().shape, not effective vehicle/copied appearance. Reuse
+  the directional team helper: source duel override, reciprocal ready guild war,
+  then map-team/country fallback. Do not add a separate country early guard or
+  reverse the source/target arguments. Map team query is pure state access,
+  not a dispatch/notification callback.
+- Range follows eligibility. There is no eligibility recheck after range returns:
+  its callback may change target state to 1 and AttackUser still executes when
+  range returns true. Keep the captured target object instead of resolving the
+  actor's potentially changed current_target again.
+- Range failure restores the supplied poll tick (the original temporarily uses
+  EBP for captured target ID), samples live attack speed, writes the wrapping
+  deadline, stops, sends 17-byte reason-5 0502 and returns false. It does not
+  cancel movement or clear the motion byte afterward.
+- Successful AttackUser is followed by target's live state-1 check and optional
+  existing stop. Then write deadline using live speed and the ORIGINAL poll tick,
+  cancel movement, clear motion +1448 to zero and return true. Inner attack/stop
+  changes to the attacker's mode do not suppress the final scheduling tail.
+  Cancellation deadline changes remain; its motion changes are overwritten.
+
+Original fixtures execute complete UpdateAttack entry-to-return paths with real
+IsTeam, StatusAttackStop, GetAttackSpeedNow, CancleMove (pending move zero) and
+cookie returns. Effects, lookup, range, AttackUser and self delivery are observed
+required ports. The 2,048 cases include 1,665 lookups, 909 original relation calls,
+819 range tests, 408 attacks and 411 range-failure packets. Inputs cover absent,
+zero/max/self/alias identities, raw target flags/state/shape, directional duel and
+guild relationships, map-team modes, signed speeds and tick wrap. Synthetic
+lookup/range/attack/cancel/send mutations audit the specific captured/live reads;
+these are not assertions that each real provider performs those mutations.
+Native tests use actual retained Actor instances and canonical `same_team`.
+Unexpected mob, skill, or movement-routing services fail the test probe.
+
+Validation:
+
+- All immutable executable/PDB SHA256SUMS pass, exit 0.
+- Fixture generated under work/ before copying and independently regenerated
+  byte-identically (`cmp`, exit 0).
+- `python3 tools/dev.py build`: exit 0, no compiler warnings;
+  `work/mob-combat-scheduler-users-build.log`.
+- `python3 tools/dev.py test`: exit 0, **128/128 passed**, 34.94 seconds,
+  including all 2,048 new normal-user traces and previous scheduler branches;
+  `work/mob-combat-scheduler-users-test.log`.
+- `git diff --check`: exit 0. Shared wrappers/locks respected. SQL unchanged;
+  final isolated SQL integration remains coordinator-owned.
+
+Production requirements: activate the expanded world rather than a generic
+remainder stub. Bind lookup to the source's retained zone/instance, not a global
+or numeric-map-only registry. Keep both Actor objects valid through AttackUser
+and the following target-state read, and keep the source Actor/scene valid
+through cancellation and the final motion write. Do not recycle a disconnected
+actor during those nested callbacks. Obtain the map's live +7c team flag from
+retained zone-definition ownership. Actual user range/attack, effects, skills
+and direct connection transport remain required providers. No new canonical
+Actor fields are needed for this branch, and no lifecycle/packet defaults were
+introduced.
+
+Remaining independent work within this prefix: recover GetAttackSpeed 0048a460
+against existing Actor effect counters to replace that external query, then
+assemble the real zone/connection adapters once the canonical retained visitor
+and active-skill owner interfaces are supplied. The user attack coordinator is
+recovered; production routing and actual providers remain open. The server is
+still non-playable.
