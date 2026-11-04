@@ -1,5 +1,6 @@
 #include "eternity/game/mob_combat_scheduler.hpp"
 #include "eternity/game/mob_combat_scheduler_skills.hpp"
+#include "eternity/game/mob_combat_scheduler_users.hpp"
 #include "eternity/game/mob_combat_stop.hpp"
 #include <algorithm>
 #include <stdexcept>
@@ -111,6 +112,23 @@ bool MobCombatSchedulerSkillWorld::remainder(Actor& actor,std::uint32_t now,MobC
     if(casting || actor.attack_state().mode!=3)mob_combat_scheduler_next(actor,dead,*this);
     if(casting)deadline(actor,now);
     cancel_move(actor);actor.attack_state().motion=1;return true;
+}
+
+bool MobCombatSchedulerUserWorld::normal_user_attack(Actor& actor,std::uint32_t now) {
+    const auto requested=actor.status().current_target;
+    auto* target=find_attack_user(actor,requested);
+    if(!target || target->attack_state().mode==1 ||
+       ((!target->appearance().visible || !target->appearance().attackable) && requested!=actor.id()) ||
+       target->status().shape==13 || target->id()==actor.id() ||
+       same_team(actor,*target,map_team_mode(actor))) {
+        mob_combat_stop(actor);return false;
+    }
+    if(!in_user_range(actor,*target)) {
+        deadline(actor,now);mob_combat_stop(actor);failure(actor,5,*this);return false;
+    }
+    attack_user(actor,*target);
+    if(target->attack_state().mode==1)mob_combat_stop(actor);
+    deadline(actor,now);cancel_move(actor);actor.attack_state().motion=0;return true;
 }
 
 }
