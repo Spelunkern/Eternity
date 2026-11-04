@@ -885,3 +885,31 @@ Reviewede80704a/ca358f8 completeRebirth/Actorbridge:1552reportedoriginaltraces(1
 Session37938 exited0:build,238/238tests68.65s,completeisolatedSQL,fullrestoredcatalogandrealstreamSQLfourcontrolledconversionfailures/types/parameters/retainedconnection. Sourcef545bae;logs.local/twelfth-batch-{build,tests,sql,bindings-sql,stream-sql}.log. Freeze released;publishverifiedbatch. Newpendinghandoffsnotcovered.
 
 Reviewed/queueddd8daae/99dce13 user2101mixedordinary/portalshared100rowchunks,192originalcases/334packets,140tests. Nozoneguard,actualmapfilterbeforetargetread,livefuturecallbackreads;ordinarythenportalwithoutphaseflush. Realuserentry/connection/retainedmaproutingstillrequired. Objectiveopen,exclusivebranchownershipunchanged.
+
+## Reviewed worker09 57693a10 — limitedliteralinterpreter
+
+Reviewedc2de343/34ac828 numeric/stringTravelCondition andretained64valuestack,3048reportedoriginalexecutions/138tests. Exactsnapshot/commitsqueued. Literalcompletionreturns0,not toptruth;capacityoverflowincrementstopwithoutwrite;retaintext/numericscratch semantics. Unsupportedvariable/function/operatorandundefinedfirstnumeric paths explicitlyerror;do notinstallasfullassetinterpreter. Actualfactory/rootservices remainopen. Latestvalidatedc8d07ce238tests/fullSQL/catalog/stream,no pipelineactive.
+
+## Reviewed worker01 e8d0d63b — LearnSkill
+
+Reviewedc813863/df90d11 actual learnedowner LearnSkill new/upgrade/guards/points/DBclientlogorder,192reportedoriginalcases/134tests. Exactsnapshot/commitsqueued. Firstcapturedcostdeducted aftersecondlivedefvalidation,no refundallocationfailure,realpassivecallback/livecount/slotrereads preserved. Stableuserdefinition/commonmanager/rootportsstillrequired. WorkercontinuesSendCharacterSkillcooldownwithin userskill scope. Lastvalidatedc8d07ce;integratingreviewedpendingbatchnext.
+
+## Thirteenthbatch integrated —sourcefreeze
+
+Integratedpendingthrough f59ccd59241c8a19a42afae080e6aace2e23d59e,includingLearnSkill/Rebirth,expelreentrancy,literalVManduserportalpublication.CMakenestingchecked. NEW SOURCEFREEZE duringbuild/test/fullSQL/fullcatalog/streamSQL in.local/thirteenth-batch-{build,tests,sql,bindings-sql,stream-sql}.log. No canonicalsource/CMakeedits/cherry-pickswhileactive;queuehandoffs. Publishonlyallcheckspass,lastvalidatedc8d07ce. Actualcommonmanager/userdefs/lifecycleworld/rootservicesremainopen;exclusivebranchownersunchanged.
+
+## Reviewed worker04 3df27d42 — worldinitialDBsequencing
+
+Reviewed1112ff8/2afd61c realportal/ordinarypublishers onsameDBport,portalfirstthenorderedmaplistswithindependentchunks.128originalcases/452packets/141testsreported. Exactsnapshot/commitsqueued duringfreeze. Latermaprowsreadliveafterearliersends,nozoneguards/stalesnapshots. RootDBconnectionstartup/reconnectandworldassemblyremainopen. Current60360thirteenthbuildobserved12/287;testsSQLcatalogstreamSQLpending,no sourceedits.
+
+## Worker04 checkpoint9f2e57c5 — exclusive actualmapowneradapter
+
+Reviewed/queuedbbe809c doc-onlycheckpoint. Explicitexpanded04exclusive map_config.hpp/cpp plus tests:actualServerMaps mutableportalcountry pointer accessor,mappedretainedconfig/source/position/identity adapter underobelisk_runtime_maps. Coordinator/othersavoidpaths;no secondcountryarray/const_cast/replacementmapowner. Reusefullcatalog/parsedbinders/sharedID,bObelisksetter;primaryzonepresence/routingactualrequiredports. Pool/init/zone03scope unchanged. Current60360buildcompleted287actions;testsSQLcatalogstreamSQLpending,sourcefreezeactive.
+
+## Reviewed realowner adapters03/07
+
+Revieweda48542a/00fdd9a actualsameboundMobPool/rawprepare/initialize_mob/ZoneMobs obeliskadapter,48reportedcompositions/135tests;initialfixtureports/name/resetpublicationexpectationscorrected,nativeadapterunchanged. Reviewedcb7ebf5/c674ca7 actualActorinventory/QuestRuntime/rewardadapter,896originalpaths/1095releases/126testsreported. Exact snapshots/commitsqueued duringfreeze. Inventorysnapshotidentity/payload/unlockedbagmutationsandnestedconsumptionexplicitlyrejected ratherthanunverifiedreentryequivalence. Actualuserexecutor/realreward/transport/logservices andworldAIbackendremainrequired. Current60360buildpassed,243/243tests63.72s;fullSQL/catalog/streamSQLrunning,pendingfinalexit.
+
+## Thirteenth batch validated
+
+Session60360 exited0. Sourcef59ccd59241c8a19a42afae080e6aace2e23d59e passed build,243/243 native tests (63.72s),complete isolated SQL,full restored binding catalog and real stream SQL. Logs: .local/thirteenth-batch-{build,tests,sql,bindings-sql,stream-sql}.log. Sourcefreeze released. New world sequencing and Actor/obelisk adapters remain reviewed in queue and are not covered by this validation. Server reconstruction objective remains open.
