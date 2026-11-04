@@ -52,6 +52,11 @@ void WorldAdmission::update_packets() {
         else {impl_->services.diagnostic(*user,WorldAdmissionError::map_selection);impl_->selection.add(*user);user->location=1;impl_->services.close(*user,9);}
     }
 }
+void WorldAdmission::update_zone_wait_packets(RuntimeZone& zone) {
+    const auto it=impl_->zone_wait.find(&zone);
+    if(it!=impl_->zone_wait.end())
+        it->second->visit([&](WorldAdmissionUser& user){impl_->services.packets(user);});
+}
 bool WorldAdmission::client_enter(WorldAdmissionUser& user) {
     auto* zone=user.zone;
     if(!zone) {impl_->services.diagnostic(user,WorldAdmissionError::missing_zone);impl_->services.close(user,9);return false;}
