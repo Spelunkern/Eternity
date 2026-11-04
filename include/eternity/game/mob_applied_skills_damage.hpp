@@ -18,6 +18,9 @@ public:
     // Original PSendView: current zone/position, radius 60, two zero options, priority 6.
     virtual void send_result(MobRuntime&,const MobAppliedSkillDamagePacket&,float radius,std::uint8_t priority) noexcept=0;
 };
+// ChkKeepSkill has already calculated damage and committed previous_tick.
+void deliver_mob_applied_skill_periodic_damage(MobRuntime&,MobAppliedSkill&,MobAppliedSkillDamage&,
+                                             MobAppliedSkillDamageServices&) noexcept;
 // ps_game.exe CMob::RemApplySkill 004a0da0, branches 0x3d / 0x3f only.
 // The subject/skill/definition survive callbacks. name projects the original
 // definition's NUL-terminated 32-byte name. Other effect types use the effect dispatcher.

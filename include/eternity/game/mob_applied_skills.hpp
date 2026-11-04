@@ -29,6 +29,9 @@ public:
 };
 class MobAppliedSkills;
 class MobAppliedSkillRemovalServices;
+class MobAppliedSkillDamageServices;
+class MobAppliedSkillEffectServices;
+struct MobRuntime;
 // One object-manager heap shared across owners. It must outlive every list.
 class MobAppliedSkillPool {
 public:
@@ -67,6 +70,8 @@ public:
     MobAppliedSkill* append_created(std::atomic<std::uint32_t>& counter);
     std::vector<MobAppliedSkill*> records() const;
     void clear(const MobAppliedSkillLogProjection&);
+    void keep(std::uint32_t now,MobRuntime&,MobAppliedSkillDamageServices&,MobAppliedSkillEffectServices&);
+    void remove_sleep(MobRuntime&,MobAppliedSkillEffectServices&);
     // Unsigned absolute tick comparison, including equality; no wrap-distance rule.
     void expire(std::uint32_t now,const MobAppliedSkillLogProjection&,MobAppliedSkillRemovalServices&);
 private:
