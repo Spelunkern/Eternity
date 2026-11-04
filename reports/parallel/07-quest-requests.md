@@ -447,3 +447,122 @@ it. The remaining mandatory inventory bridge depends on the Actor interface
 specified separately in milestone 2; real reward item receipt and transport/log
 context must also be bound. No independent assigned End/Select body remains
 unreconstructed; further canonical integration requires coordinator ownership.
+
+## Milestone 6: concrete Actor consumption and live quest world
+
+Coordinator-assigned prefix: `quest_requests_actor`. The prior Actor ownership
+blocker is resolved by worker 02's pinned **c02b69c227951a9d1961170385176b443237e863**
+(`302dcb2` report): borrowed retained item/pool, synchronized count and direct
+release primitives on the existing Actor. Shared Actor/inventory files remain
+read-only; this block does not duplicate their ownership logic.
+
+`QuestRequestsActorInventory` now runs the existing actual `quest_find_item` /
+`quest_find_items` routines against Actor's unlocked bags 1..max_bags and 24 slots.
+It borrows the actual pooled allocations and rejects value-only inventory rows
+instead of fabricating pooled ownership. Definition **nRealType +0xa0**, verified
+in Ghidra `stItemInfo`, maps to canonical `ItemDefinition::real_type`; value 27 is
+the full matching quest-stack removal case (not an Effect1/Special field).
+
+For every 0702, it synchronizes BOTH retained count and Actor value mirror to the
+routine's current projection BEFORE the mandatory actual DB transport. It does
+not subtract packet amount a second time. Multi-item whole-stack projection
+retains its old count; single-item decrement exposes its decremented count.
+After DB returns it revalidates pointer/pool/UID/definition/count, routes 0206 through the
+actual Actor scene, revalidates again, then uses direct
+`Actor::release_inventory_item(expected_pointer)` after client delivery. There is
+no Actor::remove_item, Actor::receive_item, allocation, exchange cleanup, removal log, second
+inventory owner or implicit DB replica change in this adapter.
+
+`QuestRequestsActorWorld` concretely binds the same Actor, canonical QuestRuntime,
+immutable definitions and required root ports to existing request, PC/item
+progress, timer and core completion interfaces. Lookup and traversal use the SAME
+QuestRuntime cursor. Progress and timer completion call actual QuestEnd; explicit
+selection and reward delegation use actual canonical `award_quest_reward` with
+Actor's live money and account routing. Actual QuestRuntime owns removal,
+finished/recycle storage and its DB command. No fake completion/query provider
+is installed in this production class.
+
+### Dependency preparation and lifetime contract
+
+`tools/quest_requests_actor_owners.py` snapshots pinned Actor header/inventory
+source from the exact worker 02 commit using read-only git show, plus canonical
+quest_runtime/quest_rewards from main read-only, under ignored
+`work/quest-requests-actor-owners`. Manifest records each SHA256/source. Private
+CMake replaces the OLD inventory.cpp source with that exact dependency and uses
+the matching Actor header overlay only when retained_inventory_item is absent.
+Central builds use their normal canonical Actor/inventory and quest owners.
+No main/other-worker checkout or tracked shared canonical path is edited.
+
+Callers retain Actor, quest payload, definitions, ports and actual pools through
+all callbacks and execute on the same serialized owner/recursive quest lock.
+Searched bag contents must not be released/reused or mutated by transport
+callbacks; identity/count changes fail explicitly rather than sending a stale
+client notice or releasing a replacement. Borrowed pointers are not owning
+leases, and pointer+UID cannot prove absence of same-address/same-UID ABA reuse:
+the retain/no-reuse contract is required. Reentrant inventory consumption through
+the same adapter is explicitly rejected to prevent projection invalidation;
+reentrant quest lookup/cursor movement is supported and tested. Unlocked-bag
+configuration stays stable during the operation; all searched slots are revalidated
+after DB/client callbacks. Actual root transports, actor
+experience, reward item receipt, NPC/zone lookup, logs/calendar and locks remain
+required ports; ActorScene remains the actual self-transport owner.
+
+### Original validation coverage
+
+- Reuse all 512 prior complete original request/consumption flows through the
+  NEW production inventory adapter and actual Actor, pool and InventoryReplica,
+  rather than a manually synchronized test projection. Exact bytes, retained
+  release-visible count, live quest counters and equipment/locked-bag sentinels
+  remain compared. Original reference has 680 releases.
+- New `tools/quest_requests_actor_oracle.py` executes 384 full original chains:
+  64 each of EndRequest, EndSelect, failure, UpdateQuest, item progress and PC
+  progress. Item query, core End/Select, reward result, QuestFind, QuestRemove and
+  FreeQuest are real original routines. External boundaries are clock/locks,
+  transport, NPC, actor experience, reward item receipt and game-log header.
+  Native comparison instantiates the production QuestRequestsActorWorld with
+  ACTUAL Actor, QuestRuntime, reward owner, pooled items and both DB replicas.
+- New traces contain 1,281 DB commands, 1,107 client deliveries, 415 inventory
+  releases and 303 final result logs; 82 DB callbacks perform reentrant live
+  quest lookup. Failure, pending selection, insufficient inventory, consumed
+  inventory followed by an unmet minimum-time gate, repeatable recycling and
+  post-removal cursor continuity are retained. Undefined original game-log name
+  tails alone are normalized after NUL, as in milestone 5.
+- DB callbacks observe synchronized Actor pointer/mirror before persistence;
+  client callbacks observe already-updated InventoryReplica and the still-owned
+  item with original full-stack count. Final UID deletion order matches pool
+  releases, and Actor pointer/mirror/cache counts match. A native stale-identity
+  callback test explicitly removes the affected allocation after DB and requires
+  rejection before stale client delivery/release. No production fallback is used.
+
+Milestone 6 validation:
+
+- `python3 tools/quest_requests_actor_owners.py`: exit 0; exact pinned dependency
+  plus canonical quest snapshots and manifest prepared under ignored work/.
+- `.local/oracle-env/bin/python tools/quest_requests_actor_oracle.py`: exit 0;
+  generated under work/ before fixture copy. Prior 512-flow fixture reused intact.
+- `python3 -m py_compile` for both new tools: exit 0.
+- `python3 tools/dev.py build`: both dependency-overlay and final guard rebuilds
+  exit 0. Final `work/quest-requests-actor-build-final.log` has no warnings. The
+  initial overlay rebuild contains pre-existing guild-file warnings from this
+  old prepared base; no Actor adapter warning/error occurred.
+- `python3 tools/dev.py test`: exit 0, **126/126 passed**, 39.26 seconds;
+  `work/quest-requests-actor-test.log`. New suite reports 512 original consumption
+  flows + 384 complete live owner chains and **1,095 direct pool releases**,
+  with exact replicas/mirrors/callbacks/cursors. Stale identity rejection passes.
+  No failed build or test run occurred in this milestone.
+- `sha256sum -c SHA256SUMS`: exit 0, all originals OK;
+  `work/quest-requests-actor-hashes.log`.
+- `git diff --check`: exit 0. No SQL lifecycle/schema/fixtures changed. Actual
+  packet application to InventoryReplica and QuestReplica is tested in process;
+  shared full isolated SQL integration remains coordinator-owned.
+
+Milestone 6 implementation commit: `cb7ebf58e5428ec713d25057a98dfcc81194414d`.
+
+Next integration proposal: coordinator instantiates QuestRequestsActorWorld on
+its retained user executor and connects request/progress/timer dispatch to this
+same object, supplying real ports and reward-world receipt/experience services.
+Root inventory restoration must create retained pooled Actor entries (existing
+load_inventory_item or real raw claim), not constructor value-only rows. No
+additional canonical inventory field/interface is requested. The historical
+Actor blocker is resolved; root owner attachment and real external providers
+remain open. This milestone does not claim world entry or server playability.
