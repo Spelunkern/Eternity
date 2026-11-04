@@ -1893,3 +1893,13 @@ session 22990 runs combined skill-damage and normal-damage tests. Magic damage,
 raw definition/attack-recovery live owners, hit/death services and actual Windows
 thread precision remain unresolved; this is not a production combat path.
 The desktop dashboard records this component milestone.
+
+Independent 03 implemented inbound admission routing independent of outbound
+cipher in `2d42b43`, with six focused tests passed, including real test-owned
+actor/zone admission before or after the XOR switch. Coordinator cherry-picked
+its handoff test and split as `b305521`/`dfb22e7` on new
+`/home/franco/Projects/Eternity-protocol` (`coordinator/protocol`) from the
+combined movement/skill branch. It depends on the ingress pause API already in
+that branch; neither has been imported into main. Exact FIFO insertion timing,
+returned async DB operation, stale resume, original 1000-frame snapshot and
+system/NProtect handling remain unproven/unwired. Combined validation pending.
