@@ -1248,3 +1248,11 @@ if(BUILD_TESTING)
     add_test(NAME mob-drops-inventory-requests-unit COMMAND mob-drops-inventory-requests-unit ${mob_drops_inventory_owner_root}/tests/data/quest-requests-flow-oracle.tsv)
     add_test(NAME mob-drops-inventory-grants-unit COMMAND mob-drops-inventory-grants-unit ${mob_drops_inventory_owner_root}/tests/data/quest-start-items-oracle.tsv)
 endif()
+
+# Worker 09: owned CKToken payloads and actual nested condition-vector copying.
+target_sources(eternity_game PRIVATE src/game/mob_ai_states_tokens.cpp)
+if(BUILD_TESTING)
+    add_executable(mob-ai-states-tokens-unit tests/mob_ai_states_tokens_unit.cpp)
+    target_link_libraries(mob-ai-states-tokens-unit PRIVATE eternity_game)
+    add_test(NAME mob-ai-states-tokens-unit COMMAND mob-ai-states-tokens-unit ${CMAKE_CURRENT_SOURCE_DIR}/tests/data/mob_ai_states_tokens-oracle.tsv)
+endif()

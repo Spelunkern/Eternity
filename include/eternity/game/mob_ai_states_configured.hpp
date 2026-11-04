@@ -1,6 +1,7 @@
 #pragma once
 #include "eternity/game/mobs.hpp"
 #include "eternity/game/mob_ai_states_parameters.hpp"
+#include "eternity/game/mob_ai_states_tokens.hpp"
 #include <array>
 #include <bit>
 #include <functional>
@@ -8,9 +9,13 @@
 #include <string>
 namespace eternity::game {
 struct MobAiConfiguredFsm;
-// KFSMCondition is seven DWORDs (0x1c). TravelCondition's expression/token
-// interpreter remains a required provider; these words are retained verbatim.
-struct MobAiConfiguredCondition {std::array<std::uint32_t,7> words{};};
+// KFSMCondition is seven DWORDs (0x1c). The first three are type/count/cursor;
+// legacy words remain an explicit projection, never native vector pointers.
+// Tokens are decoded owned values. TravelCondition remains a required provider.
+struct MobAiConfiguredCondition {
+    std::array<std::uint32_t,7> words{};
+    std::vector<MobAiToken> tokens{};
+};
 struct MobAiConfiguredTransition {
     std::uint32_t target=0;
     std::int32_t expected_sum=0;
