@@ -1417,3 +1417,13 @@ Independent 07 `.local/vertical-inventory-targeted.log` shows its focused
 unintegrated; isolated SQL and actual live Actor/zone/transport bindings remain
 required. Coordinator asked worker 07 to record the focused result before its
 next ActorScene assignment. Main validation 53983 is still live and queued.
+
+Independent 03 traced original location-2 waiting and zone-wait processing: a
+frame may need to survive beyond completion of the selection application call,
+so main's existing per-call serialization alone is insufficient. Coordinator
+created worktree `/home/franco/Projects/Eternity-ingress`, branch
+`coordinator/ingress`, commit `7dbe630`: adds explicit WorldChannel pause/resume
+of its bounded raw inbound queue plus a TCP wait/resume regression. It is NOT
+wired into actual WorldAdmission or merged. Its locked focused test is live in
+session 94920, log `Eternity-ingress/.local/ingress-test.log`; main session
+53983 is still running separately. Never claim complete entry from this bridge.
