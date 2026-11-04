@@ -1,4 +1,5 @@
 #include "eternity/game/obelisk_runtime_config.hpp"
+#include "eternity/game/obelisk_runtime_portal_config.hpp"
 #include <algorithm>
 #include <bit>
 #include <cstdlib>
@@ -95,4 +96,41 @@ std::vector<ObeliskRuntimeZoneInput> parse_obelisk_runtime_configuration(std::st
     }
     return result;
 }
+std::vector<ObeliskRuntimePortalInput> parse_obelisk_runtime_portal_configuration(std::string_view input) {
+    std::array<ObeliskRuntimePortalInput,64> slots{};std::size_t count=0;ObeliskRuntimePortalInput* active=nullptr;int mode=0;
+    const auto line=[&](std::string_view text) {
+        text=text.substr(0,text.find('\0'));if(text.size()<=1) return;
+        const auto first=text.find_first_not_of(" \t");if(first==std::string_view::npos) return;text.remove_prefix(first);
+        if(text.starts_with("//")||text.starts_with("--")) return;
+        if(prefix(text,"[portal_")) {
+            mode=3;if(count==slots.size()) throw std::runtime_error("Original portal configuration capacity exceeded");
+            auto& slot=slots[count];Tokens tokens{text.substr(8)};std::uint32_t id=0;
+            if(!tokens.number(id)) return;
+            slot.base_id=id+0x10000000U;
+            if(!tokens.number(slot.map)||!tokens.number(slot.portal)) return;
+            active=&slot;++count;return;
+        }
+        if(mode==3&&(prefix(text,"[light]")||prefix(text,"[fury]"))) {
+            if(!active) return;
+            const auto side=prefix(text,"[light]")?0U:1U;
+            // Original fury compares six characters but advances seven too.
+            Tokens tokens{text.substr(std::min<std::size_t>(7,text.size()))};
+            for(auto& ref:active->references[side]) {
+                if(!tokens.number(ref.map)) return;
+                const auto label=tokens.next();
+                if(!label||label->size()<9||!prefix(*label,"obelisk_")) return;
+                ref.ordinal=integer(label->substr(8));
+            }
+            return;
+        }
+        if(prefix(text,"[bothmob_")) mode=4;
+        else if(prefix(text,"[zone_")) mode=1;
+    };
+    std::string text;for(std::size_t i=0;i<input.size()&&input[i]!='\x1a';++i) {if(input[i]=='\r'&&i+1<input.size()&&input[i+1]=='\n') continue;text+=input[i];}
+    for(std::size_t at=0;at<text.size();) {const auto newline=text.find('\n',at);const auto end=std::min(at+8191,newline==std::string::npos?text.size():newline+1);line(std::string_view(text).substr(at,end-at));at=end;}
+    // EOF retry changes only the same first field of pending headers/references;
+    // no completed portal row or reference changes on that retry.
+    return {slots.begin(),slots.begin()+static_cast<std::ptrdiff_t>(count)};
+}
+
 }

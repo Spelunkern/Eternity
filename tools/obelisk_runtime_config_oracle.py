@@ -7,7 +7,7 @@ from unicorn.x86_const import UC_X86_REG_EAX,UC_X86_REG_ECX,UC_X86_REG_EDI,UC_X8
 from original_oracle import load_game,ROOT
 
 
-def main(parser=False,portal_binding=False):
+def main(parser=False,portal_binding=False,portal_parser=False):
     cpu,digest=load_game();stack,world,maps,infos,heap,file,stop=0x20000000,0x30000000,0x31000000,0x32000000,0x34000000,0x38000000,0x10000000
     for at,n in ((0,0x10000),(stack,0x10000),(world,0x10000),(maps,0x100000),(infos,0x200000),(heap,0x3000000),(file,0x10000),(stop,0x10000)):cpu.mem_map(at,n)
     def put(at,*v):cpu.mem_write(at,struct.pack('<'+'I'*len(v),*[x&0xffffffff for x in v]))
@@ -93,8 +93,8 @@ def main(parser=False,portal_binding=False):
                     words.append(key)
             print(scenario,' '.join(map(str,words)),sep='\t')
         return
-    if parser:
-        print(f'# ps_game.exe SHA256 {digest}; actual LoadObelisk 00427300 parsing through 00427eef, before materialization; original CRT strtok/atoi/atof execute. Only ordinary obelisk temporary tables are compared.')
+    if parser or portal_parser:
+        print(f'# ps_game.exe SHA256 {digest}; actual LoadObelisk 00427300 parsing through 00427eef, before materialization; original CRT strtok/atoi/atof execute. Only {'portal' if portal_parser else 'ordinary obelisk'} temporary tables are compared.')
         header=b'[zone_1]\n[Obelisk_9]=(1.25,-2.5,3),(1,2,3),2\n'
         spawn=b'[Mob]=(4,5,6,2.75),(3,4,5),2\n'
         cases=[b'[zone_1]\n',b'[zone_1]',b'',b'// comment\n-- comment\n',header,header+spawn,header+spawn.rstrip(b'\n'),
@@ -112,12 +112,35 @@ def main(parser=False,portal_binding=False):
         cases += [header+b'[Unknown] value\n'+spawn,header+spawn*64,
                   b'[zone_1]\n[Obelisk_1]=(1,2,3),(1,2,3),1\n'*3,
                   header+b'[zone_]\n'+spawn]
+        if portal_parser:
+            header=b'[Portal_9,1,1001]\n';light=b'[light]=0,Obelisk_1,1,Obelisk_2,2,Obelisk_3,3,Obelisk_4\n';fury=light.replace(b'[light]',b'[fury]')
+            cases=[b'',header,header.rstrip(b'\n'),header+light+fury,
+                   b'[light]=0,Obelisk_1\n'+header,
+                   header+b'[zone_1]\n'+light+b'[Portal_10,2,1002]\n'+fury,
+                   header+b'[bothmob_1,0,1,2,0,1001]=(1,2,3),1\n'+light,
+                   header+light+b'[unknown] value\n'+fury,
+                   header+light+b'[fury]12,Obelisk_9\n',header+light+b'[light]12,Obelisk_9\n',
+                   b' \t[PoRtAl_4294967295,-1,2147483649]\r\n[LiGhT]={-1,ObElIsK_4294967297}\r\n',
+                   header+light+b'\x1a'+fury,header+b'\0'+light,
+                   b' '*8191+header+light,b'//'+b'x'*9000+b'\n'+header+light,
+                   header+b'[light]=0,Obelisk_1,1,Obelisk_2,2,Obelisk_3,3,Obelisk_4,4,Obelisk_5\n',
+                   header*64]
+            next_header=b'[Portal_33,2,1002]'
+            for cut in (0,8,9,10,11,12,13,14,15,16,17,18):cases.append(header+light+next_header[:cut]+b'\n'+fury+next_header+b'\n')
+            for cut in range(7,len(light),3):cases.append(header+light+light[:cut]+b'\n'+fury)
+            for bad in (b'bad',b'Obelisk_',b'obelisk_x',b'Obelisk_-1'):
+                cases.append(header+light+b'[light]=7,'+bad+b',8,Obelisk_9\n')
+            print('# Portal parser variant: completed raw stPortalLink rows only; pre-zeroed initial stack; actual parser through 00427eef.')
         for scenario,text in enumerate(cases):
             context.update(text=text.replace(b'\r\n',b'\n').split(b'\x1a')[0],position=0,heap=heap);cpu.mem_write(file,bytes(32))
             cpu.mem_write(stack,bytes(0x10000)) # Explicit initial stack, including the empty-file buffer.
             put(stack+0xf000,stop);cpu.reg_write(UC_X86_REG_ESP,stack+0xf000);cpu.reg_write(UC_X86_REG_FPCW,0x27f)
             cpu.emu_start(0x427300,0x427eef,count=10000000)
             if cpu.reg_read(UC_X86_REG_EIP)!=0x427eef:raise RuntimeError('Original parser did not reach materialization boundary')
+            if portal_parser:
+                count=get(cpu.reg_read(UC_X86_REG_ESP)+0x44);words=[count]
+                for i in range(count):words.extend(get(0x543b90+i*76+j) for j in range(0,76,4))
+                print(scenario,text.hex() or '-',*words,sep='\t');continue
             count=get(cpu.reg_read(UC_X86_REG_ESP)+0x38);words=[count]
             for mi in range(count):
                 zone=0xfe2f10+mi*0x20908;n=get(zone+4);words.extend((get(zone),n))

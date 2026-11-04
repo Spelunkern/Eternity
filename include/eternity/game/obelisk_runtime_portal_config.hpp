@@ -12,6 +12,7 @@ struct ObeliskRuntimePortalMap {
     std::span<const ObeliskRuntime> obelisks;
     bool zone_present=false;
 };
+std::vector<ObeliskRuntimePortalInput> parse_obelisk_runtime_portal_configuration(std::string_view);
 class ObeliskRuntimePortalConfiguration {
 public:
     // LoadObelisk 00427300 portal materialization. All map/target/obelisk

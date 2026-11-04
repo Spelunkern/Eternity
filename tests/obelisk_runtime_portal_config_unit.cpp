@@ -5,7 +5,7 @@
 #include <stdexcept>
 using namespace eternity::game;
 namespace {
-void run(int scenario,const std::vector<std::uint32_t>& expected) {
+void run(int scenario,const std::vector<std::uint32_t>& expected,bool parse) {
     std::array<std::array<ObeliskRuntime,2>,3> records;
     std::array<std::array<std::int32_t,3>,3> countries{};
     std::array<std::array<ObeliskRuntimePortalTarget,3>,3> portals;
@@ -21,6 +21,18 @@ void run(int scenario,const std::vector<std::uint32_t>& expected) {
         input.portal=std::array<int,3>{1001,1002,999}[static_cast<std::size_t>((scenario+i)%3)];
         for(std::size_t side=0;side<2;++side) for(int j=0;j<4;++j) input.references[side][static_cast<std::size_t>(j)]=scenario%7==0?ObeliskRuntimePortalReference{3,0}:ObeliskRuntimePortalReference{(scenario/5+i+j)%4,std::array<int,4>{0,1,2,4}[(static_cast<std::size_t>(scenario+i+j)+side)%4]};
         inputs.push_back(input);
+    }
+    if(parse) {
+        std::ostringstream text;
+        for(const auto& input:inputs) {
+            text<<"[Portal_"<<(input.base_id-0x10000000U)<<','<<input.map<<','<<input.portal<<"]\n";
+            for(std::size_t side=0;side<2;++side) {
+                text<<(side==0?"[light]=":"[fury]=");bool first=true;
+                for(const auto& ref:input.references[side]) {if(!first) text<<',';first=false;text<<ref.map<<",Obelisk_"<<ref.ordinal;}
+                text<<'\n';
+            }
+        }
+        inputs=parse_obelisk_runtime_portal_configuration(text.str());
     }
     // The full original loader first consumed six ordinary obelisk IDs.
     std::uint32_t next=(scenario%2?0xfffffffcU:100U)+6U;
@@ -43,8 +55,8 @@ void run(int scenario,const std::vector<std::uint32_t>& expected) {
 }
 int main(int argc,char** argv) {
     try {
-        if(argc!=2) throw std::runtime_error("Expected portal configuration fixture");std::ifstream input(argv[1]);if(!input) throw std::runtime_error("Missing fixture");std::string line;unsigned count=0;
-        while(std::getline(input,line)) {if(line.empty()||line[0]=='#') continue;std::istringstream row(line);int scenario;row>>scenario;std::vector<std::uint32_t> words;std::uint32_t n;while(row>>n) words.push_back(n);run(scenario,words);++count;}
+        if(argc!=2&&argc!=3) throw std::runtime_error("Expected portal configuration fixture");std::ifstream input(argv[1]);if(!input) throw std::runtime_error("Missing fixture");std::string line;unsigned count=0;
+        while(std::getline(input,line)) {if(line.empty()||line[0]=='#') continue;std::istringstream row(line);int scenario;row>>scenario;std::vector<std::uint32_t> words;std::uint32_t n;while(row>>n) words.push_back(n);run(scenario,words,argc==3);++count;}
         std::int32_t country=2;std::array<ObeliskRuntime,1> records;std::array<ObeliskRuntimePortalTarget,1> targets{{{1,&country}}};
         std::array<ObeliskRuntimePortalMap,1> maps{{{targets,records,true}}};std::array<ObeliskRuntimePortalInput,1> invalid;invalid[0].portal=1;invalid[0].references[0][0]={0,2};
         std::uint32_t next=0;bool rejected=false;try {static_cast<void>(ObeliskRuntimePortalConfiguration::bind(invalid,maps,next));} catch(const std::out_of_range&) {rejected=true;}
