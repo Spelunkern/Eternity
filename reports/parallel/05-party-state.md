@@ -838,3 +838,121 @@ Do not normalize the recovered signed count in this owner. This block does not
 claim safe original behavior for later unrelated operations on a negative-count
 party, or provide the missing production Actor binding. SQL lifecycle/full SQL
 integration stays with the coordinator. Server gameplay completion is open.
+
+## Block 12 — actual regular raid entry and leave
+
+Resolved complete `ps_game.exe CParty::EnterRaidParty 00445a30..00445fda`,
+`LeaveRaidParty 00446510..00446958`, and `GetEmptySlot 00446480..004464b2`
+from the complete Ghidra symbol/disassembly inventory. Both membership routines
+use ECX=party, stack argument=user (unlike ExpelUser's recovered convention).
+New files use only party_runtime_raid; existing canonical Actor/inventory/zone
+headers and all other owners remain untouched.
+
+The native functions operate on the existing PartyRegistryParty's SAME ordered
+30-entry array (seven inherited entries plus 23 extra entries), indices, count,
+leader, subleader, cursor and experience state. No second membership owner or
+raid success stub was added. PartyRaidRequestWorld implements the inherited
+required enter_raid/leave_raid routes, so the existing PacketParty dispatcher
+and its default actual ExpelUser now compose with actual raid membership.
+Full other raid request opcodes remain an explicit required provider.
+
+Recovered entry behavior:
+
+- Count >=30 returns false before clock or locks. Otherwise clock then party
+  lock; GetEmptySlot scans index values of ALL entries below count, including
+  holes, returning the lowest unused 0..29 or -1. An absent user pointer does
+  not make its index available. A -1 result unlocks and returns false.
+- Append pointer AND new index at live count, set user.party before sends. When
+  count>0, broadcast 0b0c and send the identical 0b0c directly to the new user,
+  BEFORE count increment. This member record includes the wire index and up to
+  40 visible effects using the same original signed wrapped deadline arithmetic.
+- Capture 0b0b roster header once: continuation, leader/subleader wire indices,
+  division WORD, raid flag, auto-join flag and count. Scan all 30 pointer slots,
+  skip holes, include the joining member, and send chunks of six with at most
+  35 effects per record. Full-chunk continuation depends on LIVE count+1 modulo
+  six, not which chunk is last. A trailing partial chunk is sent only on reaching
+  count+1 non-null entries; scan exhaustion alone does not flush it. Inactive
+  tail pointers are not cleared or ignored by this scan.
+- Increment count, clear pending byte +1744, refresh max experience, unlock;
+  then shared 0520 scene notification and 0f01 log. Inviter DWORD is separate.
+
+Recovered leave behavior:
+
+- Lock, scan pointer identity below live count, skip holes; missing returns
+  false with unlock only. Capture leader/subleader-removal flags, clear party,
+  and broadcast 0b0d while the leaver is still in the recipient array.
+- Compact BOTH pointers and indices, leaving inactive tail untouched. For each
+  shifted source position decrement matching leader, ELSE matching subleader.
+  Decrement item cursor only when removed_position+1 < cursor, then --count.
+- Zero count unregisters; one remaining member recursively invokes raid Leave
+  when current kind==1, otherwise the existing normal Leave owner. No recycling
+  or free. With >=2, removed leader promotes the shifted subleader; replacement
+  subleader is the first non-null array position excluding the leader. Preserve
+  holes and the original retained indices when no replacement exists.
+- Required guild cleanup precedes max refresh. Leader change broadcasts 0b17,
+  reloads the selected leader after that callback; subleader change broadcasts
+  0b13. Unlock, scene for departed user then changed leader (not subleader),
+  then shared 0f02 log. Recursive notifications are retained, including original
+  inactive-tail behavior after dissolution.
+
+PartyRaidMembershipWorld supplies 30-slot GetPartyType with the recovered
+capture/recursive-lock/recheck algorithm and the 30-slot CParty::Send loop.
+It REUSES existing shared buffer allocation/copy/release and direct connection
+send, with real pool/worker/close providers still mandatory. The original seven
+slot send/type defaults are not sufficient for raid: production must select
+this world adapter or an equivalent real 30-slot provider. Existing normal
+parties can use it because every bound party is an actual PartyRegistryParty.
+
+Validation:
+
+- 256 retained original sequences: 768 whole PacketParty calls (accept, leave,
+  and leader-driven expulsion), 256 direct EnterRaidParty, 512 direct
+  LeaveRaidParty and 256 direct ExpelUser calls, plus 84 literal nested
+  PacketParty calls. Bodies, registry/map operations, experience and 30-slot
+  GetPartyType execute in the original EXE. No raid membership body is patched.
+- Matrix spans counts 0..30, nonsequential/duplicate wire indices, pointer holes,
+  leader/subleader beyond inherited seven slots, full capacity, multi-chunk
+  rosters, 65-effect users exercising both truncation limits and shared effect
+  cursor, tick wrap, automatic join flag, recursive unregister and callback
+  leave during scene/expulsion. Callback snapshots include all 30 slots/indices,
+  signed count, leader/subleader/cursor/max, auto-join, membership/request/guild
+  state and effect cursor. Full packets, return values and final state match.
+- Traces include 1,233 raid roster packets, 468 broadcast AND direct 0b0c pairs,
+  363 raid departure broadcasts, 475 composed expulsion broadcasts and 124
+  required guild-cleanup calls. Guild cleanup is an explicit input projection
+  of inline world blocks 0044670a..00446806, 0044724d..00447325 and the existing
+  normal cleanup 00446ac1..00446bae; its implementation is not claimed recovered.
+- Separate 512 complete original CParty::Send/AllocBuffer/connection/agent
+  comparisons cover 30 slots, holes, socket -1 versus 0, allocation failure,
+  live count/slot/socket/type mutations and immediate/delayed completion. Native
+  uses existing shared buffer allocator and releases, tests ensure exactly one
+  recycle after the final reference. No production no-op pool/worker exists.
+- Locked native build exits 0, no diagnostics
+  (`work/party-runtime-raid-complete-build.log`, incremental final harness build
+  `work/party-runtime-raid-guild-build.log`). Initial focused expansion used a
+  stale hash writer compiled with 32 bytes instead of eight; the rebuilt
+  harness corrected that test bug before final comparisons.
+- Final locked tests: 133/133 passed, 42.78 seconds, exit 0
+  (`work/party-runtime-raid-final-test.log`). Earlier 133/133 pass: 46.46 seconds.
+- Locked focused C++20 ASAN/UBSAN compilation and both matrices: exit 0, no
+  diagnostics (`work/party-runtime-raid-sanitized.log`). Re-run with final added
+  PacketParty-to-expel sequences also exits 0, no diagnostics
+  (`work/party-runtime-raid-final-sanitized.log`).
+- Both repeated original fixtures compare byte for byte (`cmp`, exit 0),
+  including return-sentinel assertions on whole calls. Original EXE/PDB manifest
+  and `git diff --check`: exit 0 (`work/party-runtime-raid-final-hashes.log`).
+  Generated assembly, fixtures and logs stay in ignored work/. Full isolated SQL
+  integration remains coordinator-owned and was not run in this memory block.
+Implementation commit: `ba4f407a3ce54019f686fb3500a51d716f02ae79`.
+
+Required production contract: keep one retained registry party and live
+PartyMembershipUser per Actor; the root must hold selected parties/users across
+ALL nested callbacks and recursive Leave, including after member.party clears
+and map unregister. A raw map/slot pointer is not lifetime ownership. Use the
+Block 9 retained Actor binding and new raid-aware world/request adapters; no new
+canonical field or duplicate party handle is requested. Scene/log/guild cleanup,
+lookup, recursive locks, real transport/pool/worker and remaining raid request
+provider are required. Guild cleanup remains a projected mandatory boundary,
+not a recovered guild implementation. No SQL lifecycle operations or main edits.
+Regular raid creation/conversion/opcode dispatch and root Actor assembly remain
+open; component tests do not establish client playability.
