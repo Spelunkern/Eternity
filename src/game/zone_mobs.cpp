@@ -118,9 +118,22 @@ MobRuntime* ZoneMobs::find(std::uint32_t id) const noexcept {const auto at=index
 MobRuntime* ZoneMobs::find_cell(CellCoordinates c,std::uint32_t id) {const auto at=cells_.find(key(c));if(at==cells_.end()) return nullptr;auto& cell=at->second;cell.cursor=cell.members.empty()?0:cell.members.begin()->first;while(cell.cursor) {auto* mob=cell.members.at(cell.cursor);if(mob->id==id) return mob;const auto next=cell.members.upper_bound(cell.cursor);cell.cursor=next==cell.members.end()?0:next->first;}return nullptr;}
 std::vector<MobRuntime*> ZoneMobs::all() const {std::vector<MobRuntime*> out;for(const auto& [ordinal,mob]:ordered_) out.push_back(mob);return out;}
 std::vector<MobRuntime*> ZoneMobs::in_cell(CellCoordinates c) const {std::vector<MobRuntime*> out;const auto at=cells_.find(key(c));if(at!=cells_.end()) for(const auto& [ordinal,mob]:at->second.members) out.push_back(mob);return out;}
+void ZoneMobs::visit_cell(CellCoordinates c,const std::function<void(MobRuntime&)>& visitor) {
+    const auto at=cells_.find(key(c));if(at==cells_.end()) return;
+    auto& cell=at->second;cell.cursor=cell.members.empty()?0:cell.members.begin()->first;
+    while(cell.cursor) {
+        visitor(*cell.members.at(cell.cursor));
+        // Only the retained cell is accessed after callback. Remove rewinds to
+        // predecessor; nested failed FindMob leaves sentinel (restart at head).
+        const auto next=cell.cursor==0?cell.members.begin():cell.members.upper_bound(cell.cursor);
+        cell.cursor=next==cell.members.end()?0:next->first;
+    }
+}
 void ZoneMobs::send(CellCoordinates c,MobViewer& viewer,bool entering) {
-    const auto at=cells_.find(key(c));if(at==cells_.end()) return;auto& cell=at->second;cell.cursor=cell.members.empty()?0:cell.members.begin()->first;
-    while(cell.cursor) {const auto* mob=cell.members.at(cell.cursor);if(!entering || mob_status(*mob)!=2) viewer.send_self(entering?mob_appearance(*mob,0):mob_removed(mob->id));const auto next=cell.cursor==0?cell.members.begin():cell.members.upper_bound(cell.cursor);cell.cursor=next==cell.members.end()?0:next->first;}
+    visit_cell(c,[&](MobRuntime& mob) {
+        if(!entering || mob_status(mob)!=2)
+            viewer.send_self(entering?mob_appearance(mob,0):mob_removed(mob.id));
+    });
 }
 void ZoneMobs::send_enter(CellCoordinates c,MobViewer& viewer) {send(c,viewer,true);}
 void ZoneMobs::send_leave(CellCoordinates c,MobViewer& viewer) {send(c,viewer,false);}

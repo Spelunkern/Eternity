@@ -56,6 +56,13 @@ public:
     bool move(MobRuntime&,UserPosition,std::uint8_t mode); // MoveMob 004169d0.
     MobRuntime* find(std::uint32_t) const noexcept;
     MobRuntime* find_cell(CellCoordinates,std::uint32_t);
+    // Synchronous original SSyncList cursor traversal. Caller owns zone/cell
+    // serialization through ALL callbacks (including nested find/visit/remove).
+    // No cursor restoration: nested operations affect the outer traversal.
+    // Membership removal is allowed; no visited actor is read after callback.
+    // Keep this zone alive; release_to_pool/destruction cannot run during visit.
+    void visit_cell(CellCoordinates,const std::function<void(MobRuntime&)>&);
+    std::int32_t cell_count() const noexcept {return geometry_.cell_count();}
     std::vector<MobRuntime*> all() const;
     std::vector<MobRuntime*> in_cell(CellCoordinates) const;
     void send_enter(CellCoordinates,MobViewer&); // CellInfoEnter, appearance 0, skip status 2.

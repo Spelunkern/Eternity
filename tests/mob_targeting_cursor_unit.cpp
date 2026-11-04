@@ -7,9 +7,7 @@
 #include <stdexcept>
 using namespace eternity::game;
 void check(bool ok,const char* message) {if(!ok) throw std::runtime_error(message);}
-// Test-only cursor probe. send_leave already traverses ZoneMobs' actual shared
-// cell cursor; packets are consumed locally to observe visits, never transported.
-// Production integration needs a direct lock-held visitor API, not this probe.
+// Original mutation traces now exercise the direct production visitor.
 struct Case final:MobTargetingHelpServices,ZoneMobServices {
     std::array<MobRuntime,6> mobs;
     ZoneMobs zone{MapGeometry(1),*this};
@@ -19,18 +17,12 @@ struct Case final:MobTargetingHelpServices,ZoneMobServices {
     void send_cell_view(CellCoordinates,const eternity::net::Packet& p) override {check(p.size()==17 && p[0]==1 && p[1]==6,"Unexpected entry delivery");}
     std::unique_ptr<MobBroadcast> allocate_broadcast(const eternity::net::Packet&,std::optional<std::uint8_t>) override {throw std::runtime_error("Unexpected movement");}
     void lua_init(MobRuntime&) override {throw std::runtime_error("Unexpected Lua");}
-    struct Viewer final:MobViewer {
-        Case& owner;const std::function<void(const MobTargetingHelpCandidate&)>& visit;
-        Viewer(Case& c,const std::function<void(const MobTargetingHelpCandidate&)>& f):owner(c),visit(f) {}
-        void send_self(const eternity::net::Packet& p) override {
-            check(p.size()==6 && p[0]==2 && p[1]==6,"Unexpected cursor probe packet");
-            std::uint32_t id=0;for(unsigned i=0;i<4;++i) id|=static_cast<std::uint32_t>(p[2+i])<<(8*i);
-            auto* m=owner.zone.find(id);check(m!=nullptr,"Cursor delivered detached mob");owner.current=id;
-            visit({mob_status(*m),m->type,1,m->position.x,m->position.z});
-        }
-    };
     void visit_cell(std::int32_t x,std::int32_t z,const std::function<void(const MobTargetingHelpCandidate&)>& f) override {
-        check(x==0 && z==0,"Unexpected cell");events+="L ";Viewer v(*this,f);zone.send_leave({0,0},v);events+="U ";
+        check(x==0 && z==0,"Unexpected cell");events+="L ";
+        zone.visit_cell({x,z},[&](MobRuntime& m) {
+            current=m.id;f({mob_status(m),m.type,1,m.position.x,m.position.z});
+        });
+        events+="U ";
     }
     void remove(unsigned id) {
         if(id<1 || id>count) return;
