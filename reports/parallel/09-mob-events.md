@@ -2389,3 +2389,85 @@ coordinator owns isolated SQL and complete integration checks. The server is not
 playable.
 
 Implementation commit: `f76a372dee4b3490333dd3f586242b5cc707f6af`.
+
+## Milestone 34 — CalculateParam integer assignment and compound map writes
+
+### Evidence / behavior
+
+`ps_game.exe`, `CKFSM<CMob>::CalculateParam` `0049d020`, assignment
+`0049df40`, add-assign `0049e0c1`, subtract-assign `0049e302`, increment
+`0049e4fb`, decrement `0049e6a7`, multiply-assign `0049e80a`, divide-assign
+`0049ea2a`; full Ghidra export and original instructions. The shared tail
+`0049ec14..0049ec43` pushes the result before looking up the second operand's
+VariableID at stack offset +17c and assigning the result to that local. Other
+compound branches reach equivalent push/writeback tails, including `0049e9fe`.
+
+Added explicit writing argument and recursive expression providers for int/DWORD
+opcodes 10..16, on the existing configured owner's map and private argument stack.
+Both operands are popped even for increment/decrement. Result type, inactive
+payloads and VariableID come from the second operand. Assignment copies the
+first value's active bits into that type; compound operations wrap int/DWORD
+arithmetic and preserve signed-only int/int division. Unknown numeric literals
+can reuse the resulting copied scratch. Exhaustion/overflowed final tops still
+leave caller output intact while earlier map writes remain visible.
+
+Unlike F_OUT, direct CalculateParam assignment does not skip VariableID zero.
+It targets key zero if that typed entry exists. Missing targets explicitly error;
+no uninitialized original insertion is fabricated. Float argument writes,
+undefined pops and faulting integer division remain explicit errors. Earlier
+arithmetic/nested providers preserve their stricter assignment boundary.
+
+### Validation
+
+- 2,048 direct sequences / 4,095 complete original CalculateParam calls, covering
+  all seven updates, int/DWORD pairings, extrema/wrapping/division, literal/local
+  right operands, two-pop increment/decrement, aliases/zero target IDs, near-full
+  private stacks, retained scratch reuse and declared-count truncation. Exact
+  caller output bytes after each call, final map bytes, cursor and unchanged
+  main stack match native. 1,008 final maps change. All 12,287 allocations are
+  freed and poisoned; private stack constructors/destructors execute.
+- 768 recursive sequences / 1,536 complete original TravelCondition calls,
+  4,145 actual CMob virtual queries and 4,635 observed CalculateParam invocations,
+  with five simultaneous argument frames. Exact defined argument payload/order,
+  full maps observed before every DoFunction, retained final map/stack bytes,
+  subject mutations and per-round counts match native. All 20,790 allocations
+  are freed and poisoned; 342 final maps change. Capturing maps at dispatch
+  verifies writes occur during argument evaluation before the query.
+- Both oracles execute real parsing, stacks, vector ownership, map writeback and
+  query handlers; only allocation/free/security-cookie imports are adapted.
+  A typed key-zero entry is explicitly seeded to distinguish direct zero-ID
+  writes from F_OUT's zero-ID skip. Metadata remains a projection on known
+  queries, not factory-asset recovery. Indeterminate argument string tails after
+  NUL remain excluded; retained map/stack/output bytes are compared in full.
+- Actual native nested update uses add-assign through an alias: Source 5 writes
+  8 and stays; Source 20 writes 23 and transitions. Tests verify prior nested
+  providers reject assignment, the writing provider accepts it, and a missing
+  direct target errors before query dispatch, preserving the subject flag/map.
+  Unsupported/faulting operand paths remain explicit boundary tests rather than
+  claimed equivalent original returns.
+- Both oracles regenerate byte-identically; original SHA256SUMS pass; diff check
+  clean. Build exit 0, no compiler warnings;
+  `work/mob_ai_states_argument_writes-build.log`.
+- `python3 tools/dev.py test`: exit 0, 155/155 tests pass (57.72 s),
+  direct writes test 4.44 s and nested writes test 0.94 s;
+  `work/mob_ai_states_argument_writes-tests.log`.
+
+### Required integration / remaining work
+
+No shared canonical header or MobRuntime field change was needed. Preserve the
+single configured local map, private argument stacks, shared cursor and copied
+VariableID. Direct writes must not borrow F_OUT's zero-ID skip. Existing typed
+targets are required; original insertion with indeterminate retained text remains
+unsupported. Earlier per-owner SysFuncMap/CKFunctionParam/+48 bound-instance
+requirements remain coordinator integration requests, not new shadow owners.
+
+CalculateParam float arithmetic/assignment/compound matrices, other DoFunction/
+world handlers, nonfinite propagation, nonnumeric comparisons, full factory/asset
+decoding and root world/Lua/scheduling/destruction remain open. Next independent
+block can recover private-stack numeric/float assignment and arithmetic with
+original staging, rather than assuming TravelCondition's matrix transfers
+unchanged. Unknown functions and missing providers must continue to error.
+SQL/contracts did not change; coordinator owns isolated SQL and complete
+integration checks. The server is not playable.
+
+Implementation commit: `60e3e18cd823d0f5e0a764e82e57713aee6188e8`.
