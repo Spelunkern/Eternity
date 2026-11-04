@@ -60,7 +60,9 @@ struct Case final:MobTargetingNpcDeathServices {
     void unlock_party(PartyRegistryParty* p) noexcept override {event('U',std::to_string(token(p)));mutate('U');}
     void send_party(PartyRegistryParty* p,const eternity::net::Packet& b) override {event('B',std::to_string(token(p))+":"+hex(b)+":9001");if(fail) throw std::runtime_error("Injected party transport failure");mutate('B');}
 };
-struct Scene final:ActorScene {
+struct Scene final:ActorScene,ActorEffectDatabase {
+    std::vector<eternity::net::Packet> effect_database_packets;
+    void send_effect_database(const eternity::net::Packet& packet) noexcept override {effect_database_packets.push_back(packet);}
     std::vector<unsigned> released;
     void send_self(const eternity::net::Packet&) noexcept override {std::terminate();}
     void send_nearby(const eternity::net::Packet&) override {throw std::runtime_error("Unexpected proximity delivery");}
