@@ -1557,3 +1557,12 @@ and `vertical-protocol-gate-unit` on the combined 03+09+pause branch, logs
 covers ordered AES/XOR handoff and admission with test-owned services; it is not
 an original client or production root. Remaining focused protocol/persistence,
 full build and disposable SQL phases continue in the same live session.
+
+Ingress integration session 69947 has now passed all four focused tests:
+`vertical-protocol-tcp-unit`, `vertical-protocol-gate-unit`,
+`vertical-protocol-unit`, `vertical-persistence-unit`. Its full build and
+isolated SQL phases remain live/in progress; this is not a live application or
+original-client test. Independent 08 committed a quest-specific NPC guard
+`fa8a664`/`17c4b78`/`49253c2`, but coordinator previously flagged that canonical
+NpcPool release can bypass this wrapper. Keep it unintegrated until canonical
+retention or an enforced single retirement owner is demonstrated.
