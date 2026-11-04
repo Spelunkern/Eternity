@@ -71,9 +71,11 @@ canonical header was modified. CMake additions register only this source/test.
   (companions in complete respawn). Raw-heap companion preparation
   must atomically assign the world mob ID and seed drop RNG with Unix time XOR
   ID; initialize must call real `initialize_mob`; enter must call real zone owner.
-- Required transports, KC totals/status-14 lookup, `SendObeliskChange`
-  **0042b200** and `UpdatePortalLink` **0042a000** remain external world owners.
-  These services have no default no-op implementation.
+- Required transports and KC totals/status-14 lookup remain external world
+  owners. The `SendObeliskChange` **0042b200** serializer is now available in the
+  publication helpers below; actual zone routing is still required.
+  `UpdatePortalLink` **0042a000** still requires its world owner. No required
+  service has a default no-op implementation.
 - Production tick/reset dispatch and configuration remain unconnected: native
   `UpdateRespawnObelisk` and `ObeliskReset` bodies are available (see below), but
   loaders and the live ownership bridges still need integration. Existing
@@ -281,3 +283,59 @@ No shared pool/header changes were made here.
 Next independent work: obelisk configuration/state loading and stable per-zone
 respawn/source binding. Production startup/tick/reset dispatch and world ports
 remain unconnected; this milestone does not make the server playable.
+
+## Publication milestone — change and database list
+
+Implementation commit: `9900269130e02b151b237881500a4284df9e8602`.
+
+Recovered `ps_game.exe` **CMap::SendObeliskChange 0042b200**,
+**SendDBObeliskChange 0042b260**, and **SendDBObeliskList 0042b370**, with original
+assembly and a locked focused Ghidra export. New publication helpers implement:
+
+- Zone **2102**, seven bytes: opcode, full 32-bit local obelisk ID, translated
+  current country (0→1, 1→2, all others→0). Only the zone guard suppresses this
+  function; reset-send suppression belongs to its caller, as in Destroy.
+- DB **0207**, eleven bytes: base ID, original byte-packed last/current country,
+  change timestamp. No zone guard. Destroy/Reset now share this exact serializer.
+- DB **0206**: opcode, byte count, nine-byte records in source order; send each
+  full chunk of **100** immediately and then a nonempty remainder. Empty input
+  sends nothing. Read future records after previous transport callbacks, rather
+  than building a snapshot of all packets in advance.
+
+`ObeliskRuntime::id` projects original `stMapObelisk::dwID` at **+0000**, distinct
+from `base_id` at **+0014**. The map/configuration owner must populate both;
+substituting base ID or vector index for the local ID produces the wrong packet.
+`ObeliskRuntimePublication` requires concrete zone/DB transports without defaults.
+Existing `ObeliskRuntimeWorld::send_change` can now call
+`publish_obelisk_change(map, records[index], transport)`; its database callback
+continues receiving the already-serialized 0207 packet. World DB-list dispatch
+can call `publish_obelisk_database_list` with stable per-map projections.
+No canonical shared header changes were made.
+
+The original oracle executes all three serializer/loop bodies; only zone and DB
+transport calls are observed. 216 cases cover zero/one/two and 99/100/101,
+199/200/201, 255/256/301 records, nonzero selected indices, absent zones, reset
+flags, IDs above 16 bits, and signed/extreme country values to verify byte
+wrapping without C++ signed overflow. Transport callbacks change later country,
+base-ID and timestamp values after a full chunk. The resulting trace contains
+62 zone packets and 210 database packets, including 138 list packets containing
+10,290 records. This validates protocol assembly, not live SQL persistence.
+
+Validation:
+
+- `python3 tools/dev.py build`: exit 0, no compiler warnings
+  (`work/obelisk-publication-build.log`).
+- `python3 tools/dev.py test`: exit 0, **124/124 tests passed**, 29.34 seconds
+  (`work/obelisk-publication-tests.log`), including all five obelisk suites.
+- Original fixture generation, independent regeneration and `cmp`: exit 0;
+  `work/obelisk-runtime-publication-oracle.tsv` and
+  `work/obelisk-runtime-publication-repeat.tsv` match the tracked fixture.
+- Locked focused Ghidra export: exit 0 (`work/obelisk-publication-ghidra.log`).
+- Final `sha256sum -c SHA256SUMS`: exit 0 for every original EXE/PDB
+  (`work/obelisk-publication-final-hashes.log`). `git diff --check`: clean.
+
+No SQL queries/schema/fixtures changed; final isolated SQL integration remains
+coordinator-owned. Production transport routing, portal/KC services, stable
+configuration/state loading and world dispatch remain required. The canonical
+pool interface proposal from the startup block is still pending. This milestone
+does not make the server playable.
