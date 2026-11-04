@@ -23,6 +23,10 @@ struct WorldChannel {
     std::function<void(Packet)> send;
     std::function<void()> enter_world;
     std::function<void()> enter_character_selection;
+    // Keep inbound frames in the existing bounded connection queue while the
+    // world owner transfers the user between selection and zone-wait lists.
+    std::function<void()> pause_input;
+    std::function<void()> resume_input;
     std::function<void()> disconnect;
 };
 

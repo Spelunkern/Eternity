@@ -6,7 +6,7 @@
 
 using namespace eternity;
 void require(bool value,const char* message) {if(!value) throw std::runtime_error(message);}
-enum class Behavior {normal,block_open,block_receive,factory_error,null_factory,open_error,receive_error,close_error,bulk};
+enum class Behavior {normal,block_open,block_receive,pause_entry,factory_error,null_factory,open_error,receive_error,close_error,bulk};
 struct State {
     std::mutex mutex;
     std::condition_variable changed;
@@ -46,6 +46,7 @@ public:
         if(state->behavior==Behavior::receive_error) throw std::runtime_error("Test receive failure");
         ++sequence;
         if(packet.at(2)==1) {
+            if(state->behavior==Behavior::pause_entry) channel.pause_input();
             channel.send({9,1,static_cast<std::uint8_t>(sequence)});
             channel.enter_world();channel.send({1,2,static_cast<std::uint8_t>(sequence)});
         } else if(packet.at(2)==2) {
@@ -136,6 +137,26 @@ int main() {
             require(peer.selection()==Packet({9,1,1}),"Selection packet order changed");
             require(peer.in_world()==Packet({1,2,1}),"World transition packet changed");
             require(peer.in_world()==Packet({9,1,2}),"Pipelined world entry was discarded");
+            peer.close();fixture.state->wait([&]{return fixture.state->destroyed==1;});
+        }
+        // Zone selection can complete after the character-selection call has
+        // returned. A received 0201 must wait for explicit zone admission.
+        {
+            Fixture fixture(Behavior::pause_entry);Peer peer(fixture,fixture.reserve());
+            require(peer.selection()==Packet({9,1,0}),"Missing initial application packet");
+            peer.command(1);
+            require(peer.selection()==Packet({9,1,1}),"Selection packet order changed");
+            require(peer.in_world()==Packet({1,2,1}),"World mode marker missing");
+            Packet entry{1,2,0};peer.outgoing.crypt(entry);peer.socket.write(net::frame(entry));
+            net::WorldChannel retained;
+            {
+                std::unique_lock lock(fixture.state->mutex);
+                require(!fixture.state->changed.wait_for(lock,100ms,[&]{return fixture.state->receives>1;}),
+                        "Zone entry dispatched before admission resumed input");
+                retained=fixture.state->channel;
+            }
+            retained.resume_input();
+            require(peer.in_world()==Packet({9,1,2}),"Queued zone entry was lost after admission");
             peer.close();fixture.state->wait([&]{return fixture.state->destroyed==1;});
         }
         // A remote close, account replacement and server stop must all wait for open/receive.

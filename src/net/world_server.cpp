@@ -65,7 +65,7 @@ struct WorldServer::Impl::Connection : std::enable_shared_from_this<Connection> 
     std::size_t maximum_queued_bytes;
     std::size_t queued_bytes = 0;
     std::atomic_bool closed{false};
-    bool working = false,loaded = false;
+    bool working = false,loaded = false,input_paused = false;
     Connection(tcp::socket peer,const std::shared_ptr<Impl>& server,std::uint64_t identity)
         : socket(std::move(peer)),owner(server),id(identity),worker(asio::make_strand(server->database)),
           lifetime(socket.get_executor()),maximum_queued_bytes(server->options.maximum_queued_bytes) {}
@@ -132,6 +132,17 @@ struct WorldServer::Impl::Connection : std::enable_shared_from_this<Connection> 
                 try {self->protocol->enter_character_selection();} catch(...) {self->close();}
             });
         };
+        result.pause_input=[weak,executor] {
+            asio::post(executor,[weak] {if(auto self=weak.lock();self && !self->closed) self->input_paused=true;});
+        };
+        result.resume_input=[weak,executor] {
+            asio::post(executor,[weak] {
+                if(auto self=weak.lock();self && !self->closed) {
+                    self->input_paused=false;
+                    self->process_received();
+                }
+            });
+        };
         result.disconnect=[weak,executor] {
             asio::post(executor,[weak] {if(auto self=weak.lock()) self->close();});
         };
@@ -168,7 +179,7 @@ struct WorldServer::Impl::Connection : std::enable_shared_from_this<Connection> 
     // have run on the socket executor, preserving the incoming cipher order.
     void process_received() {
         try {
-            while(!closed && !working && !received.empty()) {
+            while(!closed && !working && !input_paused && !received.empty()) {
                 auto packet=std::move(received.front());received.pop_front();
                 auto event=protocol->receive(std::move(packet),world_now_ms());
                 if(event.close) return close();
