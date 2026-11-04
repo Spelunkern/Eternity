@@ -59,6 +59,27 @@ Vision fix requires nonzero captured attacker ID, checks effective status and
 sets scalar status=1/next_move=0 only when not dead; target kind/ID still update
 for dead mobs. It is direct original field mutation, not SetTarget dispatch.
 
+## Damage-producing replacement composition
+
+The replacement fixture now runs the complete native apply -> old-effect removal
+-> real TimeDamage/final-damage coordinator -> declared combat/death callbacks ->
+real clear/optional nested apply -> final result -> outer reapplication flow.
+No additional runtime projection or production-code change was needed.
+
+The selected node is unlinked but never free or active during old-effect damage,
+death and result delivery. Death-driven clear returns only the other nodes.
+A declared reentrant admission can reuse those nodes (and reassign their zero
+instance IDs), but cannot consume the selected object. Outer apply still installs
+its incoming definition, attacker and deadline and appends the same object/ID,
+even when combat published death state or changed old metadata. Preserve name
+lifetime through nested logging and the old result before the new application.
+
+These are explicit observed provider scripts: combat publishes its returned death
+state; the Death port calls original Clear and optionally original AddApplySkill.
+They do not reconstruct the complete Death reward body or claim that it
+spontaneously admits skills. They stress the existing coordination's live-callback
+contract with actual owner operations and stable retained storage.
+
 ## Existing ownership/timing contracts
 
 - One shared pool/counter outlives all lists. Destruction deletes active records;
@@ -118,40 +139,47 @@ for dead mobs. It is direct original field mutation, not SetTarget dispatch.
 | `e51bed4e907d5fffd2e5ce72fcbd19ca1acf7260` | Complete TimeDamage calculation | 12,544 original cases plus native periodic-removal composition; 125/125 tests, 38.83 s. |
 | `3d8b480c25acefe9aa66a15bc3bc6619d2fa74b1` | Live Keep/Sleep owner methods | 640 complete original traces; 126/126 tests, 32.87 s. |
 | `5c91dc31a5049e461848dee7e8fe78b953815651` | Admission, refresh, replacement and debuff application | 64 original scenarios / 1,536 operations; 127/127 tests, 31.19 s. |
+| `7ecf7f3a3ced7ec5c19b032c81d21fd1fd7367d1` | Damage/reentrant replacement composition evidence | 256 complete original flows; 128/128 tests, 32.24 s. |
 
 ## Current validation
 
-- All 12 original EXE/PDB hashes pass `sha256sum -c SHA256SUMS` (exit 0).
-  Log: `work/mob-applied-skills-application-hashes.log`.
-- Locked Ghidra process export passed: AddApplySkill, AddApplySkillDebuff,
-  RemovedSkill and list Remove; required output/JDK21/Ghidra12.1.4.
-  Log: `work/mob-applied-skills-application-export.log`.
-- Original oracle passed 64 sustained scenarios / 1,536 operations. It executes
-  real admission, non-damage application/removal, ability mutation, manager,
-  list/pool and GetStatus. Required clock/log/rebuild/speed/allocation/lock ports
-  are observed; InterlockedIncrement uses locked xadd. Clock callbacks change
-  live keep seconds and effect callbacks change Lua log gates.
-- Coverage includes ignored effects, failed/new/reused allocation, equal-level
-  refresh retaining changed metadata, first-match weak rejection, levels 0/4/255,
-  same-node replacement, wrapped IDs/deadlines/stats, all four status stack modes,
-  vision target zero/nonzero, pre-link logging, retained nonzero allocator payload
-  and shared-pool reuse. Snapshots compare all stat/control fields, definition
-  identity, entire payload, list/free order, counter/attempts and ordered events.
-- Repeat fixture generation is byte-identical; generated under work/ and copied
-  before native readers. Oracle py_compile and staged whitespace checks pass.
-- `python3 tools/dev.py build`: exit 0, no compiler warnings.
-- `python3 tools/dev.py test`: exit 0, **127/127 passed**, 31.19 seconds. All eight
-  applied-skill suites pass, including prior manager/expiry/keep/effect/damage/math
-  regressions after sharing the raw creation primitive.
-  Logs: `work/mob-applied-skills-application-{build,test}.log`.
+- All 12 original EXE/PDB hashes pass `sha256sum -c SHA256SUMS`, exit 0.
+  Log: `work/mob-applied-skills-replacement-hashes.log`.
+- Locked Ghidra process export passed for AddApplySkill, RemApplySkill and Clear;
+  required output/JDK21/Ghidra12.1.4 were used.
+  Log: `work/mob-applied-skills-replacement-export.log`.
+- Oracle generation passed 256 complete flows, with periodic/scalar old effects,
+  both combat outcomes, 64 reentrant admissions, metadata/zone/log-flag mutation,
+  all four status-stack modes, naming gates and three original node positions.
+  Actual admission, removal, TimeDamage/CRT, clear, manager and list/pool code
+  execute. Underlying combat/Death/view/log/speed bodies remain observed ports.
+- Snapshots/events compare full node/definition identity, stat/control/name
+  payloads, phase-specific arguments, exact old 0607 packet, tick/deadline order,
+  counter/attempts and free/active order. Original/native assertions require the
+  selected node to remain detached and unavailable through damage/death/view;
+  final identity/instance ID and outer-tail admission are checked explicitly.
+- Source allocator asserts no replacement/reentrant fresh allocation; native
+  factory rejects construction after seeding. Wrapped zero-ID free reuse occurs
+  only for other objects. Static callback trampolines avoid code-cache ambiguity.
+- Repeat output matches fixture byte-for-byte. Generated under work/ and copied
+  before any native fixture reader. Oracle py_compile/whitespace checks passed.
+- Native build passed. First native suite had 127/128 passing: the new test
+  omitted the original fixture's initial previous-name buffers. Corrected only
+  native test initialization; original output and production code unchanged.
+  Initial failure: `work/mob-applied-skills-replacement-test.log`.
+  `python3 tools/dev.py build`: corrected build exit 0, no compiler warnings.
+  `python3 tools/dev.py test`: corrected full run exit 0, **128/128 passed**,
+  32.24 seconds, all nine applied-skill suites included. New suite passes 256
+  original/native compositions; no production change was needed.
+  Final logs: `work/mob-applied-skills-replacement-build-fixed.log`,
+  `work/mob-applied-skills-replacement-test-fixed.log`.
+  Initial logs: `work/mob-applied-skills-replacement-{build,test}.log`.
 
-Damage-producing replacement/reentrant world callback composition is not included
-in this admission fixture; its required provider bodies and earlier coordination
-fixtures remain separate. No SQL access or sanitizer run for this block. Shared
-isolated SQL integration and canonical owner changes belong to the coordinator.
+No SQL access or sanitizer run for this evidence block. Complete isolated SQL and
+canonical owner/catalog/transport adapters remain coordinator dependencies.
 Historical expiration oracle cache failure was corrected before its successful
 122/122 rerun; that initial failed fixture is not counted as a pass.
 
-Next independent proposal: original/native replacement flows whose old damage
-effect causes Death/Clear, followed by same-node reapplication, with the actual
-final-damage/effect/list owners and retained lifetime ordering.
+Next independent proposal: recover RemApplySkillVisionFix **004a1580** selective
+cleanup directly on this same list owner, providing a real vision-target loss
+cleanup boundary for the targeting/world adapter without new state projections.
