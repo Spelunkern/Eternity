@@ -57,7 +57,7 @@ int main(int argc,char** argv) {
                 static_cast<std::uint8_t>(s*3),static_cast<std::uint8_t>(s*5),static_cast<std::uint8_t>(s%5),static_cast<std::uint8_t>(s%6),
                 static_cast<std::uint8_t>(s%2),static_cast<std::uint8_t>(s%4),0xfedcba98+s,
                 std::array<std::string,3>{"Actor","ABCDEFGHIJKLMNOPQRST","\xb0\xa1\xb3\xaa"}[(s>>3)%3]};
-            actor.attack_state().mode=static_cast<std::int32_t>(s%4);actor.attack_state().motion=static_cast<std::uint8_t>(s*7);
+            actor.attack_state().mode=static_cast<std::int32_t>(s%4);actor.attack_state().motion=0xa5;actor.presentation_motion(static_cast<std::uint8_t>(s*7));
             if(s&4) {
                 CopiedUserShape copy;copy.kill_count=0x12345678+s;copy.length=std::array<std::uint8_t,4>{67,73,91,97}[s%4];
                 for(std::size_t j=0;j<copy.appearance.size();++j) copy.appearance[j]=static_cast<std::uint8_t>(s+j*11);
@@ -66,7 +66,7 @@ int main(int argc,char** argv) {
                 for(std::size_t j=0;j<copy.extra.size();++j) copy.extra[j]=static_cast<std::uint8_t>(s+j*19);
                 appearance.copied_user=copy;
             }
-            actor.user_shape_changed(actor.status());const auto context=" at user-shape vector "+std::to_string(s);
+            actor.user_shape_changed(actor.status());require(actor.attack_state().motion==0xa5,"Presentation changed attack motion");const auto context=" at user-shape vector "+std::to_string(s);
             require(scene.lookups==lookups,"User-shape social lookup differs"+context);
             require(scene.sent.size()==(expected=="-"?0:1),"User-shape packet count differs"+context);
             if(!scene.sent.empty()) require(hex(scene.sent[0])==expected,"User-shape packet bytes differ"+context);

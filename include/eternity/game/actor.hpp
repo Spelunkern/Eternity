@@ -51,7 +51,7 @@ struct ActorAppearance {
 struct ActorAttackState {
     std::int32_t mode=0,recovery=1;
     std::uint32_t previous_tick=0,next_tick=0;
-    std::uint8_t motion=0;
+    std::uint8_t motion=0; // CUser+1448 attack motion; not presentation+1434.
     std::uint32_t resume_tick=0; // CUser+1450.
 };
 struct ActorEquipmentRules {
@@ -122,6 +122,12 @@ public:
     std::uint32_t& guard_target_after() noexcept {return guard_target_after_;}
     std::uint32_t guard_target_after() const noexcept {return guard_target_after_;}
     const PlayerResources& resources() const noexcept {return resources_.current();}
+    // Rebirth bridge: silent raw stores to the existing resource owner. No heal,
+    // clamp, notifications, damage reset or change to attack_state.mode (+142c).
+    void replace_resources_raw(PlayerResources) noexcept;
+    // Existing ZoneLifecycleState owns original CUser+1434. Distinct from +1448.
+    std::uint8_t presentation_motion() const noexcept {return zone_lifecycle_.motion;}
+    void presentation_motion(std::uint8_t value) noexcept {zone_lifecycle_.motion=value;}
     EffectCycle& effects() noexcept {return effects_;}
     const EffectReplica& replica() const noexcept {return replica_;}
     std::vector<PlayerItem>& inventory() noexcept {return inventory_;}

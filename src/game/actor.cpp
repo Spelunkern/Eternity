@@ -28,6 +28,7 @@ void Actor::gain_experience(PlayerCore& player,const StatusRules& rules,const Ex
     } delivery(status_,player,destination);
     award_experience(player,status_.skills.equipment.base,rules,curve,source,amount,options,delivery);
 }
+void Actor::replace_resources_raw(PlayerResources value) noexcept {resources_.replace_raw(value);}
 std::array<std::int32_t,3> Actor::heal(std::array<std::int32_t,3> amounts) {return resources_.heal(status_.skills.equipment.base.maximum,amounts);}
 void Actor::recover(std::array<std::int32_t,3> amounts,bool send_set,bool recovering) {resources_.recover(status_.skills.equipment.base.maximum,amounts,send_set,attack_.mode,recovering);}
 void Actor::wear_defense() {
@@ -66,7 +67,7 @@ void Actor::clear_duel_debuffs() {
 void Actor::enter_zone_lifecycle(UserPosition position,std::uint16_t map,const std::function<void()>& nprotect) {
     if(!nprotect) throw std::invalid_argument("Zone lifecycle requires NProtect service");
     // Current target kind is shared with combat; clear before the first clock.
-    attack_.motion=0;status_.current_target_type=0;zone_lifecycle_.position=position;
+    zone_lifecycle_.motion=0;status_.current_target_type=0;zone_lifecycle_.position=position;
     ZoneLifecyclePorts port;port.tick=[&]{return scene_.tick_ms();};
     port.reset_keep_tick=[&](std::uint32_t tick){effects_.reset_keep_tick(tick);};
     port.check_map=[&]{
@@ -149,7 +150,7 @@ void Actor::user_shape_changed(EffectStatus&) {
     if(status_.shape==100 && appearance_.copied_user) {
         if(status_.in_zone) scene_.send_cell_view(character_copied_user_shape(id_,*appearance_.copied_user));
     } else {
-        auto packet=character_user_shape(id_,appearance_.identity,attack_.mode==1,attack_.motion,scene_.user_shape_social(),inventory_);
+        auto packet=character_user_shape(id_,appearance_.identity,attack_.mode==1,zone_lifecycle_.motion,scene_.user_shape_social(),inventory_);
         if(status_.in_zone) scene_.send_cell_view(packet);
     }
 }
