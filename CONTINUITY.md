@@ -1275,3 +1275,11 @@ checks without bypassing shared locks. It accepts only Eternity Git worktrees.
 Command construction was mock-checked; a real container run remains to verify.
 All nine sessions were notified to use it only after their current builds finish.
 Full SQL and integrated regression validation remain separate requirements.
+
+Independent 04 committed `885b02d` movement checker and its incremental build
+completed, but the new test suite is still queued. An SQL run failed at
+creation-network-integration; no pass should be claimed until a successful
+retry is observed. Coordinator requested review of nearest rounding, FTZ/DAZ,
+nonfinite and sqrt assumptions against original x87 before integration. Worker
+06 is adding explicit floating-environment guards to its uncommitted AttackSuccess
+follow-up; review that final source and tests before integration.
