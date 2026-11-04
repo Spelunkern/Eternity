@@ -1950,3 +1950,12 @@ ordered packet/attack/effect/idle passes, but a production scheduler requires th
 real active/wait zone authority and dynamic leases. Its statement that zone-wait
 visitor does not exist is outdated: `25d85e2` on main supplies that traversal;
 active users/reset-position processing remains missing. Dashboard updated.
+
+Coordinator reviewed independent 03's uncommitted system/NProtect draft: its
+connection path currently closes on A302 before an authenticated `owner()`,
+whereas original `CUser::OnRecv` routes A302 before location/auth dispatch.
+Requested original `NProtectCSARecv` pre-auth/short-payload and real per-connection
+ownership review; do not assert native fail-close equivalence without evidence.
+Requested worker 02 to extend its scheduler instruction fixture to currently
+suppressed passes and wait-zone promotion after its retained instance work.
+Both are pending independent assignments, not completed runtime behavior.
