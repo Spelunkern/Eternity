@@ -1200,3 +1200,13 @@ Stopped that exact orphan; partial worker build remains unvalidated. Main
 interruption before releasing the lock (0c4fb6e); mock verifies cleanup and CTest
 argument preservation. Existing independent checkouts still have the old wrapper;
 avoid cancelling their builds and verify no orphan containers on interruption.
+
+Independent 09-persistence native build completed and its 304/304 tests passed
+in `.local/vertical-persistence-test.log` in that worktree; adapter remains
+unintegrated and has no direct new SQL round-trip validation. Independent 05
+revised mob frame ownership (`ea27be2`, report `002463a`) to leave respawn to
+world frame. Its report requires idle traversal then death cleanup then single
+respawn. The 02-world draft previously ran population before the callback; both
+sessions received this ordering issue. Revised 05 build was interrupted and is
+unvalidated. Central combat validation session 99411 remains live waiting for a
+shared build slot; do not restart it solely because it is waiting.
