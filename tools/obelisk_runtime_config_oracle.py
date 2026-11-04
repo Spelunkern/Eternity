@@ -7,7 +7,7 @@ from unicorn.x86_const import UC_X86_REG_EAX,UC_X86_REG_ECX,UC_X86_REG_EDI,UC_X8
 from original_oracle import load_game,ROOT
 
 
-def main(parser=False,portal_binding=False,portal_parser=False):
+def main(parser=False,portal_binding=False,portal_parser=False,asset=False):
     cpu,digest=load_game();stack,world,maps,infos,heap,file,stop=0x20000000,0x30000000,0x31000000,0x32000000,0x34000000,0x38000000,0x10000000
     for at,n in ((0,0x10000),(stack,0x10000),(world,0x10000),(maps,0x100000),(infos,0x200000),(heap,0x3000000),(file,0x10000),(stop,0x10000)):cpu.mem_map(at,n)
     def put(at,*v):cpu.mem_write(at,struct.pack('<'+'I'*len(v),*[x&0xffffffff for x in v]))
@@ -55,6 +55,27 @@ def main(parser=False,portal_binding=False,portal_parser=False):
                     out.extend(int(get(get(g+0x54)+k*4)!=0) for k in range(get(g+0x14)))
         out.extend(cpu.mem_read(infos+i*268+0x7c,1)[0] for i in range(12))
         return out
+    if asset:
+        text=(ROOT/'.local/server-data/Obelisk.ini').read_bytes()
+        context.update(text=text.replace(b'\r\n',b'\n').split(b'\x1a')[0],position=0,heap=heap);cpu.mem_write(file,bytes(32));cpu.mem_write(stack,bytes(0x10000))
+        put(stack+0xf000,stop);cpu.reg_write(UC_X86_REG_ESP,stack+0xf000);cpu.reg_write(UC_X86_REG_FPCW,0x27f)
+        cpu.emu_start(0x427300,0x427eef,count=10000000)
+        if cpu.reg_read(UC_X86_REG_EIP)!=0x427eef:raise RuntimeError('Original asset parser did not reach materialization boundary')
+        fnv=0xcbf29ce484222325
+        for byte in text:fnv=((fnv^byte)*0x100000001b3)&0xffffffffffffffff
+        print(f'# ps_game.exe SHA256 {digest}; actual LoadObelisk 00427300 through 00427eef. Complete recovered Obelisk.ini SHA256 {hashlib.sha256(text).hexdigest()}; original CRT parser executes; zeroed initial stack explicit. Asset stays private; normalized temporary records only.')
+        sp=cpu.reg_read(UC_X86_REG_ESP);count=get(sp+0x38);words=[count]
+        for mi in range(count):
+            zone=0xfe2f10+mi*0x20908;n=get(zone+4);words.extend((get(zone),n))
+            for j in range(n):
+                record=zone+8+j*0x824;groups=get(record+32)
+                words.extend(get(record+k) for k in range(0,36,4))
+                for k in range(groups):words.extend(get(record+36+k*32+x) for x in range(0,32,4))
+        print('O',len(text),fnv,*words,sep='\t')
+        count=get(sp+0x44);words=[count]
+        for i in range(count):words.extend(get(0x543b90+i*76+j) for j in range(0,76,4))
+        print('P',len(text),fnv,*words,sep='\t')
+        return
     if portal_binding:
         print(f'# ps_game.exe SHA256 {digest}; full LoadObelisk 00427300, portal materialization 00428a94 onward. Explicit completed input projections in native comparison; actual original text parsing/binding executes. Targets include duplicate IDs and missing maps/portals; reference ordinal is not base ID.')
         for scenario in range(64):
