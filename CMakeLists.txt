@@ -1571,3 +1571,10 @@ if(BUILD_TESTING)
     target_link_libraries(mob-drops-actor-death-unit PRIVATE eternity_game)
     add_test(NAME mob-drops-actor-death-unit COMMAND mob-drops-actor-death-unit ${CMAKE_CURRENT_SOURCE_DIR}/tests/data/mob-drops-actor-death-reset.tsv)
 endif()
+
+# Worker 09: numeric assignment, original float conversions and raw NaN copies.
+if(BUILD_TESTING)
+    add_executable(mob-ai-states-numeric-assignment-unit tests/mob_ai_states_numeric_assignment_unit.cpp)
+    target_link_libraries(mob-ai-states-numeric-assignment-unit PRIVATE eternity_game)
+    add_test(NAME mob-ai-states-numeric-assignment-unit COMMAND mob-ai-states-numeric-assignment-unit ${CMAKE_CURRENT_SOURCE_DIR}/tests/data/mob_ai_states_numeric_assignment-oracle.tsv)
+endif()
