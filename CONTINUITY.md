@@ -1921,3 +1921,10 @@ the entry/persistence branch with normal combat, movement check and pickup; it
 still uses test owners and is not a live world. Main session 39827 remains in
 its full unit/SQL validation; main source should stay frozen until that ends.
 The desktop dashboard state records this validated component milestone.
+
+Main session 39827 completed full native build and passed 308/308 CTests for the
+integrated entry/persistence source revision (`.local/main-entry-persistence-
+{build,tests}.log`). Its isolated SQL phase is queued/running; do not claim the
+session passed until it exits 0. This suite remains component coverage and does
+not establish production world entry or original-client gameplay. Desktop
+progress state now records the 308-test result.
