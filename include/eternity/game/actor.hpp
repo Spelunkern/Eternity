@@ -149,6 +149,9 @@ public:
     bool damage(std::int32_t kind,std::uint32_t source,std::int32_t amount,const SkillDefinitions& definitions);
     void clear_effects_on_death(const std::int32_t& death_penalty);
     const DamageLedger& damage_ledger() const noexcept {return damage_;}
+    // CDamage::Reset004b8aa0 on this actor ledger only. No Scene callback,
+    // resource/effect/life writes or notifications. Serialized actor owner only.
+    void reset_damage_ledger() noexcept;
     std::int32_t& defense_wear_cursor() noexcept {return defense_wear_cursor_;}
     std::int32_t defense_wear_cursor() const noexcept {return defense_wear_cursor_;}
     void send_shape_self();

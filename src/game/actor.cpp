@@ -187,5 +187,6 @@ void Actor::send_self(const net::Packet& packet) noexcept {scene_.send_self(pack
 std::optional<bool> Actor::party_kind() const noexcept {return scene_.party_kind();}
 void Actor::send_party(const net::Packet& packet) noexcept {scene_.send_party(packet);}
 void Actor::send_view(const net::Packet& packet) {scene_.send_nearby(packet);}
+void Actor::reset_damage_ledger() noexcept {damage_.reset();}
 void Actor::reset_damage() {damage_.reset();scene_.reset_damage();}
 }
