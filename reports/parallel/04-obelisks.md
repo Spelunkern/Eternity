@@ -1469,3 +1469,42 @@ adapter against these runtime_map/records/routes. No default successful lifecycl
 or transport is supplied. mobs/mob_pool and other workers' files were not edited.
 SQL and original binaries were unchanged; final isolated SQL/integration checks
 remain coordinator-owned. The server is not playable.
+
+## Expanded assignment completed — root lifecycle handoff checkpoint
+
+The resumed assignment repeats the already delivered implementation
+`4db2ac3bf6b6137e7ad71c4156d628b4e8ad4d66` and report `7b0a529`:
+actual mutable ServerMaps country storage, concrete retained-map adapter,
+full catalog record mutation, required real primary-zone/transport bindings,
+recovered asset loading and original ownership/reset/scene compositions.
+No runtime/source change or new execution result is claimed in this checkpoint.
+Last native validation remains142/142 tests in31.67 seconds. Original EXE/PDB
+SHA256SUMS verified again (`work/obelisk-maps-checkpoint-hashes.log`);
+`git diff --check` passed.
+
+Current main now contains worker03's actual `MobAppliedSkillsObelisk` bridge.
+It requires retained MobPool, ZoneMobs, MobInitPorts and mandatory existing world
+services; it must be reused. Worker04 did not modify its canonical owners or
+create a competing allocation/Init/entry implementation.
+
+The concrete remaining dependency is the actual root owner. Current
+`src/main.cpp` loads a local const ServerMaps during data validation and explicitly
+reports runtime zones uninitialized. It does not provide a retained mutable
+ServerMaps/primary-zone lifecycle or actual map/global/user connection routing
+for ObeliskRuntimeMapsServices. Another worker04-only zone list or successful
+placeholder transport would not connect to a production owner.
+
+Next-task proposal for the coordinator: integrate the delivered map accessor/
+adapter, retain mutable ServerMaps and coherent full/Init definition owners in
+the real root world, create/retain actual primary ZoneMobs and shared pools under
+that root's serialized lifetime, then assign the binding of
+ObeliskRuntimeMapsServices and worker03's MobAppliedSkillsObelisk to those actual
+owners. Supply real DB/map/world/user transport, KC and calendar providers. The
+existing adapter entry points already cover runtime_map/records, restore/reset,
+portal update, per-map change, user scene and ordered world persistence.
+Root startup/network files are outside current worker04 canonical ownership;
+no further disconnected implementation is proposed under this completed scope.
+
+Await a concrete root-owner interface or an expanded root integration assignment.
+No SQL lifecycle action ran, and main/other-worker sources were untouched.
+Subsystem completion is not playable-server completion.
