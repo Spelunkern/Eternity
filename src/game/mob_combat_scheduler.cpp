@@ -1,4 +1,5 @@
 #include "eternity/game/mob_combat_scheduler.hpp"
+#include "eternity/game/mob_combat_scheduler_skills.hpp"
 #include "eternity/game/mob_combat_stop.hpp"
 #include <algorithm>
 #include <stdexcept>
@@ -69,6 +70,47 @@ void mob_combat_scheduler_next(Actor& actor,bool force_stop,MobCombatSchedulerWo
         status.current_target_type=actions.previous_target_type;
         status.current_target=actions.previous_target;
     }
+}
+
+bool MobCombatSchedulerSkillWorld::remainder(Actor& actor,std::uint32_t now,MobCombatSchedulerRemainder stage) {
+    if(stage==MobCombatSchedulerRemainder::normal_user)return normal_user_attack(actor,now);
+    const bool casting=stage==MobCombatSchedulerRemainder::casting;
+    const auto* initial=selected_skill(actor);
+    if(!initial){mob_combat_stop(actor);failure(actor,10,*this);return false;}
+    const auto reload=[&]() -> const MobCombatSchedulerSkillBinding& {
+        const auto* skill=selected_skill(actor);
+        if(!skill)throw std::invalid_argument("Selected skill disappeared within attack dispatch");
+        return *skill;
+    };
+    const auto copy_name=[](auto& out,std::string_view name) {
+        const auto length=std::min(name.size(),name.find('\0'));
+        if(length>=out.size())throw std::invalid_argument("Attack naming context exceeds retained buffer");
+        std::copy_n(name.begin(),length,out.begin());out[length]=0;
+    };
+    bool dead=false;
+    const auto kind=actor.status().current_target_type;
+    if(kind==2) {
+        auto* mob=enable_mob(actor,actor.status().current_target);
+        if(!mob){mob_combat_stop(actor);return false;}
+        const bool naming=is_both_mob(*mob);
+        if(naming){copy_name(mob->previous_attack_user,actor.appearance().identity.name);copy_name(mob->previous_attack_skill,reload().name);}
+        const auto& skill=reload();
+        if(casting)attack_skill_mob(actor,mob,skill,now);else use_skill_mob(actor,mob,skill,now);
+        if(naming){mob->previous_attack_user[0]=0;mob->previous_attack_skill[0]=0;}
+        const auto status=mob->state_stack?(mob->state_stack->empty()?0:mob->state_stack->back()):mob->status;
+        dead=status==2;
+    } else if(kind==1) {
+        auto* target=enable_skill_user(actor,actor.status().current_target,initial->target_type);
+        if(!target){mob_combat_stop(actor);return false;}
+        const auto& skill=reload();
+        if(casting)attack_skill_user(actor,*target,skill,now);else use_skill_user(actor,*target,skill,now);
+        dead=target->attack_state().mode==1;
+    } else if(kind==4) {
+        if(casting)attack_skill_mob(actor,nullptr,*initial,now);else use_skill_mob(actor,nullptr,*initial,now);
+    }
+    if(casting || actor.attack_state().mode!=3)mob_combat_scheduler_next(actor,dead,*this);
+    if(casting)deadline(actor,now);
+    cancel_move(actor);actor.attack_state().motion=1;return true;
 }
 
 }
