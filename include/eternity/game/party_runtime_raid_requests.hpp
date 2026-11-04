@@ -8,8 +8,11 @@ void configure_raid_party(PartyRegistryParty&,std::uint8_t,PartyMembershipWorld&
 // entry/leave and default ExpelUser use the SAME live retained membership owner.
 class PartyRaidRequestsWorld:public PartyRaidRequestWorld {
 public:
+    // CWorld::FindUser(char*) 0040d690 active-name index. This is NOT the
+    // existing FindUserZoneMove provider; retain the SAME live member record.
+    virtual std::optional<PartyRequestUser> find_active_raid_user_name(std::string_view)=0;
     void raid_request(const PartyRequestUser&,net::Packet&) override;
-    // Required remaining original branches (invites, autojoin), never a
+    // Required remaining original branches (invites), never a
     // default success/no-op.
     // Also required for autojoin bytes >1: current registry bool cannot retain
     // those original raw +115 values. Ordinary decoded booleans use real code.

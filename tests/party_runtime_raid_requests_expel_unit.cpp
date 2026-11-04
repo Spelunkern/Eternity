@@ -59,6 +59,7 @@ struct World final:PartyRaidRequestsWorld,PartyRegistryPorts,PartyRaidMembership
     std::optional<PartyRequestUser> find_user_name(std::string_view name) override {event('N',Bytes(name.begin(),name.end()));lookup_mutation();if(!missing)for(unsigned i=0;i<32;++i)if(users[i]->member.name==name)return binding(i);return std::nullopt;}
     PartyRequestUser retain_member(PartyMembershipUser& m) override {const auto id=uid(&m);check(id>=100);return binding(id-100);}
     void close_connection(const PartyRequestUser&,std::int32_t reason,std::int32_t detail) override {Bytes b;append(b,static_cast<std::uint32_t>(reason));append(b,static_cast<std::uint32_t>(detail));event('C',b);}
+    std::optional<PartyRequestUser> find_active_raid_user_name(std::string_view) override {throw std::logic_error("Unexpected active raid lookup");}
     void remaining_raid_request(const PartyRequestUser&,Bytes&) override {throw std::logic_error("Required remaining raid request provider not supplied");}
     std::uint32_t tick() override {const auto n=clock+ticks++*17U;Bytes b;append(b,n);event('K',b);if(mutation==2 && !mutated){users[root]->member.id+=1000;users[root]->member.name="tick-name-0000000000";mutated=true;}return n;}
     void lock(PartyNormalMembership& p) override {lock_registry(PartyRegistryLock::party,static_cast<PartyRegistryParty*>(&p));}
