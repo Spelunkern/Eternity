@@ -855,3 +855,33 @@ Reviewed0cd5bed/9886060 retained288byteCKToken payload/nonemptyvectors andconstr
 Corrected pipeline71788 exited0:buildretry,228/228tests71.34s,fullisolatedSQL,fullrestoredcatalogcomparison,actualread-onlystreamSQL with fourcontrolledGetDatafailures preservingprefixes,types/NULL/extraresults/bufferedparameters/transaction/retainedconnection. Source48f2c32. Logs .local/eleventh-batch-build-retry.log,.local/eleventh-batch-{tests,sql,bindings-sql,stream-sql}.log. InitialCMakeguardfailure preserved,not passed. Freeze released;publishverifiedbatch.
 
 Reviewed/queued9feae10/e66ceb4 directsharedbObelisk+7c mutation via actualmutablecatalogaccessor,138reportedtests;ID/level/HPguards and267otherbytespreserved. Interfaceblockerclosed,no canonicalfield/bitmapneeded. Actualmapmutableportals/lifecycle/KC/calendar/transport/rootassemblyremain. Newpendingentriesnotcoveredby228-testbatch. Exclusivebranchownershipunchanged. Objectiveopen.
+
+## Reviewed worker05 289307db — normalExpelUser
+
+Reviewed709df36/1de29fe actualExpelUser00447120 inrequests/recursiveLeave,2048reportedscenarios/131tests/ASAN. Exactsnapshot/commitsqueued. Expel differs voluntaryLeave:no directleader/itemcursoradjustment/no0b07;remaininguser pin retains outercall lifetime,unregisterneverrecycles. Actualguildcleanup/Actorpartybindings stillrequired. Assigned05 regularraidEnter/Leave00445a30/00446510 underparty_runtime_raid,existing30slotowner,no normalsubstitution. Lastvalidateda2c4e8c228tests/fullSQL/catalog/stream,no pipelineactive.
+
+## Reviewed worker01 391d05c9 — actual learneduserSkill owner
+
+Reviewed317980f/fc1a9eb retainedUserSkillRuntime256stable slots/signedcount/DWORDselection and actualhandles throughscheduler,64originalsequences/12nativecompositions,133tests. Exactsnapshot/commitsqueued. Rootretainsowner+Actor,notActorownedstrongcycle;realmanager mustshareCSkillpool/IDdomain withmob,notunsafe casts/independentgenerator. Stableuserdefinition/names andactualactionproviders required. Resetcount/index beforeloop preservesstrandedslots;managerstrand/delete vsrecycle explicit. WorkercontinuesLearnSkill004842e0 within scope. Lastvalidateda2c4e8c;integratingpendingnext.
+
+## Twelfth reviewed batch integrated — sourcefreeze
+
+Integratedpendingthrough f545baed016242e83711d1c4521502689f47cdac,includingActorinventoryprimitives,rawMobPool,normalpartyrequests/expulsion,tokens/stateadmission,fullasset/flagsetter andlearneduserSkillowner. CMakecontrolnestingcheckedbeforepipeline. NEW SOURCEFREEZE duringbuild/test/fullisolatedSQL/fullcatalog/realstreamSQL in.local/twelfth-batch-{build,tests,sql,bindings-sql,stream-sql}.log. No canonicalsource/CMakeedits/cherry-pickswhileactive;queuenewhandoffs. Publishonlyallcheckspass. Lastvalidateda2c4e8c. CommonCSkillmanager/userdefinitions/rootworld stillmissing;actualownercomponents do notclaimplayability. Exclusivebranchscopeunchanged.
+
+## Reviewed worker04 9fd22064 — initialportalDBlist
+
+Reviewed528926f/d31569c initialportal0206list:constantcountry3/time0,100rowchunks/livefuturebaseIDs,no target/zoneguard. Reported96originalcases/168packets/139tests. Exactsnapshot/commitsqueued duringfreeze. CWorldSendDBObeliskList portalfirstthenordinarymaps;do not reuse livechange serializer. ActualDB/rootmaplifecycle remainsopen. Current37938twelfthbatchwaitingbuildcapacity;no sourceeditswhileactive. Lastvalidateda2c4e8c.
+
+## Reviewed worker05 0528233d — reentrantnormalexpulsioncorrection
+
+Reviewedc656778/79d68aa normalExpelUser nestedleave correction,not raidimplementation.2560reportedscenarios/282nestedleaves,131tests/ASAN. Preserve originalcount-1/retainedmaximum after callbackdisbands before outerdecrement;subsequent signednonpositive search returnsfalse,no clamp/recycle. Exactsnapshot/commitsqueued duringfreeze. Newerregularraidassignment remainsactive andsupersedes olderexpelscope. Current37938twelfthbatchpendingbuildcapacity;no sourcechanges.
+
+## Reviewed worker08 bb218e8d — Rebirth
+
+Reviewede80704a/ca358f8 completeRebirth/Actorbridge:1552reportedoriginaltraces(16actualreentrant),130tests/ASANaftertestin_zoneattachmentfix,initial129/130notpassed. Exactsnapshot/commitsqueued duringfreeze. Sharedmode1->0 onlytail,exactresourcepublishbeforecallbacks,corpse/move/transferfailuresretainoriginalpartialstate/effects/deadlines. Requiredsilentsigned/rawresources and presentationmotion+1434 distinct fromaction+1448 remaincanonicalActor02owner work;do not conflate bytes/clamprawrestoration. FullDeath/PvPrewards and realrootports missing,08continueslifecyclescope. Current37938buildcompleted355actions;testsSQLcatalogstreamSQLpending,no sourcechanges.
+
+## Twelfth batch validated —238tests/fullSQL/catalog/stream
+
+Session37938 exited0:build,238/238tests68.65s,completeisolatedSQL,fullrestoredcatalogandrealstreamSQLfourcontrolledconversionfailures/types/parameters/retainedconnection. Sourcef545bae;logs.local/twelfth-batch-{build,tests,sql,bindings-sql,stream-sql}.log. Freeze released;publishverifiedbatch. Newpendinghandoffsnotcovered.
+
+Reviewed/queueddd8daae/99dce13 user2101mixedordinary/portalshared100rowchunks,192originalcases/334packets,140tests. Nozoneguard,actualmapfilterbeforetargetread,livefuturecallbackreads;ordinarythenportalwithoutphaseflush. Realuserentry/connection/retainedmaproutingstillrequired. Objectiveopen,exclusivebranchownershipunchanged.
