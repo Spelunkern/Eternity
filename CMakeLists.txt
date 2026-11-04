@@ -969,3 +969,11 @@ if(BUILD_TESTING)
     add_executable(mob-drops-reload-sql-unit tests/mob_drops_reload_sql_unit.cpp)
     target_link_libraries(mob-drops-reload-sql-unit PRIVATE eternity_game eternity_storage)
 endif()
+
+# Worker 09: SetFSM typed-local admission and original insertion semantics.
+target_sources(eternity_game PRIVATE src/game/mob_ai_states_locals.cpp)
+if(BUILD_TESTING)
+    add_executable(mob-ai-states-locals-unit tests/mob_ai_states_locals_unit.cpp)
+    target_link_libraries(mob-ai-states-locals-unit PRIVATE eternity_game)
+    add_test(NAME mob-ai-states-locals-unit COMMAND mob-ai-states-locals-unit ${CMAKE_CURRENT_SOURCE_DIR}/tests/data/mob_ai_states_locals-oracle.tsv)
+endif()
