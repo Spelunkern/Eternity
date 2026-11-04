@@ -514,3 +514,79 @@ retain their exact positional result order, then decode before enabling the
 production resolver. No SQL lifecycle/schema operation or credential exposure
 was performed. Required world visitors/FSM/helper services remain unconnected;
 this decoder and its tests do not make the server playable.
+
+## Milestone 7: restored SQL binding distribution comparison
+
+This block resolves milestone 6's pending restored-data comparison without
+repeating the targeting fixtures or changing the decoder/canonical owners.
+Added `mob_targeting_bindings_sql_unit.cpp` and the serialized read-only runner
+`tools/mob_targeting_bindings_sql_oracle.py`. It calls only the four recovered
+read procedures, validates scalar MaxIDs/result widths, exports an ignored
+positional snapshot, runs the COMPLETE original skill/mob loaders and Init over
+that snapshot, then compares all populated native targeting projections against
+original execution. The runner uses Eternity's existing SQL resource_lock and
+isolated container/network/runtime env; no DDL, reset, provisioning or writes.
+It is deliberately not registered as an ordinary credential-free CTest.
+
+The existing bindings oracle now accepts --sql-rows and allocates larger mapped
+arrays for restored distributions. Its default synthetic output remains
+byte-identical to the tracked milestone 6 fixture (regression checked after
+refactor). An initial local argument-shadowing error in that refactor was fixed
+before the successful regression/SQL runs; it was not a SQL failure. The SQL mode
+explicitly refuses any input reference to the original one-past skill slot, so
+no allocator-adjacent contents are invented as binding evidence.
+
+Restored isolated SQL results:
+
+- `MobSkillMaxID = 355`: 356 allocated slots, 355 procedure rows.
+- `MobMaxID = 2746`: 2,747 allocated slots and 2,747 procedure rows.
+- 2,746 nonzero-ID definitions compared; reserved ID-zero is excluded by the
+  native lookup contract. These counts do not mean every record is spawnable;
+  canonical HP/level/admission checks remain separate.
+- All 355 skill projections and all 2,746 definition projections match original
+  execution, including 8,238 attack positions and 1,871 resolved skill pointers.
+  Twenty of those pointers have disabled byOK and must remain PRESENT.
+- Original Init/SetAttack executed for all 2,746 nonzero-ID definitions; pointer
+  retention, unchanged definition bytes and zeroed runtime attack timers passed.
+
+Snapshots remain ignored in work/mob-targeting-bindings-sql-{rows,original}.tsv.
+They contain all numeric procedure fields in fetch order; name columns are
+intentionally replaced by the oracle's fixed SQL_C_CHAR name port. No name or
+full non-targeting skill-layout equality is claimed. Relevant country/range,
+three full attack records, skill ID/effect/detail/reset-time/forced-level and
+binding/null identity are compared; no restored data is committed.
+
+Reproduce after native build:
+
+    python3 tools/mob_targeting_bindings_sql_oracle.py
+
+Implementation commit: `96af8bc` (workers/08-mob-targeting).
+
+- `python3 tools/dev.py build`: exit 0, no warnings;
+  `work/mob-targeting-bindings-sql-build.log`.
+- `python3 tools/mob_targeting_bindings_sql_oracle.py`: exit 0, complete
+  read-only SQL/original/native comparison;
+  `work/mob-targeting-bindings-sql-check.log`.
+- Default synthetic oracle after refactor: byte-identical to the existing fixture;
+  ignored `work/mob-targeting-bindings-refactored.tsv`.
+- First `python3 tools/dev.py test`: exit 8, 124/125 passed (42.24 s), with
+  login-network-unit reporting "Malformed frame left an authenticated session
+  behind". All targeting tests passed. This failed run is NOT counted as a pass.
+- Clean full rerun: exit 0, all 125 passed (39.55 s);
+  `work/mob-targeting-bindings-sql-native-retry.log`. Initial log remains
+  `work/mob-targeting-bindings-sql-native-tests.log`.
+- Read-only source inspection identifies a plausible independent timing window:
+  src/net/login_server.cpp close() shuts down/closes the socket BEFORE
+  sessions->release_login; tests/login_socket.hpp closed() returns immediately
+  on EOF/reset, then login_network_unit.cpp line 75 checks session_count.
+  This is an inference from ordering, not a proven root-cause trace. Coordinator
+  should review session-release/closure ordering or synchronize that assertion.
+  No files in that subsystem were edited and no third retry was used.
+- All twelve EXE/PDB SHA256SUMS pass; git diff --check clean. No SQL/credential
+  snapshots or runtime files tracked.
+
+The minimal canonical owner/lifetime and positional patch contract in milestone
+6 is unchanged. Actual startup publication, stable lifetime through callbacks,
+in-place or quiescent reload and production resolver/world wiring still belong
+to integration. Passing this read-only data comparison is not a running world
+or original-client playability.
