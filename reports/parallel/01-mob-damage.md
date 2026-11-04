@@ -1525,3 +1525,105 @@ DWORD formula. Complete original surrounding function and actual backend owner
 must be recovered before composing that phase; existing DB-agent SkillReplica
 save owner is not duplicated. Full cooldown persistence/restore equivalence is
 not newly claimed. Overall server objective remains open.
+
+## Learned cooldown persistence / existing cache round trip — 2026-11-04
+
+Implementation **a6d1d1c**. Reviewed current main continuity/parallel notes and
+`979e1a2/d33f9a9`; completed its next learned-persistence block. Reused canonical
+UserSkillRuntime and existing DB-agent SkillReplica; no second game skill store,
+replacement cache, SQL procedure owner or per-user ID generator. Only owned
+user_skill_runtime files, private CMake and this report changed. Shared Actor,
+inventory, main and other workers remain untouched.
+
+Original evidence: `ps_game.exe` complete Ghidra/PDB exports,
+**CUser::SendDBAgentCharGetInfo 0046c980..0046cef4**, learned phase
+**0046cab9..0046cb63**, stSkillInfo WORD reset time **+4a**. Existing DB-agent
+**PacketUserSkill 00406100** / SkillReplica::apply already owns receipt of0804;
+this milestone composes that owner rather than implementing another receiver.
+
+Implemented `user_skill_runtime_persist` as ONLY the learned phase:
+
+- Require real clock and DB transport, plus initialized 775-byte caller packet
+  scratch. Sample clock BEFORE opcode/account/count reads, unlike client0108.
+  Capture live Actor account and signed count after that callback. Return the same
+  sampled tick so the enclosing root can reuse it for later effect/quest phases.
+- Loop by physical index below signed count; null slot rows remain untouched.
+  Each populated row writes BYTE runtime number (not physical index) and WORD
+  delay. Use absolute UNSIGNED `reset_tick > now`; otherwise delay0 without
+  dereferencing the definition. Future delay is integer `(reset_tick-now)/1000`,
+  capped by the retained definition WORD reset_seconds. No ceiling, signed delta
+  or client0108 formula. An invalid future definition fails explicitly.
+- Read LIVE count again at tail, take its low BYTE and send backend **0804**
+  (wire `04 08`), DWORD account, BYTE count, then count*3 bytes. Low BYTE zero
+  sends nothing: count256 processes all rows but emits NO packet. This differs
+  from client0108's three-byte header at256. Do not clamp/compact count or holes.
+  Signed iteration and low-byte tail count remain distinct even on malformed
+  negative count; fixtures do not introduce a corruption-only public setter.
+- Required initialized scratch preserves caller-provided bytes in holes without
+  uninitialized native reads or a fabricated zero-row policy. Count>256 fails
+  instead of reproducing original stack overwrite. No owner/Actor/runtime read
+  follows synchronous DB delivery. Existing retention/serialized executor contract
+  applies throughout the call, including clock and transport callbacks.
+
+The user-definition projection gains reset_seconds, backed by actual stSkillInfo
++4a; central definition provider must populate it, not infer it from passive IDs,
+client seconds or mobAI definitions. Zero is a legitimate original cap. No new
+catalog ownership or lookup table was added.
+
+Original execution fixture runs WHOLE SendDBAgentCharGetInfo, not a patched-out
+instruction range. Resources0606 and position0607 are emitted first; equipment,
+applied-effect, quest and quickslot owners are valid empty inputs. Shared-list
+heads/locks are initialized, and full stack probe/security-cookie/return execute.
+It checks surrounding output is exactly0606 then0607 for those inputs. Captures
+learned workspace at **0046cb63**, then still executes the remaining whole body:
+that checkpoint is necessary because later phase headers reuse/overwrite part
+of the original stack workspace. Native comparison is ONLY learned phase; it
+DOES NOT claim native whole-character resources/position/effect/quest output.
+
+**192 complete original/native phase comparisons** cover counts0/1/4/16/255/256,
+contiguous/permuted/slot255/duplicate placement, two initialized scratch patterns,
+four ticks and signed-boundary/wrapped deadlines. Definition caps0/1/7/65535,
+nullable expired definitions, low-byte runtime numbers, clock-reset count/account
+mutation and DB-send reset/account mutation are included. Exact packet bytes,
+clock-before-header order, final owner/account state and ALL775 workspace bytes'
+FNV agree, including processed-but-unsent rows. Mutations are synthetic boundary
+probes, not assertions that OS time itself resets the user.
+
+**116 additional native compositions** deliver each emitted0804 to the actual
+existing SkillReplica. Verify its indexed last-row-wins delay updates and ignored
+out-of-range numbers, including caller-initialized hole rows. Then retire the old
+game owner, serialize that cache's learned rows into0504, restore through actual
+UserSkillRuntime::load and check WORD-delay/DWORD-deadline wrap. Never run two
+production game owners for the same Actor concurrently. These compositions reuse
+previously recovered DB-agent/admission implementations; no new original
+ps_dbAgent execution or full SQL round-trip is claimed by this fixture.
+
+Validation:
+
+- Original executable/PDB SHA256SUMS exit0;
+  `work/user-skill-runtime-persist-hashes.log`.
+- Independent oracle regeneration byte-identical (`cmp`, exit0), generated under
+  work/ and copied before readers. Original binaries unchanged.
+- `python3 tools/dev.py build`: exit0, no warnings,
+  `work/user-skill-runtime-persist-build.log`.
+- Sequential `python3 tools/dev.py test`: exit0, **136/136 passed,46.85s**,
+  `work/user-skill-runtime-persist-tests.log`, including all prior owner/learn/
+  snapshot/scheduler/zone fixtures. `git diff --check`: exit0.
+- Shared-resource wrappers respected. SQL unchanged; coordinator owns full final
+  isolated SQL integration. No gameplay-completion inference from test counts.
+
+Production boundary: root must first execute the ACTUAL resource0606, position0607
+and changed-equipment-quality070d owners, then call this learned phase, then use
+its returned tick for actual applied-effect/quest/quickslot phases. Those empty
+fixture owners are not no-op production defaults. Supply real DB-agent routing
+for the captured account and retain root/Actor/skill/scene/definitions/manager
+through callbacks. Existing DB-agent SkillReplica receives0804 and its existing
+SkillStore persists the cache inside the existing whole-character transaction;
+do not bypass either with SQL writes from the game owner.
+
+Shared CSkill manager adaptation, full stable user-definition source, root save/
+admission assembly and live weapon binding remain documented central dependencies.
+No new Actor/shared-header patch is requested here. Next independent proposal:
+recover runtime cooldown/ready checks in **EnableUseSkillUser 0044eb40** and
+**EnableUseSkillMob 0044ee50**, composing existing Actor resource/target providers
+rather than duplicating skill damage or effects. Full server objective remains open.
