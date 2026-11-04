@@ -11,8 +11,6 @@ struct World final : VerticalMobsWorld, MobAiConfiguredServices, MobAiStateServi
     void release_failed_stack(MobRuntime& m) override {calls.push_back  (4);m.state_stack.reset();}
     void return_home(MobRuntime&,std::uint32_t) override {calls.push_back(5);}
     void ordinary_idle(MobRuntime&,std::uint32_t) override {calls.push_back(6);}
-    void obelisk_respawn(RuntimeZone&,std::uint32_t) override {assert(false);}
-    void linked_respawn(RuntimeZone&,std::uint32_t) override {assert(false);}
     std::int32_t travel_condition(MobRuntime&,MobAiConfiguredFsm&,MobAiConfiguredCondition&) override {return 0;}
     std::uint32_t tick() override {return 0;}
     void lua_call(MobRuntime&,std::string_view,std::uint32_t,std::optional<std::uint32_t>) override {}

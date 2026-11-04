@@ -23,17 +23,14 @@ void vertical_mobs_idle(MobRuntime& mob,std::uint32_t now,VerticalMobsWorld& wor
     if(mob_status(mob)==0) world.ordinary_idle(mob,now);
 }
 bool vertical_mobs_idle_frame(MobPrimaryZones& root,std::size_t map,std::uint32_t now,
-    MobInitPorts& init,VerticalMobsWorld& world) {
+    RandomSource& random,VerticalMobsWorld& world) {
     auto lease=root.lease(map);
     if(!lease) return false;
     lease.visit([&](RuntimeZone& zone) {
         if(!zone.mobs || !zone.linked_mobs || !zone.mob_population || !zone.map)
             throw std::logic_error("Mob frame requires the actual initialized zone owners");
         world.visit_mobs(*zone.mobs,[&](MobRuntime& mob){ vertical_mobs_idle(mob,now,world); });
-        zone.mobs->update_deaths(root.mob_pool(),init.random,now,*zone.linked_mobs);
-        zone.update_mob_population(root.mob_pool(),init,now,
-            [&](std::uint32_t t){world.obelisk_respawn(zone,t);},
-            [&](std::uint32_t t){world.linked_respawn(zone,t);});
+        zone.mobs->update_deaths(root.mob_pool(),random,now,*zone.linked_mobs);
     });
     return true;
 }
