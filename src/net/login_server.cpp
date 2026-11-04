@@ -90,14 +90,15 @@ struct LoginServer::Impl::Connection : std::enable_shared_from_this<Connection> 
         if (closed) return;
         closed = true;
         protocol.close();
+        const auto server = owner.lock();
+        // Release the login owner before the peer can observe EOF. Otherwise a
+        // reconnect or observer can see a disconnected socket with a live login.
+        if (server && user_id) server->sessions->release_login(*user_id, id);
         asio::error_code ignored;
         socket.cancel(ignored);
         socket.shutdown(tcp::socket::shutdown_both, ignored);
         socket.close(ignored);
-        if (auto server = owner.lock()) {
-            if (user_id) server->sessions->release_login(*user_id, id);
-            server->connections.erase(id);
-        }
+        if (server) server->connections.erase(id);
         // In-flight writes own their buffers separately until cancellation completes.
         output.clear();
         queued_bytes = 0;
