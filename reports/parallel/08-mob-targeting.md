@@ -195,3 +195,76 @@ Remaining work: connect the required world list and live SetTarget providers,
 recover/validate multi-candidate removal/reentrant cursor semantics, and supply
 the canonical definition/user bindings above. Original-client playability is
 still not achieved.
+
+
+## Milestone 4: multi-candidate callback cursor evidence
+
+Recovered focused Ghidra evidence through the locked --process wrapper into
+ignored `work/exports/08-mob-targeting/ps_game.exe/` (no import/project edits).
+Additional ps_game.exe symbols: `SSyncList<CMob>::Front` 0041f190, `Next`
+0041f1c0, `Remove` 00424ac0, `AddBack` 00424a80, and `CCell::FindMob` 00423680.
+Remove changes the shared cursor to the removed node's predecessor only when
+removing the current cursor, then unlinks/zeros the node and decrements count.
+AddBack appends to the sentinel's tail. The helper's next step follows the
+CURRENT shared cursor's next link; it never retains a private next iterator.
+FindMob starts at Front and leaves that same cursor at the match or sentinel.
+
+New original-execution fixture `mob-targeting-cursor-oracle.tsv` covers 450
+traces: all three helpers, 1..5 original candidates, inactive/active empty/active
+idle scene stacks, and ten callback modes. These include removing current/next/
+previous, appending, nested lookup of tail/current/missing ID, removing then
+reappending current, and removing next then lookup miss. The callback driver
+executes actual original Remove/AddBack/FindMob instructions with their original
+register conventions. Helper selection/next-step logic, CRT sqrt and scene
+reads also execute original instructions. Only OS locks/TLS and the SetTarget
+callback itself are ports; this does not claim a recovered SetTarget can remove
+its own actor or that the fixtures execute actual AI/world handler bodies.
+
+Important recovered outcomes (original idle candidates 1,2,3,4): nested lookup of
+4 while acquiring 1 ends the outer traversal; nested lookup miss while acquiring
+3 restarts at 1, yielding acquisitions 1,2,3,1,2,3,4. Removing/reappending current
+3 yields 1,2,3,4,3 and final membership 1,2,4,3. Appending 5 while acquiring 2
+makes 5 visible later in the SAME traversal. Restoring the outer cursor after a
+nested lookup, precomputing next, or traversing a membership snapshot would
+change original behavior.
+
+`mob-targeting-cursor-unit` compares these traces and final list order against
+the actual existing ZoneMobs cell cursor, composing native help selection with
+ZoneMobs enter/leave/find_cell. A test-only MobViewer consumes send_leave packets
+locally as cursor visits; no packet is transported and no production adapter is
+built on this packet probe. Nested lock traces are represented by the test
+provider; this validates ordering/cursor semantics, not multithreaded OS locking.
+This evidence closes the previous one-candidate fixture limitation for those
+explicit mutations, while actual world-handler reentrancy remains integration
+work. No canonical ownership or headers were modified.
+
+Exact canonical interface proposal: add a synchronous
+`visit_cell_mobs(CellCoordinates, const std::function<void(MobRuntime&)>&)` to
+ZoneMobs using its existing Cell::cursor, not a new cursor. Start at its first
+member, invoke the visitor, then advance from the possibly changed shared cursor
+(zero/sentinel advances to current first member). Allow visitor enter/leave and
+find_cell calls; do not save/restore cursor around them. Do not dereference the
+visited actor after the visitor returns. The zone owner must serialize/hold the
+cell lock across the entire operation and forbid zone destruction during it.
+The existing send traversal already demonstrates the required cursor algorithm;
+extract/reuse it without creating an independent help membership owner.
+
+Evidence/test implementation commit: `9b49604` (workers/08-mob-targeting).
+
+Validation:
+
+- Locked Ghidra --process export: exit 0; `work/mob-targeting-cursor-ghidra.log`.
+- `python3 tools/dev.py build`: exit 0, no warnings;
+  `work/mob-targeting-cursor-build.log`.
+- `python3 tools/dev.py test`: exit 0; all 123 native tests passed (41.41 s).
+  New `mob-targeting-cursor-unit`: pass in 0.01 s;
+  `work/mob-targeting-cursor-test.log`.
+- Original fixture generated twice identically; repeat remains ignored in
+  `work/mob-targeting-cursor-repeated.tsv`. All twelve EXE/PDB SHA256SUMS pass.
+- `git diff --check`: clean. No SQL calls/changes; integration remains with
+  the coordinator.
+
+Remaining integration: the proposed canonical visitor, skill/country/range/user
+bindings, and production SetTarget/help/FSM world wiring. The cursor evidence
+allows a shared implementation instead of a duplicate membership projection.
+No playable-server completion is claimed.
