@@ -100,6 +100,7 @@ def run(command, build_directory="build"):
         subprocess.run(command + [f"{build_directory}/creation-sql-integration", name], check=True)
         subprocess.run(command + [f"{build_directory}/creation-network-integration", name], check=True)
         subprocess.run(command + [f"{build_directory}/players-sql-integration", name], check=True)
+        subprocess.run(command + [f"{build_directory}/vertical-entry-sql-integration", name], check=True)
         # Reset only this fresh disposable fixture after the preceding tests.
         # Duplicate UIDs then exercise the original failed-insert delete/retry path.
         sql("DELETE dbo.CharItems; DELETE dbo.UserStoredItems; "
