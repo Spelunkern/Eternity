@@ -1472,3 +1472,11 @@ callbacks can release/reuse that mob. Requested a concrete same-object retention
 guard or evidence that the existing pool defers reuse, plus reentrant release/
 reuse tests. A comment requiring retention alone is insufficient. Do not merge
 the cursor draft before this is resolved.
+
+Coordinator independently regenerated independent 06's 8192-case original
+AttackDamage fixture and byte-compared successfully; also executed its original
+AttackSuccess->AttackDamage CRT seed-19 oracle (success, damage 98, draws
+100/15331/209, state 13737300). This reproduces oracle data, not native behavior
+or complete combat. Candidate `13e871d` plus subsequent dirty FP/RNG changes
+remain under worker review and unintegrated; production services/root and skill
+paths remain missing.
