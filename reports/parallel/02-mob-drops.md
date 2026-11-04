@@ -21,7 +21,8 @@ All twelve EXE/PDB hashes verified again. Focused Ghidra exports use locked
 | b2f12a9 | Range/zone 004a64f0/004a6560, Distance2 0041b1f0, distinct money gate and NaN acceptance |
 | 050179d | Concrete delivery through real Actor::receive_item 0045df40 and ZoneItems::enter 00417320 |
 
-Current milestone implementation commit: `940a1f986fa4e92de56e9f0f169bbbf5e0fa4a04`.
+Milestone 7 implementation: `940a1f986fa4e92de56e9f0f169bbbf5e0fa4a04`.
+Current UID implementation commit: `5f940275104dc1dfd6d38ca4d91c9ed7a50ffa5f`.
 
 ## Milestone 7: selective MobItems reload and live slot binding
 
@@ -112,10 +113,9 @@ Earlier commit reports retain detailed fixture limits and corrected harness runs
 - Resolve retained Actor/ItemDefinition owners. InventoryWorld must capture and
   revalidate the same live party with compatible recursive locking. Actual
   transports/return owners/log sinks remain required; exceptions imply no rollback.
-- Shared original UID ownership is still a coordinator dependency. Current
-  canonical ItemIds has known clock/deadline/zero/wrap differences; configuring
-  server zero alone does not establish original GenID compatibility. The owned
-  creation header now states this explicitly. Add server ID only once.
+- Shared original UID production ownership is still a coordinator dependency;
+  the generator algorithm is corrected in milestone 8 below. All producers must
+  use the same instance. Add server ID only once.
 - Zone identity means live CZone identity, not map number; never truncate host
   pointers. Retain catalog entries and all eight sequence backing groups; publish
   after every sequence reload attempt, including failure. Unsupported INI syntax,
@@ -123,44 +123,104 @@ Earlier commit reports retain detailed fixture limits and corrected harness runs
 - Real quest links/ownership, guild ranking/revalidation, party money grants,
   top-level dispatch and logging remain required. Both-mob events 7/8 and sequence
   0a06 stay with the coordinator's logging owner. No required service defaults to
-  a no-op. No shared canonical header, SQL fixture or main checkout was modified.
+  a no-op. Milestone 8 changes only the explicitly authorized shared ItemIds
+  header/source/tests in this worker. No SQL fixture or main checkout was modified.
 
-## Continuation checkpoint: production owner dependencies
+## Historical continuation checkpoint (superseded by UID assignment)
 
-Read current main CONTINUITY.md and PARALLEL_WORK.md and reviewed the preceding
-implementation/report. Read-only main snapshot inspected:
-`b19f469ae285bda44b0e0526a90f1b7c2409601a` (sixth-batch validation freeze).
-No independent unimplemented loot algorithm was identified in the assigned
-ItemDrop/MobItems scope. No new runtime implementation or test results are claimed
-by this documentation checkpoint; milestone 7 validation above remains unchanged.
+Checkpoint `5652e56` recorded production dependencies against main `b19f469`.
+The coordinator then explicitly assigned existing canonical ItemIds/header/tests
+plus new mob_drops_uid evidence to this worker. This resolves the algorithm/API
+part of that dependency; no main checkout or another owner's source was edited.
 
-Concrete current dependencies confirmed in canonical sources:
+## Milestone 8: original shared ItemIds / GenID semantics
 
-- `mobs.hpp`: MobRuntime already owns `drop_random`, but MobRuntimeTemplate lacks
-  original money WORDs +28/+2a and quest bytes +2c/+2d. The stable full definition
-  owner must expose those fields or a retained view; do not create a competing
-  mob table. Bind the existing mob's RNG, never a fresh per-death generator.
-- `mob_death.hpp/cpp`: drop_items remains a required pure provider, invoked under
-  the existing party lock on the party path. Death user/party projections expose
-  experience fields only; actual user/roster owners must supply retained loot
-  views and publish cursor updates to the same party. A copied roster/cursor is
-  insufficient for nested delivery and reload behavior.
-- `item_ids.cpp`: the canonical generator still uses a 64-bit deadline, zero-stamp
-  initialization and an overflow exception at counter 65535. Original DWORD
-  deadline/wrap and global baseline compatibility remains unresolved. Do not
-  silently replace the required raw_unique_id provider with this implementation.
-- `SqlServer::query` still buffers results; the streaming publication dependency
-  described above remains necessary for original mid-fetch failure semantics.
+Evidence: ps_game.exe `SUniqueIDGen::SUniqueIDGen` 00402550,
+`SUniqueIDGenByServer` constructor 004011c0, global startup 0051fb60,
+`SetStartID` 004494d0, `GenID` 004cbe60, server adapter 00457a50 and local
+calendar packer (misleading symbol GetSystemTime) 004cb8e0. Global item state
+is 00547ce0: counter +4, refresh baseline +8, DWORD deadline +0c, packed local
+calendar +10, critical section +14. All twelve immutable binary/PDB hashes pass.
+Focused locked Ghidra export completed; log `work/mob-drops-uid-ghidra.log`.
 
-Proposed next task: once the coordinator supplies/authorizes the retained full
-mob-definition and live Actor/party owner bindings, assign `mob_drops_runtime`
-composition of the concrete MobDeathWorld::drop_items provider with the existing
-catalog, delivery and money owners. Keep callbacks under the existing serialized
-world/party owner, preserve one shared CRT stream and MobRuntime::drop_random,
-and compare complete death-to-inventory/ground traces. Canonical UID and actual
-transport/log services must be supplied rather than defaulted. A second layer of
-abstract ports would not resolve these production dependencies.
+Existing ItemIds now owns that state directly. Construction zeroes counter,
+baseline and deadline and samples local calendar once. GenID locks before tick
+sampling, refreshes iff unsigned tick >= absolute DWORD deadline, sets wrapped
+`tick+2000`, restores baseline, then samples packed local calendar. Every call
+increments the DWORD counter; the returned low DWORD is counter shifted left 16,
+so no exception occurs at 65535 or full DWORD overflow. Zero stamp does not force
+refresh. SetStartID only changes the next-refresh baseline. Original local WORD
+calendar arithmetic wraps modulo DWORD; it does not use the narrower database
+world-calendar year validation. Constructor/refresh years 1999/2032/2064 and
+injected zero calendar state are covered. Zero SYSTEMTIME fixture is an explicit
+OS-response projection, not a claim that the platform emits invalid dates.
 
-Checkpoint validation: documentation-only `git diff --check` passes. No rebuild,
-SQL execution or original-fixture regeneration was needed or claimed. Main and
-other workers remain unchanged. Waiting for the coordinator's next scoped task.
+API/caller migration:
+
+- Existing ItemIds(server), next(CreationTime), CreationTime and creation_time
+  remain source compatible; all existing callers compile. Snapshot ticks use
+  their low DWORD. Snapshot sampling already happened outside the lock, so that
+  adapter cannot reproduce the original clock-sampling placement under contention.
+- Runtime owners should inject one retained ItemIdClock into one ItemIds and use
+  next() (server byte added once) or raw_next() (original GenID without server).
+  The clock must outlive the generator. Both adapters share exactly one counter,
+  baseline, deadline and recursive lock. Do not configure a second server-zero
+  generator for drops. MobDropCreationWorld::raw_unique_id should delegate to the
+  SAME owner's raw_next(); quest/start/character providers use next() or explicitly
+  add server once to raw_next(). Existing character snapshot calls still work;
+  migration to live clock ownership belongs with the coordinator's owner wiring.
+- The default Linux clock uses low-DWORD CLOCK_BOOTTIME milliseconds and localtime_r
+  calendar, sampled lazily on refresh. This chooses boot-time semantics, not
+  process-relative elapsed time. Windows timer quantization/suspend behavior is
+  not asserted identical; injected clock responses establish algorithm equality.
+- Production main currently constructs the shared pointer for CharacterCommands;
+  quest/drop services must receive that same retained owner. Actual world assembly
+  is still required. Constructor initialization failures propagate explicitly.
+
+Call-site audit: tracked `mob-drops-uid-calls.tsv` and reproducible audit tool cover
+absolute global references and direct base/server calls, including billing,
+user drop/create/remake, gem removal, shop, exchange, market, point, PvP exchange,
+quest, character creation and mob drops. QuestionMgr::AddQuestion 00448bb4 uses
+its own generator at manager+80; it must not be merged with item state. GenIDU
+004cbec0 has a distinct 1000ms/full-counter algorithm and no direct calls in this
+image; it is not silently implemented by raw_next. No direct SetStartID call was
+found for the item global; its constructor baseline is zero. Indirect pointer
+aliasing is not proven absent. Linear objdump misaligns at a preceding switch
+table; an independent E8 displacement scan recovers the actual server-wrapper
+call at 00457a51, also confirmed by function-entry decode and Ghidra.
+
+Validation:
+
+- Original execution fixture: 128 real constructors, 2304 retained interleaved
+  operations, 73213 generated IDs. Complete GenID/server instructions and complete
+  UID slices of QuestAddItem 0047e854..0047e917, CMob::ItemDrop
+  004a6663..004a668e and ProcessCharacterCreate 00481750..00481810 execute.
+  Local packing instructions execute; only OS critical-section/tick/calendar
+  responses are ports. These are UID slices, not full quest/drop gameplay runs.
+- One 65540-call retained sequence alternates actual quest/drop UID slices at a
+  cached tick. FNV covers every output UID, not merely the final value. Other
+  sequences cover baseline changes, zero stamp/tick, 65535/full-counter wrap,
+  unsigned sign boundary, deadline wrap, exact expiry, server bytes 0/1/127/128/255,
+  and local-calendar refresh cadence. Native comparisons match original UID hashes
+  and observed tick/calendar cadence. Native lock exclusion is additionally
+  covered by the existing eight-thread/8000-ID unit test, not OS port emulation.
+- Final build exit 0, no warnings: `work/mob-drops-uid-final-build.log`.
+  Final suite exit 0: 130/130 passed in 43.65 seconds, including existing callers;
+  `work/mob-drops-uid-final-tests.log`. Earlier suite also passed 130/130 before
+  additional adapter/SQL checks, but final results above cover the committed code.
+- Focused isolated SQL exit 0 under shared SQL lock: same original/native stream
+  plus 64 SELECT CONVERT(bigint, ?) round trips of actual generated IDs, including
+  high-bit signed values. No database writes/schema/lifecycle operations. This
+  verifies parameter bit preservation, not item persistence or gameplay.
+  Log: `work/mob-drops-uid-sql.log`.
+- Python py_compile and git diff --check pass. A requested wrapper help command
+  unexpectedly ran two asset-only tests; terminated before SQL phases. That
+  partial run is not counted as integration validation. Missing optional Capstone
+  was handled by existing objdump/Ghidra tools; no dependency installed.
+
+Remaining integration: retain one generator across all item-producing services,
+provide the authoritative runtime boot/calendar clock and server byte, and connect
+real death/inventory/world/log services. Earlier creation-header warning about
+ItemIds timing/wrap describes the pre-fix implementation; coordinator can update
+that comment during integration. SQL streaming publication remains a separate
+storage-owner dependency. No production gameplay completion is claimed.
