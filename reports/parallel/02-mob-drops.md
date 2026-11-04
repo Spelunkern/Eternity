@@ -22,7 +22,7 @@ All twelve EXE/PDB hashes verified again. Focused Ghidra exports use locked
 | 050179d | Concrete delivery through real Actor::receive_item 0045df40 and ZoneItems::enter 00417320 |
 
 Milestone 7 implementation: `940a1f986fa4e92de56e9f0f169bbbf5e0fa4a04`.
-Current UID implementation commit: `5f940275104dc1dfd6d38ca4d91c9ed7a50ffa5f`.
+Milestone 8 UID implementation commit: `5f940275104dc1dfd6d38ca4d91c9ed7a50ffa5f`.
 
 ## Milestone 7: selective MobItems reload and live slot binding
 
@@ -242,3 +242,82 @@ ownership. Inject the same retained ItemIds into all those providers, use next()
 for server-inclusive IDs and raw_next() for the existing drop creation boundary,
 and validate complete producer composition. This is owner wiring, not another
 UID generator. Awaiting assignment; no main/other-owner changes or repeated tests.
+
+
+## Milestone 9: CharacterCommands uses the retained live UID owner
+
+Implementation commit: `9d6d13499e74133e360991df620146d966534056`.
+
+Read latest main continuity/parallel instructions. UID fix is already integrated
+centrally in frozen source 5e8d1cb via b916c7f; historical checkpoint 783f9ba's
+pre-integration snapshot is superseded. This assignment explicitly authorizes
+character_commands.hpp/cpp and their tests. No main.cpp, Actor/inventory or other
+worker source changed.
+
+Original ProcessCharacterCreate 00480e90 evidence, especially 00481750..004818ce,
+shows locked UID generation first, then separate GetLocalTime for each item's
+make time, regardless of whether UID calendar refresh was needed. Ghidra's retained
+focused export was reviewed alongside complete original instruction execution.
+The starter DB packet is 0404, length 75+23*count, with packed per-item fields
+bag/slot/UID/item ID/type/type-ID/quality/count/make time. All twelve immutable
+EXE/PDB hashes verified again.
+
+CharacterCommands now calls the retained identifiers_->next(), using that owner's
+live clock under its lock; the separately injected timestamp clock remains only
+for persistence metadata and each starter make-time sample. Its existing initial
+metadata sample is unchanged and is not represented as an original UID-loop
+sample. Each item still samples UID before make time. The obsolete overflow-error
+mapping was removed: original counter wrap is ordinary generation, and failures
+from required clock services are not disguised as a capacity result. Constructor
+signature/shared_ptr ownership remain unchanged; no generator was added.
+
+Deterministic callers must inject both independent services: ItemIdClock into the
+retained ItemIds, and the existing timestamp callback into CharacterCommands.
+The existing creation-network integration fixture now does this, with its clock
+outliving the commands/generator. An injected timestamp callback no longer
+silently controls UID sampling. Quest/start/drop providers must receive the SAME
+retained ItemIds; server-inclusive providers use next(), while drop creation's
+raw_unique_id boundary uses raw_next() and adds server once. Real world assembly
+remains outside this caller assignment.
+
+Validation:
+
+- New original-execution oracle runs the complete starter UID/make-time loop and
+  final original DB packet send, with the real local packer and GenID/server
+  bodies before and after each creation on the SAME original global. 64 flows,
+  380 generated starter records, cached/refreshed calendars, deadline/counter wrap,
+  server 0/3/255 and changing independent make times. Only OS clock/lock and final
+  DB transport are ports; full character-stat/header preparation is not claimed.
+- Native test executes actual CharacterCommands, CreationRules, Characters create
+  transaction/parameter construction, roster reload and client replies. SQL methods
+  are explicitly test-only link-time scripted ports; no native repository method
+  is substituted. All 146 submitted starter parameter records match the original
+  23-byte packet records, including signed UID bits and separate timestamps.
+  16 successes and 48 scripted create/item-save failures verify commit/rollback,
+  stop-at-failed-row, cached account flags, 0102 result and ordered 0101 list
+  packets. Invalid admission consumes neither clock nor SQL. External producer
+  calls before/after prove the same live owner and advancement on SQL failure.
+- Native build exit 0, no warnings: work/mob-drops-uid-caller-build.log.
+  Full suite: 131/131 passed in 47.52 seconds, exit 0;
+  work/mob-drops-uid-caller-tests.log. Additional test-only failure-prefix/count
+  assertions were then compiled successfully in the final build;
+  work/mob-drops-uid-caller-final-build.log.
+- Final focused check after the additional assertions: 3/3 passed in 0.04 seconds,
+  exit 0 (creation-unit, item-ids-unit, mob-drops-uid-creation-unit);
+  work/mob-drops-uid-caller-focused.log.
+- Read-only isolated SQL under shared lock: exit 0; existing original/native UID
+  stream and 64 bigint parameter round trips pass again;
+  work/mob-drops-uid-caller-sql.log. This is not a full creation SQL/TCP run.
+- Existing creation-network-integration builds with the deterministic live clock.
+  Its complete stored-procedure/TCP execution remains for the coordinator's full
+  isolated integration: the harness creates/drops a disposable catalog, and SQL
+  lifecycle is explicitly outside this worker's authorization. No such lifecycle
+  operations were attempted in this block.
+- New oracle passes py_compile; git diff --check passes. Initial original fixture
+  attempt read the transport size from the buffer argument position; corrected
+  to size at stack+8 and RET8 before successful regeneration and fixture copy.
+
+Remaining: coordinator full creation SQL/TCP validation and real quest/drop/world
+provider assembly with this retained shared owner and authoritative clock. This
+block removes the snapshot UID caller from CharacterCommands; it does not claim
+all runtime item producers are assembled or that the server is playable.
