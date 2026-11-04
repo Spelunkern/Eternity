@@ -1,5 +1,6 @@
 #pragma once
 #include "eternity/game/entry_delivery.hpp"
+#include "eternity/game/world_admission.hpp"
 
 namespace eternity::game {
 // The connection owner retains the pipeline and all referenced catalogs until
@@ -18,4 +19,20 @@ struct VerticalProtocolServices {
 void deliver_vertical_entry(CharacterEntryState&, ActorLoadPipeline&, const PlayerSnapshot&,
     const SocialCatalog&, const EntryCatalogs&, ExperienceBounds, std::string guild_name,
     const VerticalProtocolServices&);
+}
+
+namespace eternity::game {
+enum class VerticalEntryRequest {unhandled, entered, rejected};
+// One per-connection view of the existing admission user; never owns membership.
+// All methods run on the same serialized world executor as WorldAdmission.
+class VerticalEntrySession {
+public:
+    VerticalEntrySession(WorldAdmission& world,WorldAdmissionUser& user):world_(world),user_(user) {}
+    bool wait() {return world_.wait(user_);}
+    VerticalEntryRequest receive(std::span<const std::uint8_t> packet);
+private:
+    WorldAdmission& world_;WorldAdmissionUser& user_;
+};
+// Called once per world update, not once per connection.
+void update_vertical_admission(WorldAdmission& world);
 }

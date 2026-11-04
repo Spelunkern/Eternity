@@ -32,3 +32,13 @@ void deliver_vertical_entry(CharacterEntryState& state,ActorLoadPipeline& pipeli
     complete_character_selection(state,ports);
 }
 }
+
+namespace eternity::game {
+VerticalEntryRequest VerticalEntrySession::receive(std::span<const std::uint8_t> packet) {
+    // PacketProcessing 00466da0: location 3 and opcode 0201 at 00466f01..00466f67.
+    // Length checking is the native framing boundary; the original receives a pointer.
+    if(packet.size()<2 || user_.location!=3 || packet[0]!=1 || packet[1]!=2) return VerticalEntryRequest::unhandled;
+    return world_.client_enter(user_)?VerticalEntryRequest::entered:VerticalEntryRequest::rejected;
+}
+void update_vertical_admission(WorldAdmission& world) {world.update_packets();}
+}
