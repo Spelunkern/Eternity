@@ -1731,3 +1731,11 @@ copy of the completed admission build, reconfigured/rebuilt 55 targets, and
 and ingress ancestors present. Log `.local/composed-quests-test.log` in that
 worktree. This establishes the focused combined test only; full native suite,
 exact combined SQL, live reward providers and production dispatch remain open.
+
+Coordinator review of independent 04's uncommitted 0501 speed-check stage found
+it requires a mutable reference identical to `Actor::movement_check()`, while
+Actor currently exposes only a const accessor. Production callers cannot satisfy
+the draft safely without a shared owner change; requested worker to implement or
+propose that accessor and test mutation on the actual Actor (no copied state or
+const_cast). This is only the speed-check stage; original gates, movement and
+correction effects remain to be composed.
