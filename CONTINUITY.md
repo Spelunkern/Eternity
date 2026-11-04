@@ -2088,3 +2088,9 @@ runs targeted scene, system TCP and roster tests using a copied completed protoc
 build; results pending. Full build/SQL and live connection/world assembly remain
 required; pre-auth NProtect, queue threshold and original scheduler limitations
 are unchanged. Existing entry-owner session 21247 tests its earlier exact source.
+
+Combined entry session 69040 SQL log has passed its actual retained-roster
+selection/ownership test (`Real SQL selection, ownership failure and 0104 latch
+passed`) inside its disposable fixture; remaining SQL suites and process exit
+are pending. This is not the newer raw-roster draft or the separate single-load
+entry-owner SQL test. Dashboard records the partial checkpoint accurately.
