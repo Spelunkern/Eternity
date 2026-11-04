@@ -518,3 +518,11 @@ if(BUILD_TESTING)
     target_link_libraries(mob-targeting-unit PRIVATE eternity_game)
     add_test(NAME mob-targeting-unit COMMAND mob-targeting-unit ${CMAKE_CURRENT_SOURCE_DIR}/tests/data/mob-targeting-oracle.tsv)
 endif()
+
+# Worker 06: recovered quest admission/start.
+target_sources(eternity_game PRIVATE src/game/quest_start.cpp)
+if(BUILD_TESTING)
+    add_executable(quest-start-unit tests/quest_start_unit.cpp)
+    target_link_libraries(quest-start-unit PRIVATE eternity_game)
+    add_test(NAME quest-start-unit COMMAND quest-start-unit ${CMAKE_CURRENT_SOURCE_DIR}/tests/data/quest-start-oracle.tsv)
+endif()
