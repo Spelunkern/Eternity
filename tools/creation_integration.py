@@ -115,6 +115,7 @@ def run(command, build_directory="build"):
         subprocess.run(command + [f"{build_directory}/purchases-sql-integration", name], check=True)
         subprocess.run(command + [f"{build_directory}/character-recovery-sql-integration", name], check=True)
         subprocess.run(command + [f"{build_directory}/character-save-sql-integration", name], check=True)
+        subprocess.run(command + [f"{build_directory}/vertical-persistence-sql-integration", name], check=True)
     finally:
         # Only the fresh, randomly named fixture catalog is removed.
         sql(f"ALTER DATABASE {catalog} SET SINGLE_USER WITH ROLLBACK IMMEDIATE; DROP DATABASE {catalog};")
