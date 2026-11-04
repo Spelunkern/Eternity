@@ -1,6 +1,40 @@
-#define main inventory_replica_fixture_main
-#include "inventory_replica_flow_unit.cpp"
-#undef main
+#include "eternity/game/actor.hpp"
+#include "eternity/game/inventory.hpp"
+#include "eternity/game/inventory_replica.hpp"
+#include "eternity/game/item_pool.hpp"
+#include "equipment_fixture.hpp"
+#include <algorithm>
+#include <iostream>
+
+using namespace eternity;using namespace eternity::game;
+namespace {
+void require(bool value,const char* message) {if(!value) throw std::runtime_error(message);}
+struct World final:ActorScene,ItemDropWorld,ItemPickupWorld,ZoneItemServices {
+    InventoryReplica& replica;GroundItemPool& pool;ZoneItems* zone=nullptr;std::uint64_t next_uid=3;std::vector<net::Packet> client,view,database,logs;
+    World(InventoryReplica& cache,GroundItemPool& items):replica(cache),pool(items) {}
+    void unexpected() {throw std::runtime_error("Unexpected inventory flow operation");}
+    void send_self(const net::Packet& packet) noexcept override {client.push_back(packet);}
+    void send_nearby(const net::Packet& packet) override {view.push_back(packet);}void send_cell_view(const net::Packet& packet) override {view.push_back(packet);}
+    std::optional<bool> party_kind() const noexcept override {return std::nullopt;}void send_party(const net::Packet&) noexcept override {std::terminate();}
+    void reset_damage() override {unexpected();}std::optional<std::uint32_t> allocate_effect_id() noexcept override {std::terminate();}void release_effect_id(std::uint32_t) noexcept override {std::terminate();}
+    std::uint32_t tick_ms() const noexcept override {return 100;}std::uint32_t tick_ms() override {return 100;}
+    void stop_target_mob(std::uint32_t) override {unexpected();}void taunt(std::uint16_t,float) override {unexpected();}ZoneUsers* user_zone() override {unexpected();return nullptr;}UserShapeSocial user_shape_social() override {unexpected();return {};}
+    void finish_periodic_damage(EffectStatus&,const SkillDefinition&,const EffectSource&,std::uint32_t) override {unexpected();}
+    std::uint32_t lock_inventory_party(Actor&) override {return 0;}void unlock_inventory_party(std::uint32_t) noexcept override {std::terminate();}
+    std::optional<bool> inventory_party_kind(const Actor&) override {return std::nullopt;}void send_inventory_party(Actor&,const net::Packet&) override {unexpected();}
+    void send_inventory_database(const net::Packet& packet) override {database.push_back(packet);require(replica.apply(packet)==InventoryReplicaResult::applied,"Actor inventory message failed in DB-agent cache");}
+    void send_money_database(const net::Packet& packet) override {database.push_back(packet);require(replica.apply_money(packet),"Actor money message failed in shared DB-agent cache");}
+    GameLogSubject money_log_subject(const Actor& actor) override {GameLogSubject subject;subject.account_id=actor.account_id();subject.character_id=actor.id();subject.character_name="Flow";subject.account_name="flow";subject.position=drop_position(actor);return subject;}
+    std::chrono::sys_seconds money_local_calendar() override {return std::chrono::sys_days{std::chrono::year{2026}/11/2};}void send_money_log(const net::Packet& packet) override {logs.push_back(packet);}
+    std::string inventory_item_name(const ItemDefinition&) override {return "Flow item";}std::string inventory_drop_user_name(Actor&,std::uint32_t,bool) override {unexpected();return {};}
+    bool return_inventory_item(Actor&,GroundItem& item) override {return zone->enter(item,1);}
+    Actor* find_exchange_user(Actor&,std::uint32_t) override {unexpected();return nullptr;}void negative_craft_reduction(const PlayerItem&,std::int32_t) override {unexpected();}
+    UserPosition drop_position(const Actor&) override {return {10,0,10};}std::uint64_t next_drop_uid() override {return next_uid++;}std::uint32_t drop_make_time() override {return pack_world_time(money_local_calendar());}
+    bool enter_dropped_item(Actor&,GroundItem& item) override {return zone->enter(item,1);}
+    std::uint32_t pick_tick_ms() override {return 100;}std::uint32_t pick_party_id(Actor&) override {return 0;}UserPosition pick_position(const Actor& actor) override {return drop_position(actor);}bool pick_quest_active(Actor&,std::uint16_t) override {unexpected();return false;}
+    void send_cell_view(CellCoordinates,const net::Packet& packet) override {view.push_back(packet);}void release(GroundItem& item) override {pool.release(item);}
+};
+}
 #include "eternity/game/vertical_inventory.hpp"
 #include <bit>
 #include <fstream>
