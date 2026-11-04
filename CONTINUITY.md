@@ -1411,3 +1411,9 @@ creation harness and has no SQL pass claim. Worker 01 owns creation harness
 changes; reconcile both tests centrally and preserve one `Players::load` per
 selection. Main validation session 53983 remains live and waits for the build
 lock; do not modify source under its pending build.
+
+Independent 07 `.local/vertical-inventory-targeted.log` shows its focused
+`vertical-inventory-unit` passed 1/1 under the shared lock. The adapter remains
+unintegrated; isolated SQL and actual live Actor/zone/transport bindings remain
+required. Coordinator asked worker 07 to record the focused result before its
+next ActorScene assignment. Main validation 53983 is still live and queued.
