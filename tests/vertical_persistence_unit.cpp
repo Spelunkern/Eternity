@@ -9,6 +9,5 @@ int main() {
     InventoryReplicaPool pool;auto cache=vertical_persistence_restore(s,3,pool);
     require(cache->core().money==50 && cache->inventory().inventory().size()==1 && cache->skills().learned().size()==1 && cache->quests().active().size()==1 && cache->quests().finished().size()==1 && cache->growth().maximum()==3 && cache->market().ids().size()==1);
     eternity::net::Packet money{3,6,42,0,0,0,77,0,0,0};require(cache->apply(money)==InventoryReplicaResult::applied && cache->core().money==77);
-    bool phases=false,ack=false,timeout=false;CharacterSavePort port;port.growth=[](){return 0;};port.acquire=port.begin=port.commit=port.rollback=[](){return true;};port.timeout=[](){return false;};port.lock=port.unlock=port.recovery=port.release=[](){};port.acknowledge=[&](){ack=true;};port.phases=[&](bool quick){require(quick && cache->core().money==77);phases=true;};require(execute_character_save(true,true,false,timeout,port) && phases && ack);
     s.items[0].relocated=true;bool rejected=false;try {(void)vertical_persistence_restore(s,3,pool);} catch(const std::runtime_error&) {rejected=true;}require(rejected);
 }
