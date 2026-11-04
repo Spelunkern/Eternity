@@ -1343,3 +1343,10 @@ The original DB-agent 0407 path checks the retained five-slot roster before load
 `vertical_entry_select` appears to call Players::load directly. Requested 01
 verify/adapt the live roster gate and test eligibility against original evidence
 before integration. Do not assume SQL ownership check replaces the roster gate.
+
+Independent 02 full suite produced 303/304: its new `vertical-world-unit`
+aborted with `terminate called without an active exception`; see worker
+`.local/vertical-world-tests.log`. Coordinator requested diagnosis, corrected
+idle/death/respawn order and rerun. `5c3819a` is not ready to integrate despite
+its successful build. Main session 53983 remains live waiting for shared build
+slot; current 01/02 worker suites hold both slots.
