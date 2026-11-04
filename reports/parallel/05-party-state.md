@@ -1048,3 +1048,93 @@ Separately, coordinator/root owners must supply the retained Actor binding and
 mandatory real pool/worker/lookup/scene/log/guild services documented above.
 Canonical Actor/inventory/zone sources remain read-only. Further repeated tests
 of the same entry/leave functions do not close those production dependencies.
+
+## Block 14 — actual raid conversion/configuration/disband request branches
+
+Recovered complete `ps_game.exe CParty::SetRaidParty 004458f0..00445950`
+(ESI=party, AL=kind) and the actual `CUser::PacketParty 004676c0` branches
+0b0e (00467c4a..00467d0a), 0b0f (00467d0f..00467d75), 0b10
+(00467d7a..00467de7), and 0b16 (0046819c..004681fb) from the complete
+Ghidra disassembly. New PartyRaidRequestsWorld extends the existing actual raid
+request owner; no duplicated party/user state or membership/send body. All
+canonical Actor/zone/inventory and registry headers remain untouched.
+
+Actual SetRaidParty sets kind and renumbers EVERY index below live count to
+its array position BEFORE taking its own recursive party lock, including pointer
+holes. Under that lock it selects the first position which is neither current
+leader nor previous subleader; there is no non-null user check. If none exists,
+subleader stays unchanged. It does not reset count/pointers/tail/cursor/max.
+
+New real branches, under the captured original CPartyLock coordination:
+
+- 0b0e requires a current party, requester equal to its selected leader slot
+  (direct comparison, NO positive-count helper guard), and a nonzero request
+  kind. Call SetRaidParty with kind=1, reread requester's LIVE party after its
+  inner unlock, then set request kind, signed DWORD item division and auto-join.
+  Broadcast exact 16-byte 0b0e: kind/auto bytes, division DWORD, leader/subleader
+  wire-index DWORDs. Original request kind 2 is retained; it is not normalized
+  to boolean. Normal-to-raid conversion uses the SAME registered party.
+- 0b0f requires direct leader equality and nonzero current kind; writes the
+  request's raw DWORD division and broadcasts six bytes, retaining bit patterns
+  such as ffffffff. It performs no scene/log/max refresh.
+- 0b10 has the same guard, updates auto-join and broadcasts three bytes.
+- 0b16 has the same guard, broadcasts its two-byte packet BEFORE rereading the
+  requester's current party and invoking existing actual BreakParty 00444fa0.
+  That owner emits scenes/logs, resets all 30 slots/indices and unregisters
+  without recycling. The outer captured party lock remains held until return.
+
+The new request world delegates unimplemented raid opcodes to a PURE required
+remaining_raid_request provider. It never silently drops an opcode or returns
+fake success. Thus this is a substantive conversion/configuration/disband
+milestone, not a claim that every raid request is finished.
+
+Precise existing-model dependency: PartyRegistryParty::auto_join is bool, while
+00467cb1 and 00467db8 store raw request bytes at original CParty+115; 00467cd5
+and 00467dcb read them back verbatim. To recover all 0..255 values, coordinator
+must change that EXISTING authoritative field to uint8_t and preserve raw reads
+in roster serialization (00445ca9) and request replies; autojoin admission
+still tests nonzero. Current new branches implement 0/1 and route other raw
+bytes to the required whole-request provider before mutations. No coercion,
+second raw flag cache, unauthorized registry edit or fake response was added.
+The caller supplies validated 8/6/3/2-byte decoded packet shapes. Callbacks must
+retain selected parties/users; original null-party invalidation before its
+post-callback dereference is outside the supported provider contract and native
+code reports it explicitly rather than dereferencing freed/null memory.
+
+Original execution fixture runs complete PacketParty and real SetRaidParty,
+BreakParty, Reset, map unregister and GetPartyType bodies. Party/direct send,
+lookup/scene/log/guild/OS are explicit providers as in the prior request matrix;
+no production transport default was introduced. An x86 saved-register trampoline
+runs literal nested PacketParty 0b0f from conversion/disband broadcasts and then
+returns with the interrupted CParty::Send ABI. Native invokes the same dispatcher
+and retained binding from that callback. The fixture compares lock-time state,
+all 30 slots/indices, live flags/count/cursor/max, full final projections, every
+packet/scene/log and return-to-sentinel, including failure guards.
+
+Validation:
+
+- 256 retained scenarios; 1,280 whole original PacketParty calls, plus 34 literal
+  nested configuration requests. Counts 0/1/2/3/7/15/30, holes, duplicate/nonlinear
+  wire indices, absent/nonleader actors, nonzero kind 1/2, disabled conversion,
+  auto flags 0/1 and signed/raw division values. Traces include 76 conversion,
+  84 division, 50 auto-join and 50 disband broadcasts, with 384 scenes/logs.
+- Locked native build: exit 0, no diagnostics
+  (`work/party-runtime-raid-requests-final-build.log`).
+- Locked native tests: 135/135 passed, 55.79 seconds, exit 0
+  (`work/party-runtime-raid-requests-test.log`).
+- Locked focused C++20 ASAN/UBSAN compile and all comparisons: exit 0,
+  no diagnostics (`work/party-runtime-raid-requests-sanitized.log`).
+- Repeated original fixture matches byte for byte (`cmp`, exit 0). Original
+  EXE/PDB manifest (`work/party-runtime-raid-requests-final-hashes.log`) and
+  `git diff --check`: exit 0. Generated files remain ignored under work/.
+
+Implementation commit: `5b7a35b13f97562437455dae53b13b803ca1ef72`.
+
+Remaining independent request bodies: 0b11 autojoin, 0b12 wire slot exchange,
+0b13/0b17 leader operations, 0b14/0b15/0b18 raid invitations/responses and 0b1a
+raid-specific expulsion. Existing normal invitation creation is retained; this
+block adds conversion of that SAME party rather than a parallel raid registry.
+The minimal retained Actor/root binding and real scene/log/guild/pool/worker/
+lookup/recursive-lock providers remain required. No main edits, heap recycling
+or SQL operations; full isolated SQL belongs to coordinator. Server objective
+remains open.
