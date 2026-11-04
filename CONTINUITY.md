@@ -1261,3 +1261,9 @@ fixture cases and byte-compared successfully. The fixture executes original
 Update/Reset and CRT sqrt with patched deterministic clock boundary; this
 verifies reproducibility only. The native movement implementation is still
 uncommitted and awaiting compilation/tests. Main validation 99411 remains live.
+
+Coordinator regenerated and byte-compared independent 07's in-progress
+PacketMaininterface 0205 pickup-handler fixture. It executes original packet
+handler with patched cancellation/shop/pickup boundaries, including packet ID
+mutation during callbacks. Reproduction passed; native implementation remains
+uncommitted and its build/test is queued, so no pickup or SQL validation claim.
