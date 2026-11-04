@@ -1210,3 +1210,32 @@ root construction/retention/serialization and FSM Lua/clock/error/update/world
 services. Country, immunity, admin flags, count, shared CRT, clock delegation
 and actual fixed dispatch mappings are implemented. No root network handler or
 original-client playability is claimed by these tests.
+
+## Actor adapter assignment completion / life-owner dependency
+
+Reviewed current main continuity/coordination notes and 9d9111f/598067c.
+The repeated mob_targeting_actor assignment is complete in milestone 11:
+canonical Actor country/admin/immunity projections, real ZoneUsers count,
+shared CRT/FSM clock, actual fixed dispatch and configured callback composition,
+160 new original execution paths, native tests and sanitizer validation.
+No additional independent missing mapping was identified inside this scope.
+
+Read-only inspection still finds no authoritative life_status accessor on
+canonical Actor. Main is now in the ninth-batch source freeze; the actor adapter
+is not registered there yet. This does not authorize edits to Actor, ZoneUsers,
+the shared root, or worker03's newly exclusive mobs/mob_pool files. Preserve the
+existing required life-owner port; do not substitute HP, a default alive value,
+a parallel actor state table or a second FSM/catalog owner.
+
+Concrete next task: coordinator integrates 9d9111f/598067c after validation and
+assigns the Actor owner to expose authoritative signed life_status() over the
+actual CUser+142c state with initialization/death/rebirth writes. Then explicitly
+assign this worker the direct MobTargetingActorLife delegation and retained root
+assembly against the actual user/zone/FSM services. The exact accessor and
+remaining service/lifetime contracts are already specified in milestone 11.
+
+Documentation-only checkpoint: git diff --check clean; unchanged build/tests,
+original fixtures, sanitizer and SQL checks were not repeated. Last validation
+remains 129/129 tests, 160 original SetTarget-to-real-FSM paths and focused
+ASAN/UBSAN passed. No main edits, SQL writes, merges, resets or pushes. Global
+server playability remains incomplete and is not inferred from these results.
