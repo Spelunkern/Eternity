@@ -1503,3 +1503,10 @@ if(BUILD_TESTING)
     target_link_libraries(party-runtime-raid-requests-expel-unit PRIVATE eternity_game)
     add_test(NAME party-runtime-raid-requests-expel-unit COMMAND party-runtime-raid-requests-expel-unit ${CMAKE_CURRENT_SOURCE_DIR}/tests/data/party-runtime-raid-requests-expel-oracle.tsv)
 endif()
+
+# Worker 09: original int/DWORD arithmetic feeding retained VM comparisons/states.
+if(BUILD_TESTING)
+    add_executable(mob-ai-states-arithmetic-unit tests/mob_ai_states_arithmetic_unit.cpp)
+    target_link_libraries(mob-ai-states-arithmetic-unit PRIVATE eternity_game)
+    add_test(NAME mob-ai-states-arithmetic-unit COMMAND mob-ai-states-arithmetic-unit ${CMAKE_CURRENT_SOURCE_DIR}/tests/data/mob_ai_states_arithmetic-oracle.tsv)
+endif()

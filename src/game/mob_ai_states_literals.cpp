@@ -1,4 +1,4 @@
-#include "eternity/game/mob_ai_states_numeric.hpp"
+#include "eternity/game/mob_ai_states_arithmetic.hpp"
 #include "eternity/game/mob_ai_states_bindings.hpp"
 #include <algorithm>
 #include <bit>
@@ -18,7 +18,7 @@ void push(MobAiValueStack& stack,const MobAiParameter& value){
     if(stack.top<stack.capacity)assign(stack.slots[static_cast<std::size_t>(stack.top)],value);
 }
 MobAiParameter pop(MobAiValueStack& stack){
-    if(stack.top<0||stack.top>=stack.capacity||static_cast<std::size_t>(stack.top)>=stack.slots.size())throw std::logic_error("Mob AI comparison pop has undefined original operand storage");
+    if(stack.top<0||stack.top>=stack.capacity||static_cast<std::size_t>(stack.top)>=stack.slots.size())throw std::logic_error("Mob AI VM pop has undefined original operand storage");
     auto value=stack.slots[static_cast<std::size_t>(stack.top)];--stack.top;return value;
 }
 template<class T> bool relation(T first,T second,std::int32_t opcode){
@@ -42,8 +42,30 @@ bool numeric_comparison(const MobAiParameter& first,const MobAiParameter& second
     if(first.type==2||second.type==2)return relation(floating_value(first),floating_value(second),opcode);
     return integer_comparison(first,second,opcode);
 }
+bool integer_arithmetic(MobAiParameter& result,const MobAiParameter& first,const MobAiParameter& second,std::int32_t opcode){
+    if((first.type!=1&&first.type!=3)||(second.type!=1&&second.type!=3))throw std::logic_error("Mob AI arithmetic requires the unrecovered noninteger matrix");
+    if(opcode<6||opcode>16)return false;
+    if(opcode>9)throw std::logic_error("Mob AI assignment/control opcode is not recovered");
+    const auto right=first.type==1?static_cast<std::uint32_t>(first.integer):first.dword;
+    const auto left=second.type==1?static_cast<std::uint32_t>(second.integer):second.dword;
+    std::uint32_t value=0;
+    switch(opcode){
+    case 6:value=left+right;break;
+    case 7:value=left-right;break;
+    case 8:value=left*right;break;
+    case 9:
+        if(right==0)throw std::logic_error("Mob AI integer division would raise the original zero-divisor exception");
+        if(first.type==1&&second.type==1){
+            if(second.integer==std::numeric_limits<std::int32_t>::min()&&first.integer==-1)throw std::logic_error("Mob AI signed division would raise the original overflow exception");
+            value=static_cast<std::uint32_t>(second.integer/first.integer);
+        }else value=left/right;
+        break;
+    }
+    if(result.type==1)result.integer=std::bit_cast<std::int32_t>(value);else result.dword=value;
+    return true;
 }
-static std::int32_t interpret_values(MobAiConfiguredFsm& owner,MobAiConfiguredCondition& condition,bool local_reads,ComparisonMode comparisons){
+}
+static std::int32_t interpret_values(MobAiConfiguredFsm& owner,MobAiConfiguredCondition& condition,bool local_reads,ComparisonMode comparisons,bool arithmetic){
     auto& stack=owner.value_stack;
     if(stack.capacity<0||static_cast<std::size_t>(stack.capacity)>stack.slots.size())throw std::logic_error("Mob AI literal stack requires its retained capacity/storage");
     stack.top=-1;condition.words[2]=0;std::uint32_t passed=0;
@@ -72,6 +94,10 @@ static std::int32_t interpret_values(MobAiConfiguredFsm& owner,MobAiConfiguredCo
             if(value==owner.variables.end())throw std::logic_error("Mob AI local read requires a factory-populated typed variable");
             if(value->second.type==4&&std::find(value->second.text.begin(),value->second.text.end(),'\0')==value->second.text.end())throw std::logic_error("Mob AI local string has no retained terminator");
             push(stack,value->second);
+        }else if(token.type==8&&arithmetic){
+            const auto first=pop(stack);const auto second=pop(stack);
+            assign(numeric,second);numeric_type_known=true;
+            if(integer_arithmetic(numeric,first,second,token.opcode))push(stack,numeric);
         }else if(token.type==9&&comparisons!=ComparisonMode::none){
             const auto first=pop(stack);const auto second=pop(stack);
             if(comparisons==ComparisonMode::numeric?numeric_comparison(first,second,token.opcode):integer_comparison(first,second,token.opcode))++passed;
@@ -81,11 +107,13 @@ static std::int32_t interpret_values(MobAiConfiguredFsm& owner,MobAiConfiguredCo
         // Kinds outside the dispatch range and original cases 5/6 are ignored.
     }
 }
-std::int32_t interpret_mob_ai_literals(MobAiConfiguredFsm& owner,MobAiConfiguredCondition& condition){return interpret_values(owner,condition,false,ComparisonMode::none);}
-std::int32_t interpret_mob_ai_local_values(MobAiConfiguredFsm& owner,MobAiConfiguredCondition& condition){return interpret_values(owner,condition,true,ComparisonMode::none);}
+std::int32_t interpret_mob_ai_literals(MobAiConfiguredFsm& owner,MobAiConfiguredCondition& condition){return interpret_values(owner,condition,false,ComparisonMode::none,false);}
+std::int32_t interpret_mob_ai_local_values(MobAiConfiguredFsm& owner,MobAiConfiguredCondition& condition){return interpret_values(owner,condition,true,ComparisonMode::none,false);}
 
-std::int32_t interpret_mob_ai_integer_conditions(MobAiConfiguredFsm& owner,MobAiConfiguredCondition& condition){return interpret_values(owner,condition,true,ComparisonMode::integer);}
+std::int32_t interpret_mob_ai_integer_conditions(MobAiConfiguredFsm& owner,MobAiConfiguredCondition& condition){return interpret_values(owner,condition,true,ComparisonMode::integer,false);}
 
-std::int32_t interpret_mob_ai_numeric_conditions(MobAiConfiguredFsm& owner,MobAiConfiguredCondition& condition){return interpret_values(owner,condition,true,ComparisonMode::numeric);}
+std::int32_t interpret_mob_ai_numeric_conditions(MobAiConfiguredFsm& owner,MobAiConfiguredCondition& condition){return interpret_values(owner,condition,true,ComparisonMode::numeric,false);}
+
+std::int32_t interpret_mob_ai_integer_arithmetic(MobAiConfiguredFsm& owner,MobAiConfiguredCondition& condition){return interpret_values(owner,condition,true,ComparisonMode::numeric,true);}
 
 }
