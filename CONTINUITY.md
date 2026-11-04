@@ -1739,3 +1739,13 @@ the draft safely without a shared owner change; requested worker to implement or
 propose that accessor and test mutation on the actual Actor (no copied state or
 const_cast). This is only the speed-check stage; original gates, movement and
 correction effects remain to be composed.
+
+Coordinator stopped worker 02's redundant targeted `vertical-world-unit` PID
+668975 while it was sleeping for the build lock. The identical fixture had
+already passed its fresh full 304-test suite in
+`.local/vertical-world-fixture-verify-tests.log`; the interrupted repeat was not
+counted as a pass. Worker 02 was directed to pursue the pending actual admission
+services and world scheduling work. Also observed worker 07 running its SQL
+integration and a targeted scene build in the same worktree concurrently; both
+were allowed to finish, but SQL results from that overlap must be treated as
+potentially mixed-binary provenance and not exact-scene-commit validation.
