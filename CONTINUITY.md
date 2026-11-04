@@ -1566,3 +1566,11 @@ original-client test. Independent 08 committed a quest-specific NPC guard
 `fa8a664`/`17c4b78`/`49253c2`, but coordinator previously flagged that canonical
 NpcPool release can bypass this wrapper. Keep it unintegrated until canonical
 retention or an enforced single retirement owner is demonstrated.
+
+Independent 08 report `8ac56ed` records focused quest guard test and isolated
+SQL passed, including nested same-ID replacement and throwing broadcast.
+However its quest-specific retirement wrapper still permits direct canonical
+NpcPool release bypass. Worker acknowledged coordinator review and is moving
+retention/deferred reuse into the canonical NPC pool with direct-release tests.
+Keep `fa8a664..8ac56ed` out of integrated production until that revised owner
+and its lifecycle tests are reviewed.
