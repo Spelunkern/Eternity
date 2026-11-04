@@ -1530,3 +1530,10 @@ the worktree's ignored .local. Session 69947 runs sequential focused protocol,
 gate, TCP and persistence tests, then full build and isolated SQL; it is live,
 not yet passed. This remains separate from main's still-running 53983 pipeline.
 No live WorldApplication, ActorScene, root admission or playable-server claim.
+
+Coordinator instructed all nine independent sessions to let current validation
+handles finish and avoid new full 300-test suites/rebuilds for later milestones
+unless a concrete regression requires them. Use locked focused tests and relevant
+isolated SQL; coordinator runs integrated full suite after merging. This addresses
+the observed build-slot backlog without cancelling active work or weakening the
+final validation gate. Main 53983 and ingress 69947 remain live.
