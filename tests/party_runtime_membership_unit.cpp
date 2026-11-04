@@ -1,4 +1,4 @@
-#include "eternity/game/party_runtime_membership.hpp"
+#include "eternity/game/party_runtime_membership_send.hpp"
 #include <fstream>
 #include <iostream>
 #include <sstream>
@@ -9,12 +9,13 @@ namespace {
 void check(bool ok) {if(!ok) throw std::runtime_error("Invalid membership fixture or lock state");}
 void append(Bytes& p,std::uint32_t n) {for(unsigned i=0;i<4;++i) p.push_back(static_cast<std::uint8_t>(n>>(i*8)));}
 Bytes unhex(const std::string& s) {Bytes p;if(s=="-")return p;for(std::size_t i=0;i<s.size();i+=2)p.push_back(static_cast<std::uint8_t>(std::stoul(s.substr(i,2),nullptr,16)));return p;}
-struct World final:PartyMembershipWorld {
+struct World final:PartyMembershipSendWorld {
     PartyNormalMembership p;
     std::array<PartyMembershipUser,8> users;
     Bytes events;
     unsigned depth{};
-    bool real_type{};
+    bool real_type{},real_send{},buffer_active{};
+    PartyMembershipSendBuffer send_buffer;
     std::array<bool,8> effect_locks{};
     std::uint32_t now{};
     Bytes state() {
@@ -34,7 +35,10 @@ struct World final:PartyMembershipWorld {
     void unlock(PartyNormalMembership&) noexcept override {event(']');--depth;}
     void lock_effects(PartyMembershipUser& user) override {check(depth>0);const auto i=static_cast<std::size_t>(&user-users.data());check(!effect_locks[i]);event('{',id(user));effect_locks[i]=true;}
     void unlock_effects(PartyMembershipUser& user) noexcept override {event('}',id(user));effect_locks[static_cast<std::size_t>(&user-users.data())]=false;}
-    void send_party(PartyNormalMembership&,const Bytes& packet) override {check(depth>0);event('P',packet);}
+    void send_party(PartyNormalMembership& party,const Bytes& packet) override {check(depth>0);event('P',packet);if(real_send)PartyMembershipSendWorld::send_party(party,packet);}
+    PartyMembershipSendBuffer* allocate_send_buffer(std::uint16_t capacity) override {check(real_send && !buffer_active);buffer_active=true;Bytes bytes;append(bytes,capacity);event('A',bytes);return &send_buffer;}
+    void free_send_buffer(PartyMembershipSendBuffer& buffer) override {check(buffer_active && &buffer==&send_buffer && buffer.references==0);buffer_active=false;Bytes bytes;append(bytes,0);event('B',bytes);}
+    void enqueue_send(PartyMembershipUser& user,PartyMembershipSendBuffer& buffer) override {check(buffer_active && &buffer==&send_buffer && depth>0);auto bytes=id(user);append(bytes,buffer.references);bytes.insert(bytes.end(),buffer.frame.begin(),buffer.frame.end());event('E',bytes);release_party_membership_buffer(buffer,*this);}
     void send_user(PartyMembershipUser& user,const Bytes& packet) override {check(depth>0);auto b=id(user);b.insert(b.end(),packet.begin(),packet.end());event('U',b);}
     std::uint8_t party_type(PartyMembershipUser& user) override {
         const std::uint8_t type=real_type?PartyMembershipWorld::party_type(user):!user.party?0:(p.count>0 && p.slots[static_cast<std::size_t>(p.leader)]==&user)?2:1;
@@ -49,16 +53,18 @@ struct World final:PartyMembershipWorld {
 }
 int main(int argc,char** argv) {
     try {
-        check(argc==2 || (argc==3 && std::string(argv[2])=="--real-party-type"));std::ifstream input(argv[1]);check(input.good());std::string line;unsigned cases=0;
+        check(argc>=2 && argc<=4);bool real_type=false,real_send=false;
+        for(int i=2;i<argc;++i) {const std::string flag=argv[i];check(flag=="--real-party-type" || flag=="--real-party-send");if(flag=="--real-party-type")real_type=true;else real_send=true;}
+        real_type=real_type || real_send;std::ifstream input(argv[1]);check(input.good());std::string line;unsigned cases=0;
         while(std::getline(input,line)) {
             if(line.empty() || line[0]=='#')continue;
-            World world;world.real_type=argc==3;unsigned operation,target;char tag;
+            World world;world.real_type=real_type;world.real_send=real_send;unsigned operation,target;char tag;
             std::istringstream row(line);row>>tag>>operation>>world.p.count>>world.p.leader>>world.p.item_cursor>>world.p.experience.experience_level>>world.p.id>>world.now>>target;check(tag=='C' && static_cast<bool>(row));
             for(unsigned i=0;i<8;++i) {
                 check(static_cast<bool>(std::getline(input,line)));std::istringstream user_row(line);auto& user=world.users[i];unsigned job,zone,guild,count;
                 user_row>>tag>>user.id>>user.level>>job>>user.hp>>user.maximum_hp>>user.mp>>user.maximum_mp>>user.sp>>user.maximum_sp>>user.instance;
                 for(auto& value:user.position)user_row>>value;
-                user_row>>user.name>>zone>>guild>>count;user.job=static_cast<std::uint8_t>(job);user.in_zone=zone!=0;user.guild_creation=guild!=0;
+                user_row>>user.name>>zone>>guild;if(real_send)user_row>>user.send_socket;user_row>>count;user.job=static_cast<std::uint8_t>(job);user.in_zone=zone!=0;user.guild_creation=guild!=0;
                 user.party=static_cast<std::int32_t>(i)<world.p.count?&world.p:nullptr;user.pending_request=9;user.effect_cursor=count;
                 for(unsigned j=0;j<count;++j) {PartyMembershipEffect effect;unsigned level,visibility;user_row>>effect.skill>>level>>visibility>>effect.deadline;effect.level=static_cast<std::uint8_t>(level);effect.visibility=static_cast<std::uint8_t>(visibility);user.effects.push_back(effect);}
                 check(tag=='U' && static_cast<bool>(user_row));
@@ -71,7 +77,7 @@ int main(int argc,char** argv) {
                 std::size_t mismatch=0;while(mismatch<world.events.size() && mismatch<expected_events.size() && world.events[mismatch]==expected_events[mismatch])++mismatch;
                 throw std::runtime_error("Original membership mismatch case "+std::to_string(cases)+" event byte "+std::to_string(mismatch)+" state equal "+std::to_string(actual==wanted));
             }
-            check(world.depth==0);for(unsigned i=0;i<7;++i)check(world.p.slot_indices[i]==900+i);
+            check(world.depth==0 && !world.buffer_active);for(unsigned i=0;i<7;++i)check(world.p.slot_indices[i]==900+i);
             ++cases;
         }
         check(cases==512);std::cout<<cases<<" complete original normal-party membership comparisons passed\n";

@@ -8,7 +8,8 @@ from unicorn.x86_const import UC_X86_REG_EAX, UC_X86_REG_EBX, UC_X86_REG_ECX, UC
 
 
 def main():
-    real_type = '--real-party-type' in sys.argv[1:]
+    real_send = '--real-party-send' in sys.argv[1:]
+    real_type = real_send or '--real-party-type' in sys.argv[1:]
     cpu, digest = load_game()
     base = 0x30000000
     cpu.mem_map(base, 0x100000)
@@ -16,6 +17,9 @@ def main():
     users = [base + 0x10000 + i * 0x6000 for i in range(8)]
     heads = [base + 0x90000 + i * 0x1000 for i in range(8)]
     lock, unlock, tick = stop + 16, stop + 32, stop + 48
+    buffer, frame, agent, worker = [base + n for n in (0xa0000, 0xa1000, 0xa2000, 0xa3000)]
+    increment, decrement = stop + 64, stop + 80
+    pools = {0x4df710:32, 0x4df7b0:128, 0x4df850:2048}
     def put(at, value): cpu.mem_write(at, struct.pack('<I', value & 0xffffffff))
     def get(at): return struct.unpack('<I', cpu.mem_read(at, 4))[0]
     def identity(at): return users.index(at) + 100 if at in users else 0
@@ -34,12 +38,30 @@ def main():
     for at, cleanup in {lock:4, unlock:4, tick:0, 0x4455d0:0, 0x4d4d20:8,
                         0x48a330:4, 0x4208c0:12, 0x45b0d0:0, 0x4d4e50:8, 0x505316:0}.items():
         if at == 0x48a330 and real_type: continue
+        if at == 0x4455d0 and real_send: continue
         cpu.mem_write(at, b'\xc2' + struct.pack('<H', cleanup))
     put(0x5210cc, lock); put(0x5210d0, unlock); put(0x5210e4, tick)
+    if real_send:
+        for at, cleanup in {increment:4, decrement:4, 0x4dc1b0:8, 0x4df070:0, **{p:0 for p in pools}}.items():
+            cpu.mem_write(at, b'\xc2' + struct.pack('<H', cleanup))
+        put(0x5210f8, increment); put(0x5211f0, decrement)
     context = {}
     def hook(machine, at, size, data):
         sp = machine.reg_read(UC_X86_REG_ESP)
-        if at == tick:
+        if real_send and at in pools:
+            event('A', struct.pack('<I', pools[at])); machine.reg_write(UC_X86_REG_EAX, buffer)
+        elif real_send and at in (increment, decrement):
+            address = get(sp + 4); value = (get(address) + (1 if at == increment else -1)) & 0xffffffff
+            put(address, value); machine.reg_write(UC_X86_REG_EAX, value)
+        elif real_send and at == 0x4df070:
+            assert get(sp + 4) == buffer and get(buffer + 8) == 0
+            event('B', struct.pack('<I', get(buffer + 8)))
+        elif real_send and at == 0x4dc1b0:
+            assert get(sp + 8) == buffer
+            length = struct.unpack('<H', cpu.mem_read(frame, 2))[0]
+            event('E', struct.pack('<2I', identity(get(sp + 4)), get(buffer + 8)) + bytes(cpu.mem_read(frame, length)))
+            put(buffer + 8, get(buffer + 8) - 1) # explicit synchronous completion provider
+        elif at == tick:
             event('K'); machine.reg_write(UC_X86_REG_EAX, context['tick'])
         elif at in (lock, unlock):
             arg = get(sp + 4)
@@ -76,6 +98,7 @@ def main():
     cpu.hook_add(UC_HOOK_CODE, hook)
     print(f'# ps_game.exe SHA256 {digest}; full EnterNormalParty 00445fe0 / LeaveNormalParty 00446960 and real ChkPartyExpByLevel 00444d80. Ports: clock, locks, transport, GetPartyType, log context, party manager unregister block 00446a37..00446a7d, guild creation cleanup block 00446ac1..00446bae. Fixture stack initialized to zero, including unspecified name padding.')
     print('# GetPartyType mode:', 'real original body' if real_type else 'observed external port')
+    print('# CParty::Send mode:', 'real original allocation/fan-out/connection bodies; pool/worker ports' if real_send else 'observed external port')
     print('# C operation count leader cursor old_max party_id tick target; 8 U user projections/effects; R success state_hex events_hex')
     for case in range(512):
         cpu.mem_write(base, bytes(0xfd000))
@@ -89,6 +112,8 @@ def main():
         party_id = 5000 + case
         now = (0, 1000, 0x7fffffff, 0xffffffff)[(case // 23) % 4]
         target = 7 if op == 0 or case % 17 == 0 else (case // 7) % max(1,count)
+        if real_send:
+            put(buffer + 4, frame); put(agent + 0x16c, worker)
         context.update(events=b'', tick=now, effect_counts=[])
         print('C', op, count, leader, item_cursor, maximum, party_id, now, target)
         for n,v in ((8,party_id), (0xc,leader), (0x10,count), (0x108,item_cursor), (0x10c,maximum)):
@@ -122,7 +147,9 @@ def main():
             for offset,value in zip((0x17c,0x1238,0x184,0x1240,0x180,0x123c,0x164),stats): cpu.mem_write(user+offset,struct.pack('<H',value))
             cpu.mem_write(user+0xd0,struct.pack('<3f',*xyz));cpu.mem_write(user+0x188,name.encode()+b'\0')
             put(user+0xe0,123 if zone else 0);put(user+0x173c,party if i<count else 0);cpu.mem_write(user+0x1744,b'\x09');put(user+0x175c,base+0x81000 if guild else 0)
-            print('U', 100+i, level, job, *stats, *xyz, name, int(zone), int(guild), effects_count, *effects)
+            socket = (-1, 0, 5)[(case+i) % 3]
+            if real_send: put(user + 0x68, socket); put(user + 0xc8, agent)
+            print('U', 100+i, level, job, *stats, *xyz, name, int(zone), int(guild), *([socket] if real_send else []), effects_count, *effects)
         put(stack,stop);put(stack+4,users[target]);cpu.reg_write(UC_X86_REG_ESP,stack);cpu.reg_write(UC_X86_REG_ECX,party)
         cpu.emu_start(0x445fe0 if op==0 else 0x446960,stop,count=1000000)
         print('R', cpu.reg_read(UC_X86_REG_EAX)&255, state().hex(), context['events'].hex() or '-')
