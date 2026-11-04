@@ -1119,3 +1119,31 @@ Reviewedf42b478/c5b4eb8 SP/MPdebitandself050c4096wholeoriginalnopartyexecutions1
 ## Nineteenth batch validated; PvP loss reviewed
 
 Session49796 exited0:build292/292tests91.11s/fullisolatedSQL/fullcatalog/realstreamSQL passed4bbe217. Logs.local/nineteenth-batch-*.log. Freeze released. Reviewede8f1f1b/56125c6 completePvPChkLoseDeath2064originaltraces16reentrant135/135tests+sanitizers/canonicalsameledger0902reported. Realbilling+578c mustnotaccount/entityID,guildPvPUserLeavereason3 notnormaldisconnect,actualwager/locks/transportsrequired. Ordinaryplayerrewards/fullsingleDeathcontinuation remainopen. Exactcommitsqueued,newdeliveriesexcludedfrom292validation.
+
+## Reviewed worker09 e211fd0c — recursive argument calls
+
+Reviewedf76a372/7c03696 recursiveCalculateParam samecursor/perframeprivate20stack/argumentvector and F_OUT beforeoutercontinuation.4145originalDoFunction4635CalculateParamcalls5simultaneouslevels153/153tests58.57s reported. Never invoke newTravelCondition forchild (wouldresetmainstack/cursor). Argumentassignment/compound/float/worldhandlers/nonfinite/factory/rootremainopen. Exactcommitsqueued,lastvalidatedpublisheda6cf428.
+
+## Reviewed worker01 423c26fc — spending group tail
+
+Reviewedf890116/7331a18 capturedrecursivegrouplock/livemembership and energy rereads,SPthenMPordering480wholeoriginaltraces144/144tests27.64s reported. Originalgroupfanout boundaryonly,sourceexcluded00445680 senderstillmissing;mustreuse same30slotparty/sharedsendbuffer,never broadcasttosource. Nativeinvalidkind/nullMP/throwcasesexplicitfailureunlock,noundefinedoriginalequivalence. Rootactualrawdebit/partybindings remainrequired. Exactcommitsqueued,lastvalidateda6cf428.
+
+## Reviewed worker03 b28b16b3 — concrete zone factory
+
+Reviewedff62d6c/22ebd6c actualRuntimeZonefactory/canonicalcellowners/users/npcs/corpses/items/regularlinkedpopulation, retainedperzoneproviders/partialInitcleanup/release/reopen.138/138tests6ASANUBSANscenariosreported. Requiredsameboundpool/sourcecatalog/Init/worldcorpses/backendlifetimes;pooloutliveszonecleanup andretiredpopulations/servicesoutlivepool. Users/corpses/items mustdrainbeforerelease;missingAI/Lua/transport/KC remainexplicit,nosuccessdefaults. Exactcommitsqueued,latestvalidateda6cf428. Mainstartupshutdownassemblypending.
+
+## Twentieth batch integrated/sourcefreeze
+
+Reviewed495196f doc-onlyzonefactorycheckpoint,no newtests. Integratedreviewedqueue through 3620439ae843a940e674627eb8926e551c4eb5b5 including actualprimaryzoneowner/factory,eligibility/debit/grouptail,PvPloss,recursiveargumentcalls. CMakeconflicts combined/nesting audited. Freeze during .local/twentieth-batch-{build,tests,sql,bindings-sql,stream-sql}.log. Latestvalidatedpublisheda6cf428,newbatchunvalidated. Actualperzoneworld/connection/AI/transportprovidersandmainassemblyremainmissing;no successfulplaceholder.
+
+## Reviewed worker09 b18c69f7 — argument integer writes
+
+Reviewed60e3e18/8e3e456 CalculateParamassignment/compoundintDWORDsameFSMmap/private20stack/sharedcursor;directVariableIDzero writes unlikeF_OUTzeroskip.4095direct1536nestedoriginalcalls155/155tests57.72s reported. Existingtypedtargets required,missingtarget errorbeforequery,noindeterminateinsert. Argumentfloatmatrices/worldhandlers/nonfinite/factory/rootremainopen. Exactcommitsqueued during twentiethsourcefreeze.
+
+## Reviewed worker01 7cd00ffb — selected strike coordination
+
+Reviewedbcff828/ba6cd04 selectedskilldetail21..27/multihitlivecount/deathguards/selfsacrificeroute usingactualActorrelations/resources/mode.6400originalcomparisons4nativeattackcompositions145/145tests30.78s finalreported. Intermediate144/145world-networkreplacementregistryfailure preserved,nofixclaim. Actualhit/damage/Death/range/announcementservicesremainrequired;no newActorstate. WorkerproposesSendUseSkill. Exactcommitsqueued during twentiethfreeze;332actionbuildpassed,299testsnearingcompletion.
+
+## End of day requested by user — 2026-11-04
+
+User explicitly requested stop all sessions, update documentation and power off after preservation. Continuous scheduling disabled via tools/parallel.py stop; objective remains OPEN, do not auto-resume tonight. Let current worker blocks finish before closing. Twentieth pipeline11245 exited0:build299/299tests103.07s/fullisolatedSQL/fullcatalog/realstreamSQL passed source3620439. Logs.local/twentieth-batch-*.log;freeze released. Latest handoff08 378d196f HEAD481b36c received and queued pending review,not integrated. Other reviewed pending queue entries remain for next session. Publish validated batch, preserve every worker checkout/HEAD/status and dirty changes before shutdown. Resume manually from queue/snapshots after user request; no playable-server/globalcompletion claim.
