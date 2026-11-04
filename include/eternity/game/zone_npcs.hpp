@@ -39,11 +39,34 @@ class NpcNavigationWorld:public NpcMovementWorld,public NpcClock {};
 // The owner must detach an NPC before returning it; reset is a separate operation.
 class NpcPool {
 public:
+    class Lease {
+    public:
+        Lease()=default;
+        ~Lease();
+        Lease(const Lease&)=delete;
+        Lease& operator=(const Lease&)=delete;
+        Lease(Lease&&) noexcept;
+        Lease& operator=(Lease&&) noexcept;
+        Npc* get() const noexcept {return npc_;}
+    private:
+        friend class NpcPool;
+        Lease(NpcPool& pool,Npc& npc):pool_(&pool),npc_(&npc) {}
+        NpcPool* pool_=nullptr;Npc* npc_=nullptr;
+    };
+    NpcPool()=default;
+    ~NpcPool();
+    NpcPool(const NpcPool&)=delete;
+    NpcPool& operator=(const NpcPool&)=delete;
+    // Serialized operations. The pool must outlive all leases; a detached NPC
+    // released while pinned is returned to the LIFO free list after its last lease.
+    Lease pin(Npc&);
     Npc* allocate();
     void release(Npc&);
 private:
+    void unpin(Npc&) noexcept;
     std::vector<std::unique_ptr<Npc>> objects_;
-    std::vector<Npc*> available_;
+    std::vector<Npc*> available_,deferred_;
+    std::map<Npc*,std::size_t> pins_;
 };
 class NpcBroadcast {
 public:

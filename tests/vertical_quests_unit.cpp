@@ -55,11 +55,11 @@ int main() {try {
     NpcServices npc_services;NpcDefinition npc_definition,replacement_definition;NpcPool npc_pool;ZoneNpcs zone(MapGeometry(81),npc_services);
     npc_definition.record[0]=2;npc_definition.record[20]='A';replacement_definition.record[20]='B';
     auto* npc=npc_pool.allocate();npc->id=99;npc->type=2;npc->type_id=9;npc->definition=&npc_definition;check(zone.enter(*npc),"NPC entry failed");
-    auto guard=std::make_shared<VerticalQuestNpcGuard>(zone,npc_pool);Npc* replacement=nullptr;
+    Npc* replacement=nullptr;
     std::uint8_t last=0;std::uint32_t deadline=0;
-    VerticalQuests quests({items,item_pool,ids,defs,pool,actor,runtime},{last,deadline},zone,guard,services);
+    VerticalQuests quests({items,item_pool,ids,defs,pool,actor,runtime},{last,deadline},zone,npc_pool,services);
     services.on_add=[&] {
-        check(guard->retire(*npc),"nested NPC retirement failed");
+        check(zone.leave(*npc),"nested NPC leave failed");npc_pool.release(*npc);
         replacement=npc_pool.allocate();check(replacement!=npc,"leased NPC was recycled during callback");
         replacement->id=99;replacement->type=2;replacement->type_id=9;replacement->definition=&replacement_definition;
         check(zone.enter(*replacement),"replacement NPC entry failed");
@@ -74,13 +74,21 @@ int main() {try {
     check(runtime->active().empty() && runtime->finished().size()==1 && runtime->mob_kill_quests()==0,"completion did not remove actual quest");check(services.experience==20,"experience callback mismatch");check(services.replica.active().empty(),"DB replica retains completed quest");
     check(scene.packets.size()==3 && word(scene.packets[0],0,2)==0x902 && word(scene.packets[1],0,2)==0x905 && word(scene.packets[2],0,2)==0x903,"client packet order differs");
     check(services.db==std::vector<unsigned>({0xa01,0xa05,0xa02}),"database ordering differs");check(services.locks==0,"quest lock leaked");
-    check(guard->retire(*replacement),"NPC retirement failed");
+    check(zone.leave(*replacement),"NPC leave failed");npc_pool.release(*replacement);
     auto* failed=npc_pool.allocate();failed->id=101;check(zone.enter(*failed),"failure NPC entry failed");
-    auto lease=guard->acquire(101);npc_services.fail_broadcast=true;bool threw=false;
-    try {guard->retire(*failed);} catch(const std::runtime_error&) {threw=true;}
-    npc_services.fail_broadcast=false;check(threw,"retirement failure was hidden");lease.reset();
+    auto lease=npc_pool.pin(*failed);npc_services.fail_broadcast=true;bool threw=false;
+    try {zone.leave(*failed);} catch(const std::runtime_error&) {threw=true;}
+    npc_services.fail_broadcast=false;check(threw,"retirement failure was hidden");lease=NpcPool::Lease{};
     auto* other=npc_pool.allocate();check(other!=failed,"failed retirement recycled NPC");npc_pool.release(*other);
     // ZoneNpcs::leave unlinks before broadcasting and did not clear the cell on failure.
     failed->cell.reset();npc_pool.release(*failed);
+    auto* pinned=npc_pool.allocate();auto first=npc_pool.pin(*pinned);auto second=npc_pool.pin(*pinned);
+    npc_pool.release(*pinned);bool rejected=false;try {npc_pool.release(*pinned);} catch(const std::invalid_argument&) {rejected=true;}
+    check(rejected,"duplicate deferred release accepted");rejected=false;
+    try {(void)npc_pool.pin(*pinned);} catch(const std::invalid_argument&) {rejected=true;}
+    check(rejected,"released NPC accepted for pin");first=NpcPool::Lease{};
+    auto* interim=npc_pool.allocate();check(interim!=pinned,"NPC recycled before final lease");
+    second=NpcPool::Lease{};check(npc_pool.allocate()==pinned,"last lease did not restore pool reuse");
+    npc_pool.release(*pinned);npc_pool.release(*interim);
     std::cout<<"Actual Actor quest acceptance, mob progress and NPC completion passed\n";
 } catch(const std::exception& e) {std::cerr<<e.what()<<'\n';return 1;}}

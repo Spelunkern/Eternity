@@ -29,16 +29,41 @@ template<class Function> void each_cell(const View& area,Function function) {
     for(auto z=area.min_z;z<=area.max_z;++z) for(auto x=area.min_x;x<=area.max_x;++x) function(CellCoordinates{x,z});
 }
 }
+NpcPool::Lease::~Lease() {if(pool_) pool_->unpin(*npc_);}
+NpcPool::Lease::Lease(Lease&& other) noexcept:pool_(other.pool_),npc_(other.npc_) {other.pool_=nullptr;other.npc_=nullptr;}
+NpcPool::Lease& NpcPool::Lease::operator=(Lease&& other) noexcept {
+    if(this!=&other) {if(pool_) pool_->unpin(*npc_);pool_=other.pool_;npc_=other.npc_;other.pool_=nullptr;other.npc_=nullptr;}return *this;
+}
+NpcPool::~NpcPool() {if(!pins_.empty()) std::terminate();}
+NpcPool::Lease NpcPool::pin(Npc& npc) {
+    if(std::none_of(objects_.begin(),objects_.end(),[&](const auto& object){return object.get()==&npc;}) ||
+       std::find(available_.begin(),available_.end(),&npc)!=available_.end() ||
+       std::find(deferred_.begin(),deferred_.end(),&npc)!=deferred_.end())
+        throw std::invalid_argument("Cannot pin an unowned or released NPC");
+    ++pins_[&npc];return Lease(*this,npc);
+}
+void NpcPool::unpin(Npc& npc) noexcept {
+    const auto it=pins_.find(&npc);if(it==pins_.end() || !it->second) std::terminate();
+    if(--it->second) return;
+    pins_.erase(it);const auto deferred=std::find(deferred_.begin(),deferred_.end(),&npc);
+    if(deferred!=deferred_.end()) {deferred_.erase(deferred);available_.push_back(&npc);}
+}
 Npc* NpcPool::allocate() {
     // SSyncHeap<CNpc>::Alloc 0040acc0: recycled objects are not reset.
     if(!available_.empty()) {auto* result=available_.back();available_.pop_back();return result;}
+    // Release/unpin do not allocate, including from Lease's noexcept destructor.
+    const auto required=objects_.size()+1;
+    if(available_.capacity()<required) available_.reserve(std::max(required,available_.capacity()*2));
+    if(deferred_.capacity()<required) deferred_.reserve(std::max(required,deferred_.capacity()*2));
     auto object=std::make_unique<Npc>();auto* result=object.get();objects_.push_back(std::move(object));return result;
 }
 void NpcPool::release(Npc& npc) {
     if(npc.zone || npc.cell) throw std::invalid_argument("Cannot recycle an attached NPC");
-    if(std::none_of(objects_.begin(),objects_.end(),[&](const auto& object){return object.get()==&npc;}) || std::find(available_.begin(),available_.end(),&npc)!=available_.end())
+    if(std::none_of(objects_.begin(),objects_.end(),[&](const auto& object){return object.get()==&npc;}) ||
+       std::find(available_.begin(),available_.end(),&npc)!=available_.end() ||
+       std::find(deferred_.begin(),deferred_.end(),&npc)!=deferred_.end())
         throw std::invalid_argument("NPC does not belong to the active pool");
-    available_.push_back(&npc);
+    if(pins_.contains(&npc)) deferred_.push_back(&npc);else available_.push_back(&npc);
 }
 net::Packet npc_appearance(const Npc& npc) {
     // CZone::EnterNpc 00416d70: packed 23-byte TP_NPC_ENTER, angle is a WORD.

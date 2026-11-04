@@ -8,32 +8,8 @@ QuestStartItemsActorWorldOwners checked(QuestStartItemsActorWorldOwners o) {
     return o;
 }
 }
-std::shared_ptr<Npc> VerticalQuestNpcGuard::acquire(std::uint32_t id) {
-    auto* npc=zone_.find(id);if(!npc) return {};
-    auto self=shared_from_this();auto [it,inserted]=entries_.try_emplace(npc);(void)inserted;
-    if(it->second.retired) throw std::logic_error("Cannot lease a retired NPC");
-    ++it->second.leases;
-    return std::shared_ptr<Npc>(npc,[self](Npc* n){self->unpin(*n);});
-}
-bool VerticalQuestNpcGuard::retire(Npc& npc) {
-    if(npc.zone!=&zone_) return false;
-    auto it=entries_.find(&npc);
-    if(it!=entries_.end()) it->second.retired=true;
-    try {
-        if(!zone_.leave(npc)) {if(it!=entries_.end()) it->second.retired=false;return false;}
-    } catch(...) {if(it!=entries_.end()) it->second.retired=false;throw;}
-    if(it==entries_.end()) pool_.release(npc);
-    return true;
-}
-void VerticalQuestNpcGuard::unpin(Npc& npc) noexcept {
-    const auto it=entries_.find(&npc);
-    if(it==entries_.end() || !it->second.leases) std::terminate();
-    if(--it->second.leases) return;
-    const bool retired=it->second.retired;entries_.erase(it);
-    if(retired) pool_.release(npc);
-}
-VerticalQuests::VerticalQuests(QuestStartItemsActorWorldOwners o,QuestStartItemsActorUseState use,ZoneNpcs& zone,std::shared_ptr<VerticalQuestNpcGuard> guard,VerticalQuestPorts& p)
-    :owners_(checked(std::move(o))),npcs_(zone),npc_guard_(std::move(guard)),ports_(p),requests_(*owners_.actor,*owners_.runtime,*owners_.quests,*this),starts_(owners_,use,*this) {if(!npc_guard_ || !npc_guard_->owns(zone)) throw std::invalid_argument("NPC retention guard missing or wrong zone");}
+VerticalQuests::VerticalQuests(QuestStartItemsActorWorldOwners o,QuestStartItemsActorUseState use,ZoneNpcs& zone,NpcPool& pool,VerticalQuestPorts& p)
+    :owners_(checked(std::move(o))),npcs_(zone),npc_pool_(pool),ports_(p),requests_(*owners_.actor,*owners_.runtime,*owners_.quests,*this),starts_(owners_,use,*this) {}
 bool VerticalQuests::start(std::uint16_t row,std::uint32_t npc) {
     StartFrame frame;auto* previous=frame_;frame_=&frame;
     try {const bool result=starts_.request(row,npc);frame_=previous;return result;} catch(...) {frame_=previous;throw;}
@@ -47,7 +23,7 @@ void VerticalQuests::kill_mob(std::uint16_t mob,const MobQuestLinks& links) {upd
 void VerticalQuests::kill_player() {quest_requests_progress_kill_pc(owners_.actor->account_id(),owners_.runtime->player_kill_quests(),requests_);}
 void VerticalQuests::pick_item(std::int32_t type,std::int32_t id,const ItemQuestLinks& links) {quest_requests_progress_pick_item(owners_.actor->account_id(),type,id,links,requests_);}
 void VerticalQuests::update_timers(std::uint32_t tick) {quest_requests_update_timers(tick,requests_);}
-std::optional<QuestStartNpc> VerticalQuests::find_start_npc(Actor&,std::uint32_t id) {frame_->npc=npc_guard_->acquire(id);auto* n=frame_->npc.get();if(!n) return {};return QuestStartNpc{n->id,static_cast<std::uint32_t>(n->type),static_cast<std::uint32_t>(n->type_id)};}
+std::optional<QuestStartNpc> VerticalQuests::find_start_npc(Actor&,std::uint32_t id) {auto* n=npcs_.find(id);if(!n) return {};frame_->npc=npc_pool_.pin(*n);return QuestStartNpc{n->id,static_cast<std::uint32_t>(n->type),static_cast<std::uint32_t>(n->type_id)};}
 bool VerticalQuests::require_start_item(Actor&,std::uint8_t type,std::uint8_t id,bool consume) {return requests_.find_item(type,id,consume);}
 QuestStartLogContext VerticalQuests::start_log_context(Actor& a) {return ports_.start_log_context(a);}
 QuestStartLogNpc VerticalQuests::start_log_npc(Actor&,const QuestStartNpc& npc) {auto* n=frame_->npc.get();if(!n || n->id!=npc.handle || !n->definition) throw std::logic_error("Quest start NPC lost its definition");frame_->name=n->definition->name();return {static_cast<std::uint32_t>(n->type),frame_->name};}
