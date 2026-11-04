@@ -1772,3 +1772,74 @@ assume host expressions are equivalent. SQL/contracts did not change; coordinato
 owns isolated SQL and complete integration validation. The server is not playable.
 
 Implementation commit: `55abbe4734a304e75dd645cd9890cce735dfca05`.
+
+## Milestone 26 — complete numeric assignment and masked x87 conversion results
+
+### Evidence / behavior
+
+`ps_game.exe`, `CKFSM<CMob>::TravelCondition` `00498cf0`, opcode 10
+`00499ba0..00499d33`; full Ghidra decompile and original instructions.
+Float destination dispatch `00499c4b..00499ca8` converts signed int or unsigned
+DWORD to float32 and copies float sources as raw payloads. DWORD unsigned
+conversion uses signed FILD plus 2^32 for high-bit values before float32 storage.
+Int destination `00499caa..00499d04` and DWORD destination
+`00499bd6..00499c46` both convert float through signed FISTP dword with temporary
+truncation control, restoring the original x87 control word afterward.
+
+Thus a DWORD destination does not use unsigned float conversion: NaN, infinity
+or float32 values outside signed-int conversion range yield masked integer
+indefinite bits `80000000`. Finite in-range floats truncate toward zero; negative
+results retain their two's-complement bits in DWORD. Float-to-float copies retain
+signaling/quiet NaN payloads and signed zero. Result type, inactive payloads and
+VariableID come from the second operand. Existing stack-push-before-map-write and
+embedded-ID alias routing are retained.
+
+Added explicit `MobAiNumericAssignmentServices`, supporting all nine numeric
+assignment pairings plus the previous integer arithmetic/compound/comparison
+subset. Integer-to-float conversion requires the recovered nearest rounding
+mode; other host rounding modes explicitly error. Float arithmetic and float
+compound updates remain errors. Original floating exception status flags and
+unmasked exception delivery are not claimed equivalent.
+
+### Validation
+
+- 2,304 retained sequences / 4,608 complete original TravelCondition calls.
+  All nine type pairs, 24 edge bit patterns, positive/negative fractions,
+  float32 rounding boundaries, signed conversion limits, unsigned high bits,
+  quiet/signaling NaNs, infinities, subnormals and signed zero are exercised.
+  Includes literal/local sources, alias writes, repeated calls, declared-count
+  truncation and retained numeric scratch reuse. 1,276 final maps change.
+- Real original map creation, local reads, assignment lookup/write and teardown
+  execute with all 6,912 frees and poisoned freed storage. Only allocation/free
+  and security-cookie imports are adapted; no conversion/map/VM result port.
+  Exact retained map/stack bytes, cursor/top and truth counts match native.
+  Each original execution uses masked x87 nearest mode 027f and verifies it is
+  restored after assignment. Undefined pops and missing targets are excluded.
+- Actual configured entry assignment converts 1.5f to int 1 in the borrowed
+  owner; subsequent evaluation observes the value and changes its state.
+  Unsupported host rounding is rejected before result push/writeback. Earlier
+  providers retain their narrower boundaries and remain in the suite.
+- Oracle regenerates byte-identically; original SHA256SUMS pass; diff check clean.
+- Build exit 0, no compiler warnings;
+  `work/mob_ai_states_numeric_assignment-build.log`.
+- `python3 tools/dev.py test`: exit 0, 145/145 tests pass (37.41 s),
+  numeric assignment test 1.51 s;
+  `work/mob_ai_states_numeric_assignment-tests.log`.
+
+### Required integration / remaining work
+
+Use the existing retained configured owner and preserve its typed local entries,
+embedded VariableID aliases and stack storage. No canonical header or MobRuntime
+change was needed. Missing destination insertion still requires explicit original
+indeterminate-storage representation; it remains an error in this subset.
+Do not replace signed FISTP conversion to DWORD with a host unsigned cast or
+canonicalize retained float NaN payloads.
+
+Float binary/compound arithmetic, system calls/parameter piping, nonnumeric
+comparisons, complete factory/asset decoding and actual root world/Lua/scheduling/
+destruction remain open. Next independent block can recover float binary
+arithmetic with actual original staging and masked conversions rather than
+assuming host expressions are equivalent. SQL/contracts did not change;
+coordinator owns isolated SQL and full integration. The server is not playable.
+
+Implementation commit: `057dc304dfc0ba1bdb835c3387eb640ce2bc1ea2`.
