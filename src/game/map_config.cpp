@@ -120,4 +120,9 @@ ServerMaps ServerMaps::load(const MapConfiguration& configuration,const std::fil
     return result;
 }
 const ConfiguredMap* ServerMaps::find(std::uint16_t id) const noexcept {return id<maps_.size()?&maps_[id]:nullptr;}
+std::int32_t* ServerMaps::mutable_portal_country(std::uint16_t id,std::size_t slot) noexcept {
+    if(id>=maps_.size()||slot>=maps_[id].definition.portals.size()) return nullptr;
+    return &maps_[id].definition.portals[slot].country;
+}
+
 }

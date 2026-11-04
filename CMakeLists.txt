@@ -1434,3 +1434,24 @@ if(BUILD_TESTING)
     target_link_libraries(party-runtime-raid-requests-unit PRIVATE eternity_game)
     add_test(NAME party-runtime-raid-requests-unit COMMAND party-runtime-raid-requests-unit ${CMAKE_CURRENT_SOURCE_DIR}/tests/data/party-runtime-raid-requests-oracle.tsv)
 endif()
+
+target_sources(eternity_game PRIVATE src/game/obelisk_runtime_maps.cpp)
+if(BUILD_TESTING)
+    # Old worker checkout only: exact ignored read-only snapshot of the canonical
+    # full catalog. Central integration uses the existing normal target/sources.
+    set(OBELISK_MAPS_CATALOG_INCLUDE "")
+    if(NOT EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/include/eternity/game/mob_targeting_bindings.hpp")
+        set(OBELISK_MAPS_CATALOG_INCLUDE "${CMAKE_CURRENT_SOURCE_DIR}/.local/obelisk_runtime_maps_catalog/include")
+        add_library(obelisk-maps-catalog-evidence STATIC
+            .local/obelisk_runtime_maps_catalog/src/game/mob_targeting_bindings.cpp
+            .local/obelisk_runtime_maps_catalog/src/game/mob_targeting_bindings_records.cpp)
+        target_include_directories(obelisk-maps-catalog-evidence PUBLIC ${OBELISK_MAPS_CATALOG_INCLUDE} include)
+        target_link_libraries(obelisk-maps-catalog-evidence PUBLIC eternity_game)
+    endif()
+    add_executable(obelisk-runtime-maps-unit tests/obelisk_runtime_maps_unit.cpp)
+    target_link_libraries(obelisk-runtime-maps-unit PRIVATE eternity_game)
+    if(TARGET obelisk-maps-catalog-evidence)
+        target_link_libraries(obelisk-runtime-maps-unit PRIVATE obelisk-maps-catalog-evidence)
+    endif()
+    add_test(NAME obelisk-runtime-maps-unit COMMAND obelisk-runtime-maps-unit ${CMAKE_CURRENT_SOURCE_DIR}/tests/data/obelisk-runtime-maps-oracle.tsv ${CMAKE_CURRENT_SOURCE_DIR}/.local/server-data ${CMAKE_CURRENT_SOURCE_DIR}/work/obelisk-runtime-maps-unit)
+endif()

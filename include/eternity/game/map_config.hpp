@@ -34,6 +34,9 @@ public:
     // obelisk links and spawned objects are initialized by the world owner afterward.
     static ServerMaps load(const MapConfiguration&,const std::filesystem::path& directory);
     const ConfiguredMap* find(std::uint16_t id) const noexcept;
+    // Borrow the actual retained portal country. Loading must finish before
+    // publishing pointers; no map/portal resize or replacement API is exposed.
+    std::int32_t* mutable_portal_country(std::uint16_t map_id,std::size_t slot) noexcept;
     std::size_t size() const noexcept {return maps_.size();}
     std::span<const ConfiguredMap> all() const noexcept {return maps_;}
 private:
