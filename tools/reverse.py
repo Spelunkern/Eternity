@@ -4,12 +4,13 @@ import argparse
 import os
 from pathlib import Path
 import subprocess
+from parallel_lock import resource_lock
 
 ROOT = Path(__file__).resolve().parents[1]
 SERVICES = ("ps_session", "ps_login", "ps_dbAgent", "ps_game", "ps_gameLog", "ps_userLog")
 
 
-def main():
+def run():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("services", nargs="+", choices=(*SERVICES, "all"))
     parser.add_argument("--ghidra", type=Path, default=os.environ.get("GHIDRA_HOME"))
@@ -44,6 +45,11 @@ def main():
         if "Eternity export: functions=" not in report:
             raise RuntimeError(f"Ghidra did not complete its export; inspect {log}")
         print(f"Ghidra: {name} complete", flush=True)
+
+
+def main():
+    with resource_lock(ROOT, 'ghidra'):
+        run()
 
 
 if __name__ == "__main__":

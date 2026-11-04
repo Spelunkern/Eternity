@@ -4,12 +4,14 @@ import argparse
 import os
 from pathlib import Path
 import subprocess
+import sys
+from parallel_lock import resource_lock
 
 ROOT = Path(__file__).resolve().parents[1]
 IMAGE = "eternity-dev:bookworm"
 
 
-def main():
+def run():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("action", choices=("image", "build", "test", "integration", "run"))
     parser.add_argument("arguments", nargs=argparse.REMAINDER)
@@ -56,6 +58,18 @@ def main():
     else:
         command += ["build/eternity-server", *args.arguments]
     subprocess.run(command, cwd=ROOT, check=True)
+
+
+def main():
+    action = sys.argv[1] if len(sys.argv) > 1 else ''
+    if action == 'integration':
+        with resource_lock(ROOT, 'sql'):
+            run()
+    elif action in ('image', 'build', 'test'):
+        with resource_lock(ROOT, 'build', 2):
+            run()
+    else:
+        run()
 
 
 if __name__ == "__main__":
