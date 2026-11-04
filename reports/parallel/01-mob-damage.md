@@ -1732,3 +1732,104 @@ remain central dependencies. Next independent proposal: recover that cost prefix
 with controlled x87 precision/overflow fixtures, then actual retained-equipment
 adapter once the coordinator supplies the canonical accessor dependency. Full
 native EnableUseSkill and gameplay completion remain open.
+
+## CRT53 resource-cost prefix — 2026-11-04
+
+Implementation **165eb33**. Read current main continuity/parallel notes and prior
+`ed28b5b/c11c253`; continued its resource-prefix evidence task. Existing Actor
+resources, SkillStatus modifiers and actual UserSkillRuntime handles are reused.
+No Actor/inventory/main/other-worker edits, shadow resource store, catalog, pool
+or ID generator. Only user_skill_runtime files/private CMake/report changed.
+
+Original evidence: `ps_game.exe` Ghidra/PDB symbols and complete exports, original
+code bytes for CRT functions not decompiled in the export. **mainCRTStartup
+00505125** pushes1 at **0050525f**, calls **_cinit 0050a6c7** at00505261.
+_cinit dispatches original pointer **[005405c8]=00506081 (_fpmath)**, whose true
+argument calls **_setdefaultprecision 0051136e** -> **_controlfp 0051a397** with
+precision53 selection. Oracle executes the ACTUAL precision helper from reset
+control037f and verifies PC53/nearest (observed023f). This resolves the previous
+precision question; no assumed integer-percent formula or host extended default.
+
+Implemented `user_skill_runtime_resource_cost` and
+`user_skill_runtime_check_resources`: ONLY SP/MP availability prefix of
+**EnableUseSkillUser 0044eb40** / **EnableUseSkillMob 0044ee50**. User-definition
+projection now carries borrowed original WORD SP/MP costs **+44/+46**. Modifiers
+are actual Actor.status.skills.sp_cost_reduction/mp_cost_reduction, confirmed by
+**SetSkillAbility 00485f29/00485f33** (+127c/+1278). Available raw resources are
+Actor.resources().sp/mp, interpreted SIGNED as original +1240/+123c comparisons.
+
+Exact arithmetic: FILD then FSTP float32 each operand; perform cost/100 followed
+by multiplication at precision53; FIST toward zero for discount; wrapped DWORD
+cost-minus-discount then signed comparison. C++ uses explicit float32 operands,
+separate volatile double stages, defined INT_MIN for integer-conversion overflow
+and bit-cast DWORD wrap. No clamp of negative modifiers, percentages>100 or
+negative resulting requirements. Original cost29/reduction100 requires **1**, not
+0: precision53 product truncates below29. Values beyond float32 integer precision
+and FIST range follow original bits, including wrapped negative requirements.
+
+Check SP first, then MP only if SP passes. Failure sends exact20-byte reason6
+(0511 user /0517 mob), current Actor ID and captured actual runtime ID/level,
+zero target/resource payloads. Client delivery uses Actor::send_self. No resources
+are spent or changed, no clock is sampled and no weapon/range/cooldown gate is
+bypassed. Caller must still execute the real equipment middle before invoking the
+previous readiness suffix. This is NOT full native EnableUseSkill/UseSkill.
+
+The numeric helper requires host FE_TONEAREST, matching recovered default mode,
+and fails explicitly otherwise without changing caller rounding control. Tests
+probe FE_DOWNWARD rejection/restoration. Alternative original precision/rounding
+modes and exact x87 exception/status-flag reproduction are NOT claimed; explicit
+FIST-overflow materialization matches numeric bits but does not emulate its
+masked floating exception flag. Canonical build uses ordinary C++20 FP settings,
+not fast-math/contraction that would change the staged operations.
+
+Validation:
+
+- **4096 original/native cases**, including complete cross-product of10 boundary
+  costs x15 boundary modifiers, both overloads, mixed SP/MP/resource values and
+ 2048 deterministic random cost/modifier pairs. Per case execute WHOLE original
+  overload once at max signed resources to observe both exact costs, then again
+  at candidate resources to compare bool/error bytes: **8192 complete original
+  overload calls**, plus actual CRT setup. Original equipment compatible, no
+  required skill/block/target: remaining original gates execute valid paths, not
+  skipped instructions. Native comparison is ONLY resource prefix. Native tests
+  load actual runtime owner, compare8192 scalar costs,4096 outcomes/exact packets,
+  unchanged resources and rounding control. Original restores its control word
+  after every complete call.
+- Fixture regenerated independently byte-identical (`cmp`,exit0), generated in
+  work/ then copied while no target reader ran. All original executable/PDB
+  SHA256SUMS exit0; `work/user-skill-runtime-cost-hashes.log`.
+- Build exit0/no warnings; `work/user-skill-runtime-cost-build.log`. Final
+  `python3 tools/dev.py build` exit0/no work,
+  `work/user-skill-runtime-cost-final-build.log`.
+- Initial matrix suite **138/138**,38.30s; after explicit full boundary cross
+  product, suite **137/138**,42.37s with unrelated world-network-unit failure:
+  `Replacement disconnect leaked registry state`. Cost unit passed. Log preserved
+  at `work/user-skill-runtime-cost-final-tests.log`; no network source modified.
+- Bounded recheck was requested through wrapper with CTest filter/repeat options,
+  but tools/dev.py does not forward arguments for action=test (only action=run).
+  It actually ran FULL suite **138/138**,35.16s, not three focused repetitions;
+  `work/user-skill-runtime-cost-network-repeat.log`. Following full verification
+  also passed **138/138**,**34.27s**;
+  `work/user-skill-runtime-cost-verified-tests.log`.
+- Network failure is not claimed fixed. Read-only inspection finds assertion
+  immediately after replacement.closed() at tests/world_network_unit.cpp:78;
+  a teardown-order race is a hypothesis for coordinator audit, not proven cause.
+  The isolated cost helper has no static initialization/global FP-control writes.
+- `git diff --check` exit0. Shared locks respected. SQL unchanged; full isolated
+  SQL integration/final server checks remain coordinator-owned. No gameplay claim.
+
+Integration: bind real full user-definition costs, retain Actor/PlayerCore/runtime/
+scene/definition through synchronous validation/error delivery, and call this
+prefix BEFORE actual retained-equipment checks and readiness suffix. Existing
+main retained_inventory_item API closes the old accessor absence centrally;
+worker checkout is older and shared Actor/inventory remain02-exclusive. No raw
+header copy/merge or ignored-snapshot dependency was introduced. Actual weapon
+kind/table indexing, actual cost spending and action/tick publication remain open;
+do not equate successful availability check with casting or effect execution.
+Shared CSkill manager/full definition/root providers remain explicit dependencies.
+
+Next independent proposal: recover actual runtime tick/definition capture in
+**AttackMob(CSkill*) 00450cf0** / **AttackUser(CSkill*) 00451c80**, composing real
+existing damage/effect services; no duplicate damage or resource owner. Concrete
+retained equipment middle should follow after canonical accessor dependency is
+available in the integration base. Overall server objective remains open.
