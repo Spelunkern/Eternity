@@ -462,3 +462,113 @@ and UID owners. Further disconnected projection bodies are unnecessary; actual
 production ownership/transport composition is the next useful work.
 
 Block 6 evidence commit: `68a3fca6eaacfd3189c7202b14528268aac2f983`.
+
+## Block 7: concrete Actor/QuestRuntime adapters
+
+New prefix `quest_start_items_actor`. This supersedes the earlier owner-interface
+waiting checkpoints. `quest_start_items_actor.hpp/cpp` now binds existing owners:
+
+- `QuestStartItemsActor::grant` calls actual QuestAddItem coordination, looks up
+  definitions in the retained **user ItemDefinitions** owner and reads live
+  `Actor::status().skills.max_bags` / `Actor::account_id`. No separate bag state.
+- Allocation uses the root's SAME GroundItemPool. `next_uid` invokes the root's
+  SAME retained ItemIds **live `next()`**, without snapshots or a private generator.
+- Raw storage calls `Actor::claim_inventory_item` before default craft, without
+  receive/load fallback or second allocation. DB delivery first calls
+  `Actor::sync_inventory_item` with expected pointer identity, then the required
+  real DB port. Client 0205 uses the required real client port after DB 0701.
+- No borrowed item is accessed after the DB transport callback. Per-call frames
+  support recursive delivery. Pre-claim exceptions return unclaimed allocation
+  to its actual pool; post-claim failures preserve Actor ownership. Neither
+  emits a fabricated success/failure packet.
+- `QuestStartItemsActorAdd::add(row)` binds the canonical positional definition,
+  allocates from the root QuestRuntimePool and calls actual
+  `QuestRuntime::add_active_unaccounted`. Existing QuestAdd then changes the LIVE
+  runtime counters once and sends DB 0a01. Invalid rows do not allocate. Failed
+  clocks recycle unclaimed quests; post-insertion failure retains runtime ownership.
+
+All Actor, definition, pool, UID and quest-runtime handles are retained shared
+leases to the actual root owners. Never pass no-op-deleter pseudo-leases. Root
+must retain Scene, ItemIdClock, QuestRuntimePoolServices, catalogs and pools for
+all actors/runtime leases that outlive an adapter. Public invocation is through
+`grant` / `add`; internal low-level world methods are inaccessible externally.
+The adapter creates no catalog, pool, UID generator, inventory or quest list.
+Actual calendar/clock, DB/client routing remain required ports. Start-log delivery
+and NPC/item-requirement routing remain required by the existing QuestStartWorld,
+not empty implementations supplied by these adapters. Root user execution stays
+serialized; asynchronous transports retain their own packet/connection lifetime.
+
+### Exact source snapshots for this old branch
+
+No canonical Actor/inventory/UID/runtime file was edited or copied into tracked
+sources. Worker 02 exact commit `c02b69c227951a9d1961170385176b443237e863` supplies
+Actor header/inventory implementation. Canonical main commit
+`48f2c32fe2a625b7af0a40c8654d013f875f97a2` supplies corrected shared ItemIds and
+QuestRuntime header/implementation. The UID discrepancy from Block 5 is resolved
+by that canonical owner; this adapter does not duplicate or compensate for it.
+
+On this older worker base run `python3 tools/quest_start_items_actor_owners.py`
+(default revisions pinned above). It writes six exact read-only (0444) files and
+SHA256/commit manifest under ignored `work/quest-start-items-actor-owners/`.
+A local compatibility library compiles those normal owner sources for the new
+adapter tests only; legacy tests keep their original branch library. In integrated
+main, where the canonical owner interfaces exist, CMake uses normal eternity_game
+owners and bypasses this fallback. Root links `eternity_quest_start_items_actor`.
+No main source, other worker source, schema or SQL lifecycle was modified.
+
+### Original and real-owner validation
+
+`quest_start_items_actor_oracle.py` executes complete original ps_game.exe
+QuestGetStartItem **0047eb70**, QuestAddItem **0047e620/0047e6f0**, item lookup
+**00402710**, inline UID instructions and complete shared server UID adapter
+**00457a50** (`SUniqueIDGenByServer::GenID`) BEFORE/AFTER the grants. Native comparison calls actual shared
+ItemIds before/after through another producer, including DWORD tick wrap and
+SetStartID baseline 65535/ffffffff. It supplies no recorded UIDs to the adapter.
+All DB bytes are initialized in this crafted-item fixture; comparison masks none.
+
+Native tests use actual Actor retained claims/mirrors/destruction, shared pool,
+ItemDefinitions, ItemIds, QuestRuntime/Pool and persistent InventoryReplica /
+QuestReplica. The first suite compares 240 original sequences / 384 items,
+complete retained payloads, occupancy and DB/client bytes/order. It additionally
+checks recursive grants, lease release during delivery, calendar/transport
+failure, pool reuse and actual Actor destructor release. Original internal scan
+observations are retained in the fixture audit column; existing prior tests
+compare that detailed coordination, while the concrete adapter compares observable
+transport, owner state and independently generated UID results.
+
+The second suite compares 640 original request/add/start traces / 253 starts,
+with 306 additional real Actor grants. It seeds actual active/finished runtime
+owners for duplicate rejection and compares newly-added active count separately
+from those seed nodes. The old fixture's QuestGetStartItem grant port remains the
+trace boundary, now delegated to the actual Actor adapter and separately checked
+replicas/mirrors/shared UID. NPC and requirement-consumption inputs remain that
+fixture's explicit other-owner ports; no new QuestFindItem body is invented.
+Both normal allocation failures and before/after-insertion service exceptions are
+covered. Full root world/transport assembly and gameplay remain incomplete.
+
+Validation: final `python3 tools/dev.py build`: exit 0, no warnings
+(`work/quest-start-items-actor-build-final-api.log`).
+Final `python3 tools/dev.py test`: exit 0; **127/127** tests in **39.01 s**
+(`work/quest-start-items-actor-test-final.log`). Both new suites passed, including
+240 sequences / 384 grants and 640 request/add/start traces / 253 starts /
+306 additional retained grants. The earlier corrected 127-test run also passed
+(43.30 s); final results above include the final public API.
+Initial 126/127 run failed because the new flow harness omitted the allocator's
+observation tag; corrected observation is emitted by the actual pool construction
+service. It was not a production behavior failure and is not counted as a pass.
+Snapshot/generator Python compilation, fixture repeat, original EXE/PDB hashes
+and `git diff --check` pass. SQL/full central integration remains coordinator-owned.
+
+Block 7 implementation commit: `05b9c62536787852f4aedfe3088232ab40fc2316`.
+
+Next integration: apply this milestone after worker 02's inventory primitives,
+wire required calendar/DB/client ports and actual retained user leases in the root,
+and bind the existing QuestStartWorld add/give callbacks to these adapters.
+Inventory-consumption production adapter belongs to worker 07; QuestEnd/removal
+and full world/game dispatch remain coordinator work. No new canonical inventory
+or UID interface request remains for these two adapters.
+
+Concrete next block within this prefix: a QuestStartWorld bridge delegating
+active/finished lookup to actual QuestRuntime and add/give to these concrete
+adapters. NPC lookup, requirement consumption and full start-log context/delivery
+remain mandatory real root ports; do not duplicate worker 07 or fabricate a world.
