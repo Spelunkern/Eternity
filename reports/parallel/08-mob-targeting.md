@@ -1506,3 +1506,151 @@ Validation:
   coordinator-owned.
 
 No original-client playability or full player lifecycle completion is claimed.
+
+## Milestone 14: complete DeathByNPC and excluded death notification
+
+Implementation commit: `c2811ca` (workers/08-mob-targeting).
+This block implements COMPLETE ps_game.exe CUser::DeathByNPC 00458fe0..004591ba
+(477 bytes) and SendDeath 00458470..004584be (81 bytes). General CUser::Death
+004586a0, its damage-winner/fallback and solo/party/raid/PvP reward distribution,
+remain for a subsequent independent lifecycle block. No generic successful
+"resolve death/rewards" callback hides that missing coordinator.
+
+Recovered behavior:
+
+- Dead==1 early return on existing +142c, before any world/metadata query.
+  Penalty +145c starts 5, becomes 0 when raw +58bc is nonzero or +58b0==3,
+  else becomes 1 for +58b0==1/2. Existing SetSkillAbility/skills oracle mappings
+  identify those canonical fields as benefits.no_exp_loss and benefits.amulet;
+  shifted PDB member names must not substitute another benefit.
+- Publish penalty, life=1, DWORD soul +1430=0 before logging. This is distinct
+  from Rebirth's byte +1434 and scheduler byte +1448. DeathByNPC does NOT zero
+  HP/MP/SP and does NOT call exchange, shop or vehicle cancellation, unlike
+  general Death. It does not insert StatusAttackStop/StatusCastingStop.
+- Prepare common log first, opcode 0301, WORD NPC ID at 74, zero WORD at 76,
+  NPC name at 78. Original GetNpc 0041d640 is a lookup boundary; real original
+  CRT strncpy 00504c60 executes in the oracle, pads after NUL and limits copy to
+  32, then byte109 is forced zero. Missing NPC writes ONLY byte78=0.
+  Full source ID remains DWORD for SendDeath; log ID truncates to WORD.
+- PvPChkLeaveByDeath 0047b530 -> ClearApplySkillByDeath 00488000 -> CDamage::Reset
+  004b8aa0 -> EnterDead 004584d0. Clear pending move +581c BEFORE GetTickCount,
+  then +1454=tick+200000 with DWORD wrap, +1458=0. Later callbacks' mutations
+  remain live; life is not blindly republished as 1 at function exit.
+- SendDeath executes original 0504/11-byte construction: subject DWORD, source
+  type BYTE, source ID DWORD. Current zone absent suppresses this view only.
+  CZone::SendViewM1 00421120 receives excluded subject ID, flag0/channel5;
+  there is NO additional self send.
+- Capture current party P, lock P, reread current membership. If null, unlock P
+  immediately and clear captured ownership. Otherwise send to the LIVE current
+  party Q, even if Q differs from captured P, and finally unlock P. Do not
+  restore membership or acquire Q instead. An early unlock may itself restore
+  membership, so the subsequent send condition rereads it.
+- NPC variant ALWAYS uses 0c06/6 bytes, including raid membership. General
+  Death has a distinct raid opcode branch; its future implementation must not
+  blindly reuse this NPC-specific tail.
+- The overload is CParty::Send 00445680, which EXCLUDES the original subject by
+  CUser pointer identity. Required root send_party therefore receives Actor&
+  excluded_subject, not merely an ID or ordinary broadcast. The existing normal
+  sender 004455d0 is not an equivalent substitute. Real captured party/user
+  owners must stay alive through recursive locks and callbacks.
+
+The core owns only a live explicit field projection. Actor bridge borrows the
+existing Actor/NpcDefinitions and required root services; no user, party, NPC,
+ledger, resource, registry or world owner is copied/created. Concrete mappings
+use actual Actor mode, skill benefits, pending move, resources, clear_effects_on_death,
+Actor tick clock and the existing common game-log writer. NPC lookup uses the
+actual immutable NpcDefinitions positional find and raw name prefix.
+
+Log scratch provenance is explicit: original stack tails and common-header string
+padding can remain unwritten. Core accepts a 110-byte caller seed and preserves
+untouched bytes, including missing-name tails. Actual native Actor wrapper starts
+scratch at zero, a deterministic portable policy for otherwise unspecified stack
+contents; it does not claim to reproduce arbitrary leaked original stack bytes.
+Original comparisons seed memory nonzero to verify partial writes rather than
+mistaking every untouched byte for an original zero write.
+
+Original fixture covers 2064 COMPLETE DeathByNPC/SendDeath calls: signed/raw life,
+amulet and no-exp flags, NPC present/absent and full/short names, both opaque
+party identities/no party, zone suppression, DWORD clock wrap, action-boundary
+mutations, null/changed memberships during lock/unlock and 16 actual nested
+original calls. Eight nested calls stop at dead==1; eight explicitly change that
+same word to 0 and execute another complete death before the outer continuation.
+No synthetic busy flag suppresses this original reentry. Compared full ordered
+ports, log/view/party packets, exclusion arguments, callback-entry snapshots and
+final shared/resources/metadata state. Lock traces describe recursive owner
+boundaries, not a native multithreaded locking proof.
+
+Native Actor composition seeds real resource Damage and its retained DamageLedger,
+initializes real active effects and preserve-on-death nodes, then calls this
+bridge. Actual ClearApplySkillByDeath removes the ordinary HP buff, clamps actual
+HP through the existing resource owner, clears casting, erases the replica and
+releases that effect ID. Preserved node and current target remain. It stops
+explicitly at the missing authoritative ledger-reset accessor: mode/penalty/soul
+and effect/resource changes remain published, pending move/deadline/corpse stages
+have not run. No empty reset provider pretends this production dependency exists.
+Current local Actor replica removal is not a claim to close its known immediate
+DB0902 transport gap; that Actor/effect work remains worker02-owned.
+
+Additional native exception check supplies explicit fixture-only empty-ledger/
+corpse boundaries to isolate Actor-bridge cleanup. A party callback mutates the
+ACTUAL Actor and metadata, then throws. Captured lock is released once without
+flushing stale projected values over those partial mutations. Unlock deliberately
+reads actual state after release and does not write the pre-send snapshot.
+This checks native provider exception semantics, not Windows SEH equivalence or
+a completed real corpse/party transport implementation.
+
+Required canonical/root contract:
+
+- Existing Actor +142c mode is authoritative; no new life field/accessor needed.
+  Actor owner must expose authoritative +145c penalty, +1430 soul DWORD,
+  +1454 rebirth deadline and +1458 raw code (silent reference/setter access).
+  These remain explicit required projections until then; do not add a parallel
+  Actor metadata map. All references/queries must remain valid and side-effect
+  free, with the same serialized world executor and genuine retained Actor lease.
+- Actor currently exposes damage_ledger() const only. Add mutable access or a
+  silent reset to the SAME ledger equivalent to CDamage::Reset. Do not use
+  end_duel/recover or private reset_damage's additional Scene effects to fake it.
+- Real PvP leave/corpse publication, log/view transports and current party identity
+  bindings remain required. Actor.party_kind() alone cannot provide pointer
+  identity. Retain actual PartyRegistryParty/membership owners through captured
+  locks, even when callbacks unregister/switch current membership.
+- Party sender must implement original 00445680 excluded-user semantics, full
+  live count/normal-or-raid owner and real buffer/transport ownership. Do not
+  route it through a seven-slot normal broadcast for raid members. The sender
+  itself must retain its own original recursive lock/buffer/fanout semantics;
+  the coordinator preserves only its separate captured outer lock. Existing
+  party owner interfaces currently cover the other broadcast overload; request
+  its exclusion-aware composition from that owner rather than copy its list.
+- Rebirth's raw resource-write and +1434/+1448 separation contracts are unchanged.
+  This NPC path does not require a fake raw zero-resource setter. Full Death
+  still needs actual reward/drop/log/PvP/party/raid coordination and its distinct
+  action/resource cleanup before reusing any shared primitive.
+
+Validation:
+
+- tools/dev.py build: exit 0; final failure-regression source build 142 actions,
+  no warnings/errors; work/mob-targeting-lifecycle-death-failure-build.log.
+- Initial full run: 130/131 passed, 35.67 s; first complete nested case 2049
+  exposed a driver error: Unicorn reused translated generated-thunk immediates
+  from case2048, so nested NPC type/ID were stale. Invalidated ONLY the generated
+  thunk range after each host write (ctl_remove_cache), regenerated into ignored
+  work/ and copied after readers finished. Native behavior was not changed to
+  accommodate that erroneous fixture. Preserved initial tests/sanitized logs;
+  neither initial failure is counted as a pass or sanitizer diagnostic.
+- Corrected intermediate 131-test runs passed before the final exclusion/
+  exception audit; final tools/dev.py test exit 0, 131/131 passed, 39.47 s,
+  new unit 0.45 s; work/mob-targeting-lifecycle-death-verified-tests.log.
+- Final ASAN/UBSAN compile/run under the shared build lock: exit 0, no
+  diagnostics. Instrumented new core/bridge/test plus actual Actor, resources,
+  effect cycle/effects/skills, NPC owner and common log writer. All2064 original
+  traces, actual effect/resource/ledger-prefix and exception-mutation checks
+  passed; work/mob-targeting-lifecycle-death-verified-sanitized.log.
+- Original full fixture repeated byte-identically after the correction and
+  exclusion-argument assertion; work/mob-targeting-lifecycle-death-final-repeat.tsv.
+- All12 original EXE/PDB SHA256SUMS passed; git diff --check clean. No main,
+  Actor/party/zone-user/shared-owner changes, merges/resets/pushes or SQL lifecycle
+  writes. No SQL data path changed; unchanged SQL checks were not repeated.
+  Existing central integration and real DB/effect transports remain required.
+
+No full player lifecycle, production NPC death assembly or playable-server
+completion is claimed from this coordinator and these fixture counts.
