@@ -1903,3 +1903,12 @@ combined movement/skill branch. It depends on the ingress pause API already in
 that branch; neither has been imported into main. Exact FIFO insertion timing,
 returned async DB operation, stale resume, original 1000-frame snapshot and
 system/NProtect handling remain unproven/unwired. Combined validation pending.
+
+Combined combat session 22990 exited 0: both skill-damage and normal-damage
+focused tests passed on `a4de61c` in Eternity-movement; logs
+`.local/composed-skill-damage.log` and `.local/composed-skill-normal-regression.log`.
+After that build finished, its build tree was copied into the separate protocol
+worktree; session 11481 now runs split protocol, real-admission TCP handoff and
+world-protocol focused tests on `dfb22e7`. Results remain pending. These tests
+still do not establish live original-client gameplay or the original queue
+threshold/scheduling semantics.
