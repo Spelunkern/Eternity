@@ -1101,7 +1101,7 @@ Normal phase checks +1d8 AFTER transform cleanup (0048cbd2); null sends reason 7
 Skill/casting phases do not impose that weapon-presence guard. Fixture verifies
 normal removal/initial absence, skill removal and casting absence independently.
 +1d8 is equipment pointer base +1c4 plus slot **5** *4, matching appearance slot5
-at original equipment projection (0044d.../export +1d8 accesses); no weapon-type,
+in `CUser::EnterDead` **004584d0** equipment projection; no weapon-type,
 count or durability check replaces the pointer test. Slot5 conclusion follows
 array base/stride, not an inferred weapon category.
 
