@@ -2102,3 +2102,12 @@ owns a RuntimeZone link; a wrong-owner remove can corrupt foreign links and
 counts. Requested exact owner identity and cross-owner/destruction/reentrancy
 tests. Draft is not integrated or validated. Dynamic lease/recycling, actual
 scheduler passes and admission lifetime remain separate required work.
+
+Combined entry session 69040 finished exit 0 on clean `6e57801`: 2048-case
+retained-roster unit, full build and isolated SQL (both actual selection/ownership
+and persistence save/reload in the same disposable fixture) passed. Logs are
+`.local/composed-entry-{roster,build,sql}.log` in Eternity-entry. These are two
+fixture tests, not proof of one load across their independent operations; separate
+entry-flow/entry-owner sessions 86997 and 21247 test that composition and remain
+live. Newer raw roster field draft, real Actor/WorldApplication and original
+client remain unvalidated. Dashboard reflects the finished combined SQL run.
