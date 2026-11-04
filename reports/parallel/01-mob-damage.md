@@ -2411,3 +2411,98 @@ existing attack coordinator, starting CUser::SkillAttackUser00451d90, limited to
 user_skill_runtime coordination and required actual target/damage owners. Actual
 root/manager/definition/action/resource/group binding remains required; do not
 claim the pure debit plus recovered tail installs a complete production service.
+
+## User SkillAttack selected action coordination (2026-11-04)
+
+Sources: immutable ps_game.exe CUser::SkillAttack00451d90 (exact exported symbol,
+not a new SkillAttackUser name); CUser::SkillAttackSelect00451dd0..00451f57;
+actual jump table00451f5c; stSkillInfo PDB+58 byMultiAttack. New
+user_skill_runtime_strike implements these coordinators using EXISTING Actor
+life mode/resources/relations and stable user definition references. No damage,
+death, area enumeration, targeting or secondary user/skill catalog was created.
+
+TargetType+56:3=>selected,6=>SkillAttackRange00451f80,
+7=>SkillAttackRangeSelect00452560,other values=>return. Area bodies remain required
+actual providers. Selected wType21..27 has these exact table entries:
+21/24/27=>00451f41;22=>00451df2;23=>00451e51;25=>00451f0f;
+26=>00451f28. All entries except22/23 call SkillAttackToUser0044f4c0 once with
+both bool arguments true. Outside21..27 returns without effect.
+
+Type22 first invokes actual SendUseSkill0044e900: definition ECX,kind4 DL,
+stack source/targetID/0. Native mandatory announce_multi port carries that
+contract. ONLY AFTER announcement, read live byte multi_attack (+58). Zero
+still announces, then performs no hit. Each hit uses false/true, then checks
+TARGET mode1, then SOURCE mode1. Increment count and reread SAME captured
+definition's live multi_attack before continuation. Do not cache original count,
+continue after either death, or resolve runtime.definition again after callbacks.
+
+Type23 computes forced flag BEFORE the first hit: source duel_state==4 AND
+source.duel_opponent==targetID AND target.duel_opponent==sourceID; OR source
+opposing_guild_id!=0 (+54e4). Reuse actual Actor::relations fields, no extra PvP
+projection. Hit true/true. If source mode1 after hit, return. Otherwise read
+CURRENT DWORD HP, preserve signed bits for scalar Damage0044c120(kind1,selfID,
+liveHP). Only a true result invokes Death004586a0(type1,selfID,captured forced).
+No target-life guard or forced-flag recomputation is added. The actual scalar
+Damage/Death owners remain mandatory providers, including their callbacks and
+world dependencies; this module never reproduces those bodies.
+
+Integration: resolved attack's existing user_effect(UserSkillAction::attack,...)
+must call user_skill_runtime_strike on the SAME retained Actor/target/definition.
+Its remaining action enums still require their actual owners. UserSkillDefinition
+now adds only raw BYTE multi_attack; actual user-data loader/provider must supply
+stSkillInfo+58, not infer it from passive skills or catalog IDs. Root retains
+source/target and original definition across announcement/hits/damage/death and
+area callbacks; callbacks may mutate states/count but must not free borrowed
+objects. The original selected path assumes a nonnull target. Native explicitly
+rejects null for supported detail rather than dereferencing it. No Actor/shared
+owner files changed.
+
+Validation notes (final commit recorded below):
+
+- **6400 complete original SkillAttack calls**, including actual selected body
+  for TargetType3; original branch/table/loop/return execute. Ports cover actual
+  hit, announcement, scalar damage, death and the two area entrypoints. ABI
+  assertions check actual register/stack arguments and complete return balance.
+  Native compares exact ordered traces/flags/live HP/forced-death results.
+- Matrices include TargetType0/3/6/7/255; details20..28/65535; live announcement
+  count change, hit count change, source/target death after hit, signed HP change
+  and reciprocal/asymmetric duel/opposing-guild states. Hit callback clears
+  relations before the damage/death tail, proving forced was captured earlier.
+  Oracle coverage assertions require multiple hits and both forced/unforced
+  deaths; original regeneration is byte-identical (`cmp`,exit0).
+- Initial1600-case matrix coupled death flags to count bits and therefore did
+  not exercise full multi-hit chains. Expanded to6400 with independent death
+  bits before delivery, rather than treating native-only chaining as evidence.
+- Native **4 actual resolved-attack compositions** reuse the existing runtime
+  owner, load path and attack coordinator; verify reset7100 precedes dispatch,
+  live-count three-hit chain and scalar/death conditional continuation. Action
+  bodies remain test boundary providers, not gameplay/damage equivalence.
+- Test-only HP mutation uses existing Actor::heal with controlled raw-bit delta;
+  preserves the same Actor resources. This is NOT production damage or spending.
+  Actual action providers must implement the cited damage/death/announcement
+  owners. Definitions are borrowed from the existing UserSkillRuntime owner.
+- Initial build/test:145/145 passed42.29s. Intermediate verification after test
+  maximum-resource setup corrected:144/145; unrelated existing world-network-unit
+  failed with "Replacement disconnect leaked registry state". Preserve
+  `work/user-skill-runtime-strike-final-tests.log`; no network files changed.
+  Expanded matrix verification below supersedes its coverage, not its failure.
+- Original SHA256SUMS exit0; `work/user-skill-runtime-strike-hashes.log`.
+
+Implementation commit: **bcff828**.
+Final expanded `python3 tools/dev.py build`: exit0,no warnings;
+`work/user-skill-runtime-strike-expanded-build.log`.
+Final expanded `python3 tools/dev.py test`: exit0,**145/145 passed,30.78s**;
+`work/user-skill-runtime-strike-expanded-tests.log`. All6400 original comparisons
+and4 resolved-attack compositions pass. `git diff --check`:exit0. Shared resource
+locks respected; fixtures copied only after previous test readers finished. SQL
+unchanged; final isolated SQL integration remains coordinator-owned. No original
+binary modifications, shared header edits or global gameplay completion claim.
+
+Remaining integration: actual stable definition loader must provide byMultiAttack;
+root must bind this strike coordinator to attack action, actual SkillAttackToUser,
+SendUseSkill/scalar damage/Death and both area owners while retaining same objects.
+No extra Actor field/accessor is needed: existing relations/resources/attack_state
+provide all recovered reads. Next independent proposal: recover
+SendUseSkill0044e900 announcement packet and callback ordering for the mandatory
+announce_multi port, composing actual existing scene/transport owners without
+reconstructing another targeting/damage implementation.
