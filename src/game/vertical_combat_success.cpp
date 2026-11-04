@@ -1,13 +1,42 @@
 #include "eternity/game/vertical_combat_success.hpp"
+#ifdef __FAST_MATH__
+#error AttackSuccess requires IEEE nonfinite arithmetic
+#endif
 #include <algorithm>
 #include <bit>
+#include <cfenv>
+#include <cfloat>
 #include <cmath>
 #include <limits>
 #include <stdexcept>
+#if defined(__x86_64__) || defined(__i386__)
+#include <xmmintrin.h>
+#endif
 namespace eternity::game {
 namespace {
+static_assert(FLT_EVAL_METHOD==0 && std::numeric_limits<float>::is_iec559 && std::numeric_limits<float>::digits==24 && std::numeric_limits<double>::is_iec559 && std::numeric_limits<double>::digits==53 && sizeof(double)==8,
+              "AttackSuccess requires IEEE binary64 intermediate evaluation");
+void require_float_environment(){
+    if(std::fegetround()!=FE_TONEAREST)throw std::logic_error("AttackSuccess requires nearest floating rounding");
+#if defined(__GLIBC__)
+    if(::fegetexcept() & FE_ALL_EXCEPT)throw std::logic_error("AttackSuccess requires masked floating exceptions");
+#if defined(__x86_64__) || defined(__i386__)
+    // glibc fegetround/fegetexcept query the x87 word; binary64 arithmetic on
+    // x86-64 uses SSE and MXCSR can be changed independently by native code.
+    const auto mxcsr=_mm_getcsr();
+    if((mxcsr & 0x6000u)!=0 || (mxcsr & 0x1f80u)!=0x1f80u)
+        throw std::logic_error("AttackSuccess requires nearest SSE rounding and masked exceptions");
+#endif
+#else
+#error AttackSuccess requires a supported floating exception mask check
+#endif
+}
 std::int32_t sum(std::int32_t a,std::int32_t b){return std::bit_cast<std::int32_t>(std::uint32_t(a)+std::uint32_t(b));}
-double spill(std::int32_t n){return static_cast<float>(n);}
+double spill(std::int32_t n){volatile float result=static_cast<float>(n);return result;}
+double mul(double a,double b){volatile double result=a*b;return result;}
+double div(double a,double b){volatile double result=a/b;return result;}
+double add(double a,double b){volatile double result=a+b;return result;}
+double sub(double a,double b){volatile double result=a-b;return result;}
 std::int32_t integer(double n){n=std::trunc(n);if(!std::isfinite(n)||n<std::numeric_limits<std::int32_t>::min()||n>std::numeric_limits<std::int32_t>::max())return std::numeric_limits<std::int32_t>::min();return static_cast<std::int32_t>(n);}
 }
 bool vertical_combat_normal_success(const Actor& actor,const MobRuntime& mob,unsigned kind,RandomSource& random){
@@ -16,25 +45,26 @@ bool vertical_combat_normal_success(const Actor& actor,const MobRuntime& mob,uns
     if(status==3)return false;
     if(kind>2)return true;
     if(!mob.definition)throw std::invalid_argument("AttackSuccess requires retained mob definition");
+    require_float_environment();
     const auto& user=actor.status().calculated_attack[kind];const auto& enemy=mob.attack[kind];
     if(kind==2){
         const auto player_level=std::int32_t(actor.status().level),mob_level=std::int32_t(mob.definition->level);
         const double denominator=static_cast<float>(player_level+mob_level);
-        const double level_term=static_cast<float>((((double(static_cast<float>(mob_level-player_level-2))*100.0)+double(static_cast<float>(mob_level)))/denominator)*double(1.1F)+spill(enemy.evasion));
+        const double level_term=static_cast<float>(add(mul(div(add(mul(spill(mob_level-player_level-2),100.0),spill(mob_level)),denominator),double(1.1F)),spill(enemy.evasion)));
         const auto dex=actor.status().skills.equipment.base.attributes.dexterity;
         const auto enemy_dex=std::int32_t(mob.definition->dexterity);
         const auto numerator=std::bit_cast<std::int32_t>(std::uint32_t(enemy_dex)*11u-std::uint32_t(dex)*10u);
-        const double dex_term=static_cast<float>((spill(numerator)/spill(sum(dex,enemy_dex)))*double(3.9F)+spill(user.accuracy));
+        const double dex_term=static_cast<float>(add(mul(div(spill(numerator),spill(sum(dex,enemy_dex))),double(3.9F)),spill(user.accuracy)));
         const auto clamp_float=[](double v){return v<1.0?1.0:v>70.0?70.0:v;};
-        const auto chance=std::clamp(integer(clamp_float(level_term)+clamp_float(dex_term)),1,90);
+        const auto chance=std::clamp(integer(add(clamp_float(level_term),clamp_float(dex_term))),1,90);
         return random.next()%100>=chance;
     }
     const double level=static_cast<float>(actor.status().level);
     const double levels=static_cast<float>(std::uint32_t(actor.status().level)+mob.definition->level);
-    const double level_part=(level/levels)*160.0;
-    const double defense=(spill(enemy.accuracy)/spill(sum(user.evasion,enemy.accuracy)))*100.0;
-    const double accuracy=(spill(user.accuracy)/spill(sum(enemy.evasion,user.accuracy)))*100.0;
-    const auto chance=std::clamp(integer(level_part-(defense-accuracy)),20,99);
+    const double level_part=mul(div(level,levels),160.0);
+    const double defense=mul(div(spill(enemy.accuracy),spill(sum(user.evasion,enemy.accuracy))),100.0);
+    const double accuracy=mul(div(spill(user.accuracy),spill(sum(enemy.evasion,user.accuracy))),100.0);
+    const auto chance=std::clamp(integer(sub(level_part,sub(defense,accuracy))),20,99);
     return random.next()%100<chance;
 }
 bool vertical_combat_skill_success(const Actor& actor,const MobRuntime& mob,unsigned kind,const VerticalCombatSkillSuccessInputs& input,RandomSource& random){
