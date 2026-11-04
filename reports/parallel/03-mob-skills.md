@@ -354,3 +354,33 @@ Remaining production dependencies are unchanged: world root construction, shared
 catalog/pool/counter identity, synchronous subject lifetime through Death/view,
 external reload quiescence and real combat/log/transport providers. Complete SQL
 validation belongs to the coordinator. No canonical interface edits are needed.
+
+## Scope completion checkpoint
+
+The repeated catalog assignment is complete in bbaac40/0bc6799, followed by the
+recursive lifecycle evidence in 0e4ce8b/218bf38. Current main continuity explicitly
+reviews/queues the catalog adapter while the eighth-batch source freeze remains
+active. No additional independent implementation is identified within the
+catalog-only prefix without duplicating completed work or inventing world
+providers. Production root assembly and SQL validation remain coordinator-owned;
+this checkpoint does not imply server completion.
+
+Concrete dependency: wire the retained catalog, global pool/counter, actual mob
+subject/template and mandatory combat/death/log/transport/clock ports into the
+production scheduler/admission root under its serialization and reload-quiescence
+contract. This needs authorization for the relevant production owner files, not
+another catalog or temporary definitions. The existing adapter requires no new
+canonical fields.
+
+Proposed next independent assignment: expand ownership back to selective applied
+skill cancellation, starting with evidence recovery for ps_game.exe
+CMob::RemStateSkill 004a5a30 / CancleApplySkillDebuff 004a5d90, then expose it
+through the retained owner/catalog bridge. These are investigation targets, not
+newly recovered behavior. Do not implement them under the current catalog-only
+assignment without coordinator scope confirmation.
+
+Checkpoint validation: clean worker tree before this report update; prior
+131/131 native result and original fixture/hash comparisons remain the latest
+implementation validation. No source/test/fixture changes and no build, SQL or
+original-execution rerun in this documentation-only checkpoint. git diff --check
+passed. Awaiting coordinator assignment; no main or other-worker files changed.
