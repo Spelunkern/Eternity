@@ -1605,3 +1605,12 @@ The main baseline's isolated SQL integration finished successfully (session
 queued. Independent 08's uncommitted canonical NpcPool pin draft passed its
 focused quest test, but its final commit, lifecycle review and integration are
 still outstanding. None of these results proves original-client playability.
+
+Coordinator created `coordinator/gameplay` at `/home/franco/Projects/Eternity-gameplay`
+from the combined ingress branch and cherry-picked combat success/FP/damage,
+movement/FP and pickup handler (`37f49f2..228d086`). CMake registration conflicts
+were resolved by preserving both sets of targets. Session 58307 is queued for a
+full build, nine focused combined tests and isolated SQL, using the shared locks;
+all results are pending. The imported combat/movement/pickup code has required
+real owners and is not connected to main or proven as client gameplay. The
+separately running ingress validation is unchanged.
