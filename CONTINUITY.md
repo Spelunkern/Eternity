@@ -10,7 +10,7 @@ work is deferred; continue the server independently. Use Ghidra and SQL Server;
 SQLite migration is deferred. Exclude ps_gamewar and Phoenix. Preserve originals.
 Code/documentation in English, progress in Spanish. Rough global estimate remains
 about 7%; the server is NOT playable. Test counts do not measure completion.
-Do not spawn subagents without explicit authorization. Read AGENTS.md.
+The user authorized parallel work and nine independent terminal workers on 2026-11-03. Read AGENTS.md and PARALLEL_WORK.md. Reasoning for the launcher is LOW (explicit user correction), not high.
 
 Repository: https://github.com/Spelunkern/Eternity, branch main.
 Checkout: /home/franco/Projects/Eternity.
@@ -125,3 +125,57 @@ Use tools/reverse.py --process, one Ghidra process at a time. Original-execution
 fixtures use .local/oracle-env/bin/python. Generate fixtures under work first;
 never replace tracked fixtures while running tests may read them.
 Verify originals with sha256sum -c SHA256SUMS.
+
+## Nine-terminal launcher — prepared 2026-11-03
+
+Desktop entry points:
+
+- /home/franco/Desktop/Iniciar-Eternity-9-terminales.sh
+- /home/franco/Desktop/Eternity-9-terminales.desktop
+
+Published launcher commit: 092ed85. Nine worktrees/branches are prepared under
+/home/franco/Projects/Eternity-workers, with the exact prepared base recorded in .local/parallel/manifest.json. They are not started
+by preparation; running the desktop script opens nine Konsole workers. Model is
+gpt-6.1-sol, reasoning low, fast tier, danger-full-access and approval never.
+Existing Codex authentication/config is inherited. No new API key is required.
+
+Read PARALLEL_WORK.md for assignments. Only this coordinator integrates/pushes.
+Worker 01..09 own damage, drops, skill ownership, obelisks, party state, quest
+starts, quest request checks, mob targeting and mob FSM events respectively.
+Core QuestEnd/Select, rewards/removal and mob logs remain coordinator work.
+
+`python3 tools/parallel.py status` reports all nine workers. Prompts, reports,
+thread IDs and logs are ignored under .local/parallel. Re-running launch skips
+live and completed workers. File locks prevent duplicate worker sessions;
+tools/dev.py limits builds/tests to two simultaneous commands and serializes
+SQL integration, while tools/reverse.py serializes Ghidra across worktrees.
+Credentials/assets and build/output directories are private to each worktree.
+The original Ghidra project is shared only through the locked wrapper.
+
+Launcher validation: three meaningful offline tests pass (nine-worktree
+isolation/idempotence, actual CLI argv/settings/clean session environment with a
+fake Codex process, and shared-resource lock exclusion/release). The desktop
+shell script passes bash -n; all nine real worktrees were prepared successfully.
+No model calls were used for launcher testing.
+
+### Integrated coordinator contributions
+
+The three temporary internal agents completed quest_rewards, quest_runtime and
+mob_log implementations, original-execution fixtures and native tests. They are
+registered in CMake and integrated. All 122 native tests pass (25.72 s) in
+.local/parallel-final-tests.log; each new suite also passed standalone ASAN/UBSAN.
+The reviewed build and three focused suites pass in
+.local/parallel-reviewed-build.log and .local/parallel-reviewed-tests.log.
+
+The first full SQL run (.local/parallel-contributions-integration.log) failed
+with a login packet read timeout in creation-network-integration. Its disposable
+catalog cleanup completed (zero leftover creation catalogs). The entire clean
+rerun, .local/parallel-contributions-integration-retry.log, returned exit 0,
+including network creation, all persistence checks and disposable guild cleanup.
+No validation remains pending. Do not describe the first attempt as passed.
+
+Quest rewards preserve live callback ordering and MoneyReplica delivery;
+QuestRuntime preserves retained payload, cursor and pool reuse; mob logs expose
+required map/name context and a death-log bridge. Actual QuestAddItem, core
+QuestEnd/Select and production actor/world integration remain coordinator work.
+See research/protocol.md for exact evidence and limitations.

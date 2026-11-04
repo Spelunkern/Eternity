@@ -2981,3 +2981,41 @@ distribution quests and 2,747 SQL mob slots. Isolated SQL integration compares
 the resulting 11,984-byte index (498 references), including exact ordering.
 QuestEnd rewards/removal, quest admission and production actor ownership remain
 separate work; this does not complete the entire quest system.
+
+
+`award_quest_reward` follows `CUser::QuestSuccessResult` (`ps_game.exe`,
+`0047ee40`). It snapshots client 0903 (22 bytes) and quest log identity/name
+before bypassed source-0 experience. Definition grow <=2 doubles the reward DWORD
+with wrapping. Money reloads after experience, saturates through the native money
+owner and sends DB 0603 by user ID. Log 0502 (150 bytes) records configured money,
+then item ID/count/name, not an extra experience field. Header filling precedes
+the reloaded item request, always count 1. Client delivery precedes required
+QuestRemove(success=true), then game-log delivery. The 512-case complete original
+fixture covers callback-driven binding/ID/money changes, signed boundaries,
+saturation and successful/failed item receipts, including real MoneyReplica
+delivery. Native log tails are initialized to zero; original undefined stack
+tails are compared under a zero-initialized fixture, not claimed deterministic.
+Actual QuestAddItem and the production actor/provider composition remain needed.
+
+`QuestRuntime` and `QuestRuntimePool` implement `QuestRemove` (`0047e150`),
+`QuestFind` (`0047e4b0`), shared Front/Next cursor (`0044bbc0/0044bbe0`),
+FreeQuest (`0040a820`) and retained LIFO allocation (`0040b0b0`). Removal backs a
+matching cursor to its predecessor. A nonzero definition DWORD at 0134
+(`dwTickRecvCount`) forces success=2 and recycling; otherwise the supplied byte
+is retained and the object appends to finished. End type 2/3 decrements the
+corresponding quest counter with DWORD wrap. Ownership/recycling precede DB 0a02;
+payload survives callbacks. Owner destruction deletes remaining active/finished
+records rather than returning them to the heap. The fixture executes 64 owners,
+320 removals and 320 allocate/release operations, including failed allocation,
+1,663 state comparisons, reentrant lookup and real QuestReplica application.
+This does not reconstruct all admission/repeat semantics from the 0134 field.
+
+`write_mob_log` implements `CMob::SendLogBothMob` (`004a1810`): 123-byte 0a04,
+map WORD, XYZ float bits, event BYTE, three 32-byte C-string slots, generic DWORD,
+current HP DWORD and definition ID WORD. Initialized string tails survive after
+their terminator; null-zone calls return before inspecting other arguments.
+`send_mob_death_log` binds event 4, the credited name, retained previous attack
+skill and pre-reset fair flag. Map/name are required projections and transport
+is mandatory. The 512-case fixture executes the full original twice per case
+with random/zero initialized tails and ports only transport/cookie handling.
+Normal and ASAN/UBSAN comparisons pass; full mob skill ownership remains separate.
