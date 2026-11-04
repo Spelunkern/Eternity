@@ -1080,3 +1080,133 @@ Documentation-only checkpoint: git diff --check clean; no unchanged native,
 sanitizer or SQL reruns. Milestone 10 remains the latest validation: 128/128 tests,
 450 original direct-visitor traces and focused ASAN/UBSAN passed. No main edits,
 SQL lifecycle writes, merges or pushes. Overall playability remains unverified.
+
+## Milestone 11: canonical Actor and real grid/CRT/clock/FSM adapters
+
+Implementation commit: `9d9111f` (workers/08-mob-targeting). New files use the
+assigned mob_targeting_actor prefix. Actor, ZoneUsers, worker09 FSM sources,
+worker03, main and previous targeting milestones were not edited.
+
+`MobTargetingActorUser` now borrows the retained canonical Actor and projects:
+
+- target ID from Actor::id(), original CUser+dc;
+- country from appearance().identity.country (CUser+12d, populated by the
+  existing ActorLoadPipeline user_shape_identity call);
+- attackable/visible from ActorAppearance, original admin bytes +5775/+5774;
+- selection immunity from status().no_mob_targeting, original CUser+1366.
+  The older help projection field is named hp_ability, but this byte is the
+  effect-89 selection immunity, NOT SkillStatus::hp_ability_applied or its ID.
+  Existing AddApplySkillBuff 00484cf0 / RemApplySkillBuff 00485130 and the
+  helper original traces establish that distinction.
+
+Every call reads the SAME live Actor; there is no second user record or cached
+flags. Canonical Actor currently has NO authoritative CUser+142c life state or
+accessor. The adapter therefore requires MobTargetingActorLife::life_status(
+const Actor&) const, preserving the signed value and exact dead==1 test. It has
+no default implementation. Zero current HP is deliberately not converted to
+life==1. Supplying an invented alive constant is not production integration.
+
+`MobTargetingActorWorld` borrows the existing paired ZoneMobs/ZoneUsers, shared
+per-executor MicrosoftRandom and actual MobAiStateServices. user_count delegates
+to ZoneUsers::size(), rejects a foreign mob grid, and checks signed count bounds.
+No new ZoneUsers accessor is needed. random advances the borrowed original CRT
+stream; tick_ms uses the SAME FSM services clock. dispatch delegates directly to
+existing dispatch_mob_ai_event with the complete event/argument bit patterns.
+It does not implement a second FSM table or substitute a successful callback.
+
+Evidence: ps_game.exe SetTarget 0049fad0 / SetTargetEx 004b65e0,
+StackStateMachine<CMob,-1>::DispatchEvent 004925f0 / 004929b0,
+STATE::OnDispatch 004938c0, InitLuaFSM 004b4c20 and CMob::OnAttacked 004b6120.
+New original fixture executes the real SetTarget-to-dispatch-to-event chain:
+160 combinations of five fixed states, move modes, signed life values -1/0/1/2,
+vision fixation and Lua enabled/disabled, using high-bit target IDs. It compares
+raw status, target, timeout, move deadline, attack times, event discriminator,
+final stack and the Lua callback's tick/argument/PRE-transition stack. Only the
+existing worker09 container/Lua/clock/diagnostic harness boundaries are ports;
+SetTarget and DispatchEvent are not replaced with recording stubs.
+
+`tools/mob_targeting_actor_oracle.py` reuses that canonical instruction harness
+rather than copying its owner. On this older branch, regeneration command is:
+`.local/oracle-env/bin/python tools/mob_targeting_actor_oracle.py --fsm-oracle
+/home/franco/Projects/Eternity/tools/mob_ai_states_oracle.py`. After canonical
+integration the default same-directory harness path works. Harness SHA256:
+42d79fc4612780ae4e3a27797df7b87ad1aea2547b9a18409d5dd880bf23611c.
+
+Native assembly also executes help -> actual SetTarget -> actual fixed FSM ->
+required Lua-service callback -> existing configured FSM execute/evaluate.
+Its configured callback changes the retained user's life/visibility before the
+next candidate. The second acquisition sees live life==1 and is rejected; fixed
+stack publication occurs after the callback and the configured owner transitions
+normally. These test actions are explicit synthetic world/Lua actions, not a
+claim to execute original Lua scripts. Additional checks mutate real country,
+admin flags, and effect-89 immunity via the existing effect apply/remove paths;
+verify HP-ability trigger independence; detach the actual ZoneUsers member; and
+verify a shared CRT stream/authoritative clock feeding a live catalog cooldown.
+There are no production success-only providers.
+
+This branch predates canonical worker09 FSM headers/targets. Local validation
+used an ignored, byte-for-byte read-only snapshot of mob_events, mob_ai_states,
+mob_ai_states_configured and the parameter header from main snapshot
+9e35b9c3dfd7f65ec319707fae33c14df3c1326e. CMake conditionally uses that snapshot
+ONLY when the canonical FSM header is absent; otherwise it uses the normal
+canonical owner/targets. No snapshot source/header is tracked or installed.
+Snapshot hashes are in work/mob-targeting-actor-deps.sha256 and were compared
+with the source files after validation setup. Central integration must retain
+the existing worker09 sources, not import another copy from work/.
+
+Exact production assembly / minimal owner contract:
+
+- Retain the actual loaded Actor and its authoritative life owner throughout
+  user projection, complete help calls and reentrant dispatch. The actor/user
+  executor and both grids must share the existing serialized world context.
+  These adapters do not acquire locks or create actor retention machinery.
+- Needed canonical Actor interface: `std::int32_t life_status() const noexcept`
+  over the authoritative signed CUser+142c state. Its owner must initialize and
+  update that SAME state on actual death/rebirth transitions. If mutation is
+  exposed, request `std::int32_t& life_status() noexcept` from that owner too;
+  an accessor backed by a new unconnected default value does not close the gap.
+  Once available, implement MobTargetingActorLife by direct delegation. Until
+  then the explicitly required life-owner port remains; no Actor header patch
+  or parallel state map was introduced here.
+- Pair world(existing_mob_grid, existing_user_grid, shared_executor_crt,
+  actual_fsm_services), then reuse MobTargetingZone(existing_mob_grid,
+  retained_full_catalog, world). Wrap the retained Actor with
+  MobTargetingActorUser(actor, authoritative_life_owner). Preserve milestone 10
+  source/cell/catalog lifetime, deferred SetTarget subject recycling and reload
+  quiescence. Caller supplies the actual corresponding user grid; current APIs
+  do not expose a global zone identity to derive that pairing automatically.
+- MobAiStateServices must be the real retained services: tick, Lua execution,
+  error handling and update handlers. DispatchEvent's fixed stack is now wired
+  concretely. Configured AI remains its existing separate owner reached by
+  registered programs/compiled/Lua handlers; there is no evidence for mapping
+  event 1 directly to an arbitrary configured state, so none is invented.
+  Actual root Lua/compiled-handler composition and TravelCondition services
+  remain required wherever the configured program uses them.
+- Bind all targeting/random consumers on this executor to the SAME CRT owner;
+  retain the existing full catalog and MobRuntimeTemplate owner. No new list,
+  actor registry, catalog, random seed or platform clock is allocated here.
+
+Validation results:
+
+- `python3 tools/dev.py build`: exit 0; 380 actions. Nineteen existing warnings
+  in unrelated guild_{bank,bank_save,catalog,npc_save,npcs,sql} sources; no new
+  adapter warnings. Log: work/mob-targeting-actor-build.log.
+- `python3 tools/dev.py test`: exit 0, 129/129 passed, 43.67 seconds;
+  work/mob-targeting-actor-tests.log. New actor/FSM suite passed.
+- New 160-case original fixture regenerated twice into ignored work/; byte cmp
+  against the tracked fixture passed. Old direct-visitor fixtures were not
+  regenerated or expanded for this assignment.
+- Focused ASAN/UBSAN compile/run under the shared build lock: exit 0, no
+  diagnostics; all 160 original paths and Actor/help/fixed/configured/grid/CRT/
+  clock checks passed. Instrumented new adapters, target/runtime/help and actual
+  fixed/configured FSM/event sources; work/mob-targeting-actor-sanitized.log.
+- All twelve original EXE/PDB SHA256SUMS passed; git diff --check clean. No SQL
+  data path changed; prior full positional/original/restored SQL validation is
+  retained rather than repeating unchanged SQL checks. SQL lifecycle remains
+  coordinator-owned.
+
+Remaining dependencies are the authoritative Actor life accessor/owner, actual
+root construction/retention/serialization and FSM Lua/clock/error/update/world
+services. Country, immunity, admin flags, count, shared CRT, clock delegation
+and actual fixed dispatch mappings are implemented. No root network handler or
+original-client playability is claimed by these tests.
