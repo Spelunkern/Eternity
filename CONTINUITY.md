@@ -2023,3 +2023,14 @@ world/gameplay/quest/movement/combat. Session 98293 runs targeted scene and part
 send tests using a copy of a completed movement build; results pending. Actual
 cell broadcaster, effect pool, shutdown and connection failure owners remain
 mandatory; no client-playability claim. Dashboard updated.
+
+Coordinator created `coordinator/entry_flow` in Eternity-entry-flow from the
+combined retained-roster branch. Commit `fdbbec8` changes the real disposable SQL
+persistence fixture to select its created character through the actual 0104
+`vertical_entry_select` and retained roster, then restore the replica from that
+same captured PlayerSnapshot. The existing gift-notification assertion detects a
+second load, and the fixture continues mutation, exit-save and reload checks.
+Session 86997 runs full build then isolated SQL sequentially on this revision;
+results pending. This is a composed SQL fixture, not a production connection,
+ActorLoad, live zone or original-client test. Do not conflate it with the newer
+uncommitted raw-roster field changes in independent 01.
