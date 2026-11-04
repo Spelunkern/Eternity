@@ -1258,3 +1258,10 @@ if(BUILD_TESTING)
 endif()
 
 target_sources(eternity_game PRIVATE src/game/obelisk_runtime_definition_records.cpp)
+
+target_sources(eternity_game PRIVATE src/game/user_skill_runtime.cpp)
+if(BUILD_TESTING)
+    add_executable(user-skill-runtime-unit tests/user_skill_runtime_unit.cpp)
+    target_link_libraries(user-skill-runtime-unit PRIVATE eternity_game)
+    add_test(NAME user-skill-runtime-unit COMMAND user-skill-runtime-unit ${CMAKE_CURRENT_SOURCE_DIR}/tests/data/user-skill-runtime-oracle.tsv)
+endif()
