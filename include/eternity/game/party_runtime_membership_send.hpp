@@ -25,6 +25,8 @@ public:
 // This normal-owner adapter requires every visited live count to fit its seven
 // slots; it does not supply the larger raid member projection.
 void send_party_membership(PartyNormalMembership&,std::span<const std::uint8_t>,PartyMembershipSendWorld&);
+// Recovered allocation/copy shared by party broadcast and direct roster send.
+PartyMembershipSendBuffer* allocate_party_membership_send_buffer(std::span<const std::uint8_t>,PartyMembershipSendWorld&);
 // Original InterlockedDecrement / SPacketBufferSend::Free boundary 00445659.
 void release_party_membership_buffer(PartyMembershipSendBuffer&,PartyMembershipSendWorld&);
 }

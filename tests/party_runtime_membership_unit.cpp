@@ -1,4 +1,4 @@
-#include "eternity/game/party_runtime_membership_send.hpp"
+#include "eternity/game/party_runtime_membership_user_send.hpp"
 #include <fstream>
 #include <iostream>
 #include <sstream>
@@ -9,12 +9,12 @@ namespace {
 void check(bool ok) {if(!ok) throw std::runtime_error("Invalid membership fixture or lock state");}
 void append(Bytes& p,std::uint32_t n) {for(unsigned i=0;i<4;++i) p.push_back(static_cast<std::uint8_t>(n>>(i*8)));}
 Bytes unhex(const std::string& s) {Bytes p;if(s=="-")return p;for(std::size_t i=0;i<s.size();i+=2)p.push_back(static_cast<std::uint8_t>(std::stoul(s.substr(i,2),nullptr,16)));return p;}
-struct World final:PartyMembershipSendWorld {
+struct World final:PartyMembershipUserSendWorld {
     PartyNormalMembership p;
     std::array<PartyMembershipUser,8> users;
     Bytes events;
     unsigned depth{};
-    bool real_type{},real_send{},buffer_active{};
+    bool real_type{},real_send{},real_user_send{},buffer_active{};
     PartyMembershipSendBuffer send_buffer;
     std::array<bool,8> effect_locks{};
     std::uint32_t now{};
@@ -39,7 +39,8 @@ struct World final:PartyMembershipSendWorld {
     PartyMembershipSendBuffer* allocate_send_buffer(std::uint16_t capacity) override {check(real_send && !buffer_active);buffer_active=true;Bytes bytes;append(bytes,capacity);event('A',bytes);return &send_buffer;}
     void free_send_buffer(PartyMembershipSendBuffer& buffer) override {check(buffer_active && &buffer==&send_buffer && buffer.references==0);buffer_active=false;Bytes bytes;append(bytes,0);event('B',bytes);}
     void enqueue_send(PartyMembershipUser& user,PartyMembershipSendBuffer& buffer) override {check(buffer_active && &buffer==&send_buffer && depth>0);auto bytes=id(user);append(bytes,buffer.references);bytes.insert(bytes.end(),buffer.frame.begin(),buffer.frame.end());event('E',bytes);release_party_membership_buffer(buffer,*this);}
-    void send_user(PartyMembershipUser& user,const Bytes& packet) override {check(depth>0);auto b=id(user);b.insert(b.end(),packet.begin(),packet.end());event('U',b);}
+    void send_user(PartyMembershipUser& user,const Bytes& packet) override {check(depth>0);auto b=id(user);b.insert(b.end(),packet.begin(),packet.end());event('U',b);if(real_user_send)PartyMembershipUserSendWorld::send_user(user,packet);}
+    void close_send_socket(PartyMembershipUser&,std::int32_t) override {check(false);}
     std::uint8_t party_type(PartyMembershipUser& user) override {
         const std::uint8_t type=real_type?PartyMembershipWorld::party_type(user):!user.party?0:(p.count>0 && p.slots[static_cast<std::size_t>(p.leader)]==&user)?2:1;
         auto b=id(user);append(b,type);event('Y',b);return type;
@@ -53,12 +54,12 @@ struct World final:PartyMembershipSendWorld {
 }
 int main(int argc,char** argv) {
     try {
-        check(argc>=2 && argc<=4);bool real_type=false,real_send=false;
-        for(int i=2;i<argc;++i) {const std::string flag=argv[i];check(flag=="--real-party-type" || flag=="--real-party-send");if(flag=="--real-party-type")real_type=true;else real_send=true;}
-        real_type=real_type || real_send;std::ifstream input(argv[1]);check(input.good());std::string line;unsigned cases=0;
+        check(argc>=2 && argc<=5);bool real_type=false,real_send=false,real_user_send=false;
+        for(int i=2;i<argc;++i) {const std::string flag=argv[i];check(flag=="--real-party-type" || flag=="--real-party-send" || flag=="--real-user-send");if(flag=="--real-party-type")real_type=true;else if(flag=="--real-party-send")real_send=true;else real_user_send=true;}
+        real_send=real_send || real_user_send;real_type=real_type || real_send;std::ifstream input(argv[1]);check(input.good());std::string line;unsigned cases=0;
         while(std::getline(input,line)) {
             if(line.empty() || line[0]=='#')continue;
-            World world;world.real_type=real_type;world.real_send=real_send;unsigned operation,target;char tag;
+            World world;world.real_type=real_type;world.real_send=real_send;world.real_user_send=real_user_send;unsigned operation,target;char tag;
             std::istringstream row(line);row>>tag>>operation>>world.p.count>>world.p.leader>>world.p.item_cursor>>world.p.experience.experience_level>>world.p.id>>world.now>>target;check(tag=='C' && static_cast<bool>(row));
             for(unsigned i=0;i<8;++i) {
                 check(static_cast<bool>(std::getline(input,line)));std::istringstream user_row(line);auto& user=world.users[i];unsigned job,zone,guild,count;

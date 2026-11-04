@@ -14,6 +14,7 @@ struct PartyMembershipEffect {
 };
 struct PartyMembershipUser {
     std::uint32_t id{};
+    std::uint32_t send_error{},send_error_detail{}; // SConnection +0x18/+0x1c, semantics beyond Send unresolved
     std::int32_t send_socket=-1; // SConnection +0x68; only -1 is disconnected
     std::string name; // original capacity 21, including terminator
     std::uint16_t level{}, hp{}, maximum_hp{}, mp{}, maximum_mp{}, sp{}, maximum_sp{}, instance{};

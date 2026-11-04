@@ -8,7 +8,8 @@ from unicorn.x86_const import UC_X86_REG_EAX, UC_X86_REG_EBX, UC_X86_REG_ECX, UC
 
 
 def main():
-    real_send = '--real-party-send' in sys.argv[1:]
+    real_user_send = '--real-user-send' in sys.argv[1:]
+    real_send = real_user_send or '--real-party-send' in sys.argv[1:]
     real_type = real_send or '--real-party-type' in sys.argv[1:]
     cpu, digest = load_game()
     base = 0x30000000
@@ -39,6 +40,7 @@ def main():
                         0x48a330:4, 0x4208c0:12, 0x45b0d0:0, 0x4d4e50:8, 0x505316:0}.items():
         if at == 0x48a330 and real_type: continue
         if at == 0x4455d0 and real_send: continue
+        if at == 0x4d4d20 and real_user_send: continue
         cpu.mem_write(at, b'\xc2' + struct.pack('<H', cleanup))
     put(0x5210cc, lock); put(0x5210d0, unlock); put(0x5210e4, tick)
     if real_send:
@@ -61,6 +63,7 @@ def main():
             length = struct.unpack('<H', cpu.mem_read(frame, 2))[0]
             event('E', struct.pack('<2I', identity(get(sp + 4)), get(buffer + 8)) + bytes(cpu.mem_read(frame, length)))
             put(buffer + 8, get(buffer + 8) - 1) # explicit synchronous completion provider
+            if get(buffer + 8) == 0: event('B', struct.pack('<I', 0))
         elif at == tick:
             event('K'); machine.reg_write(UC_X86_REG_EAX, context['tick'])
         elif at in (lock, unlock):
@@ -99,6 +102,7 @@ def main():
     print(f'# ps_game.exe SHA256 {digest}; full EnterNormalParty 00445fe0 / LeaveNormalParty 00446960 and real ChkPartyExpByLevel 00444d80. Ports: clock, locks, transport, GetPartyType, log context, party manager unregister block 00446a37..00446a7d, guild creation cleanup block 00446ac1..00446bae. Fixture stack initialized to zero, including unspecified name padding.')
     print('# GetPartyType mode:', 'real original body' if real_type else 'observed external port')
     print('# CParty::Send mode:', 'real original allocation/fan-out/connection bodies; pool/worker ports' if real_send else 'observed external port')
+    print('# Direct roster send mode:', 'real original body, initial reference transferred to worker' if real_user_send else 'observed external port')
     print('# C operation count leader cursor old_max party_id tick target; 8 U user projections/effects; R success state_hex events_hex')
     for case in range(512):
         cpu.mem_write(base, bytes(0xfd000))

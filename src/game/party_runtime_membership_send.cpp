@@ -5,11 +5,11 @@ namespace eternity::game {
 void release_party_membership_buffer(PartyMembershipSendBuffer& buffer,PartyMembershipSendWorld& world) {
     if(buffer.references.fetch_sub(1,std::memory_order_seq_cst)==1) world.free_send_buffer(buffer);
 }
-void send_party_membership(PartyNormalMembership& party,std::span<const std::uint8_t> payload,PartyMembershipSendWorld& world) {
+PartyMembershipSendBuffer* allocate_party_membership_send_buffer(std::span<const std::uint8_t> payload,PartyMembershipSendWorld& world) {
     if(payload.size()>2046) throw std::length_error("Party send exceeds original buffer capacity");
     const std::uint16_t capacity=payload.size()<31?32:payload.size()<127?128:2048;
     auto* buffer=world.allocate_send_buffer(capacity);
-    if(!buffer) return;
+    if(!buffer) return nullptr;
     buffer->capacity=capacity;
     buffer->references.store(1,std::memory_order_seq_cst);
     buffer->custom_references=0;
@@ -18,6 +18,11 @@ void send_party_membership(PartyNormalMembership& party,std::span<const std::uin
     buffer->frame[0]=static_cast<std::uint8_t>(length);
     buffer->frame[1]=static_cast<std::uint8_t>(length>>8);
     for(std::size_t i=0;i<payload.size();++i) buffer->frame[i+2]=payload[i];
+    return buffer;
+}
+void send_party_membership(PartyNormalMembership& party,std::span<const std::uint8_t> payload,PartyMembershipSendWorld& world) {
+    auto* buffer=allocate_party_membership_send_buffer(payload,world);
+    if(!buffer) return;
     world.lock(party);
     // Kind is selected once, but count/slots are reread after each enqueue.
     if(party.experience.kind<=1) {
