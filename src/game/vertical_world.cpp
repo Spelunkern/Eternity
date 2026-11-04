@@ -4,8 +4,8 @@
 namespace eternity::game {
 std::unique_ptr<VerticalWorld> VerticalWorld::create(std::shared_ptr<ServerMaps> maps,
     MobZoneServicesInputs inputs, std::unique_ptr<MobPool> pool, MobPrimaryZoneTransport transport, VerticalWorldPorts ports) {
-    if (!pool || &inputs.pool != pool.get() || ports.init != &inputs.init)
-        throw std::invalid_argument("World requires the same bound mob pool and Init ports");
+    if (!pool || &inputs.pool != pool.get())
+        throw std::invalid_argument("World requires the same bound mob pool");
     auto services=MobZoneServices::create(std::move(inputs));
     return create(std::move(maps),std::move(services),std::move(pool),std::move(transport),std::move(ports));
 }
@@ -16,7 +16,7 @@ std::unique_ptr<VerticalWorld> VerticalWorld::create(std::shared_ptr<ServerMaps>
 }
 VerticalWorld::VerticalWorld(std::shared_ptr<ServerMaps> maps,std::shared_ptr<MobPrimaryZones> zones,VerticalWorldPorts ports)
     :maps_(std::move(maps)),zones_(std::move(zones)),ports_(std::move(ports)) {
-    if(!maps_ || !zones_ || !ports_.attach_obelisks || !ports_.init || !ports_.linked_world || !ports_.frame || !ports_.reset_tick)
+    if(!maps_ || !zones_ || !ports_.attach_obelisks || !ports_.frame || !ports_.reset_tick)
         throw std::invalid_argument("World requires maps, primary authority and real lifecycle providers");
 }
 bool VerticalWorld::start() {
@@ -44,15 +44,7 @@ void VerticalWorld::frame(std::uint32_t now) {
     for(std::size_t i=0;i<maps_->size();++i) if(maps_->all()[i].settings.create_type==0) {
         auto lease=zones_->lease(i);
         if(!lease) throw std::runtime_error("Primary zone unavailable during frame");
-        lease.visit([&](RuntimeZone& zone){
-            zone.update_mob_population(zones_->mob_pool(),*ports_.init,now,
-                [&](std::uint32_t t){if(!zones_->tick(i,t)) throw std::runtime_error("Primary obelisk timer unavailable");},
-                [&](std::uint32_t t){
-                    if(!zone.linked_mobs || !zone.map || !zone.mobs) throw std::logic_error("Missing linked population");
-                    zone.linked_mobs->update(zone.map->definition,*zone.mobs,zones_->mob_pool(),*ports_.init,t,ports_.linked_world(zone));
-                });
-            ports_.frame(zone,now);
-        });
+        lease.visit([&](RuntimeZone& zone){ports_.frame(zone,now);});
     }
 }
 bool VerticalWorld::shutdown() {

@@ -115,12 +115,19 @@ int main(int argc,char** argv) {try {
     auto f=std::make_shared<Frame>(maps);std::shared_ptr<MobPrimaryZones> root;unsigned frames=0;
     MobPrimaryZoneTransport transport{[&](const eternity::net::Packet&){++f->stats->db;},[&](const eternity::net::Packet&){++f->stats->world;},[&](const ConfiguredMap&,ZoneMobs&,const eternity::net::Packet&){++f->stats->map;}};
     LinkedFixture linked;
-    VerticalWorldPorts ports{[&](MobPrimaryZones&){attach(f,root);},&f->init,[&](RuntimeZone&)->LinkedMobWorld&{return linked;},[&](RuntimeZone& z,std::uint32_t now){check(z.mobs && now==77);++frames;},[]{return 100U;}};
-    auto world=VerticalWorld::create(maps,std::shared_ptr<ZoneServices>(f,&f->backend),std::move(f->pool),transport,ports);root=world->zones();check(world->start());world->frame(77);check(frames==2);
+    VerticalWorldPorts ports{[&](MobPrimaryZones&){attach(f,root);},[&](RuntimeZone& z,std::uint32_t now){
+        check(z.mobs && now==5077);std::size_t id=z.map==&maps->all()[0]?0:1;
+        if(id==0) check(f->records->records(0)[0].spawns[0].members[0]==nullptr);
+        z.update_mob_population(root->mob_pool(),f->init,now,
+            [&](std::uint32_t t){check(root->tick(id,t));},
+            [&](std::uint32_t t){z.linked_mobs->update(z.map->definition,*z.mobs,root->mob_pool(),f->init,t,linked);});
+        ++frames;
+    },[]{return 100U;}};
+    auto world=VerticalWorld::create(maps,std::shared_ptr<ZoneServices>(f,&f->backend),std::move(f->pool),transport,ports);root=world->zones();check(world->start());root->serialized([&]{auto* mob=f->records->records(0)[0].spawns[0].members[0];check(mob && f->router->remove(0,mob->id));});world->frame(5077);check(frames==2 && f->records->records(0)[0].spawns[0].members[0]);
     auto held=root->lease(0);check(!world->shutdown());held.reset();check(world->shutdown());check(world->shutdown());
     bool rejected=false;try{world->frame(77);}catch(const std::logic_error&){rejected=true;}check(rejected);
     auto f2=std::make_shared<Frame>(maps);
-    VerticalWorldPorts fail{[](MobPrimaryZones&){throw std::runtime_error("attach failed");},&f2->init,[&](RuntimeZone&)->LinkedMobWorld&{return linked;},[](RuntimeZone&,std::uint32_t){},[]{return 100U;}};
+    VerticalWorldPorts fail{[](MobPrimaryZones&){throw std::runtime_error("attach failed");},[](RuntimeZone&,std::uint32_t){throw std::logic_error("unexpected frame");},[]{return 100U;}};
     auto failed=VerticalWorld::create(maps,std::shared_ptr<ZoneServices>(f2,&f2->backend),std::move(f2->pool),transport,fail);auto root2=failed->zones();rejected=false;try{failed->start();}catch(const std::runtime_error&){rejected=true;}check(rejected && failed->shutdown() && root2->mob_pool().available()==root2->mob_pool().size());
     std::cout<<"World startup, frame, deferred shutdown and startup cleanup passed\n";
 } catch(const std::exception& e){std::cerr<<e.what()<<'\n';return 1;}}

@@ -3,12 +3,11 @@
 #include "eternity/game/mob_zone_services.hpp"
 
 namespace eternity::game {
-// The caller owns the real frame implementation and stops all producers before
-// shutdown. The callback runs under the same primary-zone serialization as leases.
+// The callback owns the entire primary-zone frame, including the one population
+// pass. Invoke it once per zone per scheduler frame under the existing lease.
+// The caller stops all producers before shutdown.
 struct VerticalWorldPorts {
     std::function<void(MobPrimaryZones&)> attach_obelisks;
-    MobInitPorts* init=nullptr;
-    std::function<LinkedMobWorld&(RuntimeZone&)> linked_world;
     std::function<void(RuntimeZone&, std::uint32_t)> frame;
     std::function<std::uint32_t()> reset_tick;
 };
