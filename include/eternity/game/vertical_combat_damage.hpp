@@ -11,7 +11,7 @@ public:
 // Retain the actor, mob, mob definition, RNG, element table and zone through
 // the complete synchronous call. The zone must own the same actor position;
 // the table is the actual 9x9 CGameData::m_AttackAttr owner, not a guessed table.
-// Only normal melee/ranged calls (null skill) are supported. A missing retained
+// Normal melee/ranged/magic calls (null skill) are supported. A missing retained
 // ranged position or negative matrix index is rejected where it is needed.
 bool vertical_combat_normal_damage(Actor&,MobRuntime&,unsigned kind,RandomSource&,
     ZoneUsers&,VerticalCombatRangedPassive&,std::span<const float,81> elements,std::array<std::int32_t,3>& damage);
@@ -25,7 +25,7 @@ struct VerticalCombatSkillDamageInputs {
     std::span<const std::int32_t> attack_recovery; // HP, SP, MP
 };
 // Skill AttackDamage 0044d540 modes 0..5 and other-mode fallback. Melee/ranged
-// weapon branches are supported; magic weapon branches fail explicitly.
+// and magic weapon branches are supported.
 // No hit, death, item option or network effects are supplied here.
 bool vertical_combat_skill_damage(Actor&,MobRuntime&,unsigned kind,RandomSource&,
     ZoneUsers&,VerticalCombatRangedPassive&,std::span<const float,81>,
