@@ -1089,3 +1089,33 @@ Revieweda14f20d/a84f256 CalculateParam value-only subset privatecapacity20stack/
 ## Eighteenth retry validated; PvP helper reviewed
 
 Session17870 exited0:build282/282tests90.26s/fullisolatedSQL/fullcatalog/realstreamSQL passed49f51f1. Preserve initial281/282failure in eighteenth-batch logs;passing eighteenth-retry logs. Freeze released. Reviewed945a074/40df026 completePvPGetDeathType8192originalcases133/133tests40.55s+sanitizers reported. Actualidentity/asymmetricsubjectduelbeforeguild/rawIDs;forcedPvPDeath branch differsandstillmissing. ActualPvPowner/root/rewardcontinuationrequired;do notrerunpublishedDeathprefix. Exactcommitsqueued,newdeliveriesexcludedfrom282validation.
+
+## Reviewed worker09 798706a7 — argument vectors and F_OUT
+
+Reviewede97c5bc/c515f94 ownedargumentvector/actualdispatch/F_OUTcopyback viaembeddedVariableID,sameFSMmap;livepostcallbackmetadata reread and outputbefore resultpush.1920originalexecutions5721arguments150/150tests52.41s reported. Providersmustnotretainvectorrefs;perownerSysFuncMapcounts/CKFunctionParammetadata+90/+48subject factorybindingrequired. Missingtargets/undefinedfirstargument expliciterrors. CalculateParamoperators/nestedcalls/worldhandlers/factory/rootremainopen. Exactcommitsqueued,latestvalidatedpublisheda24001b.
+
+## Reviewed worker08 14c740f8 — forced/unforced Death route
+
+Reviewed31c98fa/cfd35c5 boundedplayerDeathroute16384originalcomparisons134/134tests39.87s+ASAN/UBSAN afternativeomittedunforcedspecialpenaltywrite corrected;initial133/134andassertionabort preserved. Importantcorrection: Actor::relations alreadyowns duel_state/opponent/guild/opposingguild,priorreportedPvPfieldgapwaswrong;no newfieldsneeded. ActualActor adapter reads sameowner,requiresnonnullretainedattacker afteroneDeathprefix/GetMax/lookup;forced/unforcedspecialpenalty-1 semantics retained. PvPChkLoseDeath/rewards/fullcontinuation/root remainopen. Exactcommitsqueued,lastvalidateda24001b.
+
+## Nineteenth batch integrated/sourcefreeze
+
+Reviewed6ab5cc4/bcdbc69 int/DWORDCalculateParamexpressions private20stack/sharedcursor,vectors/F_OUT;4095direct1920fulloriginalcalls152tests47.48s reported. Assignment/float/nested/worldhandlers stillopen. Integratedreviewedqueue through 4bbe21740b7a850640a670135455b202fa9098c1 including raidinvites,UseSkill,ordinaryDeath/PvProutes,VMsystem/argumentpipeline. NPCdeathfixture conflict manually resolved to incoming mandatoryDBtransport+ordering assertions using canonicalheadercapability;CMakeconflicts combined/nesting audited. Freeze during .local/nineteenth-batch-{build,tests,sql,bindings-sql,stream-sql}.log. Latestvalidateda24001b,newbatchunvalidated.
+
+## Reviewed worker01 310b79ba — complete eligibility coordination
+
+Revieweda0db59e/83333c4 equipment/shield originalrealtypebyteindex and cost->equipment->readiness1344originalcomparisons14nativecompositions142/142tests43.08s reported. SameActorretained_inventory_item bag0slot5/6 requiredcentrally;nonemptyvalue-onlymirror musterror,notabsence. Fulluserdefinition16weaponbytes/statetype/rawpadding source required;no inventedpermissions. Gameplayaction/spending/rootproviders remainopen,workerproposesSendUseSPMP. Exactcommitsqueued during nineteenthfreeze;buildrunning.
+
+## Reviewed worker03 a1e4d715 — retained primary-zone owner
+
+Reviewedd4ea8e5/9a5aabe retainedfacade SAMEZoneRegistry, serializedleases,startup/obelisktimer/reset/drain/reopen.137/137tests44.83s,4focusedASANUBSANcompositions reported;linkedarchivesnormalnotfullyinstrumented. Retiredactualregular/linkedpopulationsretainedthroughpooldestruction;allprimariesmustcompletedrainbeforelastrootrelease,leasesprotectzone not recycledactoridentity. ActualZoneServicesfactory/partialInitrelease/AI/Lua/catalog/clocks/KC/transports andmainstartup/frame/shutdownstillmissing. Exactcommitsqueued during nineteenthfreeze;344actionbuildpassed.
+
+Reviewed4c1a2fc doc-onlyprimaryownercheckpoint,no newexecution. Explicit03newscope concreteZoneServices/RuntimeZonefactory usingactualcanonicalowners,partialInit/release/reopen,requiredrealbackends retainedinputs,no no-opdefaults/secondregistry. New mob_zone_services prefix;main remainscoordinator-owned. Nineteenth292test suite running/sourcefreeze active.
+
+## Reviewed worker01 9e2cc739 — skill spending transition
+
+Reviewedf42b478/c5b4eb8 SP/MPdebitandself050c4096wholeoriginalnopartyexecutions143/143tests35.43s reported. Cost1usescurrentrawsignedresource sentinel,bothcostcalculationsstillrun,clampednonnegativerequests/strictsignedresourcecomparison/WORDdeltas. ActualActorrawresourcesbinding and group-tail callbacks/locks/live membership stillrequired;notfullspendingservice. Workercontinues nonnullgroup originaltraces. Exactcommitsqueued during nineteenthfreeze;292/292tests91.11s passed,SQLpipelinepending.
+
+## Nineteenth batch validated; PvP loss reviewed
+
+Session49796 exited0:build292/292tests91.11s/fullisolatedSQL/fullcatalog/realstreamSQL passed4bbe217. Logs.local/nineteenth-batch-*.log. Freeze released. Reviewede8f1f1b/56125c6 completePvPChkLoseDeath2064originaltraces16reentrant135/135tests+sanitizers/canonicalsameledger0902reported. Realbilling+578c mustnotaccount/entityID,guildPvPUserLeavereason3 notnormaldisconnect,actualwager/locks/transportsrequired. Ordinaryplayerrewards/fullsingleDeathcontinuation remainopen. Exactcommitsqueued,newdeliveriesexcludedfrom292validation.
