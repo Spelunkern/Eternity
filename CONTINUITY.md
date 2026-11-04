@@ -1436,3 +1436,12 @@ while still waiting for its build lock because source changed; no container had
 started. New focused test session 68410 is queued with the revised source. This
 is not merged, not yet validated and not bound to WorldAdmission. The owner must
 handle closed connections and schedule the acknowledgment onto its world executor.
+
+Independent 05 `.local/vertical-mobs-final-test.log` shows 304/304 and its
+`.local/vertical-mobs-final-sql.log` reports the complete isolated SQL suite.
+The idle/death frame candidate through `ea27be2` remains unintegrated; live
+shared cursor/actual providers are being developed separately. 02 now drafts a
+single whole-frame callback, so coordinator asked 02 and 05 to demonstrate one
+lease/tick and exact idle -> death -> population order in actual composition,
+not infer it from an empty callback. Main 53983 and ingress 68410 both remain
+live waiting on shared validation slots.
