@@ -550,3 +550,62 @@ remain open. No SQL access/contracts changed; coordinator retains final isolated
 SQL integration/lifecycle. The server is not playable.
 
 Implementation commit: `295840f87eaafdc6380e118955574f0bb8e0957e`.
+
+## Milestone 9 — typed local owner and configured reset composition
+
+Evidence: ps_game.exe AI_Param constructor 0048fa30, CAIFactory::ClearVariable
+004a9840, CMob::ResetFSM 00492310 and onResetUser 004b05b0; map insertion helper
+0049b7e0 confirms partial initialization. Focused serialized Ghidra exports are
+under `work/exports/09-mob-events/ps_game.exe`. Originals remain unchanged.
+
+Added retained typed AI_Param values directly to the existing configurable FSM
+owner (no new canonical MobRuntime projection). The native parameter preserves
+independent type/int/float/DWORD/VariableID/text fields, including all 128 text
+bytes. Constructor behavior zeros only numeric payload and VariableID, retaining
+type/text. ClearVariable selects definition locals by AI index, preserves missing
+catalog/null slot/nonpositive count behavior, and visits duplicate IDs in order.
+Only the ID comes from the definition: clearing follows the CURRENT value's type,
+never restores definition defaults, and preserves other payloads/string tails.
+Void/function/unknown types remain untouched; extra unlisted locals remain.
+
+ResetFSM enables all four attack types, clears battle/attacked and target kind /
+ID, sets status 100, clears variables and enters the live start code through the
+actual configurable owner. Entry callback writes survive; there is no post-entry
+status/target restoration. onResetUser clears only battle/attacked and target
+when vision_fixed_user is zero, retaining status, attack flags and moment flag.
+
+### Validation
+
+- `python3 tools/dev.py build`: exit 0, no compiler warnings;
+  `work/mob_ai_states_parameters-build.log`.
+- `python3 tools/dev.py test`: exit 0, all 128 tests pass (31.04 s), including
+  `mob-ai-states-parameters-unit` (0.14 s) and all previous worker suites;
+  `work/mob_ai_states_parameters-tests.log`.
+- 768 original clear/reset/user-reset paths plus 64 original retained constructor
+  payloads; complete byte comparisons, native map ownership and configured state
+  entry composition. Inputs include every supported/unsupported type, duplicate /
+  wide IDs, missing catalogs, signed nonpositive counts, retained float bits and
+  text tails, vision gate and callback mutations. Oracle regenerated identically.
+- Original hash and diff checks completed; no SQL access/contracts changed.
+  Final shared isolated SQL integration remains coordinator work.
+
+### Factory boundary / required integration
+
+Original missing-map insertion only zeroes int/float/DWORD/VariableID; its type
+and text come from uninitialized stack storage (0049b7e0 and 0048fa30). Native
+parameters therefore require an explicit type, and ClearVariable rejects missing
+local entries rather than invent those bytes. Negative AI indices and declared
+counts exceeding retained definition storage are also explicit host errors.
+The factory must populate every referenced typed local before reset. This limit
+is tested and must not be described as original missing-entry behavior.
+
+Coordinator must retain this variables map with each configured FSM (+ac), and
+bind catalog AI-index slots / local count +21c / local vector +224. Each 148-byte
+local contributes its VariableID at +10. Existing template.ai supplies the byte
+index read by ResetFSM. No shared canonical headers/loaders were edited here.
+Named binding/factory loading and TravelCondition token interpretation remain
+next independent work; native values are now available to that interpreter.
+World/Lua callbacks, destruction and production scheduling remain unconnected.
+The server is still not playable.
+
+Implementation commit: `55a91cd7b3d70fc6d0902106949c8207f7cc5a23`.
