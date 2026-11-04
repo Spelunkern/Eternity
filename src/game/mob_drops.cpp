@@ -1,4 +1,5 @@
 #include "eternity/game/mob_drops.hpp"
+#include "eternity/game/mob_drops_range.hpp"
 #include <bit>
 #include <charconv>
 #include <stdexcept>
@@ -61,12 +62,7 @@ std::int32_t original_int(float value) {
     return static_cast<std::int32_t>(value);
 }
 std::int32_t add_wrap(std::int32_t a,std::int32_t b) {return std::bit_cast<std::int32_t>(static_cast<std::uint32_t>(a)+static_cast<std::uint32_t>(b));}
-bool money_range(const MobLootUser& user,const MobLootUser& credited) {
-    if(user.dead==1 || user.state!=4 || user.map!=credited.map || user.instance!=credited.instance) return false;
-    const float dx=user.x-credited.x,dz=user.z-credited.z;
-    const float distance=static_cast<float>(std::sqrt(static_cast<double>(dx)*dx+static_cast<double>(dz)*dz));
-    return distance<=100.0F;
-}
+
 }
 void mob_loot(const MobLootContext& mob,MobLootUser* user,MobLootParty* party,RandomSource& random,ServerRandom& server,MobLootWorld& world) {
     std::uint32_t owner=0;
@@ -113,7 +109,7 @@ void mob_loot(const MobLootContext& mob,MobLootUser* user,MobLootParty* party,Ra
     for(auto* member:party->members) {
         if(!member) throw std::invalid_argument("Original money loop requires non-null party members");
         if(!user) throw std::invalid_argument("Original party money loop requires credited user");
-        if(!money_range(*member,*user)) continue;
+        if(!mob_drop_money_range_enabled(*user,*member)) continue;
         auto bonus=member->money_percent;
         if(member->money_mode==2) bonus=add_wrap(bonus,20);
         else if(member->money_mode==3) bonus=add_wrap(bonus,50);
