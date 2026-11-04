@@ -46,6 +46,7 @@ bool set_leader(PartyRegistryParty& p,std::uint32_t id,PartyMembershipWorld& w) 
 void pinned(const PartyRequestUser& u) {if(!u.lifetime)throw std::invalid_argument("Unretained party request user");}
 bool raid_opcode(std::uint32_t op) {return op>=0xb0e && op<=0xb1a && op!=0xb19;}
 }
+void send_party_request_error(const PartyRequestUser& u,std::uint8_t reason,std::uint32_t id,PartyMembershipWorld& w){error(u,reason,id,w);}
 bool is_party_request_leader(PartyRegistryParty& p,PartyMembershipUser& u,PartyMembershipWorld& w){return leader(p,u,w);}
 PartyMembershipUser* find_party_request_member(PartyRegistryParty& p,std::uint32_t id,PartyMembershipWorld& w){return find_member(p,id,w);}
 void dispatch_party_request(PartyRequestUser self,net::Packet& packet,PartyRequestWorld& world) {

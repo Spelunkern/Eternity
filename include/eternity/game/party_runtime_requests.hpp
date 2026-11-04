@@ -43,6 +43,7 @@ public:
 // invalidate selected party/slot lifetimes; real locks must be recursive.
 // Shared recovered IsPartyBoth 00444e90 and FindUser 00445520 bodies. Find
 // captures array position under lock, then reloads its pointer AFTER unlock.
+void send_party_request_error(const PartyRequestUser&,std::uint8_t,std::uint32_t,PartyMembershipWorld&);
 bool is_party_request_leader(PartyRegistryParty&,PartyMembershipUser&,PartyMembershipWorld&);
 PartyMembershipUser* find_party_request_member(PartyRegistryParty&,std::uint32_t,PartyMembershipWorld&);
 void dispatch_party_request(PartyRequestUser,net::Packet&,PartyRequestWorld&);
