@@ -29,7 +29,7 @@ bool close(ZoneUsers& zone,const Actor& actor,const MobRuntime& mob){
 }
 namespace {
 bool weapon_damage(Actor& actor,MobRuntime& mob,unsigned kind,RandomSource& random,ZoneUsers& zone,VerticalCombatRangedPassive& passive,std::span<const float,81> elements,std::array<std::int32_t,3>& damage,const VerticalCombatSkillDamageInputs* skill){
-    if(kind>1)throw std::invalid_argument("Normal AttackDamage supports melee and ranged only");
+    if(kind>2)throw std::invalid_argument("AttackDamage supports melee, ranged and magic only");
     if(!mob.definition)throw std::invalid_argument("AttackDamage requires retained mob definition");
     vertical_combat_require_float_environment();
 #if defined(__x86_64__) || defined(__i386__)
@@ -115,7 +115,7 @@ bool vertical_combat_skill_damage(Actor& actor,MobRuntime& mob,unsigned kind,Ran
         for(auto& value:damage)if(value>30000)value=30000;
         return false;
     }
-    if(kind>1)throw std::invalid_argument("Skill weapon damage supports melee and ranged only");
+    if(kind>2)throw std::invalid_argument("Skill damage supports melee, ranged and magic only");
     if(mode==1)for(std::size_t i=0;i<3;++i)damage[i]=input.values[i];else damage.fill(0);
     return weapon_damage(actor,mob,kind,random,zone,passive,elements,damage,&input);
 }
