@@ -1543,3 +1543,10 @@ failed 1/305: `vertical-mobs-cursor-unit` reported `Unexpected compiled AI`.
 304 other tests passed. Worker is editing its fixture; coordinator requested
 preserving failure and a focused retry. This does not resolve the separate
 current-mob retention/pool-reuse issue. Candidate remains unintegrated.
+
+Independent 01 `.local/vertical-entry-full-integration.log` explicitly reports
+`Real SQL selection, ownership failure and 0104 latch passed` within the complete
+isolated disposable creation/guild suite. This validates the candidate SQL
+adapter's tested cases, not original retained-roster gating, signed flags, live
+actor/replica composition or production dispatch. Those remain open; worker 01
+has the original 0407 roster evidence. The candidate is not merged.
