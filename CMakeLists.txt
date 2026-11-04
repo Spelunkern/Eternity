@@ -1475,3 +1475,10 @@ if(BUILD_TESTING)
     target_link_libraries(mob-drops-actor-rebirth-bridge-unit PRIVATE eternity_game)
     add_test(NAME mob-drops-actor-rebirth-bridge-unit COMMAND mob-drops-actor-rebirth-bridge-unit)
 endif()
+
+# Worker 09: original float/numeric comparison matrix and x87 conversion behavior.
+if(BUILD_TESTING)
+    add_executable(mob-ai-states-numeric-unit tests/mob_ai_states_numeric_unit.cpp)
+    target_link_libraries(mob-ai-states-numeric-unit PRIVATE eternity_game)
+    add_test(NAME mob-ai-states-numeric-unit COMMAND mob-ai-states-numeric-unit ${CMAKE_CURRENT_SOURCE_DIR}/tests/data/mob_ai_states_numeric-oracle.tsv)
+endif()

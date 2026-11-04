@@ -1,4 +1,4 @@
-#include "eternity/game/mob_ai_states_compare.hpp"
+#include "eternity/game/mob_ai_states_numeric.hpp"
 #include "eternity/game/mob_ai_states_bindings.hpp"
 #include <algorithm>
 #include <bit>
@@ -6,6 +6,7 @@
 #include <stdexcept>
 namespace eternity::game {
 namespace {
+enum class ComparisonMode {none,integer,numeric};
 std::int32_t increment(std::int32_t value){return std::bit_cast<std::int32_t>(static_cast<std::uint32_t>(value)+1U);}
 void assign(MobAiParameter& target,const MobAiParameter& source){
     target.type=source.type;target.integer=source.integer;target.real=source.real;target.dword=source.dword;target.variable_id=source.variable_id;
@@ -30,8 +31,19 @@ bool integer_comparison(const MobAiParameter& first,const MobAiParameter& second
     if(second.type==3)return relation(static_cast<std::uint32_t>(first.integer),second.dword,opcode);
     return relation(first.integer,second.integer,opcode);
 }
+float floating_value(const MobAiParameter& value){
+    if(value.type==1)return static_cast<float>(value.integer);
+    if(value.type==3)return static_cast<float>(value.dword);
+    return value.real;
 }
-static std::int32_t interpret_values(MobAiConfiguredFsm& owner,MobAiConfiguredCondition& condition,bool local_reads,bool comparisons){
+bool numeric_comparison(const MobAiParameter& first,const MobAiParameter& second,std::int32_t opcode){
+    if(first.type<1||first.type>3||second.type<1||second.type>3)throw std::logic_error("Mob AI numeric comparison requires the unrecovered nonnumeric matrix");
+    if(opcode<0||opcode>5||first.type==3)return false;
+    if(first.type==2||second.type==2)return relation(floating_value(first),floating_value(second),opcode);
+    return integer_comparison(first,second,opcode);
+}
+}
+static std::int32_t interpret_values(MobAiConfiguredFsm& owner,MobAiConfiguredCondition& condition,bool local_reads,ComparisonMode comparisons){
     auto& stack=owner.value_stack;
     if(stack.capacity<0||static_cast<std::size_t>(stack.capacity)>stack.slots.size())throw std::logic_error("Mob AI literal stack requires its retained capacity/storage");
     stack.top=-1;condition.words[2]=0;std::uint32_t passed=0;
@@ -60,18 +72,20 @@ static std::int32_t interpret_values(MobAiConfiguredFsm& owner,MobAiConfiguredCo
             if(value==owner.variables.end())throw std::logic_error("Mob AI local read requires a factory-populated typed variable");
             if(value->second.type==4&&std::find(value->second.text.begin(),value->second.text.end(),'\0')==value->second.text.end())throw std::logic_error("Mob AI local string has no retained terminator");
             push(stack,value->second);
-        }else if(token.type==9&&comparisons){
+        }else if(token.type==9&&comparisons!=ComparisonMode::none){
             const auto first=pop(stack);const auto second=pop(stack);
-            if(integer_comparison(first,second,token.opcode))++passed;
+            if(comparisons==ComparisonMode::numeric?numeric_comparison(first,second,token.opcode):integer_comparison(first,second,token.opcode))++passed;
         }else if(token.type==3||token.type==4||token.type==8||token.type==9){
             throw std::logic_error("Mob AI token requires the unrecovered full TravelCondition provider");
         }
         // Kinds outside the dispatch range and original cases 5/6 are ignored.
     }
 }
-std::int32_t interpret_mob_ai_literals(MobAiConfiguredFsm& owner,MobAiConfiguredCondition& condition){return interpret_values(owner,condition,false,false);}
-std::int32_t interpret_mob_ai_local_values(MobAiConfiguredFsm& owner,MobAiConfiguredCondition& condition){return interpret_values(owner,condition,true,false);}
+std::int32_t interpret_mob_ai_literals(MobAiConfiguredFsm& owner,MobAiConfiguredCondition& condition){return interpret_values(owner,condition,false,ComparisonMode::none);}
+std::int32_t interpret_mob_ai_local_values(MobAiConfiguredFsm& owner,MobAiConfiguredCondition& condition){return interpret_values(owner,condition,true,ComparisonMode::none);}
 
-std::int32_t interpret_mob_ai_integer_conditions(MobAiConfiguredFsm& owner,MobAiConfiguredCondition& condition){return interpret_values(owner,condition,true,true);}
+std::int32_t interpret_mob_ai_integer_conditions(MobAiConfiguredFsm& owner,MobAiConfiguredCondition& condition){return interpret_values(owner,condition,true,ComparisonMode::integer);}
+
+std::int32_t interpret_mob_ai_numeric_conditions(MobAiConfiguredFsm& owner,MobAiConfiguredCondition& condition){return interpret_values(owner,condition,true,ComparisonMode::numeric);}
 
 }
