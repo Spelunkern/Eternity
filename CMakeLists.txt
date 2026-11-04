@@ -641,3 +641,11 @@ if(BUILD_TESTING)
     target_link_libraries(mob-combat-attack-unit PRIVATE eternity_game)
     add_test(NAME mob-combat-attack-unit COMMAND mob-combat-attack-unit ${CMAKE_CURRENT_SOURCE_DIR}/tests/data/mob-combat-attack-oracle.tsv)
 endif()
+
+# Worker 09: real compiled combat state update.
+target_sources(eternity_game PRIVATE src/game/mob_ai_states_combat.cpp)
+if(BUILD_TESTING)
+    add_executable(mob-ai-states-combat-unit tests/mob_ai_states_combat_unit.cpp)
+    target_link_libraries(mob-ai-states-combat-unit PRIVATE eternity_game)
+    add_test(NAME mob-ai-states-combat-unit COMMAND mob-ai-states-combat-unit ${CMAKE_CURRENT_SOURCE_DIR}/tests/data/mob_ai_states_combat-oracle.tsv)
+endif()
