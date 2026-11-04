@@ -45,7 +45,7 @@ int main(int argc,char** argv) {
                 const auto restored=restore_quests(player,definitions,tick);
                 require(restored.active.size()==1 && restored.invalid_active==std::vector<std::uint16_t>{0,2} && restored.finished.size()==1 && restored.finished[0].id==1 && restored.finished[0].success==7,"Quest restoration filtering differs");
                 const auto& quest=restored.active[0];
-                require(quest.start_tick==start && quest.packet.end_tick==end && quest.success_tick==success && quest.packet.timed==(maximum!=0) && quest.packet.counters==std::array<std::uint8_t,3>{3,4,5} && quest.success==0 && restored.mob_kill_quests==mob && restored.player_kill_quests==pc,"Original quest restoration differs");++restorations;
+                require(quest.definition==definitions.find(1) && quest.start_tick==start && quest.packet.end_tick==end && quest.success_tick==success && quest.packet.timed==(maximum!=0) && quest.packet.counters==std::array<std::uint8_t,3>{3,4,5} && quest.success==0 && restored.mob_kill_quests==mob && restored.player_kill_quests==pc,"Original quest restoration differs");++restorations;
             } else require(false,"Unknown quest vector kind");
             require(static_cast<bool>(row),"Malformed quest vector");std::string extra;require(!(row>>extra),"Trailing quest vector data");
         }

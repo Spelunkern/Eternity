@@ -6,9 +6,13 @@ class QuestDefinition {
 public:
     std::uint16_t id() const;
     std::string name() const;
+    std::uint16_t minimum_level() const;
     std::uint32_t minimum_minutes() const;
     std::uint32_t maximum_minutes() const;
     std::uint8_t end_type() const {return record_[0x147];}
+    std::uint8_t end_npc_type() const {return record_[0x148];}
+    std::array<std::uint16_t,2> mob_targets() const;
+    std::array<std::uint8_t,2> mob_requirements() const {return {record_[0x15a],record_[0x15b]};}
     // Portable, pointer-free recovered definition fields, including all original requirements/rewards.
     const std::array<std::uint8_t,464>& record() const noexcept {return record_;}
 private:
@@ -30,6 +34,7 @@ struct RestoredQuest {
     QuestPacketEntry packet;
     std::uint32_t start_tick=0,success_tick=0;
     std::uint8_t success=0;
+    const QuestDefinition* definition=nullptr; // Immutable definition owner outlives runtime quests.
 };
 struct RestoredQuests {
     std::vector<RestoredQuest> active;

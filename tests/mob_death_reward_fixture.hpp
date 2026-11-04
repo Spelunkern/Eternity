@@ -10,6 +10,7 @@ struct MobDeathRewardFixture final:eternity::game::MobDeathWorld,eternity::game:
     using Mob=eternity::game::MobRuntime;using User=eternity::game::MobDeathUser;using Party=eternity::game::MobDeathParty;
     User user;Party* group=nullptr;std::vector<char> order;
     std::function<void(User&,std::uint32_t,std::int32_t)> reward;
+    std::function<void(User&,Mob&)> kill;
     std::function<void(const eternity::net::Packet&)> death_packet;
     bool locked=false;
     [[noreturn]] static void unexpected() {throw std::runtime_error("Unexpected mob reward integration service");}
@@ -21,7 +22,7 @@ struct MobDeathRewardFixture final:eternity::game::MobDeathWorld,eternity::game:
     bool in_reward_range(User&,User&,std::int32_t radius) override {if(!locked || radius!=100) unexpected();return true;}
     void add_experience(User& recipient,std::uint32_t source,std::int32_t amount) override {order.push_back('E');reward(recipient,source,amount);}
     void drop_items(Mob&,User* credit,Party* party) override {if(credit!=&user || party!=group || (party && !locked)) unexpected();order.push_back('D');}
-    void quest_kill(User&,Mob&) override {order.push_back('Q');}
+    void quest_kill(User& user,Mob& mob) override {order.push_back('Q');if(kill) kill(user,mob);}
     std::optional<std::int32_t> obelisk_country(Mob&,std::int32_t) override {unexpected();}
     void destroy_obelisk(Mob&,std::int32_t,std::int32_t) override {unexpected();}
     void destroy_linked_group(Mob&,std::int32_t) override {unexpected();}

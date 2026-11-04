@@ -26,8 +26,10 @@ std::uint32_t field(const std::array<std::uint8_t,464>& data,std::size_t offset,
 }
 std::uint16_t QuestDefinition::id() const {return static_cast<std::uint16_t>(field(record_,0,2));}
 std::string QuestDefinition::name() const {const auto end=std::find(record_.begin()+2,record_.begin()+258,0);return std::string(record_.begin()+2,end);}
+std::uint16_t QuestDefinition::minimum_level() const {return static_cast<std::uint16_t>(field(record_,0x102,2));}
 std::uint32_t QuestDefinition::minimum_minutes() const {return field(record_,0x124,4);}
 std::uint32_t QuestDefinition::maximum_minutes() const {return field(record_,0x128,4);}
+std::array<std::uint16_t,2> QuestDefinition::mob_targets() const {return {static_cast<std::uint16_t>(field(record_,0x156,2)),static_cast<std::uint16_t>(field(record_,0x158,2))};}
 QuestDefinitions QuestDefinitions::decode(std::span<const std::uint8_t> data) {
     // ps_game.exe CQuestData::Load 004ca5d0. Preserve every read field without native alignment assumptions.
     Reader input(data);const auto count=input.number();if(count>65535) throw std::runtime_error("Original quest definition count exceeds WORD identifiers");
@@ -61,7 +63,7 @@ RestoredQuests restore_quests(const PlayerSnapshot& player,const QuestDefinition
     RestoredQuests result;
     for(const auto& saved:player.quests) {
         const auto* definition=definitions.find(saved.id);if(!definition) {result.invalid_active.push_back(saved.id);continue;}
-        RestoredQuest quest;quest.packet={saved.id,0,definition->maximum_minutes()!=0,saved.counters};
+        RestoredQuest quest;quest.definition=definition;quest.packet={saved.id,0,definition->maximum_minutes()!=0,saved.counters};
         if(quest.packet.timed) {quest.packet.end_tick=tick+static_cast<std::uint32_t>(saved.delay)*60000U;quest.start_tick=quest.packet.end_tick-definition->maximum_minutes()*60000U;}
         else quest.start_tick=tick-static_cast<std::uint32_t>(saved.delay)*60000U;
         if(definition->minimum_minutes()!=0) quest.success_tick=quest.start_tick+definition->minimum_minutes()*60000U;

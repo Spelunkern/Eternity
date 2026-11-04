@@ -24,14 +24,33 @@ Checkout: /home/franco/Projects/Eternity.
   records. 128 original pools / 2,432 operations and eight destruction scenarios.
   Resumed normal build, all 117 tests and complete isolated SQL integration exit 0.
   Earlier full 117-test ASAN/UBSAN log is also clean.
-- New validated implementation: CMob::Death coordinator, original experience
+- 90690a4: published CMob::Death coordinator, original experience
   rates, credited solo/party/raid reward ordering, exactly-once obelisk/linked
   accounting, logging boundary, member removal, damage reset before skill cleanup.
   World reward/drop/quest/skill bodies are required providers, not default no-ops.
   Native actor test composes a real level transition; SQL test uses restored mob
   1 Exp=704, base reward=844 and final solo award=1,012.
 
+- New validated mob-quest implementation: definition bindings, mob-target index,
+  stable minimum-level ordering and duplicate suppression; live kill counters,
+  exact DB/client packets and required QuestEnd boundary. 128 original index
+  fixtures and 512 complete original kill updates compose native mob death and
+  the real QuestReplica. Full SQL/asset comparison matches 2,747 mob slots,
+  1,720 quests and the complete 11,984-byte index (498 references).
+
 ## Latest validation
+
+Current mob-quest checkpoint:
+
+- `.local/mob-quests-final-build.log`: exit 0, no compiler warnings.
+- `.local/mob-quests-focused-final.log`: all four relevant tests pass.
+- `.local/mob-quests-test.log`: exit 0, all 119 native tests pass (35.95 s).
+- `.local/mob-quests-sanitized.log`: exit 0, all 119 ASAN/UBSAN tests pass (70.56 s).
+- `.local/mob-quests-integration.log`: complete isolated SQL integration exit 0,
+  including the full original mob/quest index and disposable guild cleanup.
+- Original EXE/PDB hashes verified again. No checks remain pending.
+
+Previous death checkpoint:
 
 - `.local/mob-death-final-build.log`: exit 0, no compiler warnings.
 - `.local/mob-death-final-test.log`: exit 0, all 118 tests passed (34.16 s).
@@ -54,8 +73,11 @@ share execute; world/reward bodies are observed ports. Cases include original an
 changed static rates, 0..31 members, callback-driven member/party updates, tied and
 aggregate credit, missing users, signed boundaries and ownership precedence.
 
-Next: reconstruct mob-kill quest progress and its definition-to-mob index, then
-complete drop/skill/log providers and connect production combat/world owners.
+Next: reconstruct QuestEnd (0047ec40), then complete drop/skill/log providers
+and connect production combat/world owners. Kill counters/indexing are now
+implemented, but QuestEnd reward/removal and the production quest owner are not.
+The original kill-progress minimum-time gate is now <= success_tick, not >=;
+QuestEnd has its own minimum-time check. Preserve both source contracts.
 Do not mistake the coordinator's tests for finished rewards or playable gameplay.
 
 Ghidra exports (ignored):
@@ -69,9 +91,15 @@ Ghidra exports (ignored):
 - `work/mob-kill-quests/ps_game.exe`: QuestUpdateKillMOB 00480140. Original lookup
   is QuestFind 0047e4b0; completion is QuestEnd 0047ec40 (still unreconstructed).
 - `work/reverse/ps_game.exe` has the full original decompilation/disassembly:
-  CMobQuestData::Init 004c9ed0 builds positional quest links, allows duplicate
-  targets, and guards the second target by the FIRST target's nonzero ID.
+  CMobQuestData::Init 004c9ed0 builds positional quest links and guards the
+  second target by the FIRST target's nonzero ID. AddEnd 004c9310 deduplicates
+  quest IDs and sorts by minimum level, preserving ties. Identical targets still
+  advance both counter slots during progress; the index contains the quest once.
   Original mob count comes from usp_Read_MobMaxID_R + 1, not a guessed constant.
+- `work/mob-quest-links/ps_game.exe`: original Init/GetQuestLink/AddEnd evidence.
+  `tools/mob_quest_oracle.py --sql-mobs work/mob-quest-sql-definitions.json`
+  regenerates synthetic and full distribution fixtures. The ignored JSON is a
+  read-only MobID/Level/HP snapshot; use original MobMaxID_R + 1 as its count.
 - `work/mob-death-rewards/ps_game.exe`: ItemDrop 004a5ea0/004a65a0,
   ClearApplySkill 004a0990 and SendLogBothMob 004a1810, still missing providers.
 - `work/mob-damage-ownership` / `work/damage-list-release`: constructor/init,

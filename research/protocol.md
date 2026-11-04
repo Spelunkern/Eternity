@@ -2946,3 +2946,38 @@ that update member levels/party state. Native composition also drives a real
 Actor level transition and uses restored SQL mob/curve/status definitions for
 a 1,012-point solo award. Full drop/quest/skill providers, live combat dispatch,
 obelisk ownership and production scheduling still require reconstruction.
+
+
+`MobQuestLinks::build` follows `CMobQuestData::Init` (`ps_game.exe`, `004c9ed0`)
+and `stQuestLink::AddEnd` (`004c9310`). It indexes end-type-2 quests by the
+original MobMaxID_R + 1 count and valid runtime mob definitions. Quest IDs are
+one-based definition positions, independently of the row's embedded ID. The
+second target is guarded by the FIRST target's nonzero value, even when that
+first target is invalid. AddEnd suppresses repeated quest IDs and inserts by
+ascending minimum level, preserving source order on ties. Two identical mob
+targets therefore produce one index entry, while progress still visits both
+counter slots.
+
+`update_mob_kill_quests` follows `CUser::QuestUpdateKillMOB` (`00480140`). A
+positive owned-mob-quest count and a valid nonzero mob index precede a single
+clock read. Each linked quest is found live, must have end type 2, and accepts
+the source's unsigned now <= success_tick gate when minimum time is nonzero.
+Each matching counter below 255 increments, then emits DB 0a05 (user DWORD,
+quest WORD, slot BYTE, count BYTE) before client 0905 (quest/slot/count).
+Progress does not clamp at the required count. No-NPC quests invoke the required
+QuestEnd provider with selection 0 / success=true after each increment when both
+requirements are met. If that provider unlinks a quest, the current retained
+object is still inspected for its second slot. Later repeated IDs search the
+live owner again. Restored quests now retain their original definition binding.
+
+The 128-index fixture executes complete original construction, constructors and
+AddEnd, including duplicate targets, invalid IDs, sparse mob validity, varied
+minimum levels and positional IDs. The 512-update fixture executes the full
+original progress routine and real QuestFind; ports cover clock, locks,
+DB/client transport and QuestEnd with optional live unlinking. Native comparisons
+compose actual mob death, quest progression and QuestReplica packet application.
+The complete original quest loader and mob index also execute against all 1,720
+distribution quests and 2,747 SQL mob slots. Isolated SQL integration compares
+the resulting 11,984-byte index (498 references), including exact ordering.
+QuestEnd rewards/removal, quest admission and production actor ownership remain
+separate work; this does not complete the entire quest system.

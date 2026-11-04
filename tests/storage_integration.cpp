@@ -2,6 +2,7 @@
 #include "mob_death_reward_fixture.hpp"
 #include "eternity/game/experience_award.hpp"
 #include "eternity/game/mob_experience.hpp"
+#include "eternity/game/mob_quests.hpp"
 #include "eternity/storage/sql_server.hpp"
 #include "eternity/auth/accounts.hpp"
 #include "eternity/game/definitions.hpp"
@@ -17,6 +18,9 @@
 #include <iostream>
 #include <stdexcept>
 #include <array>
+#include <fstream>
+#include <iterator>
+#include <sstream>
 
 void require(bool condition, const char* message) {
     if (!condition) throw std::runtime_error(message);
@@ -250,6 +254,24 @@ int main() {
         const auto runtime_mobs=eternity::game::MobRuntimeTemplates::load(definitions.catalogs.at("Mobs"));const auto* first_mob=runtime_mobs.find(1);
         require(first_mob && first_mob->level==38 && first_mob->ai==1 && first_mob->hp==2765 && first_mob->sp==874 && first_mob->mp==1578 && first_mob->dexterity==60 && first_mob->wisdom==40 && first_mob->luck==53 && first_mob->attribute==4 && first_mob->physical_defense==38 && first_mob->magic_defense==31 && first_mob->shield_defense==0 && first_mob->respawn_time==180000,"Original runtime mob projection differs from restored SQL");
         verify_mob_population(runtime_mobs);
+        {
+            using namespace eternity::game;
+            const auto maximum=database.query("EXEC dbo.usp_Read_MobMaxID_R;");
+            require(maximum.size()==1 && maximum[0].rows.size()==1 && maximum[0].rows[0][0].has_value(),"Original MobMaxID contract changed");
+            const auto count=std::stoi(*maximum[0].rows[0][0])+1;
+            std::ifstream asset(".local/server-data/NpcQuest.SData",std::ios::binary);require(asset.good(),"Cannot read original mob quest asset");
+            const eternity::net::Packet bytes((std::istreambuf_iterator<char>(asset)),{});const auto quests=QuestDefinitions::npc_quest(bytes);
+            const auto links=MobQuestLinks::build(quests,count,runtime_mobs);std::uint64_t hash=0xcbf29ce484222325ULL;std::size_t size=0;
+            const auto field=[&](std::uint32_t value,unsigned n) {for(unsigned i=0;i<n;++i) {hash=(hash^static_cast<std::uint8_t>(value>>(8*i)))*0x100000001b3ULL;++size;}};
+            for(const auto& record:links.records()) {field(static_cast<std::uint32_t>(record.size()),4);for(auto id:record) field(id,2);}
+            std::ifstream fixture("tests/data/mob-quest-oracle.tsv");require(fixture.good(),"Cannot read original full mob quest reference");bool checked=false;
+            for(std::string line;std::getline(fixture,line);) if(line.starts_with("A\t")) {
+                std::istringstream row(line);char tag;unsigned expected_count,quest_count;std::string sha;std::size_t expected_size;std::uint64_t expected_hash;
+                row>>tag>>expected_count>>quest_count>>sha>>expected_size>>expected_hash;
+                require(static_cast<bool>(row) && links.records().size()==expected_count && quests.size()==quest_count && size==expected_size && hash==expected_hash,"Restored SQL/full-distribution mob quest index differs from original execution");checked=true;
+            }
+            require(checked,"Full original mob quest reference missing");
+        }
         {
             using namespace eternity::game;
             MobDamageFixture damage_heap;MobRuntime subject;subject.id=999;subject.definition=first_mob;subject.damage=std::make_unique<MobDamageLedger>(damage_heap.pool);
