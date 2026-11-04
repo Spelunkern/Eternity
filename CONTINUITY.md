@@ -1582,3 +1582,11 @@ phase is live and waiting for the SQL lock; no full main unit suite has been run
 for this exact batch. Independent 08 has an uncommitted canonical NpcPool pin/
 deferred-reuse draft replacing the bypassable quest wrapper; inspect final
 source, direct-release tests and pool lifetime before accepting.
+
+Resume checkpoint: independent 05's corrected global-cursor fixture passed the
+full native suite 305/305 (`.local/vertical-mobs-cursor-retest.log` in its
+worktree); its SQL run is queued. This does not resolve pooled mob identity
+retention during a reentrant frame: a canonical pin or proven deferred reuse is
+still required before integrating that path. Ingress 03+09+pause passed all four
+focused tests, and its full build is still running; main SQL is queued. No live
+original-client admission or production game loop has been established.
