@@ -1109,3 +1109,24 @@ if(BUILD_TESTING)
     target_link_libraries(mob-ai-states-random-unit PRIVATE eternity_game)
     add_test(NAME mob-ai-states-random-unit COMMAND mob-ai-states-random-unit ${CMAKE_CURRENT_SOURCE_DIR}/tests/data/mob_ai_states_random-oracle.tsv)
 endif()
+
+# This old worker branch predates the canonical worker09 FSM delivery. Its
+# read-only ignored snapshot is for local validation only; integrated builds
+# use the canonical sources/targets already registered by their owner.
+if(NOT EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/include/eternity/game/mob_ai_states.hpp")
+    set(mob_targeting_actor_dependencies "${CMAKE_CURRENT_SOURCE_DIR}/work/mob-targeting-actor-deps")
+    if(NOT EXISTS "${mob_targeting_actor_dependencies}/src/mob_ai_states.cpp")
+        message(FATAL_ERROR "mob_targeting_actor needs the canonical mob FSM delivery (or the documented ignored validation snapshot)")
+    endif()
+    target_include_directories(eternity_game PUBLIC "${mob_targeting_actor_dependencies}/include")
+    target_sources(eternity_game PRIVATE
+        "${mob_targeting_actor_dependencies}/src/mob_events.cpp"
+        "${mob_targeting_actor_dependencies}/src/mob_ai_states.cpp"
+        "${mob_targeting_actor_dependencies}/src/mob_ai_states_configured.cpp")
+endif()
+target_sources(eternity_game PRIVATE src/game/mob_targeting_actor.cpp)
+if(BUILD_TESTING)
+    add_executable(mob-targeting-actor-unit tests/mob_targeting_actor_unit.cpp)
+    target_link_libraries(mob-targeting-actor-unit PRIVATE eternity_game)
+    add_test(NAME mob-targeting-actor-unit COMMAND mob-targeting-actor-unit ${CMAKE_CURRENT_SOURCE_DIR}/tests/data/mob-targeting-actor-oracle.tsv)
+endif()
