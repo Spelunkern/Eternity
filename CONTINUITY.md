@@ -1969,3 +1969,13 @@ running magic normal/skill and both physical regressions. Results pending.
 The implementation is bounded to tested 53-bit FP; actual original Windows
 thread control word, real selected-hit/effect/death pipeline and live sources
 remain unproven. Desktop dashboard updated for this component milestone.
+
+Combined magic session 49110 finished exit 0 on `9ea85f8`: magic normal,
+magic skill, normal damage regression and skill damage regression each passed
+1/1. Logs `.local/composed-magic-{normal,skill,normal-regression,skill-regression}.log`
+in Eternity-protocol. Original Windows FP environment and live hit/death remain
+unresolved. Desktop dashboard updated. Independent 02 `27f460a` additionally
+traced original instance retirement: wait/active user counts and expiry, removal
+from actual world-thread list and owner/map indexes, then release and reuse.
+The existing ZoneRegistry has no removal/recycling or actual thread unlink owner;
+a safe generation lease depends on those real owners, not a parallel registry.
