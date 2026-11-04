@@ -1654,3 +1654,102 @@ Validation:
 
 No full player lifecycle, production NPC death assembly or playable-server
 completion is claimed from this coordinator and these fixture counts.
+
+
+## Milestone 15 — ordinary Death routes and actual canonical owner composition
+
+Implementation: `97087b8` (preserves all previous milestones). Source:
+`ps_game.exe`, `CUser::Death` 004586a0..00458fd3, `SendDeath` 00458480,
+`CDamage::Reset` 004b8aa0 and the called owner boundaries below. The new
+`mob_targeting_lifecycle_ordinary` API deliberately covers ordinary/fallback
+routes only; it is not the complete general Death entry point.
+
+Recovered behavior:
+
+- Already-dead raw state 1 returns immediately. Otherwise the original amulet/
+  no-exp-loss inputs determine penalty; life uses the SAME Actor attack mode,
+  soul is cleared and HP/MP/SP become zero before exchange cancellation,
+  shop termination and CancleActionVehicle2 0044b330. Do not substitute the
+  different existing cancellation function 0044b2c0.
+- Maximum damage is queried after those callbacks. Non-player maxima use their
+  source for the mob log; absent maxima use the caller route. Runtime mob type
+  supplies the log word, while the retained full catalog supplies its name.
+  The absent-maximum/player-caller branch uses an untouched failed-GetMax output
+  source slot for the log DWORD, but the actual caller source for FindUser.
+  Scratch provenance is explicit; no invented authoritative attacker value.
+  ItemDropByUser is called even with a null lookup result when source differs
+  from victim ID. Live kill counters are copied AFTER that callback.
+- Common tail preserves PvP leave, actual effect death cleanup, silent ledger
+  reset and corpse entry order. Pending movement clears before the fresh clock;
+  deadline wraps at tick+200000. The zone packet excludes the subject. Party
+  publication uses live membership with the original captured outer lock,
+  including callback removal/replacement/reentry. General Death chooses 0c06
+  for normal party and 0c11 for raid, unlike the previous NPC path. Corrupt party
+  kind leaves the original opcode scratch slot untouched.
+- Player maximum kind 1 raises MobTargetingPlayerDeathRequired AFTER the
+  recovered prefix. It cannot be retried as a fresh complete Death call:
+  initial state/resources/cancellations have already been published. No player
+  reward, drop, log or rebirth success is fabricated.
+
+Actual owner integration:
+
+- Existing Actor supplies mode, current resources, damage maximum, effects,
+  casting cleanup and pending movement. Existing ZoneMobs supplies borrowed
+  runtime mobs; the SAME retained binding catalog supplies full mob records.
+  No second Actor, life field, ledger, list, catalog or world owner was added.
+- Concrete defaults delegate to canonical Actor::replace_resources_raw and
+  Actor::reset_damage_ledger. A checkout lacking either API fails explicitly;
+  it does not heal/clamp, invoke Scene reset effects or silently succeed.
+- Canonical positive execution used a stable read-only snapshot of headers and
+  built archives from main `2515956ace68b3a182fb831654ead80fb5f42bfd`.
+  `tools/mob_targeting_lifecycle_canonical_check.py --canonical
+  /home/franco/Projects/Eternity` checks source HEAD and archive digests around
+  copying, overlays only our lifecycle headers, and compiles/runs both owned
+  test suites against that actual Actor implementation. Manifest and copied
+  artifacts stay in ignored work/mob-targeting-lifecycle-canonical-check/.
+- The NPC test now cohosts the real ActorEffectDatabase sink when available.
+  It verifies mandatory 0902 publication after replica/runtime removal and
+  before effect-ID release, and no duplicate publication on shutdown. This is
+  real interface composition, not a claim of a running DB transport receiver.
+
+Validation (all final commands exit 0):
+
+- tools/dev.py build: 145 actions, no warnings/errors;
+  work/mob-targeting-lifecycle-ordinary-owner-build.log.
+- tools/dev.py test: 132/132 passed, 42.86 s; new unit 0.83 s;
+  work/mob-targeting-lifecycle-ordinary-owner-tests.log.
+- 1552 complete original ordinary/fallback Death traces, including 16 actual
+  nested reentries, match native output. Regeneration into work/ repeated
+  byte-identically. Raw states, callback mutations, missing lookups, packet/log
+  scratch, normal/raid membership and captured-lock changes are covered.
+- ASAN/UBSAN under shared build lock: all 1552 comparisons and Actor compositions
+  passed without diagnostics; old private checkout reports raw/reset API 0/0.
+  work/mob-targeting-lifecycle-ordinary-owner-sanitized.log.
+- Canonical snapshot execution: all 1552 comparisons passed with ACTUAL raw/reset
+  APIs 1/1; all 2064 previous NPC traces and mandatory 0902 ordering passed.
+  work/mob-targeting-lifecycle-canonical-verified.log. This separate execution
+  closes the API-availability gap without modifying main or canonical owners.
+- All 12 original EXE/PDB SHA256SUMS passed; git diff --check clean. No SQL data
+  path changed, so unchanged SQL checks were not repeated. No SQL lifecycle
+  writes, main/other-owner edits, merges, resets or pushes.
+
+Remaining integration and next block:
+
+- Recover the player-maximum branch 0045876a..00458cf6, including PvPGetDeathType
+  0047b270, PvPChkLoseDeath 0047b2c0, GetExp 004581b0, AddExpFromUser 00458240,
+  KillPCFrom 0045b050, KillPCTo 0045aed0, ItemDropByUser 0045a180 and live
+  party/raid reward iteration. Continue after one GetMax/prefix, not a second
+  invocation. The ordinary API must not be installed as a complete Death owner.
+- Canonical raw-resource and silent-ledger interfaces are now available; no new
+  life/accessor request remains. Four authoritative metadata references still
+  must be bound to the canonical Actor metadata owner (+145c/+1430/+1454/+1458),
+  initialized with actual inherited allocation context rather than zero seeds.
+- Actual exchange/shop/vehicle2, PvP leave, corpse publication, player lookup/drop,
+  logging/view transports and exclusion-aware normal/raid party sender remain
+  required ports. Retain Actor, PlayerCore, catalog, mob and captured party owners
+  through callbacks, on the real serialized world executor; defer destruction
+  until leases/locks release. Party kind alone cannot replace pointer identity.
+  Admission/transport/root assembly is not implemented by these projections.
+
+No complete player-death, production lifecycle assembly or playable-server
+completion is claimed from these checks.
