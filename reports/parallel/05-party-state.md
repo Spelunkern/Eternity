@@ -1138,3 +1138,83 @@ The minimal retained Actor/root binding and real scene/log/guild/pool/worker/
 lookup/recursive-lock providers remain required. No main edits, heap recycling
 or SQL operations; full isolated SQL belongs to coordinator. Server objective
 remains open.
+
+## Block 15 — actual raid wire-slot and leadership requests
+
+Recovered complete original `ps_game.exe CParty::ChangeUser 00445110..004451d2`,
+`SetRaidPartySubBoth(UID) 00445220..0044529d`, and
+`SetRaidPartyBoth(UID) 004452f0..00445469`, plus PacketParty 004676c0 branches
+0b12 (004680fd..00468197), 0b13 (00467e39..00467e80) and 0b17
+(00467dec..00467e34). Assembly establishes EDI=party for ChangeUser;
+EAX=party/EBX=UID for SubBoth; EAX=party/stack UID for Both. Original whole
+PacketParty execution uses these real calling conventions without patching the
+called bodies. Standalone no-argument overloads are not claimed implemented.
+
+New party_runtime_raid_requests_leaders files extend the SAME request world and
+registry. Shared PartyRaidRequestLock now supplies the prior original captured
+CPartyLock algorithm to both conversion and leadership branches; it stores only
+a transient captured lock, not another party/user owner. Existing conversion
+behavior and explicit remaining-provider contract are preserved.
+
+Recovered behavior:
+
+- 0b12 allows the selected leader OR subleader when current kind is nonzero.
+  It searches wire-index values before the internal lock and captures first
+  matching array positions, including holes and duplicate index values. It swaps
+  index values when both exist, assigns the requested missing value when only
+  one exists, or returns false when neither exists. It NEVER moves user pointers,
+  leader/subleader positions, membership or count. PacketParty ignores that bool,
+  rereads the requester's live party after internal unlock, and broadcasts all
+  18 bytes: requested indices plus live leader/subleader wire indices. Missing
+  indices therefore still produce a broadcast.
+- 0b13 requires direct selected-leader equality and nonzero kind. Under the
+  helper lock, choose first non-null matching UID excluding the leader position.
+  Missing/leader targets retain the current subleader; the helper STILL broadcasts
+  current subleader UID as 0b13 and returns true. There are no scene/log packets.
+  The current selected subleader must be non-null for that original dereference;
+  the native provider contract reports an invalid projection rather than faking
+  a user or silently suppressing the original notification.
+- 0b17 has the same outer guard. The helper locks and finds first matching
+  non-null UID excluding current leader. Failure unlocks/returns false without
+  packets. Success captures old leader position, sets the selected position and
+  broadcasts 0b17. If that selected position equals the LIVE subleader after the
+  callback, scan ALL 30 slots, including inactive tail, for the first non-null
+  pointer excluding the LIVE leader; then broadcast 0b13. Reload users at the
+  selected and captured-old array positions AFTER broadcasts, unlock, and emit
+  their scene notifications in that order. There are no logs or max refresh.
+
+Whole original fixtures include missing/self targets, role/zero-kind/no-party
+failures, holes, duplicate and absent wire indices, repeated updates and leader
+positions beyond inherited slots. A saved-register x86 trampoline invokes actual
+nested PacketParty 0b12 from each leadership broadcast, using the CURRENT
+leader's retained user. Native uses the same live binding and dispatcher,
+exercising recursive locks, child responses, and outer reply-before-callback
+ordering. Valid-current-subleader projections are supplied explicitly; original
+null-subleader crashes are not presented as recovered gameplay behavior.
+
+Validation:
+
+- 256 retained scenarios; 1,280 whole original PacketParty calls plus 18 literal
+  nested calls. Exact trace comparison includes 176 movement broadcasts,
+  104 subleader broadcasts, 21 leader broadcasts and 42 scene notifications;
+  zero game-log sends. Full final state and every callback-state hash retain
+  all 30 slots/indices, memberships, role positions, count/cursor/max and request
+  state. Original return sentinels and native recursive lock balance are checked.
+- Locked focused C++20 ASAN/UBSAN build and all comparisons: exit 0, no
+  diagnostics (`work/party-runtime-raid-requests-leaders-sanitized.log`).
+- Repeated original fixture exact `cmp`, original EXE/PDB manifest and
+  `git diff --check`: exit 0
+  (`work/party-runtime-raid-requests-leaders-hashes.log`).
+- Final locked native build: exit 0, no diagnostics
+  (`work/party-runtime-raid-requests-leaders-final-build.log`).
+- Final locked native tests: 136/136 passed, 40.37 seconds, exit 0
+  (`work/party-runtime-raid-requests-leaders-test.log`).
+
+Implementation commit: `999721b50c1daf97ce87882acce77cd00d803a70`.
+
+Remaining request scope is now 0b11 autojoin, 0b14/0b15/0b18 invitations and
+response, and 0b1a raid-specific expulsion. The prior raw auto-join byte model
+change and retained Actor/root/provider contracts remain required exactly as
+reported in Blocks 9/14. No canonical headers, new membership state, heap return,
+main checkout or SQL lifecycle changed; full isolated SQL remains coordinator
+owned. Components and fixture counts do not establish a playable server.
