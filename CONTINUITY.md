@@ -134,8 +134,10 @@ Desktop entry points:
 - /home/franco/Desktop/Eternity-9-terminales.desktop
 
 Published launcher commit: 092ed85. Nine worktrees/branches are prepared under
-/home/franco/Projects/Eternity-workers, with the exact prepared base recorded in .local/parallel/manifest.json. They are not started
-by preparation; running the desktop script opens nine Konsole workers. Model is
+/home/franco/Projects/Eternity-workers, with the exact prepared base recorded in .local/parallel/manifest.json. Preparation alone does not start agents. The user started the launcher; an initial
+desktop PATH failure was fixed in fe410e8. The coordinator relaunched and verified
+all nine workers running with distinct session IDs. Running the desktop script
+again skips those live workers. Model is
 gpt-6.1-sol, reasoning low, fast tier, danger-full-access and approval never.
 Existing Codex authentication/config is inherited. No new API key is required.
 
@@ -152,9 +154,9 @@ SQL integration, while tools/reverse.py serializes Ghidra across worktrees.
 Credentials/assets and build/output directories are private to each worktree.
 The original Ghidra project is shared only through the locked wrapper.
 
-Launcher validation: three meaningful offline tests pass (nine-worktree
+Launcher validation: four meaningful offline tests pass (nine-worktree
 isolation/idempotence, actual CLI argv/settings/clean session environment with a
-fake Codex process, and shared-resource lock exclusion/release). The desktop
+fake Codex process, desktop PATH resolution, and shared-resource lock exclusion/release). The desktop
 shell script passes bash -n; all nine real worktrees were prepared successfully.
 No model calls were used for launcher testing.
 
@@ -179,3 +181,14 @@ QuestRuntime preserves retained payload, cursor and pool reuse; mob logs expose
 required map/name context and a death-log bridge. Actual QuestAddItem, core
 QuestEnd/Select and production actor/world integration remain coordinator work.
 See research/protocol.md for exact evidence and limitations.
+
+### Live workers after desktop PATH fix
+
+All nine external workers were started and have distinct thread IDs in each
+.local/parallel/workers/<task>/status.json. Check those files and events.jsonl
+before restarting anything. Worker branches started from 092ed85; main now also
+contains 43835d2 (rewards/removal/logging) and fe410e8 (desktop Codex resolution).
+Do not rebase/reset/change the live workers' checkouts. The coordinator owns
+integration of their committed handoffs. The desktop launcher additionally
+prepends /home/franco/.local/bin; the Python runner has absolute-path fallbacks.
+Four offline launcher tests and the restricted-PATH real CLI --help probe pass.
