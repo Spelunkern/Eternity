@@ -907,3 +907,11 @@ if(BUILD_TESTING)
     target_link_libraries(mob-drops-delivery-bridge-unit PRIVATE eternity_game)
     add_test(NAME mob-drops-delivery-bridge-unit COMMAND mob-drops-delivery-bridge-unit ${CMAKE_CURRENT_SOURCE_DIR}/tests/data/mob-drops-bridge-oracle.tsv)
 endif()
+
+# Worker 09: configurable CKFSM execution and native retained state ownership.
+target_sources(eternity_game PRIVATE src/game/mob_ai_states_configured.cpp)
+if(BUILD_TESTING)
+    add_executable(mob-ai-states-configured-unit tests/mob_ai_states_configured_unit.cpp)
+    target_link_libraries(mob-ai-states-configured-unit PRIVATE eternity_game)
+    add_test(NAME mob-ai-states-configured-unit COMMAND mob-ai-states-configured-unit ${CMAKE_CURRENT_SOURCE_DIR}/tests/data/mob_ai_states_configured-oracle.tsv)
+endif()
