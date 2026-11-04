@@ -334,3 +334,36 @@ Remaining work: production user/mob visitor integration, source/skill/user
 bindings and actual world/FSM/helper services. The original native acquisition
 search is implemented through mandatory providers, not a live world scheduler.
 The server remains unplayable.
+
+## Dependency checkpoint after milestone 5
+
+Reviewed current main CONTINUITY.md/PARALLEL_WORK.md and commits
+667e37a/f28f799. Main is under the coordinator's canonical validation freeze;
+this worker has not changed its sources, CMake, databases or live workers.
+The assigned SetTarget/Ex coordination, their help selection, shared-cursor
+mutation evidence, immediate Targeting/FindTarget callers and MobRuntime bridge
+have all been delivered. The remaining work is production integration, not a
+reason to repeat the completed fixtures or add another simulated world owner.
+
+Read-only inspection confirms canonical ZoneMobs still has no synchronous mob
+visitor API, and MobRuntimeTemplate still lacks the country/chase-range/three
+skill bindings needed by these routines. User cell traversal/actor projections
+and actual FSM/help services are also required. Existing in_cell snapshots do
+not satisfy the original cursor semantics verified in milestone 4. A packet
+probe was useful for tests but must not become a production traversal adapter.
+
+Concrete next-task proposal: coordinator supplies/reviews canonical synchronous
+shared-cursor mob and early-stop user visitors plus live definition/user bindings,
+then assigns this worker the production acquisition/help composition and its
+original-execution integration comparisons. Alternatively explicitly assign the
+mob definition/skill binding recovery under mob_targeting_bindings, coordinated
+with the canonical data owner. Until then, no independent meaningful change is
+left within the current exact function/interface ownership without duplicating
+shared ownership or inventing providers.
+
+This checkpoint changes documentation only. Validation: read-only canonical API
+inspection and git diff --check; native/SQL suites were not repeated because no
+code or fixtures changed. Last substantive validation remains milestone 5:
+124/124 native tests passed, 2,048 new original search comparisons. This is not
+production integration or original-client playability. Waiting for a concrete
+assignment/interface dependency resolution; no merge, push or main edits.
