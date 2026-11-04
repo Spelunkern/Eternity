@@ -42,6 +42,11 @@ def main():
             dest = [[54.999996185302734, 55.0, 55.000003814697266][i-3], 0.0, 0.0]
             words = [(now - 1000) & 0xffffffff, now, *map(f, back), 0, f(0), f(0), f(0), f(0), f(0)]
             speed = f(5)
+        if 6 <= i < 14:
+            tiny = [1, 2, 0x007fffff, 0x00800000][(i-6) % 4]
+            words = [now, now if i < 10 else (now+1)&0xffffffff, *map(f, back), 0, 0, 0, 0, tiny, tiny]
+            dest = [struct.unpack('<f', struct.pack('<I', tiny))[0], 0.0, 0.0]
+            speed = tiny
         cpu.mem_write(state, struct.pack('<11I', *words));cpu.mem_write(pos, struct.pack('<3I', *map(f, dest)))
         cpu.mem_write(stack + 0x8000, struct.pack('<2I', stop, speed))
         cpu.reg_write(UC_X86_REG_ESP, stack + 0x8000);cpu.reg_write(UC_X86_REG_ECX, state);cpu.reg_write(UC_X86_REG_EAX, pos)
