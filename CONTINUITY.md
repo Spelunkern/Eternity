@@ -1614,3 +1614,16 @@ full build, nine focused combined tests and isolated SQL, using the shared locks
 all results are pending. The imported combat/movement/pickup code has required
 real owners and is not connected to main or proven as client gameplay. The
 separately running ingress validation is unchanged.
+
+Independent 03's latest report (`ddcfbcd`, address correction `96d4b20`)
+identifies `SWorker::RecvComplete` 004dbac0 enqueue and `CUser::UpdatePackets`
+00466cc0 count snapshot with close when over 1000. It cautions that the original
+may dispatch/ignore 0201 before location 3; holding all frames until location 3
+is not demonstrated equivalent. Ingress's eight-frame limit and pause are native
+bounded mechanisms, not a recovered original queue policy, and are not wired to
+production admission. The existing TCP test lacks deterministic ack/0201 race,
+transition order, failure and overflow coverage. Requested 03 to investigate and
+build a barrier-based regression; requested 04 live movement dispatch and 09
+single-snapshot selected-character lifecycle. These are queued independent tasks,
+not completed implementations. Gameplay session 58307 and ingress session
+69947 remain live in their respective locked build/SQL queues.
