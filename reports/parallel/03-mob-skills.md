@@ -905,3 +905,27 @@ catalog loading/reload, real AI/Lua/backend factory, shared clocks/RNG, KC/linke
 world services, DB/world/map/user connections and startup/tick/reconnect dispatch.
 The per-primary composition itself is implemented; real backend assembly and full
 isolated SQL remain coordinator work. No global completion/playability claim.
+
+## Primary-map composition scope completion checkpoint
+
+The repeated assignment is complete in 8e4f19d/716a0c4. Reviewed current main
+continuity/parallel rules and last report; seventeenth-batch source freeze is
+active. A bounded read-only check of src/main.cpp still finds its const local
+ServerMaps validation load and no primary_zone or MobAppliedSkillsObeliskMaps
+construction. No authoritative retained root owner was identified there.
+
+No further independent implementation is identified inside this completed
+composition scope. Concrete next dependency/task: coordinator designate and
+explicitly authorize the actual retained primary-zone lifecycle/lease owner and
+its production construction site, then bind that authority into the SAME
+ObeliskRuntimeMapsServices and this router's startup/timer/reset dispatch.
+Map/catalog coherence, real AI/Lua, KC/linked and DB/world/map/user connections
+remain actual required providers; another registry, copied country table or
+successful no-op callback would not resolve this dependency. Root/main and
+worker04 map_config edits remain outside the current worker assignment.
+
+Documentation-only checkpoint: no new build, original execution, SQL or fixture
+changes. Latest validation remains 136/136 native tests (35.71 s), 16 two-map
+lifecycles and the byte-identical 64-case original map replay. Tree was clean
+before this report update; git diff --check passed. Awaiting coordinator scope,
+without repeating completed tests or claiming global completion.
