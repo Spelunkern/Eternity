@@ -768,3 +768,84 @@ assemble the real zone/connection adapters once the canonical retained visitor
 and active-skill owner interfaces are supplied. The user attack coordinator is
 recovered; production routing and actual providers remain open. The server is
 still non-playable.
+
+## Scheduler speed query: bind the existing canonical effect owner
+
+Implementation commit: `bf51740`
+(`Use canonical effect speed gate directly in actor attack polling`).
+
+Read current canonical effects.cpp/effects.hpp and Ghidra/PDB evidence for
+CUser::GetAttackSpeed **0048a460** / GetAttackSpeedNow **0048a4b0**. The first
+getter already exists as canonical `attack_speed(const EffectStatus&)` and is
+also used by the character speed serializer. Reuse it directly inside UpdateAttack
+rather than adding another getter or another effect-state owner. Removed the
+MobCombatSchedulerWorld::attack_speed virtual query: production adapters no
+longer supply or override this local, side-effect-free operation. Other actual
+world operations remain mandatory providers. No shared owner/header edited.
+
+Exact field mapping and behavior:
+
+| Original | Existing EffectStatus |
+| --- | --- |
+| +1344 | action_block_b |
+| +1340 | action_block_a |
+| +1428 | casting |
+| +1348 | fixed_form |
+| +12ec | skills.equipment.attack_speed |
+
+GetAttackSpeed returns 255 when ANY of the four blockers is nonzero, including
+negative wrapped counters. Otherwise it clamps signed raw speed to 0..9.
+Movement block +133c and movement restriction +5778 are deliberately absent from
+this gate. Conflicting PDB member names do not override these assembly reads.
+GetAttackSpeedNow ignores blockers and always clamps raw speed to 0..9; the
+scheduler deadline already implements that separate behavior. Do not substitute
+the blocked getter when calculating a post-callback deadline.
+
+New oracle executes 2,048 pairs of complete original getters without any body
+ports (4,096 getter invocations), checking stack balance, no escape to external
+code and byte-identical entire user storage afterward. Every blocker mask spans
+signed speed boundaries and positive/negative blocker values; unrelated movement
+counters also vary. Another 1,024 complete original UpdateAttack executions use
+actual speed getters, stop, zero-pending-move cancellation and cookie returns.
+Only effect/lookup/range/attack/transport bodies remain ports. They include 483
+attack/cancellation tails and 486 disabled-gate packets. Synthetic range changes
+can introduce all four blockers after the initial gate while changing raw speed;
+the current frame still calls AttackMob and computes its deadline from raw speed.
+This audits coordinator timing, not the inner attack provider's eligibility body.
+
+Native tests compare canonical getter output and the image's clamped-now result,
+then actual Actor polling state/events and deadlines. Previous scheduler fixtures
+are retained byte-for-byte. Their native comparisons omit only Q observations,
+which represented the former external query; all other action snapshots remain
+checked. Old normal-mob fixture blocked inputs now populate the real Actor effect
+counter. This is an interface migration, not a changed expected world trace.
+
+Validation:
+
+- All immutable executable/PDB SHA256SUMS pass, exit 0.
+- New fixture generated under work/ before copying; independent regeneration
+  byte-identical (`cmp`, exit 0).
+- `python3 tools/dev.py build`: exit 0, no compiler warnings;
+  `work/mob-combat-scheduler-speed-build.log`.
+- `python3 tools/dev.py test`: exit 0, **129/129 passed**, 41.52 seconds,
+  including the getter pairs, 1,024 actual-speed frames and all previous
+  normal/skill/cast/user/next/stop/hit suites;
+  `work/mob-combat-scheduler-speed-test.log`.
+- `git diff --check`: exit 0. Shared wrappers/locks respected. SQL unchanged;
+  final isolated SQL integration remains coordinator-owned.
+
+Production contract: existing effect admission/removal must update the SAME
+serialized Actor.status() used by speed publication and attack polling. Remove
+old world speed overrides; do not maintain a second blocker snapshot or inject
+callbacks at this pure read. Retain the Actor through the existing complete
+scheduler frame, including effects introduced by later callbacks. No new
+canonical fields are needed for the speed integration.
+
+Next independent integration candidate within this prefix: the existing
+Actor::cancel_shape_on_attack already owns RemApplySkillToMOB 00489560, and
+Actor::cancel_move owns CancleMove. Bind these actual owners in a concrete actor
+world adapter with original effect/removal/transport composition rather than
+creating replacement providers. Same-zone retained actor visitation and active
+CSkill slot/index ownership remain coordinator API dependencies. Attack/range,
+transport and full zone/connection routing still need real production bindings;
+the server remains non-playable.
