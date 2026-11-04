@@ -1304,3 +1304,88 @@ Root must retain selected users and parties even after recursive unregister and
 through the outer final notifications; no guessed heap return is valid. All
 canonical Actor/zone/inventory sources and main checkout remain read-only.
 Playability/global server completion is not claimed by this milestone.
+
+## Block 17 — actual automatic raid admission request
+
+Recovered complete `ps_game.exe CUser::PacketParty 004676c0` autojoin branch
+0b11 (00467b07..00467bde), `CParty::GetPartyBoth 00444f20..00444f48`,
+`CParty::AutoPartyJoin 004473d0..004473e7`, and
+`CUser::SendRaidPartyError 00467690..004676b5` from original assembly.
+GetPartyBoth uses ESI=party; AutoPartyJoin ECX=party/stack user; raid error
+uses ECX=DWORD reason, EAX=DWORD UID and stack destination user. Whole original
+request fixtures execute the unmodified called membership/registry bodies.
+
+New real branch on the SAME request and membership owner:
+
+- Already-grouped requester returns BEFORE any name mutation, lookup or lock.
+  Otherwise force request byte22 to NUL and look up the name via actual ACTIVE
+  CWorld::FindUser(char*) 0040d690 semantics, not FindUserZoneMove 0040d840.
+- Missing name sends 10-byte 0b19 with reason12/UID0. Retain the exact found user
+  record and take CPartyLock on THAT user, not the requester. Missing live party
+  sends reason12. GetPartyBoth locks that party, captures selected leader pointer
+  iff count>0, unlocks, then tests that captured pointer. A null leader sends12.
+- Compare requester's country with the NAMED user's country, not the returned
+  leader's country. Mismatch sends12. Reread named user's LIVE party after the
+  helper unlock; auto-join disabled sends13 BEFORE capacity is checked; count
+  >=30 sends14. All these error UID fields are zero in the original branch.
+- AutoPartyJoin tests NONZERO kind and auto flag, then directly tail-calls the
+  existing actual EnterRaidParty; it does not select normal entry. Its false
+  result is silent and PacketParty ignores the result. In particular kind0
+  with auto flag enabled/capacity available emits no rejection packet and does
+  not admit the requester. Kind2 follows actual raid entry as the binary does.
+- This branch has no activity, pending inviter, deadline, country-of-leader or
+  equal-zone/scene-state admission guard. These are not invented. Successful
+  entry clears only existing pending byte +1744; inviter DWORD/deadline remain
+  untouched. Existing raid member/roster/scene/log/max ordering is reused.
+
+PartyRaidRequestsWorld gains a PURE required find_active_raid_user_name port
+returning the same retained PartyRequestUser; it cannot default to the broader
+zone-move lookup or a detached user copy. Existing fixture worlds which never
+call this opcode explicitly reject unexpected use of that provider. New native
+fixture world supplies an observed active-name index, not a production service.
+The retained Actor root must bind its REAL active-name index and keep found
+Actor/scene/member/request records and captured parties alive across callbacks.
+No canonical Actor/zone/inventory header or additional membership state changed.
+The shared raid error serializer is now available to the remaining invitations.
+
+Validation:
+
+- 256 retained sequences, 1,024 whole original PacketParty calls and 46 literal
+  nested configuration calls from the active-name lookup callback. x86 saved
+  register trampolines preserve found EAX and return with the lookup RET4 ABI;
+  native invokes the same dispatcher on the current leader's retained binding.
+- 53 admissions and subsequent already-grouped early returns, 27 silent kind0
+  nonadmissions, reason12=371/reason13=247/reason14=17 errors. Traces contain
+  715 active lookups and 2,050 scenes/logs from real entry/disband compositions.
+  Count/capacity 0/1/2/5/6/7/11/12/29/30, pointer holes, absent names, country
+  mismatch, active target in another zone/scene state, busy/pending requester,
+  normal/nonzero kind, and repeated requests are exercised. Explicit orphan
+  count-zero party and null selected leader test BOTH GetPartyBoth null paths.
+- Full final projection, every callback-state hash and packet, mutable byte22,
+  shared effect cursors, role/index/count/max/request state, original return
+  sentinels and recursive lock balance match. The 0b16 follow-up uses existing
+  actual BreakParty/Reset/unregister rather than synthetic teardown.
+- Locked native build exits0 without diagnostics
+  (`work/party-runtime-raid-requests-autojoin-build.log`, incremental final
+  harness build `work/party-runtime-raid-requests-autojoin-final-build.log`).
+- Locked focused C++20 ASAN/UBSAN compilation and final expanded comparisons:
+  exit0, no diagnostics
+  (`work/party-runtime-raid-requests-autojoin-final-sanitized.log`).
+- Final locked native tests: 138/138 passed, 60.10 seconds, exit0
+  (`work/party-runtime-raid-requests-autojoin-final-test.log`). Initial suite
+  passed138/138 in49.37s before the two added null-leader projections.
+- Repeated original fixture exact `cmp`, original EXE/PDB manifest and
+  `git diff --check`: exit0
+  (`work/party-runtime-raid-requests-autojoin-final-hashes.log`). Generated
+  fixtures, harnesses and logs remain ignored under work/.
+
+Implementation commit: `3b806fc9ab81aefa9246143b9813e3164e1f2649`.
+
+Remaining opcode scope: 0b14/0b15/0b18 raid invitations/responses. Prior raw
++115 auto_join BYTE storage/serialization correction remains necessary for all
+0..255 values; this matrix uses current authoritative bool values0/1 and adds
+no competing raw cache. Actual retained Actor root, active/zone-move/zone lookup,
+recursive locks, real scene/log/guild/pool/worker/close services remain required.
+No main edits, SQL lifecycle or guessed heap recycling; full isolated SQL stays
+with coordinator. Request implementation and passing fixtures do not establish
+client playability or global completion.
