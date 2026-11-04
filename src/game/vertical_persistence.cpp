@@ -17,11 +17,15 @@ std::unique_ptr<CharacterReplica> vertical_persistence_restore(const PlayerSnaps
     cache->growth().load(max_grow);
     return cache;
 }
+std::unique_ptr<CharacterReplica> vertical_persistence_restore_with_products(const PlayerSnapshot& snapshot, PointItemStore& products, std::uint8_t max_grow, InventoryReplicaPool& pool, SkillReplicaPool* skills, QuestReplicaPool* quests, PointItemPool* points) {
+    auto replica=vertical_persistence_restore(snapshot,max_grow,pool,skills,quests,points);
+    products.load_products(replica->points());
+    return replica;
+}
 std::optional<VerticalPersistenceSelection> vertical_persistence_select(Players& players, PointItemStore& products, std::uint32_t user, std::uint32_t character, const std::string& username, std::uint8_t max_grow, InventoryReplicaPool& pool, SkillReplicaPool* skills, QuestReplicaPool* quests, PointItemPool* points) {
     auto snapshot=players.load(user,character,username);
     if(!snapshot) return std::nullopt;
-    auto replica=vertical_persistence_restore(*snapshot,max_grow,pool,skills,quests,points);
-    products.load_products(replica->points());
+    auto replica=vertical_persistence_restore_with_products(*snapshot,products,max_grow,pool,skills,quests,points);
     return VerticalPersistenceSelection{std::move(*snapshot),std::move(replica)};
 }
 }
