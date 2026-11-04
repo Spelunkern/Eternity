@@ -107,6 +107,39 @@ class ParallelTests(unittest.TestCase):
             command = parallel.codex_command(settings, self.root, self.root / 'report.txt')
         self.assertEqual(command[0], str(executable))
 
+    def test_resume_preserves_context_and_permissions(self):
+        settings = {'model': 'gpt-6.1-sol', 'effort': 'low', 'sandbox': 'danger-full-access', 'approval': 'never', 'codex_executable': '/fake/codex'}
+        command = parallel.codex_command(settings, self.root, self.root / 'report.txt', 'existing-thread')
+        self.assertEqual(command[-7:], ['exec', 'resume', '--json', '-o', str(self.root / 'report.txt'), 'existing-thread', '-'])
+        self.assertIn('model_reasoning_effort="low"', command)
+        self.assertIn('danger-full-access', command)
+        self.assertIn('never', command)
+
+    def test_idle_service_dispatch_does_not_open_another_terminal(self):
+        parallel.prepare(self.root)
+        task = parallel.TASKS[0]
+        _, folder = parallel.paths(self.root, task)
+        parallel.save(folder / 'status.json', {'state': 'finished', 'pid': os.getpid(), 'thread_id': 'existing-thread'})
+        with patch('parallel.subprocess.Popen') as process:
+            self.assertTrue(parallel.start_one(self.root, task, continuation=True))
+            process.assert_not_called()
+        self.assertTrue((folder / 'dispatch.json').exists())
+        self.assertFalse(parallel.alive(-1))
+
+    def test_terminal_service_handles_successive_blocks(self):
+        parallel.prepare(self.root)
+        task = parallel.TASKS[0]
+        _, folder = parallel.paths(self.root, task)
+        calls = []
+        def block(root, identity):
+            calls.append(identity)
+            return 0
+        def sleep(seconds):
+            parallel.save(folder / 'dispatch.json', {'id': 'next-block'})
+        with patch('parallel.worker', side_effect=block), patch('parallel.time.sleep', side_effect=sleep), patch('parallel.control', side_effect=lambda root: {'active': len(calls)<2}):
+            self.assertEqual(parallel.worker_service_loop(self.root, task[0]), 0)
+        self.assertEqual(calls, [task[0], task[0]])
+
 
 if __name__ == '__main__':
     unittest.main()

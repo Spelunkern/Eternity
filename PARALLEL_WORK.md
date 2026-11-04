@@ -11,18 +11,20 @@ Launch the desktop `Iniciar-Eternity-9-terminales.sh`, or run:
     python3 tools/parallel.py status
 
 `plan` previews settings/tasks; `prepare` creates worktrees without opening agents.
-The launcher does not duplicate live workers or rerun finished assignments.
-Worker reports and session IDs are in ignored `.local/parallel/workers/`.
+The launcher does not duplicate live workers. A durable supervisor resumes each
+existing Codex thread for successive implementation blocks. Worker reports,
+milestone snapshots and session IDs are in ignored `.local/parallel/workers/`.
+It is a Python scheduling process, not an additional model/session.
 
 ## Ownership
 
 The main checkout `/home/franco/Projects/Eternity` remains the coordinator's only
 integration branch. Workers use independent `workers/<task>` branches and folders
 under `/home/franco/Projects/Eternity-workers`. They commit only to their branch;
-only the coordinator merges and pushes. A finished worker writes its handoff under
+only the coordinator merges and pushes. Each milestone writes a handoff under
 `reports/parallel/<task>.md`; it does not take another worker's domain.
 
-| Worker | Exclusive subsystem / new file prefix |
+| Worker | Initial exclusive subsystem / new file prefix |
 | --- | --- |
 | 01 | Mob damage and credit / `mob_combat` |
 | 02 | Mob loot and drops / `mob_drops` |
@@ -39,6 +41,37 @@ their integration belong to the main coordinator. Workers must not duplicate
 those active assignments. Shared canonical-header changes are requested in the
 handoff, not made independently. CMake registration is allowed in a worker's
 private checkout and reviewed centrally. Do not edit another worktree/main.
+
+## Continuous coordination
+
+The supervisor snapshots a finished block before restarting that same thread.
+Continuation reads the latest main continuity/coordination notes and selects
+missing meaningful behavior within the worker's ownership. It does not repeat
+completed work. The coordinator may adapt a worker's scope using:
+
+    python3 tools/parallel.py assign 09-mob-events 'Concrete next implementation' --prefix mob_ai_states
+
+Assignments are stored in `.local/parallel/control.json` and apply at the next
+milestone. Prefixes already owned by another worker cannot be claimed. A worker
+with a concrete dependency ends with `WAITING_FOR_ASSIGNMENT`; it waits for a
+new assignment instead of spending model turns polling or duplicating another
+front. The coordinator reviews and integrates committed milestones, resolves
+dependencies and assigns the next work. Notifications are queued to the same
+coordinator thread through `codex queue --resume`; an active writer may defer
+delivery, which the supervisor records without claiming a new turn began.
+
+New terminal services keep their window alive between blocks. Existing first-run
+terminals upgrade when their current block ends; only a proven single-session
+finished worker window can be retired. No active worker is interrupted for this
+upgrade. Failure retries have backoff; persistent/account failures wait for the
+coordinator instead of looping without progress.
+
+The scheduling loop has no fixed number of successful rounds. Only verified
+completion of the original playable-server objective may set `objective_complete`.
+Passing tests or finishing one subsystem is not global completion. The user can
+stop scheduling after current blocks with `python3 tools/parallel.py stop`, and
+explicitly resume it with the desktop launcher. `supervise` attaches the scheduler
+to already-running workers without launching duplicate model sessions.
 
 ## Resources and evidence
 

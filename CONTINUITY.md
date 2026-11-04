@@ -192,3 +192,45 @@ Do not rebase/reset/change the live workers' checkouts. The coordinator owns
 integration of their committed handoffs. The desktop launcher additionally
 prepends /home/franco/.local/bin; the Python runner has absolute-path fallbacks.
 Four offline launcher tests and the restricted-PATH real CLI --help probe pass.
+
+## Continuous worker supervision — user authorized
+
+The user explicitly requested that all nine workers continue across milestones,
+adapting their work toward the complete goal, not stop after one fixed task.
+The continuous supervisor is ACTIVE as a background Python process, with PID
+and health recorded in .local/parallel/supervisor-process.json and
+.local/parallel/supervisor-status.json. It does not add another model context.
+
+- Existing thread IDs are reused through codex exec resume, preserving model
+  gpt-6.1-sol, reasoning low, fast, full access and never approvals.
+- Milestones are snapshotted before continuation under each worker's rounds/.
+- New persistent terminal services reuse their window between blocks. Existing
+  initial sessions upgrade after their current block; only a proven finished
+  single-session owned window can be retired. No live work is interrupted.
+- Workers select substantive missing behavior within their scope, report/commit,
+  then continue. WAITING_FOR_ASSIGNMENT is only a concrete dependency marker;
+  the coordinator must supply a fresh assignment, not leave it permanently idle.
+- Root/coordinator notifications are queued to this same thread UUID, stored in
+  manifest.coordinator_thread. The queue command attempts resume; an active
+  writer may defer delivery. Inspect the recorded delivery result honestly.
+- Use `python3 tools/parallel.py assign WORKER 'Next concrete task' --prefix PREFIX`
+  for adaptive scope. Do not merge/reset a live worker checkout. Integrate the
+  EXACT milestone commit from its snapshot, not an unchecked moving branch tip.
+- Global control is .local/parallel/control.json. active=true and
+  objective_complete=false. Successful round count is unbounded. Only verified
+  original-client playability can justify marking the global objective complete.
+- Persistent errors back off/notify instead of consuming model calls endlessly.
+  `stop` stops scheduling after active blocks; the desktop launcher explicitly
+  restarts scheduling when requested. Do not undo an explicit user stop.
+
+Live evidence: worker 03-mob-skills completed a milestone and resumed the SAME
+thread 01a1a406-7c12-7e20-a675-0eb18344f492 with codex exec resume and low reasoning;
+its first milestone snapshot is available for root review/integration. Worker 09
+has a queued next scope `mob_ai_states` after its initial event block: reconstruct
+real compiled mob FSM ownership/transitions, prioritizing the death state.
+
+Validation: seven launcher tests and ten supervisor tests pass; installed CLI
+accepts the exact resume argument shape. Tests cover same-thread arguments,
+persistent two-block services, duplicate-writer prevention, durable snapshots,
+assignment waits/acknowledgments, pause/complete controls, bounded failures and
+coordinator notification spooling. No goal completion has been claimed.
