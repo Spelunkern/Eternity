@@ -1215,3 +1215,62 @@ duplicated. Mutable retained ServerMaps portal-country/lifecycle routing and
 root-world/KC/calendar/transport assembly remain dependencies from prior blocks.
 Canonical files and SQL were unchanged; final isolated SQL validation remains
 coordinator-owned. The server is not playable.
+
+## Direct user scene list — mixed ordinary/portal chunks
+
+Implementation commit: `dd8daaeca4c7b56adb852ecbba27ac57b7202a46`.
+
+`publish_obelisk_user_list` recovers **ps_game.exe, CMap::SendObeliskList
+0042b040**. It sends opcode2101 directly to a required selected-user transport,
+with BYTE count and13-byte rows: full DWORD runtime ID, BYTE display country,
+raw float X/Z words. Ordinary map records come first (country0->1,1->2,other0),
+then global portal links whose target-map identity equals the calling map
+(country0->103,1->101,2->102,other100). Y is not published. No map-zone-presence
+check gates this function.
+
+Both phases share the same100-row chunk buffer: ordinary rows are not flushed
+merely because the portal phase begins. Full chunks are1303 bytes; only a
+nonempty remainder is sent. Empty scenes send nothing. Native portal scene
+views borrow the actual target-map identity, stable runtime link/country and
+live target position. Nonmatching maps are filtered before dereferencing target
+backing; matching rows without required backing fail explicitly. Callback
+mutations of later values/map selection are read live. Storage and table counts
+must remain stable; replacing the original global table/count during sends is
+outside this stable-span API.
+
+192 original executions compare334 packets and21,835 rows;92 packets mix both
+record kinds. Cases cover0/1/2/99/100/101/199/200 ordinary records and
+0/1/2/12/100/101 portals, all versus alternating target-map matches, signed/extreme
+country values, full DWORD IDs, distinct X/Y/Z values and exact chunk boundaries.
+The first user-send callback in alternate blocks changes later ordinary rows
+and live portal IDs/countries/coordinates/map selection. The original function
+runs with a null map-zone pointer, proving that the separate change publication
+zone gate must not be applied here. Only the selected user's SConnection::Send
+**004d4d20** is observed, and its connection identity is checked. Large portal
+cases stress this serializer, not UpdatePortalLink's separate12-flag bound.
+A native filtered-null-target case also verifies filtering precedes backing
+validation. No actual user-zone entry dispatch or network delivery is claimed.
+
+Validation:
+
+- `python3 tools/dev.py build`: exit0, no warnings (`work/obelisk-user-list-build.log`);
+  shared resource waits respected.
+- `python3 tools/dev.py test`: exit0, **140/140 passed**, 30.68 seconds
+  (`work/obelisk-user-list-tests.log`).
+- Independent original regeneration/`cmp`: exit0, byte-identical192 cases
+  (`work/obelisk-runtime-user-list-repeat.tsv`).
+- Locked focused Ghidra export: exit0 (`work/obelisk-user-list-ghidra.log`).
+- All original EXE/PDB SHA256SUMS passed (`work/obelisk-user-list-hashes.log`);
+  `git diff --check`: clean. No SQL lifecycle action ran.
+
+Integration: at the original user scene publication point, bind send_user to
+that user's real connection. Pass ordinary records from the retained calling
+map; construct portal views using each configuration target_map(index) identity
+and actual MapPortal.position, plus its stable runtime link. Keep the real map/
+portal/connection owners alive across synchronous transport callbacks. This
+requires no canonical interface change, but actual ServerMaps mutable portal
+country/lifecycle and root user/world routing remain coordinator assembly work.
+Worker03's pool/init/zone adapter assignment was not duplicated. KC/calendar and
+other mandatory world services remain open. Canonical files and SQL were
+unchanged; final isolated SQL validation remains coordinator-owned. The server
+is not playable.
