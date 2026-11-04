@@ -475,3 +475,78 @@ integration. No SQL contracts/access changed; final isolated SQL checks remain
 coordinator work. The server is still not playable.
 
 Implementation commit: `121cf33fdd3b686361ce0fab9503a774d1fa0afa`.
+
+## Milestone 8 — retained configurable CKFSM execution
+
+Evidence: ps_game.exe CKFSM<CMob>::Start 004954c0, ExecuteStateMachine 004a8520,
+EvaluateCurrentStateTransitions 004a83e0; KFSMState OnEnter 00495da0, OnExit
+00495e00 and OnUpdate 004a8560. Focused Ghidra process export under
+`work/exports/09-mob-events/ps_game.exe`; all original hashes verified.
+
+Added an actual retained configurable state owner, separate from the fixed stack
+FSM: signed-code ordered state map, retained programs/transitions/conditions,
+optional compiled callback slots and explicit current/start codes. Missing state
+lookups insert a default empty state, matching operator[]. No canonical headers
+were changed. Default slots/disabled flags/vectors were checked against the
+state constructor 004963b0; its unused disabled-program declared counts are
+uninitialized in the image, so native zero counts for those unused slots are
+only internal normalization, not claimed recovered count values.
+Programs run before their compiled callbacks; enabled is sampled
+once, declared signed count/storage reload on each condition, and return values
+are ignored for phase programs. Callback selection reloads after the program.
+Invalid declared counts beyond retained storage fail explicitly.
+
+Transitions retain the initial current state's range even if a condition changes
+current. Every condition executes without short-circuit; signed DWORD results
+sum with wrap and compare with the live expected_sum. Empty-condition transitions
+to a different code ignore expected_sum; matching self transitions keep scanning.
+On a match, old current and destination are captured, exit and enter run while
+current still reflects preceding live writes, then the captured destination is
+published after both callbacks. Start publishes start before entering; Execute
+updates only and does not implicitly evaluate transitions.
+
+### Validation
+
+- `python3 tools/dev.py build`: exit 0, no compiler warnings; final log
+  `work/mob_ai_states_configured-final-build.log`.
+- `python3 tools/dev.py test`: exit 0, all 127 tests pass (34.39 s), including
+  `mob-ai-states-configured-unit` (0.03 s) and prior worker suites;
+  `work/mob_ai_states_configured-tests.log`.
+- Regenerated fixture compares byte-identically; original hashes match;
+  `git diff --check` clean. No SQL access/contracts added; coordinator retains
+  final isolated SQL integration.
+
+768 original executions cover Start, Execute,
+Evaluate and Execute+Evaluate; real state phase wrappers execute around observed
+TravelCondition and compiled callbacks. Original STL storage is adapted; native
+uses actual retained std::map/vectors/callables. Inputs include signed-wide codes,
+null callbacks, default insertion, unconditional/self transitions, full integer
+condition results, live sum/target/current mutations, program grow/shrink/disable,
+callback changes and wrapping runtime-field writes. Fixture regeneration matches
+byte-for-byte. State snapshots include ordering, callbacks, enabled/count fields,
+transition targets/thresholds and mutable condition results.
+
+### Dependencies / next integration
+
+TravelCondition 00498cf0 remains a required interpreter provider; each opaque
+condition preserves a seven-DWORD boundary (0x1c), including opaque token-vector
+metadata. Original pointer DWORDs are not native pointers: the future interpreter
+must supply retained native token storage/mappings. The oracle substitutes
+expression identities/results at this boundary; it does not execute tokens.
+No empty interpreter or
+required compiled-action default is supplied. Null callback slots are the actual
+recovered optional state-function contract, not substituted world services.
+Factory parsing, named function bindings and expression evaluation must populate
+this owner before production use. Active transition ranges/state/subject lifetime
+must survive callbacks; phase program storage may reload between evaluations.
+
+Coordinator should own one configured FSM alongside each MobRuntime's existing
+use_pais/status, binding the original CMob mainFSM at +ac; do not reuse state_stack
+or move normal status codes into this separate machine. CAIFactory::SetFSM
+004a9130 / ConnectToFSM 00491db0, expression/token evaluation, original text assets
+and compiled function registry are the next independent factory scope. World/
+Lua/target/combat services and canonical destruction dependency from milestone 7
+remain open. No SQL access/contracts changed; coordinator retains final isolated
+SQL integration/lifecycle. The server is not playable.
+
+Implementation commit: `295840f87eaafdc6380e118955574f0bb8e0957e`.
