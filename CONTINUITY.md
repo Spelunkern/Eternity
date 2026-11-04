@@ -1754,3 +1754,13 @@ Main session 7699 passed its own locked `world-admission-unit` on `25d85e2`
 (`.local/main-zone-wait-target.log`); full build is now running, with SQL next.
 Ingress session 69947 acquired the isolated SQL lock and has begun its integration
 phase (`Eternity-ingress/.local/composed-sql.log`); result remains pending.
+
+Created `/home/franco/Projects/Eternity-movement` on `coordinator/movement` from
+quest integration; cherry-picked 04's admitted-actor 0501 speed-check stage as
+`b967bd4`, preserving all CMake targets, and applied worker 04's proposed mutable
+canonical Actor movement accessor plus test without const_cast as `a4e413a`.
+Session 17196 runs locked `vertical-movement-dispatch-unit` after copying the
+completed quest build into this distinct worktree; result is pending. This stage
+requires earlier real StatusStand, life/distance/speed gates and later original
+movement, visibility, correction and cancellation effects. It is not a complete
+packet handler or production route. All Actor mutation must be serialized.
