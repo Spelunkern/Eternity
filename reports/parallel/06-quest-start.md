@@ -297,3 +297,96 @@ and integrates the shared runtime/interfaces into this worker's base, assign a
 production `QuestStartWorld` adapter under `quest_start_add`. Actual QuestAddItem
 and quest completion/removal remain outside this worker's ownership. Further
 independent implementation of those providers would duplicate another owner.
+
+## Block 5: actual quest item grants
+
+Expanded exclusive prefix: `quest_start_items`. New native coordinator recovers
+both `ps_game.exe`, `CUser::QuestAddItem` overloads: wrapper **0047e620**, inner
+**0047e6f0**. Focused Ghidra exports were produced with the locked `--process`
+wrapper under `work/exports/06-quest-start/ps_game.exe`. Additional evidence:
+`CGameData::GetItemInfo` **00402710**, `CObjectMgr::CreateItem` **0040a510**,
+`CItem::Init` **004b9f30**, and inline UID instructions **0047e854..0047e914**.
+
+Recovered behavior:
+
+- Definition lookup happens first. Original lookup accepts type/ID 1..255 and
+  requires nonzero type/ID bytes in its table record. Missing definition writes
+  null definition and clears bag/slot outputs. No clock/allocation/transport follows.
+- Snapshot signed open-bag count after lookup. Search bags 1..count, slots 0..23,
+  in order; never inspect equipment bag 0, merge a stack, enforce stack count,
+  split quantity or clamp quantity. Full/zero/negative bag count leaves existing
+  bag/slot outputs unchanged while still publishing the looked-up definition.
+- Allocate exactly once at the first free slot. Failure clears bag/slot and stops;
+  it does not retry later holes. Bind definition before the make-time clock.
+- Initialize definition type/ID, low count byte, full quality WORD, zero six gems,
+  first craft NUL, eleven zero craft additions, packed local make time and make
+  type ASCII `Q`. Craft bytes after the first NUL survive pooled reuse.
+- Obtain a required server-wide UID; claim/store the pointer in the selected slot
+  and set bag/slot outputs before default craft assignment. For nonzero server
+  and required wisdom 1..99, craft becomes twenty ASCII zeroes plus NUL; otherwise
+  it stays empty. Send exact DB `0x0701` (57 bytes) after this state is published.
+- The wrapper sends exact client `0x0205` (16 bytes) only on success, AFTER DB.
+  Client type/ID/count are low bytes of the requested arguments; quality is the
+  definition's full quality WORD, gems/trailing craft are zero. It does not send
+  UID or actual crafted string. Neither function emits an item log, party notice,
+  pickup side effect or failure packet. Transport acknowledgments do not govern
+  the boolean success return.
+
+### Shared-owner composition and production adapter
+
+Native code reuses `GroundItem`, `GroundItemPool`'s allocation contract,
+`initialize_ground_item`, `set_ground_item_craft`, `inventory_add_packet` and
+`inventory_receipt_packet`; it does not copy inventory/pool/packet bodies.
+Definitions, empty-slot access, allocation, make-time clock, shared UID generation,
+raw ownership claim and transports are mandatory ports with no no-op defaults.
+
+Coordinator Actor patch needed: serialized empty-slot access plus a method that
+claims an ALREADY allocated `GroundItem` into retained inventory at bag/slot,
+without stack merging, reallocation, pickup/party/log/DB/client effects. Keep the
+pointer authoritative during `store` (which precedes default craft assignment),
+then synchronize any Actor `inventory_` value mirror by the DB send boundary.
+The pool must outlive the actor. Do not use `Actor::receive_item` (extra pickup
+behavior) or `load_inventory_item` (allocates a second object); do not bypass
+`retained_inventory_` ownership by only pushing its public value vector.
+Read-only canonical Actor/inventory/pool/UID sources were inspected, not modified.
+
+UID is deliberately a REQUIRED shared-owner port. The oracle executes the real
+inline generator, including unsigned tick/deadline comparison, wrapping +2000,
+reset to the global baseline counter, 32-bit increment and low-16-bit shift,
+packed local-calendar refresh and server byte. Existing canonical `ItemIds::next`
+uses a 64-bit deadline, resets counter to zero and throws at 65535; do not claim
+it is equivalent at these boundaries or instantiate a separate quest-only UID
+owner. The coordinator must reconcile the shared UID contract or supply its
+accurate equivalent. Make time is sampled BEFORE UID acquisition; UID refresh
+may sample a later local second. Do not collapse those two calendar observations.
+
+### Validation
+
+`python3 tools/dev.py build`: exit 0, 134 steps, no warnings.
+`python3 tools/dev.py test`: exit 0; **124/124** tests in **35.11 s**.
+`quest-start-items-unit`: **384** original cases / **152** grants matched.
+Logs: `work/quest-start-items-build.log`, `work/quest-start-items-test.log`.
+`git diff --check`: exit 0.
+
+The new oracle executes BOTH complete original grant
+functions, the actual item-definition lookup and original inline UID generator.
+Only CreateItem, OS clocks/locks and transports are ports. 384 deterministic
+cases include 152 successful grants, alias definition fields vs requested bytes,
+quality 0/255/256/65535, counts -1/0/255/256/513, required-wisdom/server branches,
+first/last/second-bag holes, full bags, negative/zero bag counts, lookup failure,
+allocation failure, retained craft tails and UID baseline/deadline/counter wrap.
+Original stack storage starts zeroed; DB packet string tails after the copied
+NUL are unspecified stack bytes in the original and deterministic zeros here.
+The native shared serializer intentionally zero-initializes those tails.
+Native tests compare the complete grant CItem payload, scan/make-time/store
+observations and UID results, full DB/client packets and lower-overload output parameters. They compose
+the real GroundItemPool and apply each DB grant to real InventoryReplica.
+Generator repeat is byte-identical; original EXE/PDB hashes and Python checks pass.
+SQL lifecycle/full integration remain coordinator-owned; no SQL contract changed.
+
+Block 5 implementation commit: `5d9e55c87a2ed7cba7f4bc553d377e2de86b4218`.
+
+Next independent block: execute QuestGetStartItem **0047eb70** with all three
+actual grant calls and persistent inventory/pool/cache, verifying that earlier
+slot claims affect later grants and that failures do not stop remaining grants.
+Production owner/interface dependencies above remain explicit.
