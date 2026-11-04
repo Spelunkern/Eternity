@@ -45,19 +45,25 @@ public:
     virtual void game_log(const net::Packet&)=0;
     virtual void database(const net::Packet&)=0;
     virtual void update_portal_links()=0;
-    // Principal uses CObjectMgr::CreateMob; companions use heap allocation.
-    virtual MobRuntime* allocate(bool principal)=0;
-    // Companion-only: assign atomic world ID and seed drop random with time^ID.
+    // true: CObjectMgr::CreateMob (principal and periodic replenishment);
+    // false: raw heap allocation (companions during complete respawn only).
+    virtual MobRuntime* allocate(bool manager_create)=0;
+    // Raw heap path only: assign atomic world ID and seed drop random with time^ID.
     virtual void prepare_companion(MobRuntime&)=0;
     virtual void initialize(MobRuntime&,const MobRuntimeTemplate&,MobRespawn&)=0;
     virtual void enter(MobRuntime&)=0;
     virtual std::int32_t random()=0; // Original CRT rand(), nonnegative.
 };
 // ps_game.exe CMap::ObeliskDestroy 0042a410 / ObeliskRespawn 0042a6f0.
-// Timer scheduling, SQL configuration and world-service implementations are owned
+// Tick dispatch, SQL configuration and world-service implementations are owned
 // by callers; no required provider has a default no-op.
 void destroy_obelisk(ObeliskRuntimeMap&,ObeliskRuntime&,std::size_t index,
                      const MobRuntime& destroyed,std::int32_t country,bool reset,
                      const std::array<std::int32_t,2>& kill_count_add,ObeliskRuntimeWorld&);
 void respawn_obelisk(ObeliskRuntimeMap&,ObeliskRuntime&,ObeliskRuntimeWorld&);
+// CMap::UpdateRespawnObelisk 00429da0. Unsigned deadline <= now; one attempt
+// per eligible companion group per invocation. Calls complete respawn only for
+// principal current < 1, and never replenishes that group's companions that tick.
+void update_obelisk_respawns(ObeliskRuntimeMap&,std::span<ObeliskRuntime>,
+                             std::uint32_t now,ObeliskRuntimeWorld&);
 }

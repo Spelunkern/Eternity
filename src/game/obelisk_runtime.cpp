@@ -29,6 +29,15 @@ std::int32_t tile(float value) {const auto v=std::trunc(static_cast<double>(valu
 float coordinate(ObeliskRuntimeWorld& w,const ObeliskRuntimeSpawn& s,float center) {
     return static_cast<float>((static_cast<double>(static_cast<float>(w.random()%s.radius_twice))-s.radius)+center);
 }
+std::optional<UserPosition> random_position(const ObeliskRuntimeMap& map,const ObeliskRuntimeSpawn& s,ObeliskRuntimeWorld& w) {
+    if(s.radius_twice<=0) throw std::invalid_argument("Invalid obelisk spawn radius");
+    const auto x=coordinate(w,s,s.center.x),z=coordinate(w,s,s.center.z);const auto tx=tile(x),tz=tile(z);
+    if(tx<0||tz<0||tx>=map.size||tz>=map.size) return std::nullopt;
+    const auto at=static_cast<std::uint32_t>(map.size)*static_cast<std::uint32_t>(tz)+static_cast<std::uint32_t>(tx);
+    if(at/8>=map.blocked_tiles.size()) throw std::invalid_argument("Obelisk terrain projection too short");
+    if((map.blocked_tiles[at/8]>>(at%8))&1U) return std::nullopt;
+    return UserPosition{x,s.center.y,z};
+}
 }
 void ObeliskRuntimeSpawn::add(MobRuntime* mob) {if(members.empty()) return;const auto end=members.begin()+static_cast<std::ptrdiff_t>(slots(*this));const auto at=std::find(members.begin(),end,nullptr);if(at!=end) *at=mob;}
 void ObeliskRuntimeSpawn::remove(MobRuntime* mob) {if(members.empty()) return;const auto end=members.begin()+static_cast<std::ptrdiff_t>(slots(*this));const auto at=std::find(members.begin(),end,mob);if(at!=end) *at=nullptr;}
@@ -66,14 +75,33 @@ void respawn_obelisk(ObeliskRuntimeMap& map,ObeliskRuntime& o,ObeliskRuntimeWorl
         definition=s.definitions[static_cast<std::size_t>(o.country)];if(!definition) continue;
         s.respawn.current=s.count;s.respawn.next=0;
         for(std::int32_t n=0;n<s.count;++n) {
-            if(s.radius_twice<=0) throw std::invalid_argument("Invalid obelisk spawn radius");
-            const auto x=coordinate(w,s,s.center.x),z=coordinate(w,s,s.center.z);const auto tx=tile(x),tz=tile(z);
-            if(tx<0||tz<0||tx>=map.size||tz>=map.size) continue;
-            const auto at=static_cast<std::uint32_t>(map.size)*static_cast<std::uint32_t>(tz)+static_cast<std::uint32_t>(tx);
-            if(at/8>=map.blocked_tiles.size()) throw std::invalid_argument("Obelisk terrain projection too short");
-            if((map.blocked_tiles[at/8]>>(at%8))&1U) continue;
+            const auto position=random_position(map,s,w);if(!position) continue;
             mob=w.allocate(false);if(!mob) continue;
-            w.prepare_companion(*mob);mob->definition=definition;w.initialize(*mob,*definition,s.respawn);mob->position={x,s.center.y,z};s.add(mob);w.enter(*mob);
+            w.prepare_companion(*mob);mob->definition=definition;w.initialize(*mob,*definition,s.respawn);mob->position=*position;s.add(mob);w.enter(*mob);
+        }
+    }
+}
+void update_obelisk_respawns(ObeliskRuntimeMap& map,std::span<ObeliskRuntime> obelisks,std::uint32_t now,ObeliskRuntimeWorld& w) {
+    if(!map.zone_present) return;
+    for(auto& o:obelisks) {
+        country_check(o.country);
+        if(!o.definitions[static_cast<std::size_t>(o.country)]) continue;
+        if(o.respawn.current<1) {
+            if(o.respawn.next<=now) respawn_obelisk(map,o,w);
+            continue;
+        }
+        for(auto& s:o.spawns) {
+            country_check(o.country);
+            const auto* definition=s.definitions[static_cast<std::size_t>(o.country)];
+            if(!definition || s.respawn.current>=s.count || s.respawn.next>now) continue;
+            const auto position=random_position(map,s,w);if(!position) continue;
+            auto* mob=w.allocate(true);if(!mob) continue;
+            mob->definition=definition;w.initialize(*mob,*definition,s.respawn);mob->position=*position;
+            // Original reads the live definition after Init, before AddMob/Enter.
+            if(!mob->definition) throw std::invalid_argument("Initialized obelisk mob requires definition");
+            s.respawn.current=std::bit_cast<std::int32_t>(static_cast<std::uint32_t>(s.respawn.current)+1U);
+            s.respawn.next=now+mob->definition->respawn_time;
+            s.add(mob);w.enter(*mob);
         }
     }
 }
