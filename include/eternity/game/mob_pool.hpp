@@ -27,6 +27,13 @@ public:
         :counter_(counter),services_(services),skills_(&skills){}
     // Two-argument constructor above is the historical damage-only projection;
     // it cannot provide applied skills and does not fabricate lifetime ports.
+    // Alloc 0040ab80: constructor/binding on fresh objects, LIFO reuse otherwise.
+    // Does not change retained ID/random state or consume the manager counter.
+    MobRuntime* allocate_raw();
+    // Exactly one manager preparation for an outstanding raw allocation:
+    // increment world ID, then sample Unix time and seed time^ID.
+    // Foreign, released or already prepared objects are rejected without writes.
+    void prepare_allocated(MobRuntime&);
     MobRuntime* allocate();
     void release(MobRuntime&);
     std::uint32_t construction_attempts() const noexcept {return construction_attempts_;}
@@ -38,5 +45,6 @@ private:
     std::uint32_t construction_attempts_=0;
     std::vector<std::unique_ptr<MobRuntime>> objects_;
     std::vector<MobRuntime*> available_;
+    std::vector<MobRuntime*> unprepared_;
 };
 }
