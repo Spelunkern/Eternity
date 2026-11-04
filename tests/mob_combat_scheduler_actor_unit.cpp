@@ -8,7 +8,9 @@
 using namespace eternity;using namespace eternity::game;
 namespace {
 std::string hex(const net::Packet& bytes){const char* d="0123456789abcdef";std::string out;for(auto b:bytes){out+=d[b>>4];out+=d[b&15];}return out;}
-struct Scene final:ActorScene {
+struct Scene final:ActorScene,ActorEffectDatabase {
+    std::vector<net::Packet> effect_database_packets;
+    void send_effect_database(const net::Packet& packet) noexcept override {effect_database_packets.push_back(packet);}
     Actor* actor=nullptr;MobCombatSchedulerBindings* bindings=nullptr;
     unsigned mutation=0,released=0;bool observing=false,error=false,saw_removal=false;std::string events;
     std::string snapshot() const {
