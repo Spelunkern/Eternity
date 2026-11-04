@@ -1,4 +1,4 @@
-#include "eternity/game/mob_ai_states_argument_math.hpp"
+#include "eternity/game/mob_ai_states_nested.hpp"
 #include "eternity/game/mob_ai_states_bindings.hpp"
 #include <algorithm>
 #include <bit>
@@ -229,7 +229,7 @@ std::int32_t interpret_mob_ai_zero_argument_calls(MobAiConfiguredFsm& owner,MobA
 }
 
 namespace eternity::game {
-static bool calculate_argument_values(MobAiConfiguredFsm& owner,MobAiConfiguredCondition& condition,MobAiParameter& output,bool arithmetic=false){
+static bool calculate_argument_values(MobAiConfiguredFsm& owner,MobAiConfiguredCondition& condition,MobAiParameter& output,bool arithmetic=false,const std::function<MobAiParameter(const MobAiToken&)>& system_call={}){
     MobAiValueStack stack;stack.capacity=20;stack.slots=std::vector<MobAiParameter>(20,MobAiParameter(0));MobAiParameter numeric(0);bool known=false;
     for(;;){
         const auto index=std::bit_cast<std::int32_t>(condition.words[2]);
@@ -256,6 +256,10 @@ static bool calculate_argument_values(MobAiConfiguredFsm& owner,MobAiConfiguredC
         }else if(token.type==7){
             if(std::find(token.value.begin(),token.value.end(),'\0')==token.value.end())throw std::logic_error("Mob AI argument string literal lacks a terminator");
             MobAiParameter value(4);value.text=token.value;push(stack,value);
+        }else if(token.type==4&&system_call){
+            const auto result=system_call(token);
+            if(result.type==4&&std::find(result.text.begin(),result.text.end(),'\0')==result.text.end())throw std::logic_error("Mob AI nested result has no retained terminator");
+            push(stack,result);
         }else if(token.type==8&&arithmetic){
             const auto first=pop(stack);const auto second=pop(stack);assign(numeric,second);known=true;
             if(integer_arithmetic(numeric,first,second,token.opcode))push(stack,numeric);
@@ -267,14 +271,15 @@ static bool calculate_argument_values(MobAiConfiguredFsm& owner,MobAiConfiguredC
 
 namespace eternity::game {
 void calculate_mob_ai_argument(MobAiConfiguredFsm& owner,MobAiConfiguredCondition& condition,MobAiParameter& output){static_cast<void>(calculate_argument_values(owner,condition,output));}
-static std::int32_t interpret_expression_calls(MobAiConfiguredFsm& owner,MobAiConfiguredCondition& condition,MobAiSystemCatalog& definitions,MobAiArgumentDispatcher& dispatcher,bool arithmetic){
-    const auto call=[&](const MobAiToken& token){
+static std::int32_t interpret_expression_calls(MobAiConfiguredFsm& owner,MobAiConfiguredCondition& condition,MobAiSystemCatalog& definitions,MobAiArgumentDispatcher& dispatcher,bool arithmetic,bool nested=false){
+    std::function<MobAiParameter(const MobAiToken&)> call;
+    call=[&](const MobAiToken& token){
         const auto before=definitions.find(token.function_id);
         if(before==definitions.end())throw std::logic_error("Mob AI call requires a factory-populated function definition");
         const auto count=before->second.parameter_count;
         std::vector<MobAiParameter> arguments;MobAiParameter argument(0);bool known=false;
         for(std::int32_t i=0;i<count;++i){
-            known=calculate_argument_values(owner,condition,argument,arithmetic)||known;
+            known=calculate_argument_values(owner,condition,argument,arithmetic,nested?call:std::function<MobAiParameter(const MobAiToken&)>{})||known;
             if(!known)throw std::logic_error("Mob AI first argument has undefined original retained type");
             MobAiParameter copy(argument.type);assign(copy,argument);arguments.push_back(copy);
         }
@@ -303,4 +308,8 @@ namespace eternity::game {
 void calculate_mob_ai_arithmetic_argument(MobAiConfiguredFsm& owner,MobAiConfiguredCondition& condition,MobAiParameter& output){static_cast<void>(calculate_argument_values(owner,condition,output,true));}
 std::int32_t interpret_mob_ai_piped_calls(MobAiConfiguredFsm& owner,MobAiConfiguredCondition& condition,MobAiSystemCatalog& definitions,MobAiArgumentDispatcher& dispatcher){return interpret_expression_calls(owner,condition,definitions,dispatcher,false);}
 std::int32_t interpret_mob_ai_expression_calls(MobAiConfiguredFsm& owner,MobAiConfiguredCondition& condition,MobAiSystemCatalog& definitions,MobAiArgumentDispatcher& dispatcher){return interpret_expression_calls(owner,condition,definitions,dispatcher,true);}
+}
+
+namespace eternity::game {
+std::int32_t interpret_mob_ai_nested_calls(MobAiConfiguredFsm& owner,MobAiConfiguredCondition& condition,MobAiSystemCatalog& definitions,MobAiArgumentDispatcher& dispatcher){return interpret_expression_calls(owner,condition,definitions,dispatcher,true,true);}
 }

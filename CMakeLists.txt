@@ -1728,3 +1728,10 @@ if(BUILD_TESTING)
     target_link_libraries(mob-targeting-lifecycle-lose-unit PRIVATE eternity_game)
     add_test(NAME mob-targeting-lifecycle-lose-unit COMMAND mob-targeting-lifecycle-lose-unit ${CMAKE_CURRENT_SOURCE_DIR}/tests/data/mob-targeting-lifecycle-lose-oracle.tsv)
 endif()
+
+# Worker 09: recursive original CalculateParam function calls and F_OUT ordering.
+if(BUILD_TESTING)
+    add_executable(mob-ai-states-nested-unit tests/mob_ai_states_nested_unit.cpp)
+    target_link_libraries(mob-ai-states-nested-unit PRIVATE eternity_game)
+    add_test(NAME mob-ai-states-nested-unit COMMAND mob-ai-states-nested-unit ${CMAKE_CURRENT_SOURCE_DIR}/tests/data/mob_ai_states_nested-oracle.tsv)
+endif()
