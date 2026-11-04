@@ -1320,3 +1320,10 @@ combat/SQL validation. Independent 06 reports 306/306 tests and isolated SQL
 passed for `bad2e9f`/`770173d`; review and central integration remain pending.
 Original AttackSuccess incoming x87 control can change outcomes; worker explicitly
 limits its native implementation to measured 53-bit nearest/masked environment.
+
+Coordinator inspected `bad2e9f` AttackSuccess final implementation: explicit
+nearest/masked checks, binary64 staging, original integer wrap and invalid FISTP
+boundaries are present, with the documented restriction to 53-bit precision.
+Native worker evidence remains 306/306 and isolated SQL; root binding and
+AttackDamage are absent. 06 was assigned AttackDamage 0044d540. Main network
+application test session 53983 remains live, waiting for the shared build slot.
