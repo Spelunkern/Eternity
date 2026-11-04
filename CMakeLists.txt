@@ -1256,3 +1256,5 @@ if(BUILD_TESTING)
     target_link_libraries(mob-ai-states-tokens-unit PRIVATE eternity_game)
     add_test(NAME mob-ai-states-tokens-unit COMMAND mob-ai-states-tokens-unit ${CMAKE_CURRENT_SOURCE_DIR}/tests/data/mob_ai_states_tokens-oracle.tsv)
 endif()
+
+target_sources(eternity_game PRIVATE src/game/obelisk_runtime_definition_records.cpp)

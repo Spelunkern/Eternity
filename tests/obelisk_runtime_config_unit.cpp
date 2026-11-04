@@ -1,4 +1,5 @@
 #include "eternity/game/obelisk_runtime_config.hpp"
+#include "eternity/game/obelisk_runtime_definition_records.hpp"
 #include <bit>
 #include <fstream>
 #include <iostream>
@@ -7,9 +8,18 @@
 #include <stdexcept>
 using namespace eternity::game;
 namespace {
-struct Owner final:ObeliskRuntimeDefinitionOwner {
-    std::array<std::uint32_t,12> marked{};
-    void mark_obelisk(const MobRuntimeTemplate& d) override {if(d.id<marked.size()) marked[d.id]=1;}
+struct Owner {
+    std::array<std::array<std::byte,268>,12> records{};
+    ObeliskRuntimeDefinitionRecords marker;
+    Owner():marker([this](std::uint32_t id)->std::span<std::byte>{return records.at(id);}) {
+        for(std::size_t id=0;id<records.size();++id) {
+            auto& record=records[id];
+            // Non-flag sentinels detect accidental unrelated raw-record writes.
+            record.fill(std::byte{0xa5});record[0]=static_cast<std::byte>(id);record[1]=std::byte{0};
+            record[0x22]=id%7?std::byte{1}:std::byte{0};record[0x23]=std::byte{0};
+            record[0x30]=std::byte{1};record[0x31]=record[0x32]=record[0x33]=std::byte{0};record[0x7c]=std::byte{0};
+        }
+    }
 };
 MobRuntimeTemplates catalog() {
     eternity::storage::ResultSet rows;rows.columns={"MobID","Level","AI","HP","SP","MP","Dex","Wis","Luc","Attrib","Defense","Magic","Attacktime3","Attackspecial3","Exp"};
@@ -45,9 +55,12 @@ void run(int scenario,const std::vector<std::uint32_t>& expected,const MobRuntim
         }
         parsed=parse_obelisk_runtime_configuration(text.str());
     }
-    auto configuration=ObeliskRuntimeConfiguration::bind(parse?std::span<const ObeliskRuntimeZoneInput>(parsed):std::span<const ObeliskRuntimeZoneInput>(zones),std::array<std::int32_t,3>{40,40,40},definitions,owner,state);
+    auto configuration=ObeliskRuntimeConfiguration::bind(parse?std::span<const ObeliskRuntimeZoneInput>(parsed):std::span<const ObeliskRuntimeZoneInput>(zones),std::array<std::int32_t,3>{40,40,40},definitions,owner.marker,state);
     // A moved owner must preserve every spawn address already stored in respawns.
     auto moved=std::move(configuration);
+    Owner baseline;
+    for(std::size_t id=0;id<owner.records.size();++id) for(std::size_t offset=0;offset<268;++offset)
+        if(offset!=0x7c&&owner.records[id][offset]!=baseline.records[id][offset]) throw std::runtime_error("Obelisk marker changed unrelated definition bytes");
     std::vector<std::uint32_t> actual{state.next_id,static_cast<std::uint32_t>(state.total),static_cast<std::uint32_t>(state.kill_count_add[0]),static_cast<std::uint32_t>(state.kill_count_add[1])};
     const auto word=[&](auto value){actual.push_back(static_cast<std::uint32_t>(value));};
     const auto position=[&](UserPosition p){word(std::bit_cast<std::uint32_t>(p.x));word(std::bit_cast<std::uint32_t>(p.y));word(std::bit_cast<std::uint32_t>(p.z));};
@@ -66,7 +79,7 @@ void run(int scenario,const std::vector<std::uint32_t>& expected,const MobRuntim
             }
         }
     }
-    for(auto flag:owner.marked) word(flag);
+    for(const auto& record:owner.records) word(std::to_integer<std::uint32_t>(record[0x7c]));
     if(actual!=expected) {
         std::size_t i=0;while(i<actual.size()&&i<expected.size()&&actual[i]==expected[i]) ++i;
         std::cerr<<"Scenario "<<scenario<<" word "<<i<<" native="<<(i<actual.size()?std::to_string(actual[i]):"end")<<" original="<<(i<expected.size()?std::to_string(expected[i]):"end")<<'\n';
@@ -77,7 +90,14 @@ void run(int scenario,const std::vector<std::uint32_t>& expected,const MobRuntim
 int main(int argc,char** argv) {
     try {
         if(argc!=2&&argc!=3) throw std::runtime_error("Expected config fixture");std::ifstream input(argv[1]);if(!input) throw std::runtime_error("Missing config fixture");
-        auto definitions=catalog();std::string line;unsigned count=0;
+        bool missing=false;try {ObeliskRuntimeDefinitionRecords invalid(ObeliskRuntimeDefinitionRecords::Access{});} catch(const std::invalid_argument&) {missing=true;}
+        if(!missing) throw std::runtime_error("Required shared definition owner was silently omitted");
+        auto definitions=catalog();
+        Owner guarded;const auto* first=definitions.find(1);if(!first) throw std::runtime_error("Missing guard input definition");
+        guarded.records[1][0]=std::byte{2};bool stale=false;
+        try {guarded.marker.mark_obelisk(*first);} catch(const std::invalid_argument&) {stale=true;}
+        if(!stale||guarded.records[1][0x7c]!=std::byte{0}) throw std::runtime_error("Stale catalog binding was mutated");
+        std::string line;unsigned count=0;
         while(std::getline(input,line)) {if(line.empty()||line[0]=='#') continue;std::istringstream row(line);int scenario;row>>scenario;std::vector<std::uint32_t> expected;std::uint32_t n;while(row>>n) expected.push_back(n);run(scenario,expected,definitions,argc==3);++count;}
         if(count!=64) throw std::runtime_error("Incomplete config fixture");std::cout<<count<<" original obelisk materialization scenarios passed\n";return 0;
     } catch(const std::exception& e) {std::cerr<<e.what()<<'\n';return 1;}
