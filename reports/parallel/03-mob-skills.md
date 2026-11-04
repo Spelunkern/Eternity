@@ -1084,3 +1084,130 @@ Latest validation remains 137/137 tests (44.83 seconds), four focused sanitized
 compositions, byte-identical original zones replay and all 12 binary hashes.
 Tree was clean before this update; git diff --check passed. No SQL access or
 global completion claim.
+
+## Concrete canonical zone factory and partial initialization
+
+Implementation: ff62d6c2ad634eadec728c025da4e859b4f162f6. New exclusive
+mob_zone_services header/source/test and private CMake only; zones.hpp/cpp,
+main and other worker files remain unchanged. Current continuity confirms the
+nineteenth integration freeze and the explicit factory assignment.
+
+MobZoneServices now implements ZoneServices with concrete RuntimeZone allocation,
+map preparation and object creation over canonical owners. There is no new
+registry, map configuration, catalog or pool. Its zones are allocated by the SAME
+ZoneRegistry inside MobPrimaryZones. Map preparation creates actual
+ZoneEnvironment, ZoneUsers, ZoneNpcs, ZoneCorpses and ZoneItems, plus canonical
+per-zone regular and linked spawn copies. NPC initialization uses
+ZoneNpcs::initialize with actual NpcDefinitions. Map object initialization calls
+MobPopulation::initialize, whose required linked callback calls
+LinkedMobPopulation::initialize with the SAME bound MobPool and MobInitPorts.
+No clock/RNG samples, IDs or initialization results are fabricated. Primitive
+clock/RNG providers must not throw, matching original primitive operations.
+
+Source evidence reused/read directly: ps_game.exe CZone::MapInit 0041c8a0
+(copies map mob/linked sources and calls CMap::InitNPC), CMap::InitNPC 00429130,
+CZone::MapInitObject 0041c5f0 (regular spawning followed by linked initialization),
+CZone::MapInitBothMob 0041b470, CZone::MapReleaseObject 0041c3b0 (unlink/index clear,
+AI cleanup/recycle and instance portal clearing), and CWorld::InitZones 00414870.
+Existing canonical modules retain their original recovery. This is an owner
+composition, not a claim of new complete original world execution equivalence.
+
+The factory requires a retained dependency assembly, bound pool, templates,
+NpcDefinitions, MobInitPorts, WorldCorpses, linked configuration projection,
+Unix/local clocks, NPC heap release and actual instance wait-queue publication.
+A required per-RuntimeZone bind function returns retained mob/NPC/corpse/item
+service ports. All four must exist before map resources are created. This
+binding matters: cell service calls carry coordinates without a map ID, so a
+single unbound cell transport across maps would be incorrect. Ports must bind
+the actual zone and avoid strong backreferences into root/registry. No successful
+empty AI/Lua/transport/KC provider was added. Required callback presence is
+validated; semantic backend availability remains the provider's responsibility
+and unsupported operations must report failure.
+
+Each concrete zone retains its factory and per-zone ports. Lifetime-stable
+geometry is stored in that zone for corpse/item owners that borrow geometry.
+Partial map/object initialization uses the same concrete destructor cleanup as
+normal destruction. AI initialization exceptions before EnterMob explicitly
+return the unregistered subject to the real pool, then propagate; zone cleanup
+releases previously entered actors. Bulk release recycles canonical members and
+retains the ORIGINAL regular/linked source objects in the service when not
+already retired by MobPrimaryZones. Thus instance-cache preparation and failed
+initialization also preserve pooled raw respawn pointers until pool destruction.
+Release preserves map/NPC/environment owners, matching the separation between
+MapInit and MapReleaseObject. Reopen rebuilds retired spawn copies and runs real
+population initialization. Normal root retirement still owns primary sources;
+factory retention handles other release/partial-init paths without duplication.
+
+Real users, corpses and ground items must be drained by their world owners before
+release. A nonempty view explicitly rejects release; it is not silently detached
+or freed without its backend. The root's retained stage permits that owner to
+evacuate and retry release without replaying obelisk reset. At final concrete
+zone destruction, NPCs leave the actual ZoneNpcs and return through the required
+heap provider. Views are destroyed before their retained geometry/ports die.
+Live views at destruction violate the explicit shutdown precondition. Primitive
+allocation/ID/clock providers and destructor cleanup must obey their nonthrowing
+contracts; this does not promise recovery from arbitrary allocation failure
+inside canonical pool/list primitives. Raw public mob zone fields after bulk
+release remain non-owning residues; backend AI teardown must not dereference a
+destroyed partial-init zone through them.
+
+Validation:
+
+- python3 tools/dev.py build passed; final
+  work/mob-zone-services-build-verified.log has no warnings. An earlier reuse of
+  a test main under a renamed symbol emitted a return-type warning; diagnostic
+  suppression is scoped to that unchanged fixture include. No build failure.
+- python3 tools/dev.py test: **138/138 passed**, 25.87 seconds, in
+  work/mob-zone-services-test-bound.log. Earlier complete passes were 138/138
+  (47.03 and 27.00 seconds); preserved rather than hidden.
+- After adding the real corpse blocked-release/retry case, final focused CTest
+  passed **2/2**, 0.04 seconds: work/mob-zone-services-focused.log. This exercises
+  both the existing primary owner suite and the final factory suite.
+- Six factory scenarios reuse the existing original-format map/catalog/bound
+  damage/skill fixture instead of duplicating fixture data. Success creates a
+  regular mob, linked leader and linked companion per map; actual obelisk
+  startup adds two actors. They cover actual periodic obelisk dispatch,
+  corpse-owner release failure and retry, reopen, complete drain/destruction,
+  invalid linked radius after entry, missing linked configuration, compiled AI
+  and Lua initialization exceptions before entry, and absent per-zone services.
+  Every failure leaves all allocated mobs available in the SAME pool. The
+  successful case verifies canonical source pointer identity and real cell
+  owners. Unchanged primary tests retain their lease/lifetime/ordering coverage.
+- Final root/factory/test ASan+UBSan run passed all six cases:
+  work/mob-zone-services-sanitized-final.log. Linked existing game/storage
+  archives remain normal builds; not a fully instrumented server claim.
+- Original execution via .local/oracle-env/bin/python tools/mob_population_oracle.py
+  and tools/linked_mobs_oracle.py matched existing mob-population-oracle.tsv and
+  linked-mobs-oracle.tsv byte for byte. Outputs stayed under ignored
+  work/mob-zone-services-{regular,linked}-original.tsv; no duplicate/rewritten
+  fixture was committed. Native original comparisons passed in the full suite.
+- All 12 original binary/PDB SHA256SUMS passed
+  (work/mob-zone-services-hashes.log); git diff --check passed. No SQL access or
+  database lifecycle changes. Existing exact worker04/catalog snapshots remain
+  read-only compatibility inputs; integrated builds use canonical modules.
+
+Production hook refinement (coordinator-owned main remains untouched): retain
+an assembly containing the SAME maps, loaded NPC/runtime/full catalogs, actual
+LinkedMobConfiguration, heap/counter/AI services, executor RNG and MobInitPorts.
+Construct the bound unique MobPool against that assembly; create
+MobZoneServices with its pool reference and retained assembly token. Its linked
+projection should return the existing LinkedMobConfiguration::for_map view,
+not parse/copy another catalog. Bind each actual RuntimeZone to real cell
+transport/allocation/Lua ports. Move that SAME unique pool into
+MobPrimaryZones::create with the new concrete factory; initialize the existing
+registry, then attach the exact retained obelisk owners and dispatch startup.
+This occurs before serve's world->start()/io.run(), not in the validation-only
+ServerMaps local. Regular/linked frames can use canonical
+RuntimeZone::update_mob_population inside root leases with the real
+LinkedMobWorld and obelisk callback; root.tick remains obelisk-only.
+
+Stop admission/producers, evacuate real users/corpses/items, release leases and
+complete retained root drain before releasing root. Root destroys the actual
+pool before registry containers/source storage/configuration/assembly services;
+no other owner may destroy or replace that pool. Keep source/definition and
+non-mob heap providers alive through their respective final destruction. The
+factory does not supply the real AI/Lua factory, map/user transport, KC/linked
+world operations, DB/log/calendar/queue implementations, global frame scheduler
+or signal/serve assembly. These precise providers remain required inputs; no
+second authority or no-op fallback fills them. Full isolated SQL and final main
+integration belong to the coordinator; gameplay completion is not claimed.
