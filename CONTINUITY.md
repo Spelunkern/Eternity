@@ -709,3 +709,49 @@ Reviewed2037bb0/b2e1273 RemApplySkillVisionFix actual list/pool cleanup: zero ID
 Session56420 exited0: native build,200/200tests62.37s, complete isolatedSQL(final guild disposable catalog included), restored targeting binding match355skills/2746definitions/1871links(20disabled). Source5e8d1cb includes corrected shared ItemIds algorithm. Logs .local/seventh-batch-{build,tests,sql,bindings-sql}.log. Freeze released; publish verified batch. Queue distinguishes validated entries from newer pending deliveries. Actual callers still need retained live generator wiring; worker02 owns CharacterCommands migration on branch.
 
 Reviewed/queueda8ee553/90e3b8b portal ownership/publication and two-pass neighbor closure:1024 reported original cases/129tests after correcting native side*4 reference indexing; initial128/129 failure preserved. At most12links, exact DB/map/world packet ordering and live callback reads. Production stable config/transports still required; pending next Death-to-portal composition remains worker scope. This delivery is not covered by completed200-test batch. Objective remains open, real world/Lua/inventory/visitor assembly incomplete.
+
+## Reviewed integration queue: worker09 042b982c
+
+Revieweda16ee67/6479a12 compiled MoveAtSelectedPosition via named registry/actual map/trail/status. Reported1536 original cases/132tests after test-only optional coordinate comparison correction. Exact snapshot/commits queued. Home0.5/20 gates, selectedY clearing/full-position rejection and map line verified; world MoveMob remains required. Raw status3 write must not dispatch/replace fixed state_stack. Actual map/subject/services retained together. Factory/TravelCondition/other handlers remain open. Latest validated publication695ae88(200tests/fullSQL/bindings); no pipeline active.
+
+## Reviewed integration queue: worker04 7de6b2aa
+
+Reviewed31d85d4/3fbc5fb evidence-only actual Death->Destroy->portal publication->corpse/pool composition:256 reported sequences/2048operations,130tests. Exact snapshot/commits queued. Portal map publication routes its actual target map, not necessarily dying actor map; stable global country/obelisk bindings survive callbacks. No additional decrement/recycle. Production configuration/world providers remain required. Last validated publication695ae88; no pipeline active.
+
+## Reviewed worker01 26c281f2 — actual Actor operations and zone visitor task
+
+Reviewedd9bb675/8fce79c scheduler adapter delegates actual Actor cancel_shape_on_attack/cancel_move/send_self;768 reported original comparisons/130tests. Exact snapshot/commits queued. Important backend gap: original immediate0902 effect removal is observed, canonical owner erases replica for later persistence; no wire equivalence claimed. Expanded exclusive ZoneUsers visitor assignment to01: zone_users.hpp/cpp and tests, shared live whole-zone cursor/same tick/retain actor through callbacks, actual scheduler composition. Coordinator/others avoid these paths until delivery; zone_mobs remains08. ActiveCSkill/equipment and real world providers remain open. Last validated publication695ae88; no pipeline active.
+
+## Reviewed worker02 fb9ab9f4 — live UID CharacterCommands
+
+Reviewed9d6d134/1b78fc8 CharacterCommands live retained ItemIds::next then independent make-time, removes obsolete overflow mapping. Reported380 original starter records/146 persistence parameters,131tests plus final3focused; full creationSQL/TCP remains required centrally. Exact snapshot/commits queued. Timestamp injection no longer controls UID; inject retained ItemIdClock with correct lifetime. Quest/drop must receive same owner. Latest validated695ae88; integrating pending reviewed batch next.
+
+## Eighth batch integrated — full catalog/live character UID validation freeze
+
+Integrated reviewed queue through 27df2587ed96c1ce14d7208f3827e7186a8a359e, including full stable mob-skill catalog, actual actor scheduler operations, obelisk death/portals, selective vision cleanup and live CharacterCommands UID. CMake append conflicts preserved both modules/test blocks; no live worker reset/rebase.
+
+NEW SOURCE FREEZE: build/test/full isolatedSQL(includes complete creationTCP)/full restored bindingSQL comparison. Logs .local/eighth-batch-{build,tests,sql,bindings-sql}.log. No canonical source/CMake changes/cherry-picks during pipeline; review new deliveries into pending queue. Publish only after all checks pass. Latest validated publication695ae88. Full normalized catalog comparison should now cover all356skill/2747mob records. Exclusive branch paths still reserved:02 item_ids/character_commands,08 zone_mobs,01 zone_users. Actor retained inventory and real root world/data assembly remain open; objective incomplete.
+
+## Worker02 checkpoint674bfef1 — exclusive SQL streaming owner task
+
+Reviewed/queuedd6c62ae documentation-only checkpoint; main snapshot stale,CharacterCommands migration integrated27df258 and validating session8405. Explicit exclusive sql_server.hpp/cpp and mob_drops_stream tests assignment to02: real retained incremental typed cursor preserving buffered API/transactions/parameters, bind MobItemsR2 completed-row publication with partial failure semantics. Coordinator/others avoid storage paths until delivery. Read-only isolatedSQL only under shared lock; no lifecycle writes/new credential owner. Prior item_ids/character_commands scopes completed, preserve commits. Current central pipeline waiting build capacity; canonical source freeze active. Quest/drop sameUID/root world assembly remains required, not claimed solved by streaming.
+
+## Reviewed integration queue: worker08 38cc79e8
+
+Reviewed6debf69/0017bb5 direct ZoneMobs shared Cell cursor, existing send traversal reuse and real help/catalog/SetTarget adapter. Reported450 original mutation traces/128tests/ASAN. Exact snapshot/commits queued during freeze. Generic visitor never touches actor after callback; retained cell/zone lifetime and complete owner serialization required. Actual SetTarget imposes stronger deferred subject destruction/recycle until return; retain source/user/catalog independently. Actual usercount/random/clock/FSM providers still required. Exclusive zone_mobs paths remain08 until next ownership update; zone_users01. Current session8405 build observed139/270, tests/SQL/fullbinding comparison pending; no canonical source edits while active.
+
+## Reviewed triple handoff — catalog/runaway/visitor checkpoint
+
+Reviewedbbaac40/0bc6799 actual full catalog/applied-skill adapter,reported12544original math rows/256cycles/256R2compositions,130tests. Stable definition identity/no temporary conversions; central build uses canonical catalog,not ignored snapshot fallback. Reviewede42621d/bdbfaf8 MoveRunAway actual map/trail/status,1536original paths/133tests; selected_position is displacement here,absolute in selected-move handler. Reviewed27acdb6 doc-only checkpoint; assigned08 mob_targeting_actor actual retained Actor/world/FSM projection, shared Actor/zone_users read-only (01owns latter). Exact snapshots/commits queued during freeze. Current session8405 build complete270actions,tests/fullSQL/fullcatalog comparison pending. Production root assembly remains open.
+
+## Reviewed integration queue: worker04 0de04e94
+
+Reviewedb6c81d2/d652afe composition-only reset/forced removal with real portal owners:256reported scenarios/131tests. Exact snapshot/commits queued during freeze. Key contract: reset_send suppresses recovered obelisk gate only,not nested portal DB/map/world traffic;47target-map publications occur while true. Retain live global portal/source storage through nested callbacks and route actual target maps. Production configuration/pool/calendar/KC/transport remains open. Session8405 buildpassed and210test suite observed177passing;SQL/fullcatalog compare pending. No source edits during active freeze.
+
+## Eighth batch validated —210 tests/fullSQL/fullcatalog
+
+Session8405 exited0: build,210/210tests58.30s, full isolatedSQL including updated creationTCP and complete character/guild checks, full normalized restored binding comparison. Source27df258. Logs .local/eighth-batch-{build,tests,sql,bindings-sql}.log. Full catalog records/names comparison enabled by36eab1d;355skill rows/2747mob rows/1871links matched original. Freeze released; publish verified batch. New pending handoffs not covered.
+
+Reviewed/queued0e4ce8b/218bf38 evidence-only160 native catalog/death/reentry compositions(131tests,original fixture unchanged) and2858c23 doc-only completion. EXCLUSIVE expanded ownership assigned03: mobs.hpp/cpp and mob_pool.hpp/cpp plus tests, actual applied skill catalog/sharedpool/counter lifetime binding, preserve Init/no unconditional reset-helper clear, exactly-once destruction with service lifetime. Coordinator/other workers avoid those files until delivery. Existing exclusive scopes:01zone_users,08zone_mobs,02sql_server. No other source owners assigned.
+
+User progress estimate10–13percent is rough,not test-derived; server still unplayable. Actual rootworld/Actorinventory/Lua/network composition remains open.
