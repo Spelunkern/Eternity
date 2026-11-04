@@ -1938,3 +1938,15 @@ picked it as `18d1058` and queued session 39684 for combined handoff/gate tests.
 No original-client, real socket queue scheduler, system/NProtect, threshold or
 lifetime equivalence is established. Desktop progress state records the earlier
 three-test combined pass.
+
+Protocol session 39684 finished exit 0: combined TCP handoff through the actual
+zone-wait visitor and gate tests passed on `18d1058`, logs
+`Eternity-protocol/.local/composed-zone-{handoff,gate}.log`. The fixture invokes
+the visitor explicitly with test-owned services; no production scheduler or
+original-client test is implied. Coordinator independently regenerated 02's
+`vertical_world_scheduler_oracle.py` and matched its 160-case original fixture
+byte-for-byte. Its report traces a 250ms outer loop, zero initial deadlines and
+ordered packet/attack/effect/idle passes, but a production scheduler requires the
+real active/wait zone authority and dynamic leases. Its statement that zone-wait
+visitor does not exist is outdated: `25d85e2` on main supplies that traversal;
+active users/reset-position processing remains missing. Dashboard updated.
