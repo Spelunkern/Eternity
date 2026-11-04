@@ -430,3 +430,106 @@ coordinators are now reconstructed; proposed next scope is party creation/
 registry lifetime (CParty constructor/Init and manager allocation/removal), or a
 coordinator-owned production adapter using these interfaces. Do not substitute
 placeholder pool/worker services or infer server playability from fixtures.
+
+## Block 7: party registry creation and lifetime
+
+Expanded scope `party_runtime_registry` reuses the existing PartyNormalMembership,
+PartyRuntime and normal entry/leave bodies. No canonical Actor/connection header
+or earlier membership source was changed. Focused locked Ghidra exports are in
+ignored `work/exports/05-party-state/ps_game.exe`. Immutable ps_game.exe evidence:
+
+| Symbol | Address |
+| --- | --- |
+| CParty constructor / destructor / Reset | 00444c60 / 00444c90 / 00444ca0 |
+| CPartyMgr constructor / destructor | 004473f0 / 00447450 |
+| CPartyMgr CreateParty / RemoveParty / FindParty | 004474b0 / 00447540 / 00447560 |
+| SSyncHeap<CParty> Alloc / Release | 004475f0 / 00448620 |
+| SSyncMap Add / Remove | 00447780 / 004477c0 |
+
+There is no CParty::Init in the inventory: Reset is the initialization body
+called by constructor/CreateParty. Constructor initializes its recursive critical
+section with spin 4000, sets ID zero, then resets. Reset retains ID, intrusive
+links and lock; clears count/leader/division/item cursor/maximum, all 30 pointers,
+kind and auto-join; sets every slot Index to 65535 and subleader index to 1.
+`PartyRegistryParty` extends the existing normal owner with the retained extra
+23 slots and registry fields, without introducing a second membership body.
+
+Heap Alloc holds its lock. An available node is popped through +4, available
+count decremented, and all object fields/ID retained. Otherwise actual object
+allocation is required; success initializes the object, then the allocation
+attempt counter increments. Failure ALSO increments that counter before unlock.
+The real native object allocator must supply valid typed storage, not a 304-byte
+binary overlay (304 is the original 32-bit allocation size).
+
+Manager initialization clears heap bookkeeping, constructs the map owner and
+sets the atomic ID counter to 1. Create rejects a null user before allocation.
+Only a zero-ID object consumes InterlockedIncrement, including DWORD wrap to 0;
+a retained nonzero ID is reused. Reset then applies the caller's item-division
+DWORD. That parameter is not a raid flag: Reset has already cleared kind, so the
+serialized creation path enters normal membership. Actual existing entry runs
+BEFORE map publication, including roster/scene/log callbacks; its bool result
+is ignored by the original. Map insertion keeps the earlier value on duplicate
+ID, yet Create still returns the new object. ID 0 is not normalized or retried.
+
+RemoveParty only erases the CURRENT ID key, even if that key maps to another
+object. Null is a no-op. Find locks, captures the matching raw pointer, unlocks,
+then returns it. Neither operation owns or destroys the party. The direct
+`unregister_registry_membership` bridge composes real recursive LeaveNormalParty
+with this manager; after inner unregistration the object must survive remaining
+inner/outer refresh, scene and log callbacks. It is not returned to the heap.
+
+Manager destruction clears map nodes and destroys the map lock BEFORE heap
+Release. Release destroys/deallocates only the available chain, advancing head
+before each object's lock destruction/free, then zeroes heap bookkeeping and
+unlocks. Active/unregistered objects outside that chain are not implicitly
+freed. No producer returning parties to this available chain was recovered in
+these functions; external fixture seeds are explicitly labeled H/Q, not claimed
+as a reconstructed Free routine. Do not invent recycling on unregister.
+Ghidra's incorrect noreturn annotation for operator_delete hides trailing cleanup
+in Release; real original bytes at 00448648 include ADD ESP,4 and continue the
+loop. The final fixture exercises two nodes, not the misleading one-node view.
+
+The oracle executes complete constructor/reset, manager constructor/create/
+remove/find/destructor, heap Alloc/Release and real original std::map insert/
+find/erase. Creation and recursive removal also execute real normal membership,
+ChkPartyExpByLevel and GetPartyType. Ports are OS locks/atomics/clock, raw CRT
+memory, existing transport and log context. Complete normalized state is compared
+after each action; all callback snapshots use FNV-1a64 over the same complete
+state, plus exact payloads. Cases cover nullable user/object allocation, retained
+IDs/links, all 30 slots, wrap/zero/collisions, publication timing, direct and
+recursive unregistration, allocator failure, reuse and two-node destruction.
+
+Block 7 validation:
+
+- Native `tools/dev.py build`: exit 0, no warnings in final build
+  (`work/party-runtime-registry-final-label-build.log`).
+- Final clean `tools/dev.py test`: exit 0, all 129 pass in 44.98 seconds
+  (`work/party-runtime-registry-clean-retry-test.log`).
+- The preceding two-node full suite FAILED world-network-unit with
+  "Login connection was not closed" (128/129, 50.11 seconds;
+  `work/party-runtime-registry-reviewed-test.log`). The message comes from the
+  shared PeerSocket::closed three-second wait, reused for several connections;
+  it does not identify which close failed. No cause/race is proven and no
+  network files were changed. This failed run is not counted as a pass.
+  The earlier one-node full suite also passed (129/129, 45.12 seconds).
+- Registry comparisons pass: 64 retained lifetimes / 1,501 state/action
+  comparisons, including 1,248 complete original top-level calls and explicitly
+  marked external setup actions. Both original free-chain nodes are exercised.
+- Focused C++20 ASAN/UBSAN under the shared build lock: exit 0, all registry
+  comparisons pass, no diagnostics (`work/party-runtime-registry-reviewed-sanitized.log`).
+- Repeat fixture generation matches byte for byte. Original EXE/PDB hashes and
+  `git diff --check`: exit 0. All generated projects/logs/executables remain
+  ignored under work/. No SQL/schema/lifecycle change; full isolated SQL remains
+  coordinator-owned and was not run here.
+
+Block 7 implementation commit: `f472fc015a37c3e5a882ba3498e56e650fe376a3`.
+
+Production contract: implement real recursive heap/map/party lock ports and
+actual object allocation/deallocation; retain objects independently of map
+entries. Use this owner for ordered normal members and experience state, and
+project it to canonical Actor/connection/reward owners under their serialized
+lifetime rules. Registry lookup returns a borrowed pointer, not ownership. Bind
+unregister through the bridge without delete/reset/recycle. Shutdown must respect
+the available-chain contract and outstanding actor/callback references. The
+source of any pool-return producer remains missing evidence, not a guessed
+service. Real network, guild, actor and world adapters remain coordinator work.
