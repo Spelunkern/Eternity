@@ -1211,3 +1211,29 @@ world operations, DB/log/calendar/queue implementations, global frame scheduler
 or signal/serve assembly. These precise providers remain required inputs; no
 second authority or no-op fallback fills them. Full isolated SQL and final main
 integration belong to the coordinator; gameplay completion is not claimed.
+
+## Concrete zone factory scope completion checkpoint
+
+Repeated assignment reviewed against current continuity/parallel rules and
+ff62d6c/22ebd6c. Nineteenth batch is now validated and its source freeze released;
+this does not alter worker ownership. The requested concrete factory, partial
+Init cleanup, retained source ownership and actual regular/linked/obelisk
+compositions are already delivered above. Read-only main inspection still finds
+serve world->start()/io.run() at lines 96/99 and validation-only ServerMaps::load
+at line 120, with no MobZoneServices/MobPrimaryZones/ZoneRegistry construction.
+
+No additional independent behavior is identified inside this completed factory
+scope. Concrete next-task proposal: assign the actual per-zone service binding
+assembly (mob/NPC/corpse/item cell transports and heap ports plus retained AI/Init
+providers), using existing canonical delivery owners, then connect it to this
+factory and the SAME primary root. Coordinator must identify the production
+world/connection authority and required backend owner rather than authorize
+another registry or a successful empty transport/Lua implementation. Main
+serve/signal integration remains coordinator-owned, with the exact construction
+and drain contract already documented above.
+
+Documentation-only checkpoint: no source/fixture changes, repeated tests or SQL
+access. Latest validation remains 138/138 native tests, final 2/2 focused checks,
+six factory sanitized scenarios, unchanged original population fixture replays
+and all 12 original binary hashes. Tree was clean before this report update;
+git diff --check passed. No global completion claim.
