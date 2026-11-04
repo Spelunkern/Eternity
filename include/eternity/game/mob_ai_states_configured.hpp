@@ -1,5 +1,6 @@
 #pragma once
 #include "eternity/game/mobs.hpp"
+#include "eternity/game/mob_ai_states_parameters.hpp"
 #include <array>
 #include <bit>
 #include <functional>
@@ -31,6 +32,7 @@ struct MobAiConfiguredFsm {
     // Explicit inputs: no guessed constructor/start-code defaults.
     MobAiConfiguredFsm(std::uint32_t current_code,std::uint32_t start_code):current(current_code),start(start_code){}
     std::uint32_t current,start;
+    MobAiVariables variables;
     std::map<std::uint32_t,MobAiConfiguredState,MobAiSignedCodeLess> states;
 };
 class MobAiConfiguredServices {

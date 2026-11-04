@@ -938,3 +938,11 @@ if(BUILD_TESTING)
     target_link_libraries(obelisk-runtime-zone-unit PRIVATE eternity_game)
     add_test(NAME obelisk-runtime-zone-unit COMMAND obelisk-runtime-zone-unit ${CMAKE_CURRENT_SOURCE_DIR}/tests/data/obelisk-runtime-zone-oracle.tsv)
 endif()
+
+# Worker 09: typed local parameter owner and configured FSM reset composition.
+target_sources(eternity_game PRIVATE src/game/mob_ai_states_parameters.cpp src/game/mob_ai_states_reset.cpp)
+if(BUILD_TESTING)
+    add_executable(mob-ai-states-parameters-unit tests/mob_ai_states_parameters_unit.cpp)
+    target_link_libraries(mob-ai-states-parameters-unit PRIVATE eternity_game)
+    add_test(NAME mob-ai-states-parameters-unit COMMAND mob-ai-states-parameters-unit ${CMAKE_CURRENT_SOURCE_DIR}/tests/data/mob_ai_states_parameters-oracle.tsv)
+endif()
