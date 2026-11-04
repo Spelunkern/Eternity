@@ -689,3 +689,11 @@ endif()
 if(BUILD_TESTING)
     add_test(NAME obelisk-runtime-initialize-unit COMMAND obelisk-runtime-timers-unit ${CMAKE_CURRENT_SOURCE_DIR}/tests/data/obelisk-runtime-initialize-oracle.tsv initialize)
 endif()
+
+# Worker 09: real idle state targeting, roaming and deadlines.
+target_sources(eternity_game PRIVATE src/game/mob_ai_states_idle.cpp)
+if(BUILD_TESTING)
+    add_executable(mob-ai-states-idle-unit tests/mob_ai_states_idle_unit.cpp)
+    target_link_libraries(mob-ai-states-idle-unit PRIVATE eternity_game)
+    add_test(NAME mob-ai-states-idle-unit COMMAND mob-ai-states-idle-unit ${CMAKE_CURRENT_SOURCE_DIR}/tests/data/mob_ai_states_idle-oracle.tsv)
+endif()
