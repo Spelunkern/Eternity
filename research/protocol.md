@@ -2909,3 +2909,40 @@ scenarios execute Add/Reset/destruction and subsequent allocation to distinguish
 both paths, with allocator/delete/lock boundaries ported. Raw instructions after
 the Ghidra noreturn annotation confirm the source deletion loop, and execution
 checks the entire loop. Mob death reward ownership still remains to be wired.
+
+
+`mob_death` reconstructs `CMob::Death` (`ps_game.exe`, `004910f0`) over the
+mob's real damage owner. Fair combat, obelisk principals and linked principals
+select maximum damage; other deaths only announce the supplied attacker. The
+11-byte scene packet is 0606 / mob DWORD / attacker BYTE / attacker DWORD,
+with priority 6. A missing winner or missing credited user invokes unowned
+drops; a non-user winner does not invoke rewards. A credited solo user gets
+trunc(GetExp * 1.2), then drops and quest progress. Party/raid rewards hold the
+party lock, test each member against the credited user's radius 100, truncate
+the count-scaled candidate, then separately truncate its level share before
+experience and quest delivery. Drops follow the member loop while still locked.
+The level-share helper is `CParty::GetPartyExpByLevel` (`00444e40`): differences
+below 8/16/32/48 use 1/.8/.6/.4, otherwise .2, with signed DWORD subtraction.
+The branch's party kind is retained even if reward callbacks change live state.
+
+Original static count multipliers are retained from globals 005423a8/005423e8;
+the normal table overlaps the raid table after eight entries. Lookups accept
+counts through 30; larger counts use 1. The native projection also accepts
+explicit runtime overrides. Obelisk/linked destruction decrements the current
+count and sets the deadline to ffffffff exactly once. Credited obelisks use the
+user country; fallback uses opposite current ownership (0/1, otherwise 2), only
+for a valid obelisk index. Early principal transitions precede event-4 logging;
+fallback transitions/member removal follow it. Damage Reset always precedes
+ClearApplySkill. This routine does not set the FSM death state or recycle mobs.
+
+The 1,536-case fixture executes the complete original coordinator, real damage
+selection/reset, GetExp and party level-share arithmetic. Explicit ports observe
+transport, user lookup/range, reward delivery, drops/quests, map/linked owners,
+logging, skill cleanup and locks. It compares exact packets, callback order,
+accounting and shared-heap returns across empty/tied/aggregate credit, missing
+users, fair flags, solo/party/raid/unknown kinds, 0..31 members, original/overridden
+rates, wrapped levels, event multipliers, ownership precedence and callbacks
+that update member levels/party state. Native composition also drives a real
+Actor level transition and uses restored SQL mob/curve/status definitions for
+a 1,012-point solo award. Full drop/quest/skill providers, live combat dispatch,
+obelisk ownership and production scheduling still require reconstruction.

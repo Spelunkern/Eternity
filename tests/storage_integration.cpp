@@ -1,4 +1,5 @@
 #include "mob_damage_fixture.hpp"
+#include "mob_death_reward_fixture.hpp"
 #include "eternity/game/experience_award.hpp"
 #include "eternity/game/mob_experience.hpp"
 #include "eternity/storage/sql_server.hpp"
@@ -249,6 +250,23 @@ int main() {
         const auto runtime_mobs=eternity::game::MobRuntimeTemplates::load(definitions.catalogs.at("Mobs"));const auto* first_mob=runtime_mobs.find(1);
         require(first_mob && first_mob->level==38 && first_mob->ai==1 && first_mob->hp==2765 && first_mob->sp==874 && first_mob->mp==1578 && first_mob->dexterity==60 && first_mob->wisdom==40 && first_mob->luck==53 && first_mob->attribute==4 && first_mob->physical_defense==38 && first_mob->magic_defense==31 && first_mob->shield_defense==0 && first_mob->respawn_time==180000,"Original runtime mob projection differs from restored SQL");
         verify_mob_population(runtime_mobs);
+        {
+            using namespace eternity::game;
+            MobDamageFixture damage_heap;MobRuntime subject;subject.id=999;subject.definition=first_mob;subject.damage=std::make_unique<MobDamageLedger>(damage_heap.pool);
+            PlayerCore recipient;recipient.character=fighter;recipient.character.id=42;recipient.character.level=first_mob->level;recipient.user_id=7;auto live_status=statuses.base(recipient.character);
+            MobDeathRewardFixture rewards;rewards.user={42,recipient.character.level,0};
+            const auto original_base=mob_experience(first_mob->level,first_mob->experience,recipient.character.level,0,0,1);
+            require(first_mob->experience==704 && original_base==844,"SQL death fixture lost original definition experience");
+            const auto gain=static_cast<std::uint32_t>(static_cast<double>(original_base)*1.2);
+            require(gain==1012 && experience.bounds(1,recipient.character.level).next>gain,"SQL death fixture needs a non-leveling solo gain");
+            rewards.reward=[&](MobDeathUser& user,std::uint32_t source,std::int32_t amount) {
+                require(user.id==42 && source==777 && amount==1012,"SQL mob death reward amount/source changed");
+                award_experience(recipient,live_status,statuses,experience,source,amount,{},award_ports);user.level=recipient.character.level;
+            };
+            const MapGeometry geometry(81);ZoneMobs zone(geometry,rewards);subject.zone=&zone;
+            subject.damage->add(1,42,100,100,0);award_ports.order.clear();mob_death(subject,2,777,{},rewards);
+            require(recipient.experience==gain && award_ports.order==std::vector<char>{'B','C'} && rewards.order==std::vector<char>{'V','F','E','D','Q','C'} && damage_heap.pool.available().size()==1,"SQL mob death did not compose definitions, experience delivery and cleanup");
+        }
         const auto map_config=eternity::game::MapConfiguration::load(".local/server-data/Map.ini");
         const auto server_maps=eternity::game::ServerMaps::load(map_config,".local/server-data/Map");
         const auto linked_config=eternity::game::LinkedMobConfiguration::load(".local/server-data/Obelisk.ini",server_maps.all(),runtime_mobs);

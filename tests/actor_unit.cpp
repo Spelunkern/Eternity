@@ -9,6 +9,8 @@
 #include "eternity/game/entry_delivery.hpp"
 #include <bit>
 #include "equipment_fixture.hpp"
+#include "mob_damage_fixture.hpp"
+#include "mob_death_reward_fixture.hpp"
 #include <fstream>
 #include <iostream>
 #include <sstream>
@@ -242,7 +244,16 @@ int main(int argc,char** argv) {
                     require(amount==1000 && source==777 && actor.status().level==2,"Actor level notification arguments changed");order.push_back('L');actor.rebuild_attack(actor.status(),false);actor.announce_maximum_resources();actor.recover({static_cast<std::int32_t>(base.maximum.hp),static_cast<std::int32_t>(base.maximum.sp),static_cast<std::int32_t>(base.maximum.mp)});
                 }
             } delivery(actor,core);
-            actor.gain_experience(core,growth_rules,curve,777,1000,{true,false,false,false,0},delivery);
+            MobDamageFixture heap;MobRuntime mob;MobRuntimeTemplate mob_definition;mob_definition.level=1;mob_definition.experience=695;
+            mob.id=999;mob.definition=&mob_definition;mob.damage=std::make_unique<MobDamageLedger>(heap.pool);mob.damage->add(1,actor.id(),100,100,0);
+            MobDeathRewardFixture rewards;rewards.user={actor.id(),core.character.level,0};
+            rewards.reward=[&](MobDeathUser& user,std::uint32_t source,std::int32_t amount) {
+                require(user.id==actor.id() && amount==1000,"Mob death supplied wrong solo reward");
+                actor.gain_experience(core,growth_rules,curve,source,amount,{},delivery);user.level=core.character.level;
+            };
+            const MapGeometry geometry(81);ZoneMobs zone(geometry,rewards);mob.zone=&zone;
+            mob_death(mob,2,777,{},rewards);
+            require(rewards.order==std::vector<char>{'V','F','E','D','Q','C'} && rewards.user.level==2 && heap.pool.available().size()==1,"Mob death did not compose actor growth, rewards and damage reset");
             require(core.character.level==2 && core.character.strength==11 && core.experience==1000 && actor.status().level==2 && actor.status().skills.equipment.base.attributes.strength==11 && actor.status().calculated_attack[0].accuracy==2 && delivery.order==std::vector<char>{'B','L'},"Actor experience did not synchronize persisted/live stats and attack");
             require(actor.resources().hp==1000 && actor.resources().mp==2000 && actor.resources().sp==3000 && !scene.events.empty() && scene.events.back()=="D","Actor level-up did not announce/recover resources and reset damage");
         }
