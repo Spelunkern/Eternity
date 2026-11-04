@@ -1627,3 +1627,108 @@ No new Actor/shared-header patch is requested here. Next independent proposal:
 recover runtime cooldown/ready checks in **EnableUseSkillUser 0044eb40** and
 **EnableUseSkillMob 0044ee50**, composing existing Actor resource/target providers
 rather than duplicating skill damage or effects. Full server objective remains open.
+
+## Runtime readiness suffix after cost/equipment — 2026-11-04
+
+Implementation **ed28b5b**. Read current main continuity/parallel notes and prior
+`a6d1d1c/4a0a2cc`. Continued its next runtime validation block. Existing actual
+UserSkillRuntime/handles/Actor state are reused; no second skill/target/resource
+owner, ID generator, global side map or catalog. Actor/inventory/main remain
+read-only. Changes confined to user_skill_runtime*, private CMake and this report.
+
+Source: `ps_game.exe` complete Ghidra/PDB exports, WHOLE
+**EnableUseSkillUser 0044eb40**, **EnableUseSkillMob 0044ee50**,
+**SendUseSkillError(CSkill*) 0044ea30**. Native functions are explicitly named
+`*_after_equipment`: implement ONLY suffixes starting **0044ece3** / **0044ef5d**,
+not complete native eligibility. Caller MUST first execute the actual resource/
+equipment prefix and pass the originally captured retained definition. Cost
+arithmetic, shield/weapon compatibility, spending resources and use/attack effects
+are not silently replaced by success/no-op providers or claimed implemented here.
+
+Recovered behavior:
+
+- Capture actual runtime handle and original definition; runtime/definition/Actor/
+  scene/world/target backing survives complete synchronous validation callbacks.
+  Positive Actor SkillStatus.cool_time multiplies by1000 with DWORD wrap. If
+  reduction>=runtime reset tick, bypass time comparison. Otherwise compare
+  unsigned adjusted deadline against CALLER tick. Negative reduction ignored.
+  Future deadline sends reason9 (user0511/mob0517), returns false.
+- stSkillInfo WORD **+52** required skill does NOT mean merely learned. Scan
+  physical slots below signed count, skip holes, choose FIRST matching SkillID;
+  no match sends reason8 with NO fresh clock sample. On match GetTickCount samples
+  a NEW tick, then rereads that physical slot even if callback reset count to0.
+  Required runtime reset tick must be unsigned GREATER than fresh tick to pass.
+  An expired/equal first match fails even if a later duplicate is still future.
+- Check original captured definition BYTE **+30** attack kind against existing
+  Actor.status.skills.attack_disabled. Mapping is corroborated by original
+  SetSkillAbility **00486050/0048605a/00486064**, offsets+13a4/+13d0/+13fc with
+  44-byte stride, and canonical skill ability types32/33/34. Nonzero (including
+  negative) fails reason10. Native rejects attack kinds outside its actual three
+  status groups rather than reading arbitrary memory; fixtures exercise kind1.
+- Nonnull target calls actual range provider with original definition BYTE
+  **+4c**; no target bypasses only range. False returns reason5. User and mob
+  range overloads remain distinct mandatory providers, not generic distance math.
+- Error packets are exact20-byte0500-family actions: actor DWORD, zero target,
+  live runtime ID WORD/level BYTE, zero resource words. Prerequisite reason8 and
+  blocked reason10 use **0511 even in the mob overload**. Mob cooldown9/range5
+  use0517. Range/clock callbacks can change runtime ID/level before packet capture;
+  self-send callbacks can change owner state after it. No state is rewritten from
+  an earlier snapshot. Validation itself does not spend costs/set cooldown ticks.
+
+UserSkillDefinition now carries only the missing borrowed metadata required_skill,
+attack_kind and attack_range. No ID lookup substitutes a runtime or its original
+captured definition. Required UserSkillReadyWorld supplies real fresh clock and
+user/mob range operations. Missing prerequisite slot after clock callback fails
+explicitly. Stable definition storage remains required even if a runtime changes
+its current definition during callbacks; the suffix intentionally uses the
+original definition captured by the enclosing eligibility frame.
+
+Evidence/validation:
+
+- Oracle executes WHOLE both original overloads, actual error helper, original
+  0504 admission/shared CreateSkill logic and balanced cookie/return paths. Actual
+  original resource/weapon prefix executes with valid inputs: zero costs,
+  SP/MP100000 and a retained compatible weapon. It is NOT skipped or replaced by
+  a hand-coded prefix. Native comparison is ONLY the supported suffix from those
+  inputs; resource-rejection/weapon-rejection equivalence is NOT newly claimed.
+- **256 original/native comparisons**: both overloads,16 profiles,four caller
+  ticks,baseline/reentrant callback passes. Cover positive/negative/wrapped
+  cooldown reduction, unsigned deadline wrap, missing/expired/future required
+  skill, fresh-vs-caller tick distinction, first duplicate, clock mutation of
+  required deadline, count reset with physical-slot reread, blocked group,
+  range rejection/null target and live ID/level changes during clock/range/send.
+  Compare bool, exact ordered packets/clock/range state snapshots and final
+  owner count/selection/runtime fields. Boundary callback mutations are synthetic
+  probes, not claims that real OS GetTickCount resets users.
+- Independent fixture regeneration byte-identical (`cmp`,exit0); generated in
+  work/ and copied before readers. All original executable/PDB SHA256SUMS exit0;
+  `work/user-skill-runtime-ready-hashes.log`.
+- `python3 tools/dev.py build`: exit0,no warnings;
+  `work/user-skill-runtime-ready-build.log`.
+- Sequential `python3 tools/dev.py test`: exit0,**137/137 passed,44.18s**;
+  `work/user-skill-runtime-ready-tests.log`. Prior owner/learn/snapshot/persist/
+  scheduler/zone tests pass. `git diff --check`: exit0.
+- Shared wrappers respected. No SQL changes/lifecycle actions; coordinator owns
+  final full isolated SQL integration. Server playability not inferred.
+
+Canonical dependency update: main Actor.hpp NOW exposes
+`retained_inventory_item(bag,slot) -> optional<ActorInventoryItem>` with actual
+GroundItem*/pool*, plus inventory_slot_empty. This supersedes older reports that
+said the accessor did not exist centrally. This worker's older checkout does not
+have it, and exclusive Actor/inventory ownership remains02; no unsafe header copy,
+merge/reset or ignored-snapshot production fallback added. The eventual actual
+weapon/shield prefix should use that real API: bag0/slot5 maps+1d8, slot6 maps+1dc.
+Borrow expires on release/reuse; retain Actor/definition/pool and revalidate item
+identity across callbacks. A value-only inventory record must not imply pointer
+presence. No additional canonical field is requested for this suffix.
+
+Remaining production work: bind actual resource/equipment prefix before invoking
+these helpers; wire them into actual retained runtime action providers. Cost
+prefix uses x87 reduction/truncation and signed SP/MP comparisons; its numeric
+semantics/definition weapon-table indexing require dedicated original execution
+before native choices, not an assumed integer-percent helper. Actual shared
+CSkill manager, full user definitions, root assembly and remaining action logic
+remain central dependencies. Next independent proposal: recover that cost prefix
+with controlled x87 precision/overflow fixtures, then actual retained-equipment
+adapter once the coordinator supplies the canonical accessor dependency. Full
+native EnableUseSkill and gameplay completion remain open.
