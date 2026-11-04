@@ -778,3 +778,63 @@ SQL integration/lifecycle remains coordinator-owned and was not run for this
 memory/protocol block. These comparisons do not establish a playable server.
 
 Block 10 implementation commit: `709df36b18f1933e8ccb881d6ccf904571ec15ac`.
+
+## Block 11 — expulsion callback reentrancy
+
+The repeated coordinator assignment's normal ExpelUser body was already
+implemented in Block 10. This block closes a distinct evidence gap: a real
+nested PacketParty leave from the expulsion's transport or scene callback,
+not merely a nested invitation accept or modeled recursive state changes.
+
+Original `ps_game.exe CParty::ExpelUser 00447120` emits its 0b06 at 004471b3,
+then compacts using the LIVE count and unconditionally decrements at 004471d4.
+If that broadcast synchronously invokes PacketParty 004676c0 leave on the other
+member of a two-user party, real LeaveNormalParty 00446960 recursively removes
+both users and unregisters the party before ExpelUser resumes. The outer count
+then becomes -1. Original normal ChkPartyExpByLevel's signed <=1 branch
+(00444df0 to 00444e2f) retains the previous maximum. A subsequent ExpelUser on
+that same retained object returns false through its signed nonpositive-count
+guard (00447152..00447176). Block 10 native code instead rejected negative count
+in refresh, and its equality-only exhausted-search check missed that guard.
+Both are now corrected. No clamp, extra unregister or invented recycling is
+added. The party remains retained through the outer scene and log callbacks.
+
+The oracle now adds 512 expulsion scenarios. Saved-register x86 trampolines
+execute actual nested PacketParty leave from the 0b06 CParty::Send boundary
+(RET 0) or CZone::SendView boundary (RET 12), then resume the original instruction
+stream and return ABI. Event W records the selected live user before that call.
+Native callbacks invoke the same dispatcher with the same retained live binding.
+This tests callback-driven compaction before the outer compaction, recursive
+unregister, state changes before the outer log, and repeated direct removal
+on the SAME objects afterward. Required raid/guild providers remain unchanged;
+no Actor/connection/zone or inventory owner changes were needed.
+
+Expanded matrix: 2,560 scenarios, 2,606 whole top-level PacketParty executions,
+3,072 whole direct ExpelUser executions, 46 nested accepts and 282 nested leaves
+(328 reentrant scenarios). Twenty-six scenarios produce the original negative
+count and retain the original experience maximum. Final native comparisons
+include every packet, callback-state hash, full final projection, direct return
+byte and lock balance, including the signed count bit pattern.
+
+Validation:
+
+- Full repeated original fixture generation: byte-identical (`cmp`, exit 0).
+- Original EXE/PDB manifest: exit 0
+  (`work/party-runtime-requests-reentrant-hashes.log`).
+- Locked focused C++20 ASAN/UBSAN build and all 2,560 comparisons: exit 0,
+  no diagnostics (`work/party-runtime-requests-reentrant-sanitized.log`).
+- Locked native build: exit 0, no compiler diagnostics
+  (`work/party-runtime-requests-reentrant-build.log`).
+- Locked native tests: 131/131 passed, 33.35 seconds, exit 0
+  (`work/party-runtime-requests-reentrant-test.log`).
+- `git diff --check`: exit 0. No SQL/schema/lifecycle operations performed.
+Implementation commit: `c656778bd73bf0dedcb048ff6151ca85271d7c30`.
+
+Integration contract remains Block 9/10's single retained membership owner,
+recursive locks, real transport/log/lookup/pool and explicit raid/guild providers.
+A callback may change live membership while an outer call is still active;
+unregister must retain the party and selected users until that call unwinds.
+Do not normalize the recovered signed count in this owner. This block does not
+claim safe original behavior for later unrelated operations on a negative-count
+party, or provide the missing production Actor binding. SQL lifecycle/full SQL
+integration stays with the coordinator. Server gameplay completion is open.
