@@ -1,7 +1,7 @@
 #pragma once
 #include "eternity/game/obelisk_runtime.hpp"
 namespace eternity::game {
-// Parsed stObeliskZone/stObelisk inputs. Text parsing is a separate provider.
+// Parsed stObeliskZone/stObelisk inputs.
 struct ObeliskRuntimeSpawnInput {
     UserPosition center;float radius=0;std::array<std::int32_t,3> mobs{};std::int32_t count=0;
 };
@@ -21,6 +21,9 @@ public:
     // Required mutation of shared stMOBInfo::bObelisk, not a private copy.
     virtual void mark_obelisk(const MobRuntimeTemplate&)=0;
 };
+// LoadObelisk 00427300 ordinary obelisk parser only; other sections select modes
+// but remain owned by their respective configuration providers.
+std::vector<ObeliskRuntimeZoneInput> parse_obelisk_runtime_configuration(std::string_view);
 class ObeliskRuntimeConfiguration {
 public:
     ObeliskRuntimeConfiguration()=default;

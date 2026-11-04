@@ -2,6 +2,7 @@
 #include <bit>
 #include <fstream>
 #include <iostream>
+#include <iomanip>
 #include <sstream>
 #include <stdexcept>
 using namespace eternity::game;
@@ -15,7 +16,7 @@ MobRuntimeTemplates catalog() {
     for(unsigned i=1;i<4096;++i) rows.rows.push_back({std::to_string(i),i%7==0?"0":"1","0","1","0","0","0","0","0","0","0","0","0","0","0"});
     return MobRuntimeTemplates::load(rows);
 }
-void run(int scenario,const std::vector<std::uint32_t>& expected,const MobRuntimeTemplates& definitions) {
+void run(int scenario,const std::vector<std::uint32_t>& expected,const MobRuntimeTemplates& definitions,bool parse) {
     const std::array<std::int32_t,8> ids{0,1,7,-1,4096,2,3,4};std::array<ObeliskRuntimeZoneInput,3> zones;
     for(std::size_t mi=0;mi<3;++mi) {
         auto& zone=zones[mi];zone.map=static_cast<int>(mi);
@@ -32,7 +33,19 @@ void run(int scenario,const std::vector<std::uint32_t>& expected,const MobRuntim
         }
     }
     Owner owner;ObeliskRuntimeConfigurationState state;state.next_id=scenario%2?0xfffffffeU:0;state.total=scenario/9%3;state.kill_count_add={9,10};state.maximum_kill_count={1000,-45};
-    auto configuration=ObeliskRuntimeConfiguration::bind(zones,std::array<std::int32_t,3>{40,40,40},definitions,owner,state);
+    std::vector<ObeliskRuntimeZoneInput> parsed;
+    if(parse) {
+        std::ostringstream text;text<<std::setprecision(9);
+        for(const auto& zone:zones) {
+            text<<"[zone_"<<zone.map<<"]\n";
+            for(const auto& o:zone.records) {
+                text<<"[Obelisk_"<<(o.base_id-static_cast<std::uint32_t>(zone.map)*65536U)<<"]=("<<o.center.x<<','<<o.center.y<<','<<o.center.z<<"),("<<o.mobs[0]<<','<<o.mobs[1]<<','<<o.mobs[2]<<"),"<<o.country<<'\n';
+                for(const auto& s:o.spawns) text<<"[Mob]=("<<s.center.x<<','<<s.center.y<<','<<s.center.z<<','<<s.radius<<"),("<<s.mobs[0]<<','<<s.mobs[1]<<','<<s.mobs[2]<<"),"<<s.count<<'\n';
+            }
+        }
+        parsed=parse_obelisk_runtime_configuration(text.str());
+    }
+    auto configuration=ObeliskRuntimeConfiguration::bind(parse?std::span<const ObeliskRuntimeZoneInput>(parsed):std::span<const ObeliskRuntimeZoneInput>(zones),std::array<std::int32_t,3>{40,40,40},definitions,owner,state);
     // A moved owner must preserve every spawn address already stored in respawns.
     auto moved=std::move(configuration);
     std::vector<std::uint32_t> actual{state.next_id,static_cast<std::uint32_t>(state.total),static_cast<std::uint32_t>(state.kill_count_add[0]),static_cast<std::uint32_t>(state.kill_count_add[1])};
@@ -63,9 +76,9 @@ void run(int scenario,const std::vector<std::uint32_t>& expected,const MobRuntim
 }
 int main(int argc,char** argv) {
     try {
-        if(argc!=2) throw std::runtime_error("Expected config fixture");std::ifstream input(argv[1]);if(!input) throw std::runtime_error("Missing config fixture");
+        if(argc!=2&&argc!=3) throw std::runtime_error("Expected config fixture");std::ifstream input(argv[1]);if(!input) throw std::runtime_error("Missing config fixture");
         auto definitions=catalog();std::string line;unsigned count=0;
-        while(std::getline(input,line)) {if(line.empty()||line[0]=='#') continue;std::istringstream row(line);int scenario;row>>scenario;std::vector<std::uint32_t> expected;std::uint32_t n;while(row>>n) expected.push_back(n);run(scenario,expected,definitions);++count;}
+        while(std::getline(input,line)) {if(line.empty()||line[0]=='#') continue;std::istringstream row(line);int scenario;row>>scenario;std::vector<std::uint32_t> expected;std::uint32_t n;while(row>>n) expected.push_back(n);run(scenario,expected,definitions,argc==3);++count;}
         if(count!=64) throw std::runtime_error("Incomplete config fixture");std::cout<<count<<" original obelisk materialization scenarios passed\n";return 0;
     } catch(const std::exception& e) {std::cerr<<e.what()<<'\n';return 1;}
 }

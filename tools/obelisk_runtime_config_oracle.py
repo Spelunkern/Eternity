@@ -7,7 +7,7 @@ from unicorn.x86_const import UC_X86_REG_EAX,UC_X86_REG_ECX,UC_X86_REG_EDI,UC_X8
 from original_oracle import load_game,ROOT
 
 
-def main():
+def main(parser=False):
     cpu,digest=load_game();stack,world,maps,infos,heap,file,stop=0x20000000,0x30000000,0x31000000,0x32000000,0x34000000,0x38000000,0x10000000
     for at,n in ((0,0x10000),(stack,0x10000),(world,0x10000),(maps,0x100000),(infos,0x200000),(heap,0x3000000),(file,0x10000),(stop,0x10000)):cpu.mem_map(at,n)
     def put(at,*v):cpu.mem_write(at,struct.pack('<'+'I'*len(v),*[x&0xffffffff for x in v]))
@@ -55,6 +55,40 @@ def main():
                     out.extend(int(get(get(g+0x54)+k*4)!=0) for k in range(get(g+0x14)))
         out.extend(cpu.mem_read(infos+i*268+0x7c,1)[0] for i in range(12))
         return out
+    if parser:
+        print(f'# ps_game.exe SHA256 {digest}; actual LoadObelisk 00427300 parsing through 00427eef, before materialization; original CRT strtok/atoi/atof execute. Only ordinary obelisk temporary tables are compared.')
+        header=b'[zone_1]\n[Obelisk_9]=(1.25,-2.5,3),(1,2,3),2\n'
+        spawn=b'[Mob]=(4,5,6,2.75),(3,4,5),2\n'
+        cases=[b'[zone_1]\n',b'[zone_1]',b'',b'// comment\n-- comment\n',header,header+spawn,header+spawn.rstrip(b'\n'),
+               b'[zone_0]\n'+header+spawn+b'[zone_1]\n[Obelisk_1]=(9,8,7),(6,5,4),1\n',
+               header+b'[Portal_1,0,1010]\n'+spawn+b'[zone_2]\n[Obelisk_1]=(1,2,3),(4,5,6),0\n',
+               header+b'[bothmob_1,0,1,2,0,1010]=(1,2,3),1\n'+spawn+b'[zone_2]\n[Obelisk_1]=(1,2,3),(4,5,6),0\n',
+               b'\t[ZoNe_4294967297]\r\n [ObElIsK_4294967295]={(1d2,-2.5,0x10),(4294967297,-1,7),-1}\r\n',
+               header+b'[Mob]=(nan,inf,0x10,1d2),(1,2,3),-2\n',
+               header+b'\x1a'+spawn,header+b'\0'+spawn,
+               b' '*8191+header+spawn,b'//'+b'x'*9000+b'\n'+header+spawn]
+        incomplete=b'[Obelisk_33]=(90,91,92),(7,8,9),1'
+        for cut in (0,9,10,12,14,17,20,24,28,32,35,38,41):
+            cases.append(header+incomplete[:cut]+b'\n'+spawn+incomplete+b'\n')
+        for cut in range(5,len(spawn),2):cases.append(header+spawn[:cut]+b'\n'+spawn)
+        cases += [header+b'[Unknown] value\n'+spawn,header+spawn*64,
+                  b'[zone_1]\n[Obelisk_1]=(1,2,3),(1,2,3),1\n'*3,
+                  header+b'[zone_]\n'+spawn]
+        for scenario,text in enumerate(cases):
+            context.update(text=text.replace(b'\r\n',b'\n').split(b'\x1a')[0],position=0,heap=heap);cpu.mem_write(file,bytes(32))
+            cpu.mem_write(stack,bytes(0x10000)) # Explicit initial stack, including the empty-file buffer.
+            put(stack+0xf000,stop);cpu.reg_write(UC_X86_REG_ESP,stack+0xf000);cpu.reg_write(UC_X86_REG_FPCW,0x27f)
+            cpu.emu_start(0x427300,0x427eef,count=10000000)
+            if cpu.reg_read(UC_X86_REG_EIP)!=0x427eef:raise RuntimeError('Original parser did not reach materialization boundary')
+            count=get(cpu.reg_read(UC_X86_REG_ESP)+0x38);words=[count]
+            for mi in range(count):
+                zone=0xfe2f10+mi*0x20908;n=get(zone+4);words.extend((get(zone),n))
+                for j in range(n):
+                    record=zone+8+j*0x824;groups=get(record+32)
+                    words.extend(get(record+k) for k in range(0,36,4))
+                    for k in range(groups): words.extend(get(record+36+k*32+x) for x in range(0,32,4))
+            print(scenario,text.hex() or '-',*words,sep='\t')
+        return
     print(f'# ps_game.exe SHA256 {digest}; full LoadObelisk 00427300. Native comparison covers materialization from explicit parsed input, not native parsing. Required shared template marking is observed in actual source storage. Ports: file/heap/CRT/TLS/locks/cookie and exact temporary-array reset.')
     for scenario in range(64):
         text='';ids=(0,1,7,-1,4096,2,3,4)
