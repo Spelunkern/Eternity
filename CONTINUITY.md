@@ -1390,3 +1390,10 @@ still calls `update_mob_population` before `ports_.frame`, whereas 05 reports
 original idle traversal and death cleanup before respawn. Do not integrate it
 until the order is reconciled with original evidence and tested. Prior aborted
 run remains documented. Main session 53983 remains active and waiting.
+
+Independent 02 has an uncommitted draft changing VerticalWorld to delegate the
+entire zone frame once under its existing lease, avoiding its previous duplicate
+population pass; exact idle/death/respawn ordering is then the required real
+frame provider's responsibility. Draft is not compiled, reviewed or integrated.
+Notified independent sessions to keep live jobs intact, avoid frequent polling
+and repeated status messages, and perform safe useful work while waiting.
