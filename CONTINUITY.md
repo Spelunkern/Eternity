@@ -1210,3 +1210,12 @@ respawn. The 02-world draft previously ran population before the callback; both
 sessions received this ordering issue. Revised 05 build was interrupted and is
 unvalidated. Central combat validation session 99411 remains live waiting for a
 shared build slot; do not restart it solely because it is waiting.
+
+Independent 09 handoff `c0ebb2b` confirms 304/304 native tests but no direct SQL
+round trip for the new adapter. Coordinator clarified that existing integration
+may create/drop its own disposable catalogs without modifying source databases,
+and assigned a selection/save/reload SQL test plus single-load integration.
+Independent 06 has new `5c1e82b` AttackSuccess evidence and code (8192 normal,
+4096 skill original traces reported), still awaiting independent review/build;
+no actual AttackDamage or live root claim. Central combat validation remains in
+live session 99411 waiting on shared build slots.
