@@ -543,3 +543,11 @@ if(BUILD_TESTING)
     add_executable(mob-drops-sql-unit tests/mob_drops_sql_unit.cpp)
     target_link_libraries(mob-drops-sql-unit PRIVATE eternity_game eternity_storage)
 endif()
+
+# Worker 09: recovered CMob event coordination.
+target_sources(eternity_game PRIVATE src/game/mob_events.cpp)
+if(BUILD_TESTING)
+    add_executable(mob-events-unit tests/mob_events_unit.cpp)
+    target_link_libraries(mob-events-unit PRIVATE eternity_game)
+    add_test(NAME mob-events-unit COMMAND mob-events-unit ${CMAKE_CURRENT_SOURCE_DIR}/tests/data/mob-events-oracle.tsv)
+endif()
