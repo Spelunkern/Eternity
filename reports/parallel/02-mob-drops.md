@@ -1064,3 +1064,94 @@ canonical Actor ownership with original/native comparisons. That storage work
 requires explicit scope; this checkpoint adds no duplicate fields and changes
 no worker08, party, damage-owner or main source. Await the coordinator rather
 than rerunning completed fixtures or implementing another worker's services.
+
+## Milestone 17: authoritative Actor death/rebirth metadata
+
+Implementation commit: 1b6b0c1ac98c6a2ff028904063f7a7700c1e0b48.
+
+Repeated the owner audit: these four values have no existing Actor/PlayerCore/
+ZoneLifecycleState/ActorActionState/EffectStatus storage. Life remains exclusively
+attack_state.mode+142c and presentation remains zone_lifecycle.motion+1434.
+Actor now owns one optional ActorDeathMetadata: signed penalty+145c, DWORD
+soul+1430, deadline+1454 and raw code+1458. No shadow map or second life word.
+
+Original initialization is NOT four zeroes. ps_game.exe CUser::CUser004499d0 writes
+only deadline at00449c81; ResetCharacter0044a050 writes it at0044a120. Both preserve
+penalty/soul/code, including nonzero inherited allocation/pool bytes. CUser::Reset
+00449fc0 delegates to ResetCharacter at0044a033. SSyncHeap<CUser>::Alloc0040aa40
+uses operator new00503a3f(size5eb0), calls CUser004499d0 at0040aa82 on fresh memory,
+and otherwise reuses the existing object. No zero-fill precedes construction at
+that allocation site. Zero-initializing three unwritten fields would invent an
+original guarantee; reading native indeterminate storage would be undefined.
+
+Actor therefore remains source-compatible for existing construction but metadata
+starts explicitly unbound. initialize_death_metadata(inherited) is a one-time
+construction projection: preserves penalty/soul/code and sets deadline0. It
+requires the real allocation/pool context's inherited values, not an invented
+zero provider. Missing binding and repeated construction throw logic_error before
+writing. death_metadata() exposes stable actual references, with const access;
+reset_death_metadata() projects ONLY the four-field ResetCharacter behavior,
+clearing deadline while preserving the other three. It is not full character
+reset and does not reset life/presentation/resources/effects. Bound metadata is
+never replaced by reset or lifecycle operations; references survive them on the
+same serialized Actor owner. Root must retain Actor and all service leases.
+
+Exact worker08 world bindings after an explicit death_metadata_bound preflight:
+death_penalty(a)->a.death_metadata().penalty;
+soul_state(a)->a.death_metadata().soul;
+rebirth_deadline(a)->a.death_metadata().deadline;
+rebirth_code(a)->a.death_metadata().code.
+Do preflight outside the world's noexcept reference callbacks; an unbound Actor
+is a missing construction provider, not a valid zero-filled world. Combine with
+reset_damage_ledger, replace_resources_raw, presentation_motion and
+send_recover_change already delivered. No worker08 lifecycle source changed.
+
+Original field access audit is recorded in tests/data/
+mob-drops-actor-death-metadata-refs.tsv with instruction addresses/symbols. Original
+exported CUser member names around these offsets are shifted/inconsistent; actual
+operands are authoritative. Death004586a0/DeathByNPC00458fe0 set penalty5/0/1,
+life1 and soul0, with Death also allowing penalty-1. Soul004591c0 and KillSoul*00459380..00459d57
+read/write soul0/1/2 and signed penalty; ClearApplySkillByDeath00488000 compares
+penalty-1. PacketPC0046abc8/+0046abce writes resurrection deadline tick+30000 and
+raw code1; ordinary death writes tick+200000/code0. UpdateRebirth0048d240 reads
+both at0048d392/0048d3ca. The direct-displacement audit is not a claim of exhaustive
+arbitrary pointer-alias analysis; constructor bulk writes were executed too.
+These action coordinators remain separately owned, not copied into Actor.
+
+Validation:
+- `.local/oracle-env/bin/python tools/mob_drops_actor_death_metadata_oracle.py`:
+  216 explicit inherited-byte cases, each executing original CUser constructor
+  owned body and original ResetCharacter prefix through0044a187 (before the
+  separately tested damage-reset call). Actual stUserInfo00449eb0 executes;
+  base connection/friend constructors and Win32 CS initialization are returned
+  boundaries outside these metadata fields. Includes zero,1,INT_MAX,INT_MIN,
+  DWORD_MAX and a5a55a5a residues. All show deadline0 and preservation of the
+  three other DWORDs. No whole ResetCharacter/world equivalence claim.
+- An initial generator probe stopped at0044a186, inside REP STOS, and reached an
+  unmapped fetch; corrected the instruction boundary to0044a187 before publishing
+  fixtures or running native comparisons. No native behavior was changed for
+  that generator error. Final fixture written under work/fixtures/ before copy.
+- Native comparisons pass all216 constructor/reset projections, missing-provider
+  and repeated-initialization rejection, stable owner references, full DWORD/
+  signed penalty values, silent behavior and independent life/presentation.
+- Actual worker08 NPCdeath bridge uses the four real Actor references. Success
+  and corpse-failure cases compose actual effects/replica/DB0902/release/resources
+  and ledger. Successful death continues into actual Rebirth on the SAME Actor,
+  preserving metadata and emitting0551/0505 via real Actor resource API. Fixture
+  world corpse/PvP/log/scene ports record expected actions; no production-provider
+  assembly is inferred. Read-only bridge snapshots from prior milestones reused.
+- `python3 tools/dev.py build`: passed;209 actions;
+  work/mob-drops-actor-death-metadata-build.log.
+- `python3 tools/dev.py test`: **143/143 passed**, zero failures, **43.83 s**;
+  work/mob-drops-actor-death-metadata-test.log. No native failure in this milestone.
+- All12 immutable originals pass SHA256SUMS; both new tools pass py_compile;
+  git diff --check passes. No SQL execution/lifecycle changes.
+
+Remaining: root allocation/admission/pool construction must supply real inherited
+metadata once per new Actor, and full character reuse must invoke the metadata
+reset projection at the original reset stage. No allocator-residue values are
+fabricated here. No SQL restore for these transient fields was found in the
+reviewed initialization/access evidence; do not add persistence columns. Actual
+corpse/PvP/zone/party-exclusion/transports and subject/group leases remain required.
+Native bridge recording fixtures are not production world assembly or gameplay
+completion. Main/worker08/party/SQL lifecycle sources remain untouched.
