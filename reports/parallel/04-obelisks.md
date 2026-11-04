@@ -1104,3 +1104,64 @@ not prove those records are spawnable with production data or establish client
 playability. Existing focused Ghidra LoadObelisk evidence is reused. Canonical
 files and SQL are unchanged; final isolated SQL validation remains coordinator-
 owned. The server is not playable.
+
+## Concrete shared definition-record flag provider
+
+Implementation commit: `9feae1092ccc6842c4f85ebb2436ae3d464537e2`.
+
+`ObeliskRuntimeDefinitionRecords` implements the configuration binder's required
+`ObeliskRuntimeDefinitionOwner` using a mandatory live mutable-record accessor.
+It resolves the actual retained 268-byte stMOBInfo by the admitted template ID
+and sets byte0x7c to1. Evidence: **ps_game.exe, CMap::LoadObelisk 00427300**,
+writes **004281b1 / 004281f0 / 0042822e**. It changes no other byte, creates no
+second catalog and never substitutes an independent marking bitmap.
+
+The real canonical catalog already exposes `mutable_mob_record(id)`, so production
+can bind `ObeliskRuntimeDefinitionRecords([&catalog](uint32_t id) { return
+catalog.mutable_mob_record(id); })` without a canonical field/setter change.
+The empty accessor fails at construction. Wrong record length, zero/mismatched
+ID or invalid raw level/HP fail before mutation, exposing mismatched slots or
+invalid admission. The caller still guarantees actual owner identity; equal IDs
+in an unrelated copied catalog cannot be distinguished by these checks. Access and
+configuration must be serialized with catalog reload/publication; retain the
+actual owner/backing records for all users. This raw flag does not require
+republishing unrelated targeting/skill views.
+
+The existing configuration comparison now uses this production provider over
+explicit mutable full-record inputs instead of its old observed marking bitmap.
+All64 original full loader materialization cases and64 text->parser->binder
+compositions compare the source flag results. They include valid/invalid template
+IDs and marking before an invalid-position record clears runtime definitions.
+Sentinel bytes additionally verify that all267 non-flag bytes stay unchanged;
+required-owner absence and stale ID rejection are checked separately. The
+original fixture is unchanged and independently regenerated. Actual canonical
+catalog construction/SQL loading remains outside this worker's older checkout;
+the new provider's direct live-record mutation is verified, not a claim of
+production root catalog assembly.
+
+Validation:
+
+- Final `python3 tools/dev.py build`: exit0, no warnings
+  (`work/obelisk-definition-records-final-build.log`); shared-slot wait respected.
+- Final `python3 tools/dev.py test`: exit0, **138/138 passed**, 32.18 seconds
+  (`work/obelisk-definition-records-final-tests.log`), including the added
+  required-owner/stale-ID guards. Earlier suite before those extra guard checks
+  passed138/138 in43.24 seconds (`work/obelisk-definition-records-tests.log`).
+- Independent original full loader regeneration/`cmp`: exit0, unchanged retained
+  fixture (`work/obelisk-runtime-definition-records-original.tsv`).
+- All original EXE/PDB SHA256SUMS passed
+  (`work/obelisk-definition-records-hashes.log`); `git diff --check`: clean.
+- Existing focused Ghidra LoadObelisk evidence reused; no SQL behavior changed
+  or SQL lifecycle action ran.
+
+Integration: the earlier requested canonical bObelisk setter is no longer a
+blocker because the retained normalized catalog's existing mutable-record API
+can supply this required provider directly. Ordinary templates and raw records
+must describe the same admitted definitions; mismatches fail explicitly. Bind
+this provider before startup configuration, retain the shared catalog, then
+bind portals over stable runtime records. Actual ServerMaps currently exposes
+only const map definitions; mutable retained portal-country access/real map
+lifecycle routing still needs coordinator-owned assembly. Raw allocation/
+preparation remains worker03's exclusive canonical task. Root-world/KC/calendar/
+transport providers remain open. No canonical files or SQL changed; final
+isolated SQL checks remain coordinator-owned. The server is not playable.
