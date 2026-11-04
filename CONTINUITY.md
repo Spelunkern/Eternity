@@ -1497,3 +1497,12 @@ changing main sources until the pipeline finishes. Independent 05 committed
 cursor `45e40e9`, but still has no per-mob pool pin: its direct idle callback
 cannot enforce the report's required retention. Coordinator requested an actual
 retention guard/lease plus reentrant release/reallocation test before wiring.
+
+Independent 09 `5bcdda2` reports and log confirms its new disposable-catalog
+`vertical-persistence-sql-integration` passed selection, mutation, exit save and
+reload, followed by complete isolated SQL suite; `.local/vertical-persistence-sql-integration.log`
+contains the explicit success. Its follow-up native suite passed 304/304. The
+candidate `e34441a..5bcdda2` remains unintegrated; reject/repair behavior for
+relocated or overflow items, retained roster gate, single-load ownership and
+actual connection/actor lifecycle still require reconciliation. Main session
+53983 is actively building/regressing and source remains frozen.
