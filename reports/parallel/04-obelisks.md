@@ -1054,3 +1054,53 @@ bObelisk flag mutation, raw pool preparation and root-world/KC/calendar/transpor
 providers remain dependencies from prior blocks. Canonical files and SQL were
 unchanged; final isolated SQL validation remains coordinator-owned. The server
 is not playable.
+
+## Complete recovered Obelisk.ini parser comparison
+
+Evidence/test commit: `048ead20c5993c8ab9aa1de5477f2f9a4f23fe71`.
+
+The new `obelisk-runtime-asset-unit` compares both native parsers against
+**ps_game.exe, CMap::LoadObelisk 00427300**, stopping at **00427eef** before
+materialization changes temporary country fields or filters records by maps.
+This block adds complete recovered-asset evidence; production code is unchanged.
+The same original CRT token/numeric execution and explicitly zeroed initial
+stack contract from the parser fixtures are used. Original file/CRT/TLS/lock/
+cookie and exact temporary-array reset boundaries remain observed ports.
+
+Input is the private `.local/server-data/Obelisk.ini`, **20,295 bytes**, SHA256
+`e3c72654021dddf318b6a2cdee48055ddf2e58ed5cef2b29c44d1f2b8db62164`.
+The tracked fixture contains normalized numeric tables and asset identity, not
+private file bytes. The test requires the private file, checks byte count/FNV64
+against the original fixture and fails explicitly when missing or different.
+Original generation separately records its SHA256. No asset was altered.
+
+The original parser produces three temporary zone buckets, mapped to0/18/30,
+nine obelisks (7/1/1), 160 companion groups and one portal input. These are the
+complete byte stream's results, including uncommented example/documentation
+lines; the native path does not clean or reinterpret the recovered asset.
+All1,368 ordinary-table DWORDs and20 portal-table DWORDs are compared, including
+record order, base IDs, country values, float bit patterns, all three mob IDs,
+group counts/radii/member counts and all portal ordinal/map pairs. This closes
+the prior synthetic-only parser validation gap, not runtime world assembly.
+
+Validation:
+
+- `python3 tools/dev.py build`: exit0, no compiler warnings
+  (`work/obelisk-asset-build.log`).
+- `python3 tools/dev.py test`: exit0, **138/138 passed**, 27.20 seconds
+  (`work/obelisk-asset-tests.log`), including complete private asset comparison.
+- Independent original generation/regeneration and `cmp`: exit0, byte-identical
+  (`work/obelisk-runtime-asset-repeat.tsv`).
+- All original EXE/PDB SHA256SUMS passed (`work/obelisk-asset-hashes.log`);
+  `git diff --check`: clean. No SQL lifecycle action ran.
+
+Integration: this test now requires the private recovered asset in its normal
+`.local/server-data` location. Keep it outside version control. The verified
+parsers can feed the existing retained ordinary/portal configuration binders;
+production must still supply actual map sizes/portal targets, shared live mob
+definitions and bObelisk mutation, shared next-ID/KC state, correct map lifecycle
+routing, raw pool preparation and world services. Complete asset parsing does
+not prove those records are spawnable with production data or establish client
+playability. Existing focused Ghidra LoadObelisk evidence is reused. Canonical
+files and SQL are unchanged; final isolated SQL validation remains coordinator-
+owned. The server is not playable.
