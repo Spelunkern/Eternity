@@ -1597,3 +1597,11 @@ had already passed. The main baseline SQL phase has acquired the shared lock
 and is running. Independent 07 completed its 642-step build and isolated SQL
 integration (`.local/vertical-inventory-full-{build,sql}.log` in that worktree);
 this does not establish live ActorScene or gameplay wiring.
+
+The main baseline's isolated SQL integration finished successfully (session
+53983 exit 0, `.local/world-serialized-sql-final.log`), after its full build and
+4/4 focused network/combat tests. Independent 03's full unit suite completed
+306/306 (`.local/vertical-protocol-tcp-tests.log`); combined ingress SQL remains
+queued. Independent 08's uncommitted canonical NpcPool pin draft passed its
+focused quest test, but its final commit, lifecycle review and integration are
+still outstanding. None of these results proves original-client playability.
