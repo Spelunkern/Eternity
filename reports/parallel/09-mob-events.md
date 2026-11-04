@@ -330,3 +330,70 @@ CAIFactory CKFSM remain missing. No SQL access/contracts changed; shared SQL
 validation/lifecycle remains coordinator work. The server remains unplayable.
 
 Implementation commit: `8eccb5d2b915c1eba677512b9bc96d9801e1bbdf`.
+
+## Milestone 6 — WhileMove and mode-sensitive completion
+
+Evidence: ps_game.exe `CMob::WhileMove` 004b5790, focused serialized Ghidra
+export under `work/exports/09-mob-events/ps_game.exe`; immutable hashes rechecked.
+Actual native MapDefinition, AStarPath, ChaseTrail and MobDamageLedger are reused.
+No canonical headers were changed.
+
+The initial move mode selects completion cleanup before FindTargetEx callbacks:
+mode 3 resets attack/damage; every other mode notifies Lua OnMoveEnd through the
+existing recovered no-argument event handler. Modes 2/3 search for targets before
+the movement deadline gate and emit event 0 with the live target ID on success.
+Movement samples time once; only the optional Lua completion takes another tick.
+
+Arrival is strictly less than 0.5 with a trail (skipping rand), or strictly less
+than rand%5+5. Arrival precedes stop/sleep/stun checks. Arrival and failed A*
+emit event 6 first, then copy the live current position to respawn, clear path /
+found / trail, and perform the captured mode's cleanup. Event/callback changes
+cannot alter that initial cleanup decision. Lua discriminator writes survive
+OnMoveEnd, as recovered in milestone 1.
+
+Path selection uses line checking, then live trail pop/SetPath or actual A*.
+A retained path uses its cursor directly. The float goal is captured before the
+random callback; changing move_target there affects later ticks, not this goal.
+Full and partial steps preserve mode=0, integer/float vector arithmetic, size+1,
+normal-step speed table, live normal_time reload, signed FISTP deadlines and
+cursor advancement even after rejected full-node movement.
+
+### Validation
+
+- `python3 tools/dev.py build`: exit 0, no compiler warnings;
+  `work/mob_ai_states_move-build.log`.
+- `python3 tools/dev.py test`: exit 0, all 125 tests pass (32.65 s), including
+  `mob-ai-states-move-unit` (0.88 s) and all prior worker suites;
+  `work/mob_ai_states_move-tests.log`.
+- Fixtures regenerated twice byte-identically; ten original branch counters
+  asserted nonzero. All original hashes match; `git diff --check` clean.
+- No SQL contracts/access changed; SQL integration remains coordinator work.
+
+Original oracle runs WhileMove, the no-argument
+OnMoveEnd handler, actual collision/A*/trail/vector/CRT code and observed required
+world/Lua ports. All ten instrumented branches execute. 1,536 cases include 625
+moves, 158 target-found events, 140 completions, 104 Lua calls and 15 attack/damage
+cleanups. Cases cover six modes, callback mode/target/position/definition changes,
+timer boundaries, path failures, retained cursors/trails and movement failure.
+Native comparison runs through real stack polling, compares exact float bits,
+complete path/cursor/trail, damage ownership and provider ordering. Two additional
+flows route event 6 through the real FSM and verify that clearing move_mode does
+not change the captured mode-3 damage reset versus other-mode Lua notification.
+
+### Integration / remaining work
+
+Bind this implementation in state 4 with real target lookup, serialized CRT RNG,
+ResetAttack, event dispatch, Lua and MoveMob providers. Definition projection is
+normal_step byte +60, size byte +3f and normal_time DWORD +5c (already requested).
+The map, mob path/trail/damage and projected definition must outlive callbacks.
+The remaining required services are pure virtual; no production no-op is supplied.
+
+All five fixed stack states now have recovered update bodies (death is the
+original empty body), but production polling/event routing remains unconnected.
+Independent work remains in InitLuaFSM/ReleaseLuaFSM VM lifecycle and the separate
+CAIFactory/configurable CKFSM factories; real Lua/script, world and scheduler
+providers must still be integrated. The invalid out-of-map scratch limit noted
+for WhileReturnHome remains. No SQL access/contracts changed; final isolated SQL
+integration/lifecycle stays with the coordinator. The server is not playable.
+
+Implementation commit: `b60fa26fbe3b6ced6cad7e0c1c81a75d9b00a8fd`.
