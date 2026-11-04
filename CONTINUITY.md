@@ -1311,3 +1311,12 @@ session 69227 while it was still waiting on the build lock (no container was
 started) because source changed. Replacement session 53983 tests world-network,
 world-application (including pipelined 0201), then builds and tests relevant
 network/combat targets plus isolated SQL. Preserve original failing worker log.
+
+Main focused `world-network-unit` passed after login release ordering fix using
+`tools/targeted.py`; `.local/world-close-targeted.log`. The runner's first real
+container invocation therefore also passed. The pipelined world application
+regression remains queued in live session 53983, followed by build/network/
+combat/SQL validation. Independent 06 reports 306/306 tests and isolated SQL
+passed for `bad2e9f`/`770173d`; review and central integration remain pending.
+Original AttackSuccess incoming x87 control can change outcomes; worker explicitly
+limits its native implementation to measured 53-bit nearest/masked environment.
