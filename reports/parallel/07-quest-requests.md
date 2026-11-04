@@ -323,3 +323,127 @@ Next task proposal: coordinator binds this timer to canonical QuestRuntime and
 real QuestEnd/zone scheduler, or assigns a new independent quest subsystem. No
 additional named CUser timed lifecycle body was found in the supplied catalog.
 The Actor inventory ownership dependency remains separately pending.
+
+## Milestone 5: QuestEnd and explicit selection
+
+The coordinator explicitly reassigned the formerly excluded core functions to
+worker 07 under `quest_requests_completion`. Historical exclusions above describe
+earlier scope; this block now implements `CUser::QuestEnd` **0047ec40** and
+`CUser::QuestEndSelect` **0047ebe0**, preserving existing reward/removal owners.
+
+`quest_requests_completion.hpp/cpp` recovers:
+
+- Abandon/fail bypasses time gates. Client 0903 (22 bytes, context and initial
+  quest ID, zero result fields), actual owner removal with success=false, log-main
+  fill, then 0502 game log (150 bytes). The log ID is loaded AFTER log-main fill
+  and may differ from the client ID. The name comes from the definition captured
+  on entry, even when callbacks replace the quest's live definition. Removal may
+  finish or recycle; its retained payload must remain readable through logging.
+- Success minimum-time gate: capture the initial definition; when minimum minutes
+  is nonzero read clock, then reload live start_tick and compare the wrapped DWORD
+  `(minimum_minutes * 60000 + start_tick) <= now` unsigned. No deadline/success_tick
+  substitution. A callback replacing the definition does not replace the captured
+  gate/selection policy; the reward owner separately reads the live definition.
+- Definition 0x15c == 1 immediately delegates variant 0, ahead of user selection.
+  Otherwise nonzero 0x15d sets live success=1 before sending four-byte 0907 and
+  retains the active quest for later selection.
+- Automatic variant path performs the original additional, discarded clock read.
+  Search variants 2,1,0 descending. Item quests use byte selector 0x163 and count
+  0x164 (+32*i), selector 1..3. Mob quests use WORD selector 0x160 and count 0x162,
+  selector 1..2. Require nonzero selector/count and enough live counter value.
+  Variant 0 is unconditional fallback, even when its own requirements do not pass.
+  Other end kinds fall through to variant 0. Reward context is forwarded unchanged.
+- Explicit selection does a fresh active lookup (sharing the original cursor),
+  accepts any nonzero live success flag and requires selection < definition 0x15d.
+  Only nonzero end NPC type triggers mandatory inventory query/consumption with
+  the actual quest counter array. Failed query stops; successful query delegates
+  the selected variant with context ZERO. It does not repeat minimum-time or
+  deadline gates, and does not recheck flags/definition after the inventory call.
+
+### Actual canonical owner composition
+
+`QuestCompletionOwners` is a typed live adapter: canonical
+`QuestRuntime::find_active/remove` own lookup, cursor and removal, while its Award
+callable invokes canonical `award_quest_reward` with live user/money/reward-world
+bindings. It never copies reward, pool, finished-list or persistence logic. Ports
+for clock, inventory, self transport and game logs remain mandatory. Earlier
+request/progress/timer providers can now call `quest_requests_complete` directly.
+
+This worker's prepared base predates the canonical owner files. To test actual
+composition without modifying or importing a second checkout, the read-only
+`tools/quest_requests_completion_owners.py` snapshots those four canonical source/
+header files into ignored `work/quest-requests-completion-owners`. Private CMake
+compiles that snapshot only when canonical headers are absent locally. Central
+integration instead links its normal `eternity_game` owners. Nothing is copied
+into tracked canonical paths and no main checkout file is written. Snapshot
+manifest: `work/quest-requests-completion-owners.sha256`; source owner contents:
+
+- quest_runtime.hpp: `4fa31cdfb4dcaad96094359db94e704f033e43ee14515476206835f60c04ce7d`
+- quest_runtime.cpp: `8f029694af640ab9bf38faea4828a4e8aa0991ba582da11f68efc3dd621fee25`
+- quest_rewards.hpp: `bf64bad65f367b405f9f144ec5bcd0b5851f38dfcdf69f0192a7fab102933d25`
+- quest_rewards.cpp: `5760073a3783c45df23989c0dc52bddb147815c83a9a769de2f965390616ed86`
+
+`tools/quest_requests_completion_oracle.py` executes complete original End/Select
+with REAL QuestSuccessResult **0047ee40**, QuestFind **0047e4b0**, QuestRemove
+**0047e150** and FreeQuest **0040a820**. Observed external ports are clock, locks,
+transports/log main, actor experience, reward item receipt and inventory query.
+The native test composes the actual canonical owners and real QuestReplica, not
+reward/removal stubs. 768 End + 768 Select paths cover wrapped minimum gates,
+all variants, pending flags, absent/out-of-range selection, inventory failures,
+clock definition/start mutation, client definition/success mutation, inventory
+counter/definition mutation, post-removal ID mutation and DB callback cursor
+lookup. Undefined game-log string tails after their first NUL are normalized to zero;
+all initialized fields and string bytes compare exactly. QuestFind stack frames
+can populate those undefined tails even when the entry stack was zeroed.
+Reference outcomes: 377 rewards (295 variant 0, 49 variant 1, 33 variant 2),
+231 pending-selection notices, 86 abandonment failures and 72 inventory queries.
+
+### Minimal canonical/production requirements
+
+No new QuestRuntime or Actor field is needed for core completion. Bind a serialized
+quest owner (or the same recursive quest lock for cross-thread callers), its DB
+sink, and the actual reward-world implementation. Retained/pool-reused quest
+payload and captured definition storage must survive the complete callback/log
+sequence. Bind inventory query to the prior actual `quest_find_items`, passing
+live counters, consuming=true. Keep live money and original account/user routing
+for `award_quest_reward`; fill_game_log_main must preserve bytes 0..1 (opcode).
+All transports, experience, item receipt and log context remain required services.
+Valid definition selections fit the three stored variants; original Select only
+checks the data-defined selection count, while canonical award owner rejects a
+variant >=3 rather than reading outside its definition. No new clamp is added.
+
+The separate Actor retained inventory/count/direct-release interface from
+milestone 2 still blocks the production inventory adapter. This block supplies
+core completion and actual owner composition, not combat dispatch, world entry or
+playability. No SQL lifecycle/schema changes are included.
+
+Milestone 5 validation:
+
+- `python3 tools/quest_requests_completion_owners.py`: exit 0; read-only canonical
+  snapshots match the four content hashes above, under ignored work/ only.
+- `.local/oracle-env/bin/python tools/quest_requests_completion_oracle.py`: exit 0;
+  generated under work/ before copying; 1,536 complete original owner paths.
+- `python3 -m py_compile` for both new tools: exit 0.
+- `python3 tools/dev.py build`: exit 0, no compiler warnings;
+  `work/quest-requests-completion-build.log`.
+- `python3 tools/dev.py test`: final exit 0, **125/125 passed**, 45.18 seconds;
+  `work/quest-requests-completion-test-final.log`. The initial run passed all 124
+  existing suites but exposed undefined original log-string tails in Select case
+  48; after explicit tail normalization the full suite passes. That initial run
+  is not counted as passed. No native behavior was changed for undefined bytes.
+- New test uses actual canonical QuestRuntime/QuestReward code, plus QuestReplica,
+  and verifies full packet/log traces, callbacks, money, retained quest payload,
+  active/finished/free ownership and shared cursor.
+- `sha256sum -c SHA256SUMS`: exit 0, all originals OK;
+  `work/quest-requests-completion-hashes.log`.
+- `git diff --check`: exit 0. No schema/SQL fixtures or lifecycle changed;
+  final isolated SQL integration stays coordinator-owned.
+
+Milestone 5 implementation commit: `f40c155cae0b5e628b43cb34dea9c59e3a481261`.
+
+Next task proposal: instantiate the typed completion adapter on the canonical
+serialized user owner and connect prior end-request/progress/timer providers to
+it. The remaining mandatory inventory bridge depends on the Actor interface
+specified separately in milestone 2; real reward item receipt and transport/log
+context must also be bound. No independent assigned End/Select body remains
+unreconstructed; further canonical integration requires coordinator ownership.
