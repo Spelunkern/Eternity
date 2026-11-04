@@ -1537,3 +1537,9 @@ unless a concrete regression requires them. Use locked focused tests and relevan
 isolated SQL; coordinator runs integrated full suite after merging. This addresses
 the observed build-slot backlog without cancelling active work or weakening the
 final validation gate. Main 53983 and ingress 69947 remain live.
+
+Independent 05 cursor revision `45e40e9` full suite `.local/vertical-mobs-cursor-tests.log`
+failed 1/305: `vertical-mobs-cursor-unit` reported `Unexpected compiled AI`.
+304 other tests passed. Worker is editing its fixture; coordinator requested
+preserving failure and a focused retry. This does not resolve the separate
+current-mob retention/pool-reuse issue. Candidate remains unintegrated.
