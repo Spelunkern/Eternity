@@ -390,3 +390,75 @@ Next independent block: execute QuestGetStartItem **0047eb70** with all three
 actual grant calls and persistent inventory/pool/cache, verifying that earlier
 slot claims affect later grants and that failures do not stop remaining grants.
 Production owner/interface dependencies above remain explicit.
+
+## Block 6: three real start-item grants with persistent owners
+
+The repeated expanded assignment's two QuestAddItem functions were already
+implemented in Block 5. This block completes its documented next step under the
+same `quest_start_items` prefix, without duplicating those bodies.
+
+`quest_start_items_sequence_oracle.py` executes complete original
+`ps_game.exe`, `CUser::QuestGetStartItem` **0047eb70** and all reached calls to
+wrapper **0047e620**, inner **0047e6f0**, real lookup **00402710**, and the inline
+UID generator. The user inventory array, created objects and UID globals persist
+through all three grants in each scenario. Only CreateItem, OS clocks/locks and
+transports are ports. Existing Ghidra exports from Block 5 provide the evidence.
+
+The native sequence test composes the existing `quest_start` start-item loop
+with real `quest_start_items_grant`, GroundItemPool, shared item initialization,
+DB/client serializers and one persistent InventoryReplica. The already-verified
+quest-start prelude is phase-asserted and excluded from this item-subflow trace;
+the original fixture entry is QuestGetStartItem itself. No production world
+adapter is claimed and no canonical owner has been copied.
+
+240 original scenarios create 384 items. Coverage:
+
+- Repeated identical definitions occupy separate first-free cells rather than
+  merging. Earlier successful claims remain occupied for later grants.
+- Zero type skips only its own grant. Missing definitions, full/closed bags and
+  middle allocation failure do not stop subsequent grant attempts.
+- Allocation failure leaves the selected hole free, allowing a later successful
+  grant to reuse it. Capacity exhaustion preserves earlier successful items.
+- A DB callback can close/open bags; later grants observe the new open-bag count.
+  Each individual grant keeps its own original bag-count snapshot.
+- Each successful grant applies DB 0701 before client 0205, persists through the
+  shared cache, and uses the continuing original shared UID sequence.
+- Complete final 48-cell occupancy, all new item payloads, packets and ordered
+  lookup/search/allocation/clock/claim/transport observations are compared.
+
+All successful synthetic definitions qualify for the twenty-digit default craft
+string. Therefore EVERY byte of each 57-byte original DB packet is initialized,
+including all craft bytes, even when prior grant calls reuse stack storage.
+No undefined stack-tail normalization/masking is used in these comparisons.
+Block 5 separately covers the empty-craft branch and retained craft tails.
+Pre-existing occupied cells are blockers; the persistent DB cache tracks the new
+grant records, not invented placeholder payloads for those occupied cells.
+The native UID provider consumes the observed original UID results; the shared
+generator remains an external owner, not a duplicated test implementation.
+
+Validation: `python3 tools/dev.py build`: exit 0, no warnings.
+`python3 tools/dev.py test`: exit 0; **125/125** tests in **37.63 s**.
+The sequence suite matches **240** original scenarios / **384** persistent items,
+including **24** middle allocation failures followed by a successful later grant.
+Original fixture regeneration is byte-identical. EXE/PDB hashes, Python compilation
+and `git diff --check` pass. Logs: `work/quest-start-items-sequence-build.log`,
+`work/quest-start-items-sequence-test.log`. SQL lifecycle/full integration remain
+coordinator-owned; no SQL code/schema/contract changed.
+
+### Current production dependencies (supersedes earlier checkpoints)
+
+Read-only main now contains `QuestRuntime::add_active_unaccounted` in coordinator
+commit `e24398d`. Its implementation claims/appends without counters; `add_active`
+retains accounting. The Block 3 interface request is therefore resolved in main,
+though canonical QuestRuntime sources are not present in this older worker base.
+No further duplicate unaccounted-insertion implementation is needed here.
+
+Actor's retained item claim/access/mirror interfaces and the exact shared UID
+contract from Block 5 remain required. The coordinator is currently validating a
+frozen canonical batch; no main file was changed. Proposed next assignment:
+provide the canonical owner interfaces in this worker's base and assign the
+production quest-start/item-grant adapter, retaining the existing pool, Actor
+and UID owners. Further disconnected projection bodies are unnecessary; actual
+production ownership/transport composition is the next useful work.
+
+Block 6 evidence commit: `68a3fca6eaacfd3189c7202b14528268aac2f983`.
