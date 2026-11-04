@@ -1218,3 +1218,89 @@ change and retained Actor/root/provider contracts remain required exactly as
 reported in Blocks 9/14. No canonical headers, new membership state, heap return,
 main checkout or SQL lifecycle changed; full isolated SQL remains coordinator
 owned. Components and fixture counts do not establish a playable server.
+
+## Block 16 — actual raid-specific expulsion request and owner
+
+Recovered complete `ps_game.exe CParty::ExpelRaidPartyUser
+00446cd0..00447110` and `CUser::PacketParty 004676c0` branch 0b1a
+(00467be3..00467c45) from the complete Ghidra disassembly. ExpelRaidPartyUser
+loads party and target from TWO stack arguments and returns RET 8; this differs
+from ExpelUser's ECX=user/stack-party convention. Whole original fixtures call
+that actual ABI and execute the complete original routine, not a modeled removal.
+
+The existing raid membership owner now shares its recovered removal coordination
+between voluntary raid leave and raid expulsion. Expulsion differs explicitly:
+
+- Missing target, nonpositive count or no matching non-null pointer unlocks and
+  returns TRUE (00446d37..00446d55); the voluntary Leave returns false.
+- Capture removed leader/subleader flags, serialize target UID and broadcast
+  six-byte 0b1a while target.party STILL references the party. Only AFTER that
+  callback returns clear target.party, then compact pointers AND wire indices.
+  LeaveRaid clears membership before its 0b0d broadcast. This difference permits
+  the target itself to execute an actual nested leave from the expulsion send.
+- Shift role positions, cursor and count; unregister at zero or recursively
+  execute actual raid/normal Leave at one (current kind==1 selects raid).
+  Promote subleader/choose replacement as recovered; required guild cleanup,
+  max refresh, 0b17/0b13 broadcasts, unlock, departed/changed-leader scenes and
+  0f02 log retain the same ordering as the recovered raid Leave coordination.
+  Tail pointers/indices remain intact; unregister never frees/recycles.
+
+The original count-one path scans for a non-null pointer but still loads slot0
+for its recursive Leave call (00446e53..00446e75). If compaction leaves slot0
+null, actual LeaveRaidParty locks, skips null slots and returns false. The shared
+native private coordination now accepts that nullable recursive subject and
+performs the same missing search; it does not bind a C++ reference to null,
+select a different user, drop lock callbacks or normalize the count. Ordinary
+public membership APIs still use the same live user references.
+
+PacketParty 0b1a takes the original captured CPartyLock, requires nonzero kind,
+then invokes actual locked IsPartyBoth (including its positive-count predicate).
+It reloads requester's LIVE party before FindUser; FindUser captures position
+under lock and reloads its user pointer AFTER unlock. After acquiring the same
+selected record's non-observable lifetime pin, reload live party again and call
+actual raid expulsion. Existing normal request leader/find bodies are exposed
+through two shared wrappers, avoiding duplicate predicates/search state. The
+retainer must return identical PartyMembershipUser and a non-null lifetime pin.
+No additional Actor party handle, member owner or transport body is introduced.
+
+Validation:
+
+- 256 retained scenarios, 512 whole PacketParty calls and 768 direct whole
+  ExpelRaidPartyUser calls, plus 43 literal nested PacketParty leaves from 0b1a
+  broadcasts. Missing/repeated/self/leader/subleader targets, holes, counts
+  0/1/2/3/7/15/30, disabled-kind guards, normal/raid recursive selection and
+  guild state are included. Original calls retain return-sentinel assertions.
+- Direct original/native missing returns are true, not invented provider success.
+  Callback-state snapshots verify membership is present during 0b1a and cleared
+  afterward. Every packet, final 30-slot/index state, count/roles/cursor/max,
+  membership, guild/request state and balanced recursive lock trace matches.
+- Traces include 294 expulsion broadcasts, 81 raid departures, 7 normal
+  departures, 182 leader/100 subleader broadcasts, 564 scenes, 382 logs and 79
+  required guild cleanups. Fifteen scenarios reach the original negative count;
+  two retain count one with null slot0, exercising the nullable recursive path.
+- Guild cleanup is the explicit required world projection of inline
+  00446ed4..00446fd5 plus existing leave/normal cleanup boundaries; it is not a
+  recovered guild subsystem. Original registry/map/experience/GetPartyType and
+  recursive leave bodies execute. Transport/scene/log/OS remain explicit fixture
+  providers, with actual pooled transport composition already covered in Block13.
+- Locked native build: exit 0, no diagnostics
+  (`work/party-runtime-raid-requests-expel-build.log`).
+- Locked native tests: 137/137 passed, 40.83 seconds, exit 0
+  (`work/party-runtime-raid-requests-expel-test.log`), including every prior raid
+  Leave/request/transport suite after sharing the removal coordination.
+- Locked focused C++20 ASAN/UBSAN compile and complete new matrix: exit 0,
+  no diagnostics (`work/party-runtime-raid-requests-expel-sanitized.log`).
+- Exact repeated original fixture `cmp`, original EXE/PDB manifest and
+  `git diff --check`: exit 0
+  (`work/party-runtime-raid-requests-expel-hashes.log`). Generated files stay
+  ignored under work/. No SQL operations; full isolated SQL is coordinator-owned.
+
+Implementation commit: `0d84227d043c79ad3f66a7e8f64c1e08a0e5d033`.
+
+Remaining request scope: 0b11 autojoin and 0b14/0b15/0b18 invitation/response.
+The raw auto-join byte change requested in Block14 and retained Actor/root real
+pool/worker/lookup/scene/log/guild/recursive-lock providers remain dependencies.
+Root must retain selected users and parties even after recursive unregister and
+through the outer final notifications; no guessed heap return is valid. All
+canonical Actor/zone/inventory sources and main checkout remain read-only.
+Playability/global server completion is not claimed by this milestone.
