@@ -794,3 +794,67 @@ change is required for this evidence block. Production config/source retention,
 raw pool allocation/preparation, platform calendar/KC and transport services
 remain dependencies from prior blocks. SQL is unchanged; final isolated SQL
 integration remains coordinator-owned. The server is not playable.
+
+## Stable configuration materialization from parsed obelisk records
+
+Implementation commit: `46416f8cbacaba88355eb2fa16f512c5f6f36765`.
+
+`ObeliskRuntimeConfiguration::bind` recovers the ordinary obelisk materialization
+phase of **ps_game.exe, CMap::LoadObelisk 00427300**. It accepts explicit parsed
+stObeliskZone/stObelisk/stObeliskMob projections, map sizes and actual canonical
+MobRuntimeTemplates. It owns stable map/record/group/member backing and binds
+companion respawn sources to actual group addresses. Copying is disabled;
+moving preserves the nested vector storage. Configuration must remain retained
+and unmodified while mobs, portal links and death/removal adapters reference it.
+Text parsing, portal/linked-group configuration and allocation-failure emulation
+are not claimed by this API.
+
+File definitions are reordered neutral/light/fury -> light/fury/neutral, with
+actual template find validity (ID/HP/level). Countries1/2 become0/1; all other
+values become neutral2. IDs consume the retained global next-ID counter even
+when positions later invalidate spawning (**0042814b–00428160**). Principal
+definitions are marked in shared source storage before the x/z position guard
+(**004281b1/004281f0/0042822e**, byte offset0x7c); invalid positions clear only
+runtime definition references. Valid positions increment the retained total
+(**0042829c**), even with zero groups. Zero groups leave the principal respawn
+zeroed; nonempty groups set its index/count/obelisk flag. Group members start
+null and group respawn count/source are bound. Principal flags do not propagate
+to companion definitions. Radius conversion truncates to int first, converts
+back to float, doubles, then truncates again (**00428493–004284d6**), preserving
+negative/fractional and overflow behavior. Positive retained total updates KC
+amounts using signed maximum/total+1 (**00428534–00428575**); nonpositive total
+preserves prior amounts.
+
+The original oracle runs the complete original parser/materializer/constructors
+on generated valid INI input; native comparison starts from the equivalent
+explicit parsed input. 64 cases compare all projected record/respawn fields,
+null member slots, resolved definition identities, shared definition marking,
+ID/total/rate state, zero groups, out-of-map positions, negative/invalid IDs,
+invalid template level, wrapped IDs and fractional/overflowing radii. Native
+configuration is moved before comparison to verify retained source pointers.
+File/heap/CRT/TLS/locks/cookie and exact temporary-array resets are observed
+execution boundaries. No native parser equivalence is implied.
+
+Validation:
+
+- `python3 tools/dev.py build`: exit0, no compiler warnings
+  (`work/obelisk-config-build.log`).
+- `python3 tools/dev.py test`: exit0, **132/132 passed**, 37.82 seconds
+  (`work/obelisk-config-tests.log`).
+- Independent full original loader regeneration and `cmp`: exit0, byte-identical
+  retained fixture (`work/obelisk-runtime-config-repeat.tsv`).
+- Locked focused Ghidra export: exit0 (`work/obelisk-config-ghidra.log`).
+- All original EXE/PDB SHA256SUMS passed (`work/obelisk-config-hashes.log`);
+  `git diff --check`: clean. No SQL behavior changed or lifecycle action ran.
+
+Integration: provide the real parser's completed raw records and retain this
+configuration beside the actual maps and shared template owner. Required
+`ObeliskRuntimeDefinitionOwner::mark_obelisk` must mutate the shared definition's
+original bObelisk flag; it cannot default to a no-op. The current canonical
+MobRuntimeTemplate projection has no such field, so the coordinator must bind
+this mutation to the retained full definition owner (or add a canonical flag/
+setter with evidence at stMOBInfo+0x7c). No canonical file was edited here.
+The loader's top-KC thresholds and retained counters are explicit state inputs,
+not fabricated defaults. Full text loading, portal binding, raw pool preparation
+and world assembly remain open. SQL is unchanged; final isolated SQL validation
+remains coordinator-owned. The server is not playable.
