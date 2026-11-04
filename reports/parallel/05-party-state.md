@@ -116,3 +116,100 @@ that broader party lifecycle scope is assigned, plus eventual canonical user
 membership/lock and transport interfaces. No canonical file was changed.
 
 Block 2 evidence commit: `f34712aecf0f3ca7ad8c44d5cc62cf942151f617`.
+
+## Block 3: normal-party entry and leave
+
+Coordinator explicitly extended ownership to `party_runtime_membership`.
+Recovered PDB/Ghidra inventory signatures in immutable ps_game.exe:
+`bool CParty::EnterNormalParty(CUser*)` 00445fe0 (inventory body size 1,158 bytes) and
+`bool CParty::LeaveNormalParty(CUser*)` 00446960 (inventory body size 869 bytes).
+Full source evidence: read-only `work/reverse/ps_game.exe/functions.tsv`,
+`decompiled.c` and `disassembly.txt` in the coordinator checkout.
+The disassembly resolves misleading decompiler field names and stack offsets.
+
+New native files implement the actual membership coordinator using explicit
+user/party projections and required `PartyMembershipWorld` providers. Existing
+party state/LevelUp code and canonical headers were not modified.
+
+- Entry rejects count >= 7 before clock/locks; otherwise samples the clock,
+  locks, writes the new pointer at slot[count] and sets user +0x173c BEFORE
+  notifying existing members. The 0b04 notification excludes the joining user
+  because count is still unchanged. The 0b01 roster contains leader BYTE,
+  existing count BYTE, and existing members in order. Only after sending it
+  does entry increment count, clear user +0x1744, refresh maximum and unlock.
+  Then GetPartyType, optional 0520 scene notification, log context and 0f01 log.
+- Per-member wire data: ID DWORD, name[21], level WORD, class BYTE, current/max
+  HP/MP/SP WORD pairs, instance WORD, XYZ float bits and effect count BYTE.
+  Visible effects append skill WORD, level BYTE and remaining seconds DWORD.
+  Definition +0x97 == 1 is omitted; other values remain visible. Expiry uses
+  signed wrapped (deadline - tick) / 1000, clamped at zero. Both serializers
+  cap at 40 visible effects, preserving list cursor at the last included node
+  on cap, or the sentinel at exhaustion. Each traversal uses the user effect
+  lock. Native name padding is initialized to zero; original strcpy leaves
+  bytes beyond NUL unspecified, and fixtures initialize original stack to zero.
+- Leave locks and searches only active ordered slots. Missing user returns
+  false after unlock, with no notifications. A found user has membership
+  cleared BEFORE 0b05 broadcast (whose recipients still include the leaver).
+  Only pUser pointers shift left; slot Index fields and the inactive last
+  pointer are retained. Item cursor decrements only if removed_index + 1 is
+  strictly less than the original cursor (00446a16..00446a29).
+- Count zero unregisters the party through its real manager owner. Count one
+  recursively removes the remaining user, including nested locking, packets,
+  manager unregister, scene updates and logs. With >=2 remaining users, removing
+  the leader resets leader index to 0 and emits 0b07 after experience refresh;
+  removing an earlier nonleader decrements the leader index without 0b07.
+  Guild-creation cleanup runs after recursion/count handling and before refresh.
+  Unlock precedes departed-user and changed-leader 0520 scene updates and 0f02
+  log delivery. One/zero-member experience maxima remain retained as before.
+
+Required provider boundaries are explicit: recursive party locks, effect locks,
+clock, party/user/scene transport, GetPartyType, actual party-manager unregister,
+actual guild-creation cleanup, SetGameLogMain context and game-log transport.
+There are no production no-op providers. Registry/pool, guild creation and
+GetPartyType bodies are not claimed as reconstructed by this block.
+Callbacks must not throw, destroy membership/users or invalidate projections;
+Windows recursive critical-section semantics are required for nested leave.
+Normal kind 0 and non-null active slots are required; raid conversion/leave,
+invitations, party allocation and manager lifetime remain separate work.
+
+The original-execution oracle runs both complete entry/leave functions and the
+real ChkPartyExpByLevel. It observes clock, critical sections, transport,
+GetPartyType and log-context ports; manager unregister block
+00446a37..00446a7d and guild cleanup block 00446ac1..00446bae are explicit owner
+ports. It does NOT substitute the membership algorithm or packet assembly.
+512 cases compare every port event with live count/leader/item cursor/maximum,
+all seven pointers (including stale tail), eight membership flags/request bytes
+and eight effect cursors, exact payloads, result and final state. Cases cover
+0..7 members, leader/target positions, missing users, full entry,
+rejection of count 8 and INT_MAX before any member read,
+recursive dissolution, guild cleanup, no-zone users, short/full names, empty and
+48-effect lists, filtered effects, 40-visible cap, clock wrap and signed expiry.
+Slot Index values are separately checked unchanged by native comparisons.
+
+Block 3 final validation:
+
+- `python3 tools/dev.py build`: exit 0; final incremental rebuild/relink completes
+  with no warnings (`work/party-runtime-membership-final-build.log`).
+- `python3 tools/dev.py test`: exit 0; all 122 tests pass in 35.19 seconds,
+  including previous state/LevelUp and all 512 complete membership comparisons
+  (`work/party-runtime-membership-final-test.log`). The preceding suite also
+  passed before adding the abnormal-full-count guard cases (42.07 seconds).
+- Focused standalone C++20 ASAN/UBSAN comparison, compiled/run in the dev image
+  under the same shared `resource_lock(ROOT, 'build', 2)`: exit 0; all 512 pass,
+  no compiler/sanitizer diagnostics (`work/party-runtime-membership-final-sanitized.log`).
+- Repeated original fixture generation matches byte for byte (`cmp`, exit 0).
+  Original EXE/PDB `sha256sum -c SHA256SUMS` and `git diff --check`: exit 0.
+  All generated executables/logs/intermediate fixtures remain in ignored work/.
+- No SQL/schema/lifecycle operations were added. Isolated SQL integration remains
+  coordinator-owned; it was not run in this worker block.
+
+Block 3 implementation commit: `ef3c489918c908e312df1f9e3a7ebe373ec659ee`.
+
+Needed canonical integration: provide live user ID/name/class/resource/instance/
+XYZ/effect-list projections and pending-request byte, membership back-reference,
+normal party count/leader/item cursor/seven ordered slots and retained maximum.
+The actual party manager must keep the party alive through outer recursive
+leave and unregister it without destroying active call frames. Guild-creation
+cleanup must preserve the original reset/list/pool contract behind the required
+callback. Map production transport to each exact ordered packet callback;
+refresh the live maximum before sending subsequent reward/LevelUp queries.
