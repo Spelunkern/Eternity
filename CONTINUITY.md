@@ -1506,3 +1506,10 @@ candidate `e34441a..5bcdda2` remains unintegrated; reject/repair behavior for
 relocated or overflow items, retained roster gate, single-load ownership and
 actual connection/actor lifecycle still require reconciliation. Main session
 53983 is actively building/regressing and source remains frozen.
+
+Independent 08 drafted `VerticalQuestNpcGuard` with a separate retirement map.
+Coordinator found its safety depends on every existing ZoneNpcs/NpcPool release
+being voluntarily routed through that new wrapper; direct canonical release can
+bypass it. Requested pin/deferred-reuse in canonical NpcPool/zone ownership or
+proof of a single enforced existing retirement path, plus direct release/reuse
+and nested-callback tests. Draft is uncommitted and not approved for integration.
