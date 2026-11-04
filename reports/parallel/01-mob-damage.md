@@ -2257,3 +2257,73 @@ assembly. Next independent proposal: recover **SendUseSPMP 00481ca0** actual
 resource writes/packet order and map them to the existing Actor resource owner;
 never substitute availability checking or negative healing without evidence.
 Overall objective remains open.
+
+## SendUseSPMP resource transition (2026-11-04)
+
+Source: immutable ps_game.exe, CUser::SendUseSPMP 00481ca0..00481ec4,
+complete original execution with actual CRT helper 0051136e. New
+user_skill_runtime_spend files recover the pure resource transition for the
+resolved attack's WORD cost domain, reusing the existing precision53 cost owner.
+This is NOT an installed full spending/party service.
+
+Both SP/MP discount calculations execute first. Raw cost exactly1 then overrides
+its discounted result with the corresponding live DWORD resource; all other
+costs use wrapped cost-minus-discount. Clamp the resulting signed request to0,
+then compare current resources SIGNED: current<=request writes0, otherwise
+subtract. Thus even zero cost clears a high-bit-set resource. Capture old low
+WORDs before changes; self050c is exactly6bytes, SP delta then MP delta, each
+modulo65536. Both writes precede the self send. Party notification guards use
+positive computed requests, not actual consumption: spending against empty
+resources can still notify. Requested values are retained in the transition for
+that later coordinator; they must not be recomputed from packet deltas.
+
+Original group tail remains an explicit integration dependency: after self send,
+read +173c, lock captured group's+118, reread live membership, unlock/discard
+captured lease if it became null. Kind0 uses0c01,kind1 uses0c0a; other kinds do
+not initialize the opcode in original stack scratch (no invented fallback).
+For each positive request, notify SP(tag1) then MP(tag2), each9bytes with actual
+actor ID and LIVE low-WORD current energy. MP rereads membership after SP
+callback. Captured lock is released after notifications, not before self send.
+Whole non-null group/reentrant traces are still required before installing this
+tail; no optional/no-op actual provider has been introduced.
+
+Canonical integration (main read-only review): Actor already exposes
+replace_resources_raw(PlayerResources), backed by ActorResources::replace_raw.
+No new resource field/accessor is needed. Centrally bind spend(Actor&,WORD,WORD)
+by reading actual resources/modifiers, computing this transition, replacing only
+SP/MP while preserving HP in that same owner, sending its self packet, then
+executing the recovered group coordinator with actual retained group/transport
+providers. Preserve Actor/scene/group leases across synchronous callbacks; do
+not retain a pre-self-send membership or energy snapshot for group payloads.
+The old worker Actor header lacks the raw setter; shared files remain untouched.
+Raw signed32 cost callers outside resolved skill WORDs are outside this helper's
+contract, even though the original function accepts DWORD arguments. No negative
+healing, parallel resource store or substitute catalog was introduced.
+
+Implementation commit: **f42b478**. Validation:
+
+- **4096 whole original SendUseSPMP executions** with absent party; original
+  arithmetic, both resource stores, self050c, null-party tail and SEH/return
+  execute. Only self transport is ported and verifies resources are already
+  committed at send entry. Native compares final DWORDs, both retained signed
+  requests and every packet byte. Includes raw cost1, zero, signed resource
+  extremes, cost29/reduction100 precision case, overflow modifiers and random
+  WORD costs/DWORD inputs. No native full-party claim.
+- Initial oracle harness lacked mapped SEH storage atFS:0 and failed before
+  producing rows; added the required mapping, then regenerated all4096 cases.
+  Subsequent independent regeneration is byte-identical (`cmp`,exit0); original
+  control word is verified restored after every full call. Fixtures copied only
+  before test readers started. SHA256SUMS exit0;
+  `work/user-skill-runtime-spend-hashes.log`.
+- `python3 tools/dev.py build`: exit0,no warnings;
+  `work/user-skill-runtime-spend-build.log`. Shared lock wait respected.
+- `python3 tools/dev.py test`: exit0,**143/143 passed,35.43s**;
+  `work/user-skill-runtime-spend-tests.log`. Existing scheduler/owner/use/attack/
+  eligibility checks preserved. `git diff --check`: exit0. SQL unchanged; final
+  isolated SQL integration belongs to coordinator. No gameplay completion claim.
+
+Next independent block: whole original non-null group lock/reentry traces,
+including self-send membership mutation, SP-send MP-energy/membership mutation
+and group-kind packet selection, then required-provider spending coordination.
+Root must still attach the actual learned owner/manager/definitions/actions and
+bind the existing Actor raw resource API; no global side map or no-op transport.
