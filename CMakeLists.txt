@@ -1748,3 +1748,13 @@ if(BUILD_TESTING)
     target_link_libraries(mob-zone-services-unit PRIVATE eternity_game)
     add_test(NAME mob-zone-services-unit COMMAND mob-zone-services-unit ${CMAKE_CURRENT_SOURCE_DIR}/work/mob-zone-services)
 endif()
+
+# Worker 09: integer CalculateParam writes and recursive pre-dispatch map effects.
+if(BUILD_TESTING)
+    add_executable(mob-ai-states-argument-writes-unit tests/mob_ai_states_argument_writes_unit.cpp)
+    target_link_libraries(mob-ai-states-argument-writes-unit PRIVATE eternity_game)
+    add_test(NAME mob-ai-states-argument-writes-unit COMMAND mob-ai-states-argument-writes-unit ${CMAKE_CURRENT_SOURCE_DIR}/tests/data/mob_ai_states_argument_writes-oracle.tsv)
+    add_executable(mob-ai-states-nested-writes-unit tests/mob_ai_states_nested_writes_unit.cpp)
+    target_link_libraries(mob-ai-states-nested-writes-unit PRIVATE eternity_game)
+    add_test(NAME mob-ai-states-nested-writes-unit COMMAND mob-ai-states-nested-writes-unit ${CMAKE_CURRENT_SOURCE_DIR}/tests/data/mob_ai_states_nested_writes-oracle.tsv)
+endif()
