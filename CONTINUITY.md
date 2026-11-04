@@ -1480,3 +1480,11 @@ AttackSuccess->AttackDamage CRT seed-19 oracle (success, damage 98, draws
 or complete combat. Candidate `13e871d` plus subsequent dirty FP/RNG changes
 remain under worker review and unintegrated; production services/root and skill
 paths remain missing.
+
+Independent 08's `a64924f` quest composition passed its own 304-test suite and
+isolated SQL, but coordinator found `StartFrame::npc` retains a borrowed
+`ZoneNpcs::find` pointer across callbacks and dereferences it in `start_log_npc`;
+`NpcPool::release` can recycle that object. Requested worker prove lifecycle
+prevents removal/reuse across callbacks or implement a real same-NPC retention
+and nested release/reuse test. Do not merge the candidate solely on the current
+fixture's test reward provider or caller-lifetime comment.
