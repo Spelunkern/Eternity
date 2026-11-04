@@ -1155,3 +1155,24 @@ reviewed initialization/access evidence; do not add persistence columns. Actual
 corpse/PvP/zone/party-exclusion/transports and subject/group leases remain required.
 Native bridge recording fixtures are not production world assembly or gameplay
 completion. Main/worker08/party/SQL lifecycle sources remain untouched.
+
+## Death metadata continuation checkpoint
+
+Re-read current canonical continuity/parallel instructions and reviewed
+1b6b0c1/d1e0929. The repeated four-field metadata assignment is completed in
+milestone17, including constructor/reset residue evidence and actual NPCdeath to
+Rebirth composition on the same Actor. No further independent metadata behavior
+was identified inside this ownership. No runtime change or new test execution
+is claimed; historical validation remains216 original scenarios and143/143tests
+in43.83s. Documentation diff check passes. Main remains read-only during its
+seventeenth batch validation; no worker08/party/root source was modified.
+
+Dependency: coordinator integrates1b6b0c1/d1e0929 and actual root construction
+supplies inherited allocation/pool metadata, performs bound preflight and binds
+the four references already documented. Concrete next-task proposal requiring
+explicit ownership: audit the retained Actor construction/admission/reuse path
+with its coordinator-owned construction hook, then connect one-time metadata
+binding and the ResetCharacter metadata projection to that actual lifetime.
+Do not use a fabricated zero residue, second pool or SQL persistence columns.
+That integration cannot be completed by changing worker08 or root files under
+this current Actor-only scope; await assignment instead of repeating fixtures.
