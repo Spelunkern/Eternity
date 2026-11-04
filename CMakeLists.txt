@@ -1681,3 +1681,10 @@ if(BUILD_TESTING)
     target_link_libraries(mob-targeting-lifecycle-pvp-unit PRIVATE eternity_game)
     add_test(NAME mob-targeting-lifecycle-pvp-unit COMMAND mob-targeting-lifecycle-pvp-unit ${CMAKE_CURRENT_SOURCE_DIR}/tests/data/mob-targeting-lifecycle-pvp-oracle.tsv)
 endif()
+
+# Worker 09: actual argument-vector dispatch and F_OUT copyback.
+if(BUILD_TESTING)
+    add_executable(mob-ai-states-pipes-unit tests/mob_ai_states_pipes_unit.cpp)
+    target_link_libraries(mob-ai-states-pipes-unit PRIVATE eternity_game)
+    add_test(NAME mob-ai-states-pipes-unit COMMAND mob-ai-states-pipes-unit ${CMAKE_CURRENT_SOURCE_DIR}/tests/data/mob_ai_states_pipes-oracle.tsv)
+endif()

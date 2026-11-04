@@ -1,4 +1,4 @@
-#include "eternity/game/mob_ai_states_arguments.hpp"
+#include "eternity/game/mob_ai_states_pipes.hpp"
 #include "eternity/game/mob_ai_states_bindings.hpp"
 #include <algorithm>
 #include <bit>
@@ -229,16 +229,16 @@ std::int32_t interpret_mob_ai_zero_argument_calls(MobAiConfiguredFsm& owner,MobA
 }
 
 namespace eternity::game {
-void calculate_mob_ai_argument(MobAiConfiguredFsm& owner,MobAiConfiguredCondition& condition,MobAiParameter& output){
+static bool calculate_argument_values(MobAiConfiguredFsm& owner,MobAiConfiguredCondition& condition,MobAiParameter& output){
     MobAiValueStack stack;stack.capacity=20;stack.slots=std::vector<MobAiParameter>(20,MobAiParameter(0));MobAiParameter numeric(0);bool known=false;
     for(;;){
         const auto index=std::bit_cast<std::int32_t>(condition.words[2]);
         const auto next=increment(index);condition.words[2]=static_cast<std::uint32_t>(next);
-        if(next>std::bit_cast<std::int32_t>(condition.words[1]))return;
-        if(condition.tokens.data()==nullptr&&index==0)return;
+        if(next>std::bit_cast<std::int32_t>(condition.words[1]))return false;
+        if(condition.tokens.data()==nullptr&&index==0)return false;
         if(index<0||static_cast<std::size_t>(index)>=condition.tokens.size())throw std::logic_error("Mob AI argument token cursor exceeds retained storage");
         const auto& token=condition.tokens[static_cast<std::size_t>(index)];
-        if(token.type==5){if(stack.top>=0&&stack.top<stack.capacity)assign(output,stack.slots[static_cast<std::size_t>(stack.top)]);return;}
+        if(token.type==5){if(stack.top>=0&&stack.top<stack.capacity){assign(output,stack.slots[static_cast<std::size_t>(stack.top)]);return true;}return false;}
         if(token.type==2){
             if(token.number_type==1){known=true;numeric.type=1;numeric.integer=token.integer;}
             else if(token.number_type==2){known=true;numeric.type=2;numeric.real=token.real;}
@@ -259,5 +259,39 @@ void calculate_mob_ai_argument(MobAiConfiguredFsm& owner,MobAiConfiguredConditio
         }else if(token.type==4||token.type==8)throw std::logic_error("Mob AI argument requires unrecovered nested calls or operators");
         // Kind 6 and kinds outside the dispatch interval are ignored.
     }
+}
+}
+
+namespace eternity::game {
+void calculate_mob_ai_argument(MobAiConfiguredFsm& owner,MobAiConfiguredCondition& condition,MobAiParameter& output){static_cast<void>(calculate_argument_values(owner,condition,output));}
+std::int32_t interpret_mob_ai_piped_calls(MobAiConfiguredFsm& owner,MobAiConfiguredCondition& condition,MobAiSystemCatalog& definitions,MobAiArgumentDispatcher& dispatcher){
+    const auto call=[&](const MobAiToken& token){
+        const auto before=definitions.find(token.function_id);
+        if(before==definitions.end())throw std::logic_error("Mob AI call requires a factory-populated function definition");
+        const auto count=before->second.parameter_count;
+        std::vector<MobAiParameter> arguments;MobAiParameter argument(0);bool known=false;
+        for(std::int32_t i=0;i<count;++i){
+            known=calculate_argument_values(owner,condition,argument)||known;
+            if(!known)throw std::logic_error("Mob AI first argument has undefined original retained type");
+            MobAiParameter copy(argument.type);assign(copy,argument);arguments.push_back(copy);
+        }
+        auto result=dispatcher.invoke(owner,token.function_id,arguments);
+        if(result.type==4&&std::find(result.text.begin(),result.text.end(),'\0')==result.text.end())throw std::logic_error("Mob AI system result has no retained string terminator");
+        const auto after=definitions.find(token.function_id);
+        if(after==definitions.end())throw std::logic_error("Mob AI callback removed its function definition");
+        const auto output_count=after->second.parameter_count;
+        for(std::int32_t i=0;i<output_count;++i){
+            const auto index=static_cast<std::size_t>(i);
+            if(index>=after->second.parameters.size())throw std::logic_error("Mob AI function output metadata exceeds retained parameter storage");
+            if(after->second.parameters[index].pipe!=1)continue;
+            if(index>=arguments.size())throw std::logic_error("Mob AI output parameter exceeds retained argument storage");
+            const auto& value=arguments[index];if(value.variable_id==0)continue;
+            const auto target=owner.variables.find(value.variable_id);
+            if(target==owner.variables.end())throw std::logic_error("Mob AI F_OUT requires an existing typed local target");
+            assign(target->second,value);
+        }
+        return result;
+    };
+    return interpret_values(owner,condition,true,ComparisonMode::numeric,true,true,true,true,true,true,call);
 }
 }

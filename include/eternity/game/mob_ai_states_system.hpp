@@ -2,7 +2,9 @@
 #include "eternity/game/mob_ai_states_finite_compound.hpp"
 namespace eternity::game {
 // CKFSM +58 SysFuncMap is distinct from the compiled state-action registry.
-struct MobAiSystemDefinition {std::int32_t parameter_count=0;};
+// CKSystemFunction +90 vector entries are {type, pipe}; F_OUT is exactly 1.
+struct MobAiSystemParameter {std::int32_t type=0,pipe=0;};
+struct MobAiSystemDefinition {std::int32_t parameter_count=0;std::vector<MobAiSystemParameter> parameters{};};
 using MobAiSystemCatalog=std::map<std::uint32_t,MobAiSystemDefinition,MobAiSignedCodeLess>;
 class MobAiSystemDispatcher {
 public:
