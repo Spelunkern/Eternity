@@ -755,3 +755,26 @@ is not authorization for no-op log/DB/portal services. Actual Lua execution,
 compiled factory/backend, transport and production root construction remain open;
 no playable-server or real DB-delivery claim. No SQL access in this block;
 complete isolated SQL and integrated normal-owner builds remain central checks.
+
+## Concrete adapter scope completion checkpoint
+
+The repeated allocation/Init/entry assignment is complete in a48542a/00fdd9a.
+Read current main continuity and parallel rules; thirteenth-batch validation is
+frozen and the concrete adapter header is not yet present in main. Existing
+worker04 publication/root tasks remain outside this worker's ownership. No new
+independent implementation is identified without duplicating completed adapter
+work or inventing missing backend services.
+
+Concrete next dependency/task: coordinator review/integration of a48542a, then
+designate the production per-zone construction owner and authoritative backend
+interfaces that supply the ten required world callables plus MobInitPorts' actual
+compiled/Lua initialization. Bind one adapter to the SAME live zone, bound pool
+and executor RNG; retain all required service/source backing through callbacks
+and mob teardown. Do not replace missing services with no-ops or another world,
+pool, catalog or list. Root/backend wiring needs a new explicit ownership scope.
+
+Documentation-only checkpoint: no source/test/fixture changes or new execution.
+Latest worker validation remains 135/135 tests (38.85 s), 48 actual adapter
+compositions and byte-identical original startup/timer regeneration. Tree was
+clean before this report update; git diff --check passed. No main/other-worker
+edits, SQL access or global completion claim. Awaiting coordinator assignment.
