@@ -2148,3 +2148,87 @@ change; coordinator owns isolated SQL and full integration. The server is not
 playable.
 
 Implementation commit: `a14f20dcdbac3d4000a8db6c8e550c99f9dcd479`.
+
+## Milestone 31 — argument vector ownership and F_OUT local writeback
+
+### Evidence / behavior
+
+`ps_game.exe`, `CKFSM<CMob>::TravelCondition` `00498cf0`, input loop
+`00498f80..00498fa9`, real `CalculateParam` `0049d020`, argument-vector
+push/growth `0049b6d0`, virtual call `00498fab..00498fc1`, output loop
+`00498fd0..00499037`, vector release before result push `00499039..00499065`.
+Full Ghidra decompile and instructions recover CKFunctionParam as two 32-bit
+fields {type, PipeType}, owned by CKSystemFunction's vector at +90.
+
+Added `MobAiPipedServices` and mandatory mutable-argument dispatcher, retaining
+the existing per-owner SysFuncMap projection. Input ParamCount is sampled once.
+Each argument calls the recovered value-only CalculateParam using the shared
+condition cursor and independent private stack. The same retained argument
+scratch is reused: an empty/exhausted later expression retains the previous
+argument. An undefined first argument explicitly errors instead of inventing a
+void value. Metadata type does not coerce the constructed argument.
+
+The dispatcher receives an owned argument vector, can update its values and
+returns an independent result. Token ID and metadata are reloaded afterward.
+Only PipeType exactly 1 (F_OUT) writes a nonzero current argument VariableID into
+the same owner's local map. Zero IDs skip lookup; other pipe values skip argument
+reads. Copyback uses full scalar metadata and string prefix, retaining destination
+string tail. Result push follows writeback and vector destruction. Missing typed
+targets and undefined metadata/argument storage remain explicit errors, with
+previous callback effects and prior writes retained.
+
+`MobAiQueryArguments` adapts only the six recovered CMob queries, whose original
+DoFunction branches ignore the vector even when explicit metadata requests
+arguments. Unknown world functions still error. Positive metadata fixtures are
+input projections and do not claim original factory-asset declarations for these
+queries. Argument string bytes after NUL are original indeterminate vector
+storage; comparisons cover all scalar fields and the defined string prefix,
+not invented tail contents. Retained stack/map bytes are compared in full.
+
+### Validation
+
+- 1,024 sequences / 1,920 complete original TravelCondition executions,
+  2,271 observed actual CMob virtual DoFunction calls and 5,721 arguments observed
+  in the original owned vectors. Real CalculateParam construction/destruction,
+  vector push/reallocation/copy/free and map read/F_OUT writeback execute. All
+  27,826 allocations are freed and poisoned; only allocation/free/security cookie
+  imports are adapted. No parser/vector/map/query/dispatch result port.
+- One to four arguments, metadata types unrelated to value types, pipe values
+  0/1/2/-1, int/float/DWORD/string arguments, empty later argument reuse, embedded
+  VariableID aliases/zero IDs, repeated calls, zero-capacity result stacks and
+  declared-count truncation are covered. Exact observed argument sequences,
+  retained stack/map bytes, subject changes, cursor/top and per-round truth
+  counts match native. 156 final maps and 133 final subjects change.
+- Actual native entry expression executes the bound query and F_OUT, then a
+  later transition observes the changed local value and cleared attack flag.
+  Native callback projection tests verify changed metadata/output routing and
+  safe IN-only metadata beyond argument extent; these are instruction-backed
+  boundary checks, not original reentrant world execution claims. Missing OUT
+  targets fail after actual query side effects and before result push. Empty
+  first argument is rejected before dispatch. Earlier providers remain tested.
+- Oracle regenerates byte-identically; original SHA256SUMS pass; diff check clean.
+- Build exit 0, no compiler warnings;
+  `work/mob_ai_states_pipes-build.log` and final test-extension build
+  `work/mob_ai_states_pipes-build-final.log`.
+- `python3 tools/dev.py test`: exit 0, 150/150 tests pass (52.41 s),
+  pipes test 1.21 s; `work/mob_ai_states_pipes-tests.log`.
+
+### Required integration / remaining work
+
+No shared canonical header or MobRuntime field was changed. Coordinator assembly
+must retain the real per-owner SysFuncMap counts and owned CKFunctionParam
+metadata (+90), and bind its actual +48 mob instance. Do not reuse compiled state
+actions or introduce a second production FSM/local map. Providers must not retain
+argument-vector references after dispatch/writeback. Existing target insertion
+with original indeterminate text is still unsupported; require initialized
+factory entries instead of inventing payloads.
+
+CalculateParam operators and nested calls remain explicit errors. Other DoFunction
+IDs/world handlers, nonfinite propagation, nonnumeric comparisons, full factory/
+asset decoding and root world/Lua/scheduling/destruction remain open. Next block
+can recover CalculateParam arithmetic on its private stack to support expression
+arguments beyond literal/local/string values. Unknown functions and missing world
+providers must continue to error. SQL/contracts did not change; coordinator owns
+isolated SQL and complete integration checks. The server is not playable.
+
+Implementation commit: `e97c5bcf36db42f8631049a7ed6220738a2bf203`.
