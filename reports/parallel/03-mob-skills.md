@@ -23,9 +23,10 @@ Ghidra export: ignored `work/exports/03-mob-skills/ps_game.exe`.
   which deletes active nodes in list order rather than recycling them. Original
   execution confirms the deletion loop hidden by Ghidra's noreturn inference.
 - `CObjectMgr::CreateSkill` **0040a780** additionally assigns a shared instance
-  ID when the allocated ID is zero. The new admission API deliberately represents
-  list/pool ownership, not this manager's ID assignment or `AddApplySkill`
-  **004a0aa0** effect/refresh/replacement rules.
+  ID when the allocated ID is zero. `append_created` now implements that ID
+  assignment before admission; `append_from_pool` remains the raw heap/list path.
+  Neither path substitutes `AddApplySkill` **004a0aa0** effect/refresh/replacement
+  rules.
 
 ## Implementation and integration contract
 
@@ -60,12 +61,13 @@ Required coordinator changes (canonical headers intentionally untouched):
    unconditional clear to that helper (original Init retains the list). The real
    ResetAttack coordinator needs a separate path/provider.
 5. Real skill admission must finish initialization (definition, ID/level,
-   attacker, ticks, and effect state) and supply manager-wide instance IDs from
-   recovered `CreateSkill`, preserving IDs on reuse. `AddApplySkill`, timed skill
+   attacker, ticks, and effect state). Call `append_created` with the manager-wide
+   atomic skill counter (+0x10 in the original object manager); do not use a
+   per-mob counter or unconditionally replace retained instance IDs. `AddApplySkill`, timed skill
    removal/effects and user ownership of the same original CSkill heap remain
    separate reconstruction/integration work.
 
-## Validation
+## Initial milestone validation
 
 - `sha256sum -c SHA256SUMS`: exit 0, all 12 original EXE/PDB files match.
 - Locked Ghidra `tools/reverse.py ps_game --process` export: exit 0, with the
@@ -90,3 +92,54 @@ shared isolated SQL integration remains assigned to the coordinator. Sanitizer
 checks were not run by this worker. The server is not playable.
 
 Implementation commit: `0b9643aeb251eb2c2c23bb02da438bb6b2f748fa` on `workers/03-mob-skills`.
+
+
+## Second milestone: manager skill instance IDs
+
+Recovered `CObjectMgr::CreateSkill` **0040a780** using the existing focused Ghidra
+export and instruction listing. It calls the real skill heap at manager +0x114,
+returns null without touching the counter on allocation failure, and invokes
+`InterlockedIncrement` through IAT **005210f8** on manager +0x10 only when
+CSkill +8 is zero. Nonzero IDs survive transfer through another mob's list.
+The unsigned 32-bit increment wraps to zero; there is no zero-skipping rule.
+That zero is reassigned when the object is subsequently created from the heap.
+
+`MobAppliedSkills::append_created(std::atomic<std::uint32_t>&)` now supplies
+this missing creation/admission step. The counter uses sequentially consistent
+atomic increment and remains an explicit object-manager input. The method shares
+the existing allocation/recycling/error path and retains all other payload.
+No canonical files or production world/log providers were changed.
+
+The new original-execution fixture runs real CreateSkill, Alloc, AddBack and
+ClearApplySkill. Its imported increment executes x86 `lock xadd` instead of
+synthesizing IDs in Python. It compares returned object identity, shared counter,
+attempt count, both lists, free order and all ten payload words after every
+operation. Fresh allocation memory has a nonzero sentinel ID to verify that the
+original constructor, and the native pool, clear only the fresh instance ID.
+
+Validation:
+
+- `sha256sum -c SHA256SUMS`: exit 0; all 12 original EXE/PDB files match.
+  Log: `work/mob-applied-skills-creation-hashes.log`.
+- New oracle generation with `.local/oracle-env/bin/python`: exit 0; **64
+  scenarios / 1,088 original operations**. A second generation matches the
+  committed fixture byte-for-byte. Both outputs were generated under `work/`
+  before copying the fixture, with no test reading it during replacement.
+- `python3 tools/dev.py build`: exit 0, no compiler warnings.
+  Log: `work/mob-applied-skills-creation-build.log`.
+- `python3 tools/dev.py test`: exit 0, **121/121 passed**, 30.59 seconds.
+  Both applied-skill suites passed. The new suite also creates 512 skills from
+  two concurrent native owners, verifies the exact wrapped ID set, and recycles
+  all 512 with allocation failure enabled: only the zero-ID record advances the
+  shared counter on reuse. Log: `work/mob-applied-skills-creation-test.log`.
+- New oracle `py_compile` and staged whitespace check: exit 0.
+
+No SQL access or sanitizer run was performed for this block.
+
+Second milestone implementation commit: `7ac2fe02a3f33f1d4a9949b20d2b25cbdc6f57fb`.
+
+Remaining integration: bind one manager-wide atomic counter with the shared skill
+heap, use `append_created` at real admission, and complete the effect/refresh,
+expiration/removal and world-owner connections listed above. SQL contracts are
+unaffected; the coordinator owns the complete isolated SQL integration. This block
+does not make the server playable.
