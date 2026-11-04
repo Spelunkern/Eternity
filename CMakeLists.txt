@@ -836,3 +836,19 @@ endif()
 # Explicit read-only isolated SQL check; uses the shared lock wrapper, not CTest.
 add_executable(mob-targeting-bindings-sql-unit tests/mob_targeting_bindings_sql_unit.cpp)
 target_link_libraries(mob-targeting-bindings-sql-unit PRIVATE eternity_game eternity_storage)
+
+target_sources(eternity_game PRIVATE src/game/quest_requests_completion.cpp)
+if(BUILD_TESTING)
+    # Worker snapshots canonical owners read-only under ignored work/ when its
+    # prepared base predates them; central integration uses normal owner sources.
+    set(QUEST_COMPLETION_OWNER_SNAPSHOT "${CMAKE_CURRENT_SOURCE_DIR}/work/quest-requests-completion-owners")
+    if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/include/eternity/game/quest_runtime.hpp" OR EXISTS "${QUEST_COMPLETION_OWNER_SNAPSHOT}/include/eternity/game/quest_runtime.hpp")
+        add_executable(quest-requests-completion-unit tests/quest_requests_completion_unit.cpp)
+        if(NOT EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/include/eternity/game/quest_runtime.hpp")
+            target_include_directories(quest-requests-completion-unit PRIVATE "${QUEST_COMPLETION_OWNER_SNAPSHOT}/include")
+            target_sources(quest-requests-completion-unit PRIVATE "${QUEST_COMPLETION_OWNER_SNAPSHOT}/src/game/quest_runtime.cpp" "${QUEST_COMPLETION_OWNER_SNAPSHOT}/src/game/quest_rewards.cpp")
+        endif()
+        target_link_libraries(quest-requests-completion-unit PRIVATE eternity_game)
+        add_test(NAME quest-requests-completion-unit COMMAND quest-requests-completion-unit ${CMAKE_CURRENT_SOURCE_DIR}/tests/data/quest-requests-completion-oracle.tsv)
+    endif()
+endif()
