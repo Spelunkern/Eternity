@@ -817,3 +817,41 @@ Reviewed/queued836cc99 documentation-only +142c completion, no new tests. New pl
 Session66021 exited0:build,221/221tests61.79s,fullisolatedSQLinclcreation/character/guild,fullrestoredcatalogcompare. Source03e120f; logs .local/tenth-batch-{build,tests,sql,bindings-sql}.log. Freeze released;publish verifiedbatch. Newer queuedSQLcursor/ZoneUsers/userlife/etc not covered.
 
 Reviewed/queueda2c2a37/d3f91e3/322feff evidence-only112original requests/48nativepolls,132tests. Actual userCSkill owner absent,not private-only; assigned01 canonical user_skill_runtime256stable slots/signedcount/liveDWORDselection/sharedmanagerpool contract and actual scheduler handle. Actor/inventory02exclusive remains read-only; report minimal singleowner attachment. Retained weaponbag0slot5 needs actual item accessor,02task addresses it. No fake runtime/projection equivalence. Existing exclusive branches03mobs/mob_pool,08zone_mobs,01zone_users,userSkillnewfiles,02Actorinventory remain. Objective open.
+
+## Reviewed worker04 526ddbe6 — portalparser
+
+Reviewed2040476/fc2018f portalparser with retained partial headers/references and original fury+7offset:50reportedoriginalparser/64bindercompositions,137tests after native lowercasepatternfix;initial135/137 failure preserved. Exact snapshot/commits queued. Ordinary and portal parser consume same bytes,ordinarybind first thenportal/sharedID/stablesources. Fullasset comparison and root providers remain open. Latestvalidated554401c;integrating queuedbatchnext.
+
+## Eleventh batch integrated — typed cursor/retained zone validation freeze
+
+Integrated pendingthrough 4f62ff6868ebabde028ee77158f52ddf1ea4199e,includingactual typedSQLcursor/MobItemsR2,retainedZoneUsers/compiledruntime,concretelife mapping/skillbindingevidence andportalparser. NEW SOURCEFREEZE build/test/fullisolatedSQL/fullcatalog plus realread-only streamSQLtest in .local/eleventh-batch-{build,tests,sql,bindings-sql,stream-sql}.log. No source/CMake edits/cherry-picks while active; queue new handoffs. FullSQL compatibility mandatory after storage-owner change. Lastpublishedvalidated554401c. Rootworld/realproviders and activeuserSkill/Actorinventory integrations remain open; exclusive branch ownership unchanged.
+
+## Eleventh build configure correction and retry
+
+Initial session19114 failed before build: missing openingBUILD_TESTINGguard at portalparser test block during append conflict integration. Central correction restored guard; originalfailure .local/eleventh-batch-build.log retained. Restart completepipeline build/test/fullSQL/bindings/streamSQL with retrylogs. Freeze remainsactive at correctedHEAD; no worker source cause claimed. Reviewed/queued048ead2/4e7084e fullprivateObeliskasset evidence1388words/138reportedtests;privateasset staysignored,nextbatchonly.
+
+## Reviewed triplehandoff — normalparty/stateadmission/rawpool
+
+Reviewed02d44c2/2d01351 normalPacketParty actual retainedregistry/membership,1116originalexecutions/131tests/ASAN;assigned05 actualExpelUser00447120 next,raid/rootpartyActorbinding pending. Reviewed0f18264/1841ca2 configuredAddState/copy/borrowedconditionowner,1536calls/39251frees/136tests;nonemptytokens/factory/interpreter remainopen. Reviewed4d8e1ed/d00a223 existingMobPool rawallocate/prepare,2816originalops/64obeliskcompositions/134tests;preparebeforeRNG/zoneentry and preserveboundlifetime. Exactsnapshots/commitsqueued duringfreeze. Centralretry71788 build593actions observed20,no sourcemutations;fulltestsSQL/fullcatalog/streamSQLpending.
+
+## Worker03 checkpoint3446c6ec — actual obeliskpool/init/zone adapter
+
+Reviewed/queuedf4a5451 doc-only rawpool completion,no newtests. Assigned03 mob_applied_skills_obelisk newfiles: concrete sameboundpool raw/manager/prepare,canonicalinit/ZoneMobs entry under existing ObeliskRuntimeWorld;worker04sourcesreadonly. Actual remainingworldmethods mandatory,no competingowner/no fakeinit/enter. Keep retainedskills/damage/zone lifetime andoriginalcallbackorder. Current71788retrybuildobserved102/593;sourcefreeze active,testsSQL/fullcatalog/streamSQLpending.
+
+## Reviewed worker02 bd21d632 — actual Actor inventory primitives
+
+Reviewedc02b69c/302dcb2 existing Actor rawclaim/borrow/countsync/mirrorsync/directrelease,135reportedtests/680release/152grantoriginalfixture compositions/read-onlySQLscalar check. Exactsnapshot/commitsqueued duringfreeze. No ItemRemove exchange/log/transport or secondallocation;claimbeforedefaultcraft,syncfullmirrorbeforeDB;multi-wholestack oldcountretaineduntilrelease. Assigned06 quest_start_items_actor(sharedliveUID/pool/rawclaim and canonicalQuestAddbinding) and07 quest_requests_actor(actualconsumption/runtime/completion),Actor/inventory02readonly,oldbases maytestignoreddocumentedsnapshots,centralactualowners. Current71788retrybuildobserved494/593;fulltestsSQLcatalogstreamSQLpending.
+
+## Worker02 checkpoint089d1928 — immediate effectDB integration
+
+Reviewed/queuedb57fe3f doc-onlyinventorycompletion,no newtests.06/07actualinventoryadapters alreadyassigned. Expanded02exclusiveactor.cpp alongsideactor.hpp/inventory.cpp: investigate/implement actual originalimmediateDB0902effectremoval gap from01adapter,requiredDBtransport and exactreplica/client/poolorder,distinguish restoration/shutdownsites,notblindglobalerase. Otherworkersread-only. No fakeDBsink/newcache. Current71788retrybuildcompleted593actions;tests/fullSQL/fullcatalog/streamSQLpending,sourcefreeze active.
+
+## Reviewed worker09 62e0861a — nonempty token ownership
+
+Reviewed0cd5bed/9886060 retained288byteCKToken payload/nonemptyvectors andconstructor partialinit. Reported768originaladmissions/28901frees/64constructors,137tests. Exactsnapshot/commitsqueued duringfreeze. Declaredconditioncount/cursor separate fromtokenssize;metadata/functionIDs remain data,no originalpointerexecution. TravelCondition/fullfactory/assets/world stillopen. Centralretry71788 buildpassed,228/228tests71.34s;fullSQL/bindings/streamSQL running/pending,no finalpassyet. Lastpublished554401c.
+
+## Eleventh batch validated —228tests/fullSQL/catalog/stream
+
+Corrected pipeline71788 exited0:buildretry,228/228tests71.34s,fullisolatedSQL,fullrestoredcatalogcomparison,actualread-onlystreamSQL with fourcontrolledGetDatafailures preservingprefixes,types/NULL/extraresults/bufferedparameters/transaction/retainedconnection. Source48f2c32. Logs .local/eleventh-batch-build-retry.log,.local/eleventh-batch-{tests,sql,bindings-sql,stream-sql}.log. InitialCMakeguardfailure preserved,not passed. Freeze released;publishverifiedbatch.
+
+Reviewed/queued9feae10/e66ceb4 directsharedbObelisk+7c mutation via actualmutablecatalogaccessor,138reportedtests;ID/level/HPguards and267otherbytespreserved. Interfaceblockerclosed,no canonicalfield/bitmapneeded. Actualmapmutableportals/lifecycle/KC/calendar/transport/rootassemblyremain. Newpendingentriesnotcoveredby228-testbatch. Exclusivebranchownershipunchanged. Objectiveopen.
