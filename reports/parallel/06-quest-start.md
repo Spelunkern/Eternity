@@ -232,3 +232,68 @@ request checks with the actual new add function in original/native fixtures,
 removing the previous QuestAdd observation port. This can validate DB delivery
 before client/log/start-item effects and consumed-item allocation failure without
 copying canonical ownership or changing the earlier milestone implementations.
+
+## Block 4: request/add/start composition evidence
+
+The repeated coordinator assignment's QuestAdd implementation was already
+completed in `0e2cb1b` / `693916e`. This block completes its documented next step
+without reconstructing it again: original/native full-flow comparison under the
+exclusive `quest_start_add` prefix.
+
+`quest_start_add_flow_oracle.py` executes `ps_game.exe`
+`CUser::QuestStartRequest` **0047f220**, checks **0047f390..0047f570**, actual
+`CUser::QuestAdd` **0047e010**, `CUser::QuestStart` **0047ea70**, and
+`QuestGetStartItem` **0047eb70**. QuestAdd is NOT replaced by an observation port.
+It initializes the real original CQuest, writes the actual intrusive active list,
+updates the original accounting fields and constructs the original DB packet.
+Ghidra evidence remains the original complete export and Block 3 focused export.
+
+World lookup/duplicate checks, inventory, allocation, OS clock/locks, transport
+and common log-header capture are explicit ports. The common log capture supplies
+initialized zero header/storage; the complete original QuestStart log body is
+compared against the real native `quest_start_log_packet`. The real common log
+header and calendar helper were independently executed/verified in Block 2.
+This fixture does not claim to execute the missing inventory/grant providers.
+
+`quest_start_add_flow_unit.cpp` composes `quest_start_request`, `quest_start_add`
+and `quest_start_log_packet` directly, applies DB adds to `QuestReplica`, and
+compares all packets and the complete ordered event stream. It verifies:
+
+- DB `0x0a01` after insertion/accounting, before client `0x0902`, then log
+  `0x0501`, then all nonzero start-item grants (including continued failed grants).
+- Consumed start requirements remain consumed if allocation subsequently fails;
+  allocation failure emits no DB/client/log/grants.
+- Item-pick checks do not consume; rejected active/finished quests skip allocation.
+- Use-item admission and actual allocation each read the clock separately,
+  including wrap from `0xffffffff` to zero between those calls.
+- Canonical definition binding uses the positional record, even with embedded
+  definition IDs 0/7/65535; counters, timers and truncated DB minutes match.
+
+640 cases cover all five start types, 253 successful starts and 16 consumed-item
+allocation failures in the original. Fixture generation is deterministic and
+byte-identical on repetition. It is generated in ignored `work/` before copying.
+Original EXE/PDB hashes, Python compilation and `git diff --check` pass.
+Native validation: `python3 tools/dev.py build`: exit 0, no warnings.
+`python3 tools/dev.py test`: exit 0; **123/123** tests in **39.85 s**.
+The new suite matches **640** flows, **253** starts and **16** consumed-item
+allocation failures. Final logs: `work/quest-start-add-flow-build-final.log`,
+`work/quest-start-add-flow-test-final.log`.
+The initial full test attempt failed because the new fixture format omitted an
+empty-event token for requests rejected before any provider call. The generator
+and parser now use `-`; regeneration and the complete rerun passed. No production
+behavior change was needed.
+
+The Block 3 adapter contract is unchanged: insertion must claim/append without
+mob/player accounting, and live counter references must bind the canonical owner.
+Read-only main still exposes only accounting `QuestRuntime::add_active`; no owner
+was copied or modified. Required allocation/inventory/log/transport providers
+remain production dependencies, and this evidence does not make the server playable.
+SQL lifecycle/full isolated integration remain reserved for the coordinator.
+
+Block 4 evidence commit: `874b9db17d0c9b853d4828dea3d626d212be773f`.
+
+Next task proposal: once the coordinator supplies unaccounted canonical insertion
+and integrates the shared runtime/interfaces into this worker's base, assign a
+production `QuestStartWorld` adapter under `quest_start_add`. Actual QuestAddItem
+and quest completion/removal remain outside this worker's ownership. Further
+independent implementation of those providers would duplicate another owner.
