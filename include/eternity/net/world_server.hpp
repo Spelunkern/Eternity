@@ -44,7 +44,12 @@ public:
     virtual ~WorldApplication() = default;
     virtual void open() = 0;
     virtual void receive(const Packet& packet) = 0;
+    // Must bind the same retained NProtect state/backend used by zone lifecycle.
+    // No default success: an unbound NProtect response fails the application.
+    virtual void receive_nprotect(const Packet&) {throw std::logic_error("NProtect answer service is not bound");}
     virtual void close() = 0;
+    // Known original close reason, or nullopt for an unmapped transport failure.
+    virtual void close_with_reason(std::optional<std::uint32_t>) {close();}
 };
 using WorldApplicationFactory = std::function<std::unique_ptr<WorldApplication>(const session::LoginSession&,WorldChannel)>;
 

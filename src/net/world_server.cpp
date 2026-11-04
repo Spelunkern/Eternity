@@ -57,7 +57,8 @@ struct WorldServer::Impl::Connection : std::enable_shared_from_this<Connection> 
     FrameDecoder decoder;
     std::array<std::uint8_t,8192> input{};
     std::deque<std::shared_ptr<Packet>> output;
-    std::deque<Packet> pending;
+    struct PendingPacket {Packet packet;bool nprotect=false;};
+    std::deque<PendingPacket> pending;
     std::deque<Packet> received;
     asio::strand<asio::thread_pool::executor_type> worker;
     asio::executor_work_guard<asio::any_io_executor> lifetime;
@@ -78,15 +79,15 @@ struct WorldServer::Impl::Connection : std::enable_shared_from_this<Connection> 
         });
         read();
     }
-    void close() {
+    void close(std::optional<std::uint32_t> reason={}) {
         if(closed.exchange(true)) return;
         if(protocol) protocol->close();
         asio::error_code ignored;socket.cancel(ignored);socket.shutdown(tcp::socket::shutdown_both,ignored);socket.close(ignored);
         if(auto server=owner.lock()) server->connections.erase(id);
         output.clear();pending.clear();received.clear();queued_bytes=0;
-        asio::post(worker,[self=shared_from_this()] {
+        asio::post(worker,[self=shared_from_this(),reason] {
             if(self->application) {
-                try {self->application->close();} catch(...) {self->application_failed();}
+                try {self->application->close_with_reason(reason);} catch(...) {self->application_failed();}
                 self->application.reset();
             }
             self->lifetime.reset();
@@ -165,7 +166,7 @@ struct WorldServer::Impl::Connection : std::enable_shared_from_this<Connection> 
         const auto server=owner.lock();if(!server) return close();
         working=true;
         const auto account=*protocol->owner();const bool initial=!loaded;
-        Packet request;if(!initial) {request=std::move(pending.front());pending.pop_front();}
+        PendingPacket request;if(!initial) {request=std::move(pending.front());pending.pop_front();}
         const auto executor=socket.get_executor();const auto weak=weak_from_this();
         asio::post(worker,[self=shared_from_this(),executor,weak,account,initial,
                           request=std::move(request),factory=server->factory] {
@@ -176,7 +177,8 @@ struct WorldServer::Impl::Connection : std::enable_shared_from_this<Connection> 
                     self->application=factory(account,self->channel());
                     if(!self->application) throw std::runtime_error("World application factory returned null");
                     self->application->open();
-                } else self->application->receive(request);
+                } else if(request.nprotect) self->application->receive_nprotect(request.packet);
+                else self->application->receive(request.packet);
             } catch(...) {self->application_failed();failed=true;}
             asio::post(executor,[weak,initial,failed] {
                 const auto connection=weak.lock();if(!connection || connection->closed) return;
@@ -194,11 +196,15 @@ struct WorldServer::Impl::Connection : std::enable_shared_from_this<Connection> 
             while(!closed && !working && !input_paused && !received.empty()) {
                 auto packet=std::move(received.front());received.pop_front();
                 auto event=protocol->receive(std::move(packet),world_now_ms());
-                if(event.close) return close();
+                if(event.close) return close(event.close_reason);
                 for(auto& reply:event.replies) send(std::move(reply));
                 if(closed) return;
-                if(event.application) pending.push_back(std::move(*event.application));
-                if(event.connected || event.application) schedule();
+                if(event.application) pending.push_back({std::move(*event.application),false});
+                if(event.nprotect) {
+                    if(!protocol->owner()) throw std::logic_error("Pre-auth NProtect answer has no retained owner");
+                    pending.push_back({std::move(*event.nprotect),true});
+                }
+                if(event.connected || event.application || event.nprotect) schedule();
             }
         } catch(const std::exception&) {close();}
     }

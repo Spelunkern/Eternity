@@ -7,8 +7,11 @@ namespace eternity::net {
 struct WorldEvent {
     std::vector<Packet> replies;
     std::optional<Packet> application;
+    // Raw, decrypted A302; the retained connection owner must invoke its real NProtect backend.
+    std::optional<Packet> nprotect;
     bool connected = false;
     bool close = false;
+    std::optional<std::uint32_t> close_reason;
 };
 
 // Socket-independent game connection state. All calls belong to one socket executor.

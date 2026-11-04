@@ -22,6 +22,14 @@ WorldEvent WorldProtocol::receive(Packet payload, std::uint64_t now_ms) {
     if(state_==State::closed || payload.size()<2 || payload.size()>maximum_frame_size-2) return fail();
     if(cipher_) cipher_->decrypt(payload);
     const auto opcode=static_cast<std::uint16_t>(payload[0] | (static_cast<unsigned int>(payload[1])<<8));
+    // ps_game.exe CUser::OnRecv 00466d20 calls PacketSystem after AES,
+    // before authentication and location-specific PacketProcessing.
+    if(opcode==0x0002) {close();event.close=true;event.close_reason=1;return event;}
+    if(opcode==0x0003) return event;
+    if(opcode==0xa302) {
+        if(payload.size()<18) return fail();
+        event.nprotect=std::move(payload);return event;
+    }
     if(state_==State::connecting) {
         // CUser::PacketProcessing, ps_game.exe 00466da0: eleven undefined packets close the socket.
         if(opcode!=0xa301) {

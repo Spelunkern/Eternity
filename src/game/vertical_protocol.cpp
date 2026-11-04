@@ -42,3 +42,18 @@ VerticalEntryRequest VerticalEntrySession::receive(std::span<const std::uint8_t>
 }
 void update_vertical_admission(WorldAdmission& world) {world.update_packets();}
 }
+
+namespace eternity::game {
+VerticalNProtectResult receive_vertical_nprotect(std::span<const std::uint8_t> packet,NProtectState& state,std::uint32_t location,const VerticalNProtectPorts& port) {
+    if(packet.size()<18 || packet[0]!=0x02 || packet[1]!=0xa3) throw std::invalid_argument("Malformed NProtect answer");
+    if(!state.present) return VerticalNProtectResult::absent;
+    if(!port.close) throw std::invalid_argument("NProtect close service is required");
+    if(location==0) {port.close(111);return VerticalNProtectResult::rejected;}
+    if(!port.check_answer || !port.diagnostic) throw std::invalid_argument("NProtect answer backend is required");
+    std::array<std::uint32_t,4> answer{};
+    for(std::size_t i=0;i<answer.size();++i) for(unsigned j=0;j<4;++j) answer[i]|=std::uint32_t(packet[2+4*i+j])<<(8*j);
+    const auto result=port.check_answer(answer);
+    if(result==0) {state.received=true;return VerticalNProtectResult::accepted;}
+    port.diagnostic(result);port.close(111);return VerticalNProtectResult::rejected;
+}
+}
