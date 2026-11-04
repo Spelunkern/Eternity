@@ -590,3 +590,11 @@ if(BUILD_TESTING)
     target_link_libraries(obelisk-runtime-timers-unit PRIVATE eternity_game)
     add_test(NAME obelisk-runtime-timers-unit COMMAND obelisk-runtime-timers-unit ${CMAKE_CURRENT_SOURCE_DIR}/tests/data/obelisk-runtime-timers-oracle.tsv)
 endif()
+
+# Worker 09: compiled stack FSM ownership and transitions.
+target_sources(eternity_game PRIVATE src/game/mob_ai_states.cpp)
+if(BUILD_TESTING)
+    add_executable(mob-ai-states-unit tests/mob_ai_states_unit.cpp)
+    target_link_libraries(mob-ai-states-unit PRIVATE eternity_game)
+    add_test(NAME mob-ai-states-unit COMMAND mob-ai-states-unit ${CMAKE_CURRENT_SOURCE_DIR}/tests/data/mob_ai_states-oracle.tsv)
+endif()
