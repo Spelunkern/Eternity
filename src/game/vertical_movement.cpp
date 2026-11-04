@@ -26,6 +26,16 @@ void require_finite(const ZoneMovementCheck& s,UserPosition p,float speed) {
         throw std::logic_error("Movement check nonfinite operands are not recovered");
 }
 }
+float vertical_movement_planar_distance(UserPosition a,UserPosition b) {
+    require_environment();
+    if(!finite(a) || !finite(b)) throw std::logic_error("Movement distance nonfinite operands are not recovered");
+    const float dx=static_cast<float>(static_cast<double>(a.x)-b.x);
+    const float dz=static_cast<float>(static_cast<double>(a.z)-b.z);
+    const float distance=static_cast<float>(std::sqrt(static_cast<double>(dx)*dx+static_cast<double>(dz)*dz));
+    if(!std::isfinite(dx) || !std::isfinite(dz) || !std::isfinite(distance))
+        throw std::logic_error("Movement distance overflow is not recovered");
+    return distance;
+}
 bool vertical_movement_update(ZoneMovementCheck& s, UserPosition p, float speed,
                               const std::function<std::uint32_t()>& tick) {
     if(!tick) throw std::invalid_argument("Movement check requires a clock");
