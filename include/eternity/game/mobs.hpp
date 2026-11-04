@@ -7,6 +7,7 @@
 
 namespace eternity::game {
 class ZoneMobs;
+class MobAppliedSkillsCatalog;class MobAppliedSkillsRuntime;class MobPoolServices;
 // Projection consumed by CMob::Init/SetAttack and respawn timers. Mob skills, loot and complete AI
 // definitions remain separate owners; this does not substitute their loaders.
 struct MobRuntimeTemplate {
@@ -28,6 +29,22 @@ struct MobRespawn {
     void* obelisk_source=nullptr;void* both_source=nullptr;
 };
 struct MobRuntime {
+private:
+    // Checked first by generated moves: bound owners borrow this exact address.
+    struct MoveGuard {
+        bool bound=false;
+        MoveGuard()=default;
+        MoveGuard(MoveGuard&&);
+        MoveGuard& operator=(MoveGuard&&);
+    } move_guard_;
+public:
+    MobRuntime();
+    MobRuntime(MobRuntime&&);
+    MobRuntime& operator=(MobRuntime&&);
+    ~MobRuntime();
+    bool has_applied_skills()const noexcept;
+    MobAppliedSkillsCatalog& applied_skills();
+    const MobAppliedSkillsCatalog& applied_skills()const;
     std::uint32_t id=0;const MobRuntimeTemplate* definition=nullptr;std::uint16_t type=0;
     ZoneMobs* zone=nullptr;std::optional<CellCoordinates> cell;UserPosition position,respawn_position,exit_position,selected_position;
     std::uint32_t hp=0;std::uint16_t sp=0,mp=0;std::int32_t dexterity=0,wisdom=0,luck=0,attribute=0;
@@ -54,7 +71,10 @@ struct MobRuntime {
     std::unique_ptr<MobDamageLedger> damage;
     ServerRandom drop_random;void* lua_state=nullptr;
 private:
-    friend class ZoneMobs;friend class MobPool;
+    friend class ZoneMobs;friend class MobPool;friend class MobAppliedSkillsRuntime;
+    // Bound once at fresh allocation; retained through Init and FreeMob reuse.
+    std::unique_ptr<MobAppliedSkillsCatalog> applied_skills_;
+    MobPoolServices* lifetime_services_=nullptr;
     // Host bookkeeping for intrusive membership. MapReleaseObject retains the
     // public zone/cell fields after unlinking, so those fields are not ownership.
     ZoneMobs* membership_owner_=nullptr;

@@ -1,10 +1,26 @@
 #include "eternity/game/mobs.hpp"
+#include "eternity/game/mob_applied_skills_runtime.hpp"
 #include <algorithm>
 #include <bit>
 #include <charconv>
 #include <cmath>
 
 namespace eternity::game {
+MobRuntime::MoveGuard::MoveGuard(MoveGuard&& other){if(other.bound)throw std::invalid_argument("Cannot move a bound mob runtime");}
+MobRuntime::MoveGuard& MobRuntime::MoveGuard::operator=(MoveGuard&& other){if(bound || other.bound)throw std::invalid_argument("Cannot move a bound mob runtime");return *this;}
+MobRuntime::MobRuntime()=default;
+MobRuntime::MobRuntime(MobRuntime&&)=default;
+MobRuntime& MobRuntime::operator=(MobRuntime&&)=default;
+MobRuntime::~MobRuntime(){
+    // CMob::~CMob 0048ff10: compiled/Lua teardown, damage, skill list deletion.
+    // Binding opts the pool into actual retained lifetime services. Unbound
+    // historical projections have no provider and cannot use applied_skills().
+    if(lifetime_services_)release_mob_applied_skills_runtime_ai(*this,*lifetime_services_);
+    damage.reset();applied_skills_.reset();
+}
+bool MobRuntime::has_applied_skills()const noexcept{return bool(applied_skills_);}
+MobAppliedSkillsCatalog& MobRuntime::applied_skills(){if(!applied_skills_)throw std::logic_error("Mob applied skills are not bound");return *applied_skills_;}
+const MobAppliedSkillsCatalog& MobRuntime::applied_skills()const{if(!applied_skills_)throw std::logic_error("Mob applied skills are not bound");return *applied_skills_;}
 namespace {
 std::int64_t value(const storage::ResultSet& table,const storage::Row& row,std::string_view key,std::int64_t low,std::int64_t high) {
     const auto column=std::find(table.columns.begin(),table.columns.end(),key);if(column==table.columns.end()) throw std::runtime_error("Missing mob runtime column");
