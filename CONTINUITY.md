@@ -2012,3 +2012,14 @@ any assumption that the temporary bool-only coordinator/entry branch is the fina
 representation; its new original fixture and SQL/unit tests must complete and be
 reviewed before incorporation. Current entry session 69040 is testing the prior
 `6e57801` source; its result will not validate this newer draft.
+
+Independent 07's retained Actor scene `ff64606`/`861fcf3`/`c6d2520` composes
+real channel, ZoneUsers and party owner with required scene/effect services and
+explicit transport failure handling. Its final focused test, build and isolated
+SQL are reported passed; no full suite or real production service binding.
+Coordinator cherry-picked to `/home/franco/Projects/Eternity-scene` on
+`coordinator/scene` as `40792ac..d278a2d`, based on combined system protocol and
+world/gameplay/quest/movement/combat. Session 98293 runs targeted scene and party
+send tests using a copy of a completed movement build; results pending. Actual
+cell broadcaster, effect pool, shutdown and connection failure owners remain
+mandatory; no client-playability claim. Dashboard updated.
