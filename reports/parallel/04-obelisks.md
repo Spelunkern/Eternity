@@ -546,3 +546,66 @@ this bridge does not need it. Configuration/source binding and production world
 assembly/transports/calendar/KC/portal providers remain open. SQL is unchanged;
 final isolated SQL integration remains coordinator-owned. This is an actual owner
 adapter and verified composition, not a playable-server claim.
+
+## Combat death owner adapter — real death, nested removals and corpse cleanup
+
+Implementation commit: `9fd122fceadb3c9f8b826832a916913c1c1088a0`.
+
+`ObeliskRuntimeDeathOwnership` supplies the ownership portion of the existing
+`MobDeathWorld`: delegate `obelisk_country` to `country`, `destroy_obelisk` to
+`destroyed`, and `remove_obelisk_member` to `remove_member`. Keep stable primary
+map records, zone, world, kill-count configuration and removal owner references.
+No canonical interface change is required. Wrong-zone/unknown-source bindings
+fail explicitly; the original unsafe inclusive one-past record is rejected.
+
+Evidence is **ps_game.exe, CMob::Death 004910f0**. Its fallback reads the raw
+record country at **00491604**, chooses 0->1, 1->0, otherwise 2, and calls
+**CMap::ObeliskDestroy 0042a410** at **0049161e** with reset=false. It must not use
+**stMapObelisk::GetCountry 0042afe0**, which translates country for publication.
+The adapter therefore returns the raw live country and invokes actual native
+Destroy with reset=false. Existing canonical Death retains the per-call
+UINT32_MAX deadline/count decrement (**00491623–00491635**); the adapter neither
+accounts again nor removes the dying principal. Companion ownership delegates
+to the existing first-match removal bridge (**RemoveMob 0041d700**, called from
+**0049163a–00491643**). Forced removal retains its separate reset=true contract.
+
+The original fixture runs actual Death, damage selection/reset, nested
+MobRemoveByID/Destroy, pooled recycling/reuse, and **UpdateMobDeath 00421a80**
+(deadline subsection **00421bdd**). Native comparison uses actual mob_death,
+ZoneMobs, MobPool and both ownership adapters. 256 sequences compare 2,048
+operations: absent/user/non-user/unresolved credit, mutable user country and
+record country across reward callbacks, duplicate/hole/reversed member slots,
+wrapping IDs/counters/deadlines, and strict corpse-time equality. Death leaves
+the principal registered; the explicit caller then marks its corpse state.
+Natural cleanup updates the sentinel deadline without a second decrement.
+Reward, quest, skill, KC and transport calls remain observed service boundaries;
+this does not implement their production providers or the caller's FSM.
+
+An initial run passed 127/128 tests (39.63 seconds): original corpse traversal
+skipped the principal. The raw fixture omitted the constructor's global-node
+payload. **CMob::CMob 0048fd50**, instructions **0048fd6b/0048fd7c**, require
+mob+0x74 = mob+0x50. Correcting that explicit input and asserting it before
+traversal fixed the fixture; no native behavior was changed to mask the failure.
+Initial actors remain projected inputs, not original constructor execution.
+
+Validation:
+
+- `python3 tools/dev.py build`: exit 0, no warnings
+  (`work/obelisk-death-build.log`).
+- Corrected `python3 tools/dev.py test`: exit 0, **128/128 passed**, 44.72 seconds
+  (`work/obelisk-death-final-tests.log`). Initial failure is retained in
+  `work/obelisk-death-tests.log`.
+- Independent original regeneration matches the retained death fixture exactly
+  (`work/obelisk-runtime-death-final-repeat.tsv`). Default forced-removal oracle
+  still matches its existing fixture byte-for-byte
+  (`work/obelisk-runtime-zone-final-regression.tsv`).
+- Locked focused Ghidra export completed (`work/obelisk-death-ghidra.log`).
+  All original EXE/PDB SHA256SUMS passed
+  (`work/obelisk-death-final-hashes.log`); `git diff --check` passed.
+
+Remaining integration: assemble these delegates in the production death world
+and retain actual zone/pool ownership; provide reward/quest/skill/KC/portal and
+transport services. Configuration/source binding, raw allocation/preparation
+split for startup/respawn, and platform calendar providers remain separate open
+dependencies from prior milestones. SQL is unchanged; final isolated SQL checks
+belong to the coordinator. The server is not playable.
