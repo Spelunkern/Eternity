@@ -1708,3 +1708,10 @@ session 86245 for `vertical-quests-unit` on `7167c11` plus admission/world/gamep
 ancestors. Docker uses `/src` for both worktrees; CMake/Ninja reconfigure and
 rebuild as needed. The worktrees do not share a mutable build directory. Result
 is pending and will not substitute for the required combined full build/SQL.
+
+Cherry-picked the reviewed zone-wait traversal into main as `25d85e2`. Its
+identical source and test passed in the combined admission worktree, including
+1024 original sequences and current-node removal. Main session 7699 is queued
+for its own targeted `world-admission-unit`, full native build, and isolated
+SQL integration; all are pending for this exact main revision. The entrypoint
+still uses the roster application and does not schedule this method yet.
