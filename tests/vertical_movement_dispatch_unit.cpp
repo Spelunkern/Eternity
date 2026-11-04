@@ -34,9 +34,7 @@ int main(){
     ZoneEntryState admission;admission.character_id=101;admission.position={10,2,10};
     ZoneActorEntryServices services;services.send_view=[](auto,auto){};services.cell_info=[](auto){};services.obelisks=[]{};services.nprotect=[]{};services.diagnostic=[]{};services.close=[](auto){throw std::runtime_error("Entry unexpectedly closed");};
     require(enter_zone_actor(zone,actor,admission,services),"actual admission failed");
-    // Test-only bridge: Actor is non-const and owns this object. Production needs
-    // an explicit mutable owner API; this cast is not an integration solution.
-    auto& check=const_cast<ZoneMovementCheck&>(actor.movement_check());
+    auto& check=actor.movement_check();
     unsigned calls=0;auto clock=[&]{++calls;return 200U;};
     const auto result=vertical_movement_packet_check_after_gate(actor,zone,admission,check,packet({20,7,10}),5,clock);
     require(result.motion==0x81 && result.direction==0x1234 && result.destination.x==20 && result.destination.y==7 && result.position_before_check.x==10 && result.accepted_by_speed_check,"0501 decoding or check failed");
