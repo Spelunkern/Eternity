@@ -1445,3 +1445,12 @@ single whole-frame callback, so coordinator asked 02 and 05 to demonstrate one
 lease/tick and exact idle -> death -> population order in actual composition,
 not infer it from an empty callback. Main 53983 and ingress 68410 both remain
 live waiting on shared validation slots.
+
+Coordinator inspected original ps_game.exe CUser::UpdatePackets 00466cc0: it
+reads a receive queue count, closes for count >1000, and drains at most the
+captured count. Native WorldServer's current connection queue limit is eight
+frames. Original enqueue/decrypt timing, special packets and queue count/close
+semantics still require tracing before changing the native bound; the new
+unmerged admission pause currently retains the existing eight-frame limit. Worker
+03 was assigned that evidence and test. Do not treat the arbitrary bound as
+original-equivalent.
