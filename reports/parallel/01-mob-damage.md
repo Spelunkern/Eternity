@@ -1042,3 +1042,135 @@ playability and full final isolated SQL integration remain coordinator-owned.
 Next proposal: coordinator supplies retained active CSkill/equipment binding APIs
 and concrete per-actor action contexts, then assigns their production scheduler
 assembly. No independent remaining zone-loop coordination gap is identified.
+
+## Live skill-slot and weapon binding evidence — 2026-11-03
+
+Evidence/test commit: `a2c2a37` (complete original packet selection and subsequent
+polls). Read current main CONTINUITY/PARALLEL_WORK, previous `71febf3/cf52e64`
+and canonical Actor/skills/inventory read-only. Existing retained ZoneUsers and
+all previous behavior are preserved. No shared owner/header edits, main edits,
+second production Actor/skill/equipment store or substitute providers.
+
+**Production adapter is blocked by missing canonical ownership, not completed.**
+Actor has no selected active-skill index, learned runtime-slot owner or CSkill
+objects. `SkillReplica` is a DB-agent cache, `PlayerSkill` is a persistence record,
+and EffectCycle owns applied effects; none is the original learned CSkill owner.
+`SkillDefinitions` supplies passive/effect fields (including TypeDetail), but no
+original skill name or complete active eligibility/action definition. Using the
+mob-AI catalog or passive IDs would hide this gap. Actor owns retained pooled
+inventory privately, but its public mutable `inventory()` also permits constructor
+records with no retained GroundItem/CItem. Presence in that vector therefore
+cannot safely implement original pointer presence. No speculative adapter added.
+
+Evidence sources: `ps_game.exe` complete Ghidra/PDB exports
+`work/reverse/ps_game.exe/{functions.tsv,disassembly.txt,decompiled.c,types.txt}`.
+New oracle executes complete **CUser::PacketPC 0046a230**, real jump-table
+opcodes **0511** (user skill) / **0517** (mob skill), followed by complete
+**CUser::UpdateAttack 0048ca50**. Target validation, transform cleanup, range,
+action and transport services are explicit fixture ports; actual packet guards,
+selection writes, status/continuation, CancelMove and security-cookie paths run.
+The target port leaves an existing mob target for polling; this proves selection
+publication and downstream binding, not reconstruction of ChkTargetUser/Mob.
+
+Recovered request contract (0046a89b..0046aae4):
+
+- Dead mode 1 rejects both. User request slot ff with nonzero DWORD at packet+3
+  calls RemApplySkill 00484b10 BEFORE casting/shape/eligibility guards; ff with
+  zero DWORD falls through normal validation. Casting mode 3 otherwise rejects.
+- Shape must be 0 or 13. GetAttackSpeed 0048a460 ==255, byte +1434==1 or
+  DWORD +1460!=0 rejects. Request byte is zero-extended and compared SIGNED
+  against +ac0 count. Missing slot +ac4[index] rejects. Definition +2f must be
+  nonzero; optional required WORD level +24, job bit +27[job] and grow +2d gate.
+- Actual target validation is ChkTargetUser 0044e140 / ChkTargetMob 0044e6a0.
+  Failure leaves phase/index alone but still calls CancelMove. Early guards do
+  not cancel. Success publishes mode 2 (with existing attack-start/recovery
+  ordering), phase +1440=2 and selection +1444 from the LIVE packet byte.
+  A ported nested callback changing that byte from 0 to ff produces selection
+  255 despite prior count=2 validation; count is not checked again. This mutation
+  is a synthetic boundary probe, not a claim that real target validation edits
+  packet bytes. Request packet storage must survive the complete dispatch.
+
+Polling reads +1444 then +ac4[index] directly, with no +ac0 revalidation
+(0048cab9/cabf and 0048ce2c/ce32). Forced slot 17 and 255 both dispatch their
+actual runtime pointer despite count=2. A null runtime at INITIAL polling check
+stops and sends 0502 reason 10. Nulling a slot later within a dispatched action
+is not thereby made safe: existing scheduler reload rejects disappearing skills;
+provider callbacks must preserve the current runtime/definition lifetime.
+Transform cleanup can change the selected index before that first skill read.
+Normal phase checks +1d8 AFTER transform cleanup (0048cbd2); null sends reason 7.
+Skill/casting phases do not impose that weapon-presence guard. Fixture verifies
+normal removal/initial absence, skill removal and casting absence independently.
++1d8 is equipment pointer base +1c4 plus slot **5** *4, matching appearance slot5
+at original equipment projection (0044d.../export +1d8 accesses); no weapon-type,
+count or durability check replaces the pointer test. Slot5 conclusion follows
+array base/stride, not an inferred weapon category.
+
+PDB CSkill is 52 bytes: runtime ID +8, skill ID +c, level +10, slot/number +14,
+attack/reset/end/previous ticks +18/+1c/+20/+24, attacker +28 and stSkillInfo* +30.
+PDB learned pointer array is **256** slots; 255 is an addressable slot, not a new
+catalog lookup. Definition has 32-byte name +3, eligibility fields above, and
+WORD wType +32 (existing TypeDetail mapping) used in EnableAttackUser 00456780.
+LearnSkill **004842e0** updates an existing runtime's +30 definition and level
+in-place; new skills append pooled CreateSkill runtime at +ac4[count], set
+m_nNumber=count and increment count. Runtime identity and slot number are not
+interchangeable with SkillID. UseSkillMob **0044f2d0** captures the passed CSkill
+pointer across eligibility; AttackMob skill overload **00450cf0** and AttackUser
+skill overload **00451c80** receive the runtime, not merely a name/type view.
+
+New fixture has **112 complete request sequences** (28 profiles x two opcodes x
+two starting modes), including each guard, signed count, ff cancellation, failed
+target, live packet-index publication, slot clearing, forced index, ordinary,
+skill and casting polls. **48 accepted-state polls** additionally compare native
+existing scheduler final state/ordered events against original. Native input is
+explicitly the observed post-request projection: it DOES NOT implement PacketPC
+or claim a native active-skill owner. Runtime views in the unit are test doubles
+only. This is evidence beyond previous skill dispatch fixtures, not another
+production skill store. Initial harness range port used wrong stack cleanup and
+casting action was unported; faults corrected using existing recovered calling
+conventions (range pops 8; casting action pops 4), then all complete returns
+balance. No failed partial fixture was copied into tests.
+
+Validation:
+
+- Original executable/PDB SHA256SUMS: exit 0,
+  `work/mob-combat-scheduler-bindings-hashes.log`.
+- Independent oracle regeneration byte-identical (`cmp`, exit 0); generated
+  under work/ then copied before native readers.
+- `python3 tools/dev.py build`: exit 0, no warnings in this incremental build,
+  `work/mob-combat-scheduler-bindings-build.log`.
+- Sequential `python3 tools/dev.py test`: exit 0, **132/132 passed, 50.41 s**,
+  `work/mob-combat-scheduler-bindings-tests.log`. Prior retained zone tests pass.
+- `git diff --check`: exit 0. Shared locks respected. SQL unchanged; full final
+  isolated SQL integration remains coordinator-owned. Server is not playable.
+
+Required minimal canonical ownership/API work before a concrete adapter:
+
+1. Expose `Actor::retained_inventory_item(bag,slot)` returning the actual retained
+   GroundItem (slot5/bag0 for +1d8), null only for true absence. An unbound vector
+   record must fail explicitly rather than imply runtime pointer presence.
+   Actor/pool/definition lifetime covers the query; callers needing an action
+   reference retain it until return. The scheduler needs only this presence test.
+2. Establish Actor's actual retained learned-user CSkill owner (it is absent,
+   not merely private): signed learned count, 256 stable nullable runtime slots,
+   mutable DWORD selected index, pooled lifetime, per-runtime slot number/ticks
+   and live user-definition reference. Expose mutable selected index and a fresh
+   slot lookup preserving identity; valid forced slots are NOT gated by count
+   during polling. Define explicit failure for index outside 256 (original code
+   has no bounds guard; do not invent modulo/clamping). Definitions/names and
+   captured runtimes survive synchronous world callbacks; disconnect defers
+   recycling until retained poll/action leases end.
+3. Existing `MobCombatSchedulerBindings::weapon_present` bool is an input
+   projection, not a concrete live equipment adapter. Replace its production
+   read with a mandatory `weapon_present(const Actor&)` query at the exact
+   post-transform location, or a coordinator-approved reference to the actual
+   owner-backed presence. Taking one snapshot on zone entry is insufficient.
+   Skill dispatch must pass the selected actual runtime handle to action
+   providers; the existing target/name view alone cannot identify it. Requery
+   selection at each already recovered reload site, with retained backing,
+   rather than a scratch projection overwritten during nested callbacks.
+
+Next assignment proposal: implement/authorize the canonical Actor learned-runtime
+owner and retained-equipment accessor, then assign concrete scheduler binding
+integration here. Current shared headers remain read-only; independent evidence
+within this binding gap is now recorded, and a fake replacement owner would
+violate scope. WAITING_FOR_ASSIGNMENT
