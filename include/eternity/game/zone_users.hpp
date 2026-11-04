@@ -2,6 +2,8 @@
 #include <cstdint>
 #include <functional>
 #include <map>
+#include <memory>
+#include <mutex>
 #include <optional>
 #include <vector>
 
@@ -19,7 +21,8 @@ struct UserPosition {float x=0,y=0,z=0;};
 bool same_team(const Actor& subject,const Actor& other,std::int32_t map_team_mode);
 // User cell membership, position bounds and hidden-user queries. World admission,
 // movement authorization, cell broadcasts and NPC/mob membership remain separate.
-// One executor must serialize all operations; attached actors must outlive this grid.
+// One world executor still serializes actor state. Membership uses a recursive
+// lock; borrowed actors/scenes outlive attachment and borrowed cell callbacks.
 class ZoneUsers {
 public:
     ZoneUsers(std::int32_t width,std::int32_t height,std::int32_t map_team_mode);
@@ -36,15 +39,28 @@ public:
     void detect_hidden(std::uint32_t source,std::uint8_t range);
     // Ordered, live iteration using the original cell's shared cursor. True stops.
     bool visit_cell(std::int32_t x,std::int32_t z,const std::function<bool(Actor&,UserPosition)>&);
-    std::size_t size() const noexcept {return users_.size();}
+    // Global insertion-order traversal, CZone::UpdateUserAttack 00421930.
+    // The retention callback MUST pin this actor and its scene before returning
+    // a nonempty token, without changing membership. The visitor may reenter
+    // detach/append/find/nested visits; the zone itself survives them. Current
+    // actor stays alive through callback return. No actor access follows it.
+    using RetainActor=std::function<std::shared_ptr<void>(Actor&)>;
+    void visit_all(const RetainActor&,const std::function<void(Actor&)>&);
+    // Borrowed same-zone lookup. It does not change the global visit cursor;
+    // callers crossing callbacks must acquire their own owner lease.
+    Actor* find_actor(std::uint32_t id) const;
+    std::size_t size() const noexcept;
 private:
-    struct Member {Actor* actor;UserPosition position;std::size_t cell;std::uint64_t ordinal;};
+    struct Member {Actor* actor;UserPosition position;std::size_t cell;std::uint64_t ordinal,arrival;};
     struct Cell {std::map<std::uint64_t,std::uint32_t> members;std::uint64_t cursor=0;};
     std::size_t index(std::int32_t x,std::int32_t z) const;
     void unlink(const Member&);
     std::int32_t width_,height_,team_mode_;
     std::optional<std::int32_t> map_size_;
-    std::uint64_t sequence_=0;
+    // Same existing Member objects own both cell and arrival ordinals. No
+    // secondary actor list/index. Cell moves do not change arrival ordering.
+    mutable std::recursive_mutex mutex_;
+    std::uint64_t sequence_=0,user_cursor_=0;
     std::vector<Cell> cells_;
     std::map<std::uint32_t,Member> users_;
 };

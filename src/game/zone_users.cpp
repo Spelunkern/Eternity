@@ -21,17 +21,18 @@ ZoneUsers::ZoneUsers(std::int32_t width,std::int32_t height,std::int32_t mode):w
         throw std::invalid_argument("Invalid zone user-grid dimensions");
     cells_.resize(static_cast<std::size_t>(width)*static_cast<std::size_t>(height));
 }
-ZoneUsers::~ZoneUsers() {for(auto& [id,user]:users_) {static_cast<void>(id);user.actor->status().in_zone=false;}}
+ZoneUsers::~ZoneUsers() {const std::lock_guard lock(mutex_);for(auto& [id,user]:users_) {static_cast<void>(id);user.actor->status().in_zone=false;}}
 ZoneUsers::ZoneUsers(const MapGeometry& geometry,std::int32_t mode):ZoneUsers(geometry.cell_count(),geometry.cell_count(),mode) {map_size_=geometry.size();}
 std::size_t ZoneUsers::index(std::int32_t x,std::int32_t z) const {
     if(x<0 || x>=width_ || z<0 || z>=height_) throw std::out_of_range("User cell outside zone grid");
     return static_cast<std::size_t>(z)*static_cast<std::size_t>(width_)+static_cast<std::size_t>(x);
 }
 void ZoneUsers::attach(Actor& actor,std::int32_t x,std::int32_t z,UserPosition position) {
+    const std::lock_guard lock(mutex_);
     const auto cell=index(x,z);
     if(users_.contains(actor.id()) || actor.status().in_zone) throw std::invalid_argument("Actor already belongs to a zone");
     if(sequence_==std::numeric_limits<std::uint64_t>::max()) throw std::overflow_error("Zone insertion sequence exhausted");
-    const auto ordinal=++sequence_;auto [entry,inserted]=users_.emplace(actor.id(),Member{&actor,position,cell,ordinal});static_cast<void>(inserted);
+    const auto ordinal=++sequence_;auto [entry,inserted]=users_.emplace(actor.id(),Member{&actor,position,cell,ordinal,ordinal});static_cast<void>(inserted);
     try {cells_[cell].members.emplace(ordinal,actor.id());}catch(...) {users_.erase(entry);throw;}
     actor.status().in_zone=true;
 }
@@ -41,11 +42,13 @@ void ZoneUsers::unlink(const Member& member) {
     cell.members.erase(entry);
 }
 bool ZoneUsers::attach_at_position(Actor& actor,UserPosition position) {
+    const std::lock_guard lock(mutex_);
     if(!map_size_) throw std::logic_error("Position attachment requires original map geometry");
     const auto cell=MapGeometry(*map_size_).cell(position.x,position.z);if(!cell) return false;
     attach(actor,cell->x,cell->z,position);return true;
 }
 bool ZoneUsers::move_at_position(std::uint32_t id,UserPosition position) {
+    const std::lock_guard lock(mutex_);
     if(!map_size_) throw std::logic_error("Position movement requires original map geometry");
     const MapGeometry geometry(*map_size_);auto& member=users_.at(id);
     if(!geometry.safe_position(position.x,position.z)) return false;
@@ -55,9 +58,11 @@ bool ZoneUsers::move_at_position(std::uint32_t id,UserPosition position) {
     move(id,cell->x,cell->z,position);return true;
 }
 std::optional<UserPosition> ZoneUsers::position(std::uint32_t id) const {
+    const std::lock_guard lock(mutex_);
     const auto member=users_.find(id);if(member==users_.end()) return {};return member->second.position;
 }
 bool ZoneUsers::visit_cell(std::int32_t x,std::int32_t z,const std::function<bool(Actor&,UserPosition)>& visitor) {
+    const std::lock_guard lock(mutex_);
     auto& cell=cells_.at(index(x,z));cell.cursor=0;
     for(auto entry=cell.members.begin();entry!=cell.members.end();entry=cell.cursor==0?cell.members.begin():cell.members.upper_bound(cell.cursor)) {
         cell.cursor=entry->first;const auto& member=users_.at(entry->second);
@@ -66,10 +71,19 @@ bool ZoneUsers::visit_cell(std::int32_t x,std::int32_t z,const std::function<boo
     cell.cursor=0;return false;
 }
 bool ZoneUsers::detach(std::uint32_t id) {
+    const std::lock_guard lock(mutex_);
     const auto entry=users_.find(id);if(entry==users_.end()) return false;
+    if(user_cursor_==entry->second.arrival) {
+        user_cursor_=0;
+        for(const auto& [other_id,member]:users_) {
+            static_cast<void>(other_id);
+            if(member.arrival<entry->second.arrival && member.arrival>user_cursor_)user_cursor_=member.arrival;
+        }
+    }
     unlink(entry->second);entry->second.actor->status().in_zone=false;users_.erase(entry);return true;
 }
 void ZoneUsers::move(std::uint32_t id,std::int32_t x,std::int32_t z,UserPosition position) {
+    const std::lock_guard lock(mutex_);
     const auto next=index(x,z);auto& member=users_.at(id);
     if(next!=member.cell) {
         if(sequence_==std::numeric_limits<std::uint64_t>::max()) throw std::overflow_error("Zone insertion sequence exhausted");
@@ -78,6 +92,7 @@ void ZoneUsers::move(std::uint32_t id,std::int32_t x,std::int32_t z,UserPosition
     member.position=position;
 }
 void ZoneUsers::detect_hidden(std::uint32_t source_id,std::uint8_t range) {
+    const std::lock_guard lock(mutex_);
     // ChkFindHide 00486e00 visits the clipped 3x3 cells, row first, insertion order within each.
     const auto source=users_.find(source_id);if(source==users_.end()) return;
     Actor* const source_actor=source->second.actor;const auto cell=source->second.cell;
@@ -97,4 +112,31 @@ void ZoneUsers::detect_hidden(std::uint32_t source_id,std::uint8_t range) {
         current.cursor=0;
     }
 }
+std::size_t ZoneUsers::size() const noexcept {const std::lock_guard lock(mutex_);return users_.size();}
+Actor* ZoneUsers::find_actor(std::uint32_t id) const {
+    const std::lock_guard lock(mutex_);
+    const auto found=users_.find(id);return found==users_.end()?nullptr:found->second.actor;
+}
+// ps_game.exe CZone::UpdateUserAttack 00421930: +118 recursive lock,
+// +114 shared cursor, +110 head. RemoveUser 00415ec0 rewinds to predecessor.
+void ZoneUsers::visit_all(const RetainActor& retain,const std::function<void(Actor&)>& visitor) {
+    if(!retain || !visitor)throw std::invalid_argument("Whole-zone visitation requires retention and visit services");
+    const std::lock_guard lock(mutex_);
+    user_cursor_=0; // Original global head; nested traversal intentionally shares it.
+    for(;;) {
+        auto next=users_.end();
+        for(auto entry=users_.begin();entry!=users_.end();++entry) {
+            if(entry->second.arrival>user_cursor_ && (next==users_.end() || entry->second.arrival<next->second.arrival))next=entry;
+        }
+        if(next==users_.end()){user_cursor_=0;return;}
+        user_cursor_=next->second.arrival;
+        Actor* const actor=next->second.actor;
+        auto lease=retain(*actor);
+        if(!lease)throw std::logic_error("Zone actor retention did not provide an owner lease");
+        visitor(*actor);
+        // Only the live owner cursor is read now. Callback may detach/destroy
+        // the member, append, move cells or complete another global traversal.
+    }
+}
+
 }
