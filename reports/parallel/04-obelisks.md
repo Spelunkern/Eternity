@@ -1379,3 +1379,93 @@ available independent composition evidence are delivered. Await a concrete owner
 interface or expanded assignment before further integration. SQL was untouched;
 final integration remains coordinator-owned. This subsystem checkpoint does not
 establish playable-server completion.
+
+## Expanded map-owner assignment — actual retained ServerMaps adapter
+
+Implementation commit: `4db2ac3bf6b6137e7ad71c4156d628b4e8ad4d66`.
+
+Added the authorized canonical `ServerMaps::mutable_portal_country(map_id,slot)`
+accessor. It returns the actual retained MapPortal.country address, or nullptr
+for missing maps/slots; it exposes no vector resize/replacement operation.
+Mutation is visible through both existing const find/all views. Map IDs, base
+countries and positions retain their loaded storage and values. No const_cast
+or separate portal-country array is used.
+
+`ObeliskRuntimeMaps` consumes these existing ServerMaps plus the canonical
+MobRuntimeTemplates Init projection, full catalog's mutable_mob_record accessor,
+shared next-ID/KC state and required lifecycle/transport services. It reuses both
+parsers, ordinary/portal binders, shared bObelisk record setter, ownership restore,
+reset, portal update, user scene and world DB publishers. Definitions are not
+rebuilt inside this adapter; both existing catalog projections must describe the
+same admitted data and outlive published mobs. The full normalized catalog does
+not currently embed the separate MobRuntimeTemplate projection, so production
+root assembly must retain and load both coherently; that API was not invented
+or changed in worker03's canonical ownership.
+
+Runtime map views borrow actual tile storage. Portal countries point into
+ServerMaps, scene positions point to actual MapPortal.position, and map identity
+is the retained ConfiguredMap address. Target matching by country address keeps
+the actual selected portal position even with duplicate IDs/WORD publication
+truncation. The nonmovable adapter owns only runtime configuration/views, not a
+second map or zone registry. Its required passive primary_zone(map) query reads
+the real lifecycle owner; map sends receive that actual ZoneMobs reference and
+target ConfiguredMap. After DB/map/world callbacks it refreshes zone projections,
+so a removed primary zone suppresses later map sends while DB/world sends retain
+the recovered behavior. Explicit publish_change(map,index) supplies the map
+route; the context-free zone_packet path fails rather than choosing a map.
+
+64 original compositions execute **ps_game.exe LoadObelisk 00427300,
+SetKeepObelisk 00413bd0, ObeliskReset 0042aa40, UpdatePortalLink 0042a000,
+SendObeliskList 0042b040 and world persistence00413b90**. Initial map/portal/SQL
+fields are explicit fixture inputs; native maps are loaded by actual ServerMaps
+from generated original-format map files under ignored work/. They compare256
+source-state snapshots,256 selected-user packets,313 DB packets,111 actual-map
+packets,29 world packets and46 reset clock calls. Cases include first-match
+portal IDs, raw country restoration through const map views, shared ID wrap,
+ordinary base-country reset, real ZoneMobs lifecycle absence/teardown during a
+DB callback, changed later routing and scene/persistence publication. Reset
+principals are absent in these configuration fixtures; actual mob allocation/
+removal/Init is not substituted and remains worker03's adapter domain. Existing
+full removal/death/reset/scene fixtures also pass in the complete suite.
+
+Recovered asset assembly additionally loads all68 actual ServerMaps files,
+verifies the accessor over every loaded portal, borrows their terrain buffers,
+and binds the original nine ordinary records. The recovered file's one parsed
+portal example has no matching actual target, yielding zero retained links.
+The earlier complete original parser-table comparison still passes. This asset
+assembly uses seeded admitted mob rows through the actual full catalog loader;
+it is not a restored-SQL/full world startup comparison.
+
+Private old-checkout validation compiles an exact ignored read-only snapshot of
+the existing canonical full catalog (four headers/two sources), not a replacement
+catalog implementation. All six SHA256 entries in
+`.local/obelisk_runtime_maps_catalog/SHA256SUMS` verified. Source hashes:
+bindings.cpp `f6d0eb8eb8d52298bd7090e1d9f136550acebb6948e495de7b3cf28dd99e4015`,
+bindings_records.cpp `acabaa90293729593df00e5494b6aca53d1705f1e6100e95ff31dfc1101362ba`.
+Central CMake detects its normal catalog header and uses its existing canonical
+module instead; no snapshot sources are committed or required centrally.
+
+Validation:
+
+- `python3 tools/dev.py build`: exit0, no warnings (`work/obelisk-maps-build.log`).
+- `python3 tools/dev.py test`: exit0, **142/142 passed**, 31.67 seconds
+  (`work/obelisk-maps-tests.log`); the new actual-map test passed in4.54 seconds.
+- Independent original regeneration/`cmp`: exit0, byte-identical64 compositions
+  (`work/obelisk-runtime-maps-repeat.tsv`).
+- New asset assembly reports68 real maps/nine obelisks/zero retained portal links;
+  existing complete recovered-asset parser comparison remains passing.
+- All six ignored canonical catalog snapshot SHA256 entries verified; central
+  integration uses its existing normal catalog sources.
+- Locked focused Ghidra export: exit0 (`work/obelisk-maps-ghidra.log`).
+- All original EXE/PDB SHA256SUMS passed (`work/obelisk-maps-hashes.log`);
+  `git diff --check`: clean. No SQL lifecycle action ran.
+
+The previous mutable-map-country blocker is closed. Production still must retain
+ServerMaps, coherent runtime/full catalog owners, shared counters and these
+views; supply actual primary-zone lifetime/serialization plus DB/global/map/user
+connections; connect actual user entry/reconnect dispatch; provide recovered
+KC/calendar/world services; and compose worker03's actual pool/Init/ZoneMobs
+adapter against these runtime_map/records/routes. No default successful lifecycle
+or transport is supplied. mobs/mob_pool and other workers' files were not edited.
+SQL and original binaries were unchanged; final isolated SQL/integration checks
+remain coordinator-owned. The server is not playable.
