@@ -956,3 +956,68 @@ provider are required. Guild cleanup remains a projected mandatory boundary,
 not a recovered guild implementation. No SQL lifecycle operations or main edits.
 Regular raid creation/conversion/opcode dispatch and root Actor assembly remain
 open; component tests do not establish client playability.
+
+## Block 13 — raid membership with actual original transport composition
+
+The repeated raid entry/leave assignment is already implemented in Block 12.
+This block closes its transport integration evidence gap without duplicating or
+changing a production membership/send body. The new `--live-send` oracle mode
+executes the SAME entire original raid/request/expulsion sequence with actual
+`ps_game.exe CParty::Send 004455d0`, `SConnection::Send 004d4cf0/004d4d20`,
+`SPacketBufferSend::AllocBuffer 004df9f0` and `SAgent::SendRequest 004d8950`.
+The earlier matrix observed the party/direct send boundaries; the new mode
+leaves their original instructions intact.
+
+Only size-class pool allocation (004df710/004df7b0/004df850), pool return
+(004df070), worker SendPost (004dc1b0), atomic/lock OS operations and the existing
+lookup/scene/log/guild boundaries are providers. Worker completion explicitly
+releases its owned reference immediately; it does not model an asynchronous
+network connection. The separate 512-send matrix still covers delayed
+completion. Original whole-function return sentinels remain asserted.
+
+The native fixture world now derives from the EXISTING PartyRaidMembershipWorld
+and delegates to its actual party and direct send methods in this mode. It
+retains the same live user records, request state, registry, buffers and party
+objects through all nested calls. No second membership or transport owner was
+added. Observed E events compare user identity, reference count BEFORE completion
+and every byte of the length-prefixed frame; B asserts zero references. This
+checks recipient inclusion/exclusion during entry/departure/expulsion rather
+than comparing just a serialized broadcast payload.
+
+Validation:
+
+- 64 retained sequences: 192 whole original PacketParty calls, 64 EnterRaidParty,
+  128 LeaveRaidParty, 64 ExpelUser calls, plus 10 literal scene-callback nested
+  leaves. The prior broadcast-callback reentrant cases remain in the original
+  256-sequence matrix; this live-send matrix selects ordinary broadcast execution
+  instead of the old observed broadcast callback trampoline.
+- Socket inputs are -1/0/5; only -1 suppresses an actual connection send. Count,
+  holes, 30-slot recipient state, header/roster/effect truncation, guild cleanup,
+  recursive unregister and experience/state comparisons remain in place.
+- Original traces: 538 pool allocation attempts, including 41 explicit failures;
+  2,650 worker deliveries carrying 397,170 frame bytes; 497 final zero-reference
+  frees. Every callback-state hash, final state, packet and return byte matches
+  native, including continued membership progression when allocation fails.
+- Locked native build: exit 0, no diagnostics
+  (`work/party-runtime-raid-live-build.log`).
+- Locked native tests: 134/134 passed, 45.63 seconds, exit 0
+  (`work/party-runtime-raid-live-test.log`).
+- Locked focused C++20 ASAN/UBSAN build and both 256-sequence observed-boundary
+  and 64-sequence live-send comparisons: exit 0, no diagnostics
+  (`work/party-runtime-raid-live-sanitized.log`).
+- Exact repeated live-send fixture `cmp`, original EXE/PDB manifest and
+  `git diff --check`: exit 0 (`work/party-runtime-raid-live-hashes.log`).
+  Generated fixtures/logs remain ignored under work/. No SQL operations; full
+  isolated SQL integration remains coordinator-owned.
+
+Implementation/evidence commit: `5fc2198bef33c19385743deb644ee42608e4eac6`.
+
+Production dependency remains unchanged: retained Actor binding and the actual
+root world must supply the mandatory pool, worker, socket close, lookup,
+recursive lock, scene/log and guild services. These test providers are explicit
+observations, not production services. The integration must select the existing
+raid-aware world adapter for all registry parties; its 30-slot broadcast and
+classification are now verified in membership/request compositions. No canonical
+Actor/zone/inventory change, extra party field, guessed heap return or main edit
+was needed. Actual raid creation/conversion and remaining PacketParty raid
+opcodes are concrete next scope; playable-server completion is not claimed.
