@@ -1,7 +1,7 @@
 # Worker 02: mob drops
 
-Status: reconstructed loot algorithms, catalog construction/limit initialization
-and explicit world projections; production
+Status: reconstructed loot algorithms, catalog construction/limit initialization,
+sequence configuration and explicit world projections; production
 world/item adapters remain required. This does not make the server playable.
 
 ## Evidence
@@ -71,8 +71,8 @@ Required canonical additions/adapters:
   shared `wDrop` +7e, count +8c, delay +90, random delay +94, next tick +98.
   Existing quest-start, type/type-ID, real type and quality fields can project
   into `MobLootItem`. Catalog population and initial limit reset are now supplied
-  by `mob_drops_catalog`; original SequenceItemCreate configuration and runtime
-  catalog ownership still need adapters.
+  by `mob_drops_catalog`; `mob_drops_sequence` supplies sequence configuration.
+  Runtime catalog ownership and publication still need adapters.
 - Party mode +104, leader +0c, cursor +108, type +114 and ordered members +18;
   credited/member user zone +e0, instance +164, state +5758, dead +142c,
   positions +d0/+d8, money mode +58b0 and percentage +58b4.
@@ -140,10 +140,74 @@ Validation:
   Log: `work/mob-drops-catalog-test.log`.
 - Python oracle `py_compile` and `git diff --check`: exit 0.
 
-Remaining: connect this owned catalog to the production loot provider; implement
-original SequenceItemCreate configuration loading/reloading. ItemCreate.ini is
+Remaining after milestone 2: connect this owned catalog to the production loot
+provider. Sequence configuration is supplied by milestone 3 below. ItemCreate.ini is
 an unrelated crafting distribution and was observed as an explicit external port.
 Production allocation/grant/log/range and death-owner adapters listed above remain
 required. No shared canonical files, SQL fixtures or main checkout were changed.
 
 Milestone 2 implementation commit: `3b1e120b6e104e2d569be7d5a97a64b2f7100e77`.
+
+
+## Milestone 3: sequence configuration initialization/reload
+
+Evidence: original `ps_game.exe InitSequenceItemCreate` 004be520 and
+`ReSequenceItemCreate` 004be6a0, plus `GetSequenceItem` 004be490. Regenerated
+focused Ghidra exports through the assigned locked `--process` workflow; all
+original EXE/PDB hashes verified again.
+
+`MobDropSequenceConfiguration` retains the original signed active count and all
+eight backing groups, including inactive stale groups. Initial load stores a
+nonpositive COUNT and disables selection; reload with a nonpositive COUNT fails
+without changing previous state. Positive counts clamp to eight. A zero divisor
+fails after earlier groups have already changed and disables selection. Initial
+load writes that zero divisor before failure; reload retains the failed group's
+old divisor. Each accepted group reads all ten grades in order. Required
+diagnostic providers preserve distinct init/reload failure/clamp notifications.
+
+Sequence grades now retain all 32 profile-result bits, correcting the earlier
+16-bit projection. Positive out-of-range grades such as 65,537 must reach the
+catalog bounds check instead of narrowing to an existing grade. Undefined
+negative original array indexing is not emulated.
+
+`MobDropSequenceFile` reads the recovered INI's decimal, unique-key, unquoted
+syntax with case-insensitive section/key lookup, CRLF and semicolon comments.
+Ambiguous duplicates, unsupported integers/syntax and unreadable files fail
+explicitly. Full Windows profile parsing semantics outside this supported syntax
+remain unverified. `MobDropSequenceSource` is the required boundary for another
+profile provider; it does not silently guess unsupported behavior.
+
+Integration: retain the configuration object across reloads; call `publish` after
+every attempt, including failures. A failed later-group reload can disable drops,
+whereas a nonpositive-count reload preserves the old published configuration.
+Publish on the serialized catalog owner; do not retain only the active vector
+because inactive backing slots must survive shrink/failure/re-expansion. Logging
+must implement the required `MobDropSequenceDiagnostics` provider. No canonical
+header changes are needed for this owned interface.
+
+Validation:
+
+- 256 complete original init/reload traces compare every read/diagnostic, return
+  result and all 356 state bytes, including partial failures and stale slots.
+- Six actual original positive wide-grade lookups verify the width correction.
+- The original seven-group SequenceItemCreate.ini matches complete original
+  execution; the fixture records the asset SHA256. Original Windows integer
+  reads, key formatting, diagnostics and stack-cookie checks are observed ports;
+  all configuration state transitions execute unchanged.
+- Focused isolated asset/SQL integration: exit 0. Native reader matches the
+  original INI and all new traces; the 16,047-definition/15,505-member catalog
+  still matches original hash `15810976553663983297`, and the previous 24,723-row
+  MobItems comparison passes. Shared SQL lock held; no database writes/lifecycle.
+  Log: `work/mob-drops-sequence-integration.log`.
+- Native build: exit 0, 142 actions, no compiler warnings.
+  Log: `work/mob-drops-sequence-build.log`.
+- `python3 tools/dev.py test`: exit 0, all 124 tests passed in 31.07 seconds,
+  including the new sequence configuration comparison.
+  Log: `work/mob-drops-sequence-test.log`.
+- Python oracle `py_compile` and `git diff --check`: exit 0.
+
+Remaining: production world allocation/grant/range/log and death-owner wiring
+listed above. Windows profile edge cases remain an explicit compatibility boundary;
+ItemCreate.ini crafting distributions remain outside this mob-sequence block.
+
+Milestone 3 implementation commit: `52ab268d87fd80119432d07256d019a4c7a77d77`.
