@@ -745,3 +745,108 @@ with fixture4a1ebd6 after its freeze, runs shared complete checks and assigns an
 remaining real DB route/Actor-load root binding. Actual services must remain
 required. No independent work remains in this fixture-only assignment; awaiting
 integration or another explicitly scoped task.
+
+## Rebirth subowner API need (recorded before modification)
+
+The new Actor/Rebirth assignment requires exact silent replacement of HP/MP/SP.
+ActorResources alone owns current_; its existing current() is const, and clamp /
+heal / recover mutate values or invoke sinks. No correct Actor-only forwarding
+implementation exists without bypassing that owner. Per the assignment's
+conditional resource-change instruction, the precise minimal need is one inline
+resources.hpp method: replace_raw(PlayerResources value) noexcept {current_=value;}.
+No resources.cpp implementation edit, const_cast, second resource field or
+clamping/notification workaround will be used. Actor will forward to that method.
+Presentation already has the real ZoneLifecycleState::motion (+1434) owner;
+attack_state.motion (+1448) and attack_state.mode (+142c) remain separate.
+
+
+## Milestone 14: real Actor Rebirth resource/presentation ownership
+
+Implementation commit: `a7d46ab2805f38d1369eb25dd556a74f7d856bf0`.
+
+Read current main continuity/parallel notes and worker08 Rebirth bridge/report.
+Original evidence: ps_game.exe Rebirth00459ec0 raw copy00459ef6..00459f1a
+(maxima17c/180/184 -> current1238/123c/1240) and presentation clear0045a148;
+EnterZone0044ae30 presentation store0044ae3d; SendUserShape00482ad0 presentation
+read00482cbc (also CZone::SendUserShape0041ff3a). These use CUser+1434, distinct
+from attack motion+1448. Existing shared life owner remains attack_state.mode
+(+142c). Complete Ghidra exports and original instructions were inspected; all
+12 EXE/PDB checksums pass, work/mob-drops-actor-rebirth-hashes.log.
+
+Minimal actual owner changes:
+
+- ActorResources::replace_raw(PlayerResources) noexcept assigns its existing
+  current_ directly. Exact need was recorded BEFORE the two-line resources.hpp
+  addition, following the assignment's conditional resource-change instruction.
+  resources.cpp is untouched. No const_cast, placement reconstruction, extra
+  resource cache, clamp, heal/recover callback, notification or damage reset.
+- Actor::replace_resources_raw forwards to that SAME resource owner. Existing
+  resources() remains const and its borrowed reference stays stable. It does not
+  change maxima, recovery, life or effect/credit state.
+- Actor::presentation_motion() const and presentation_motion(BYTE) noexcept use
+  the ALREADY PRESENT ZoneLifecycleState::motion. No new storage field was added.
+  attack_state.motion remains the distinct +1448 scheduler byte; mode remains
+  the existing +142c life owner, without a duplicate lifecycle life field.
+- Actor::enter_zone_lifecycle now clears +1434's owner before its first clock,
+  preserving attack motion. Actor::user_shape_changed serializes presentation
+  from that owner. Actor::send_shape_self was audited: original SendShapeMe00482510
+  sends the effective shape and does not read this motion byte, so it is unchanged.
+  Existing Actor/UserShape fixtures now set presentation through its real API and
+  preserve an independent attack-motion sentinel, keeping original packet bytes.
+
+Exact worker08/root adapter bindings now available:
+
+    presentation_motion(const Actor& a) -> a.presentation_motion()
+    presentation_motion(Actor& a,BYTE v) -> a.presentation_motion(v)
+    replace_resources(Actor& a,PlayerResources v) -> a.replace_resources_raw(v)
+
+These are silent, exact, non-reentrant stores on the serialized Actor owner. Keep
+Actor/scene/definitions and admission subject alive through synchronous callbacks.
+Do not change the existing bridge's mode/recovery publication or point its motion
+setter at attack_state.motion. Real corpse/movement/admission, recover-change,
+view/self/log/clock services remain required; pure SendRecoverChange is still not
+Actor::recover. No worker08 bridge or world/lifecycle implementation was edited.
+
+Validation:
+
+- New original execution fixture:512 full-DWORD boundary combinations (zero,
+  1,65535,65536,INT_MAX,INT_MIN bits,UINT_MAX and123456789). Executes the actual
+  six raw-copy instructions and isolated presentation store, preserving life and
+  attack byte. These are instruction slices, NOT a new whole-Rebirth claim;
+  worker08 owns the existing complete693-byte coordinator evidence.
+- Native comparison uses actual ActorResources via Actor forwarding, even with
+  deliberately different maxima to expose clamps. Exact current HP/MP/SP, stable
+  reference, no resource-sink/party/clock calls, unchanged max/recovery/life/attack
+  fields and silent presentation reset all match. Separate damage-credit test
+  proves raw full HP does not clear the ledger. EnterZone's first clock observes
+  presentation0 with attack0xa5 and shared life unchanged; normal two-clock/auth
+  sequencing and movement checks remain intact.
+-8 actual canonical worker08 Actor-bridge compositions bind the new methods:
+  restore/no-restore, corpse/no-corpse, dead/nondead, false movement and callback
+  changes to live resources. Exact restore-before-FindDead and presentation-before-
+  recovery/life tail are observed; callback resources survive. No scratch resource/
+  presentation/life owner is substituted. This does not duplicate worker08's
+  success/cross-map/nested-Rebirth fixtures or supply missing root action services.
+- Worker base predates the canonical bridge. Read-only snapshot tool copies only
+  its source/header into ignored work/mob-drops-actor-rebirth-owners; central CMake
+  uses normal canonical owners when present. Manifest:
+  work/mob-drops-actor-rebirth-owners.json. Exact SHA256 values:
+  - `include/eternity/game/mob_targeting_lifecycle.hpp`: `05ceeab56cf60279513de5e20b55d66faba3349da6e4926df24f41739408469a`
+  - `src/game/mob_targeting_lifecycle.cpp`: `e15c5bf74ef9d50446d1fea6f7e00caae397f5a3d8c3230487cdc2c983eca5de`
+- Native build exit0, no warnings: work/mob-drops-actor-rebirth-build.log;
+  final test-header rebuild exit0:work/mob-drops-actor-rebirth-final-build.log.
+- Full suite exit0: **139/139 passed in42.11seconds**;
+  work/mob-drops-actor-rebirth-tests.log. No failed build/test run in this block;
+  no repeat after the complete pass. Passing output details remain in
+  build/Testing/Temporary/LastTest.log.
+- Both new Python tools pass py_compile; git diff --check passes. Generated
+  original fixture was written under work/ before copy, with no active readers.
+- No SQL execution/lifecycle/schema changes in this silent Actor-state block.
+  Rebirth itself has no direct SQL call; actual admission/shared SQL checks remain
+  with the coordinator's integration pipeline. No main/frozen source changes.
+
+Remaining: worker08/root can replace their fixture presentation projection and
+required raw-store implementation with these real owner calls. Preserve existing
+life/recovery order and actual serialized subject/zone lifetime. Root world,
+corpse/admission/transport services still need assembly; no gameplay completion
+is inferred from native comparisons or test counts.
