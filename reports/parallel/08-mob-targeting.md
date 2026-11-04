@@ -775,3 +775,148 @@ SQL reruns with unchanged implementation. Milestone 8's 126/126 tests, 432
 original traces and clean sanitizer run remain the last substantive results.
 No main/other-worker edits, SQL lifecycle changes, merges or pushes. Waiting for
 a concrete owner interface or new assignment; global gameplay remains incomplete.
+
+## Milestone 9: full stable mob-skill catalog and owner reload access
+
+Explicit coordinator scope extends the EXISTING mob_targeting_bindings owner.
+No second skill map, copied world owner, shared mobs.hpp/skills.hpp edit or
+worker03 source change was made. Evidence remains ps_game.exe
+LoadConstMobSkill 004c0be0 (normalization/copy 004c1606..004c1695), LoadConstMob
+004c1720, original stSkillInfo layout, and the recovered R2 field publisher.
+
+Each existing skill slot now owns its complete normalized 160-byte record and
+an EMBEDDED SkillDefinition-compatible object. Each mob slot retains its complete
+normalized 268-byte post-LoadConstMob record, with pointer fields encoded as
+stable allocated-slot tokens. These are representations in the SAME owner,
+not another registry. All numeric fields, zeroed padding, names and normalization
+are retained, not reconstructed later from the former small projection. Mob
+quest scratch retains its last non-NULL value across rows, matching the separate
+original GetData destination outside the freshly cleared row buffer. Mob item
+links loaded by later services are not claimed as reconstructed by this loader.
+
+| MobSkills_R column | Original offset | Stable data |
+| --- | --- | --- |
+| 3 | +0x03, char[32] | name octets; GetData length 30, maximum 29 bytes plus NUL; +0x22 forced zero |
+| 48 | +0x5c | keep seconds; original two-byte GetData zero-extends into DWORD |
+| 65/66 | +0x7c/+0x7e | ability 1 byte type / uint16 value |
+| 67/68 | +0x80/+0x82 | ability 2 byte type / uint16 value |
+| 69/70 | +0x84/+0x86 | ability 3 byte type / uint16 value |
+| 58 | +0x6e | time-damage type |
+| 59/60/61 | +0x70/+0x72/+0x74 | three uint16 time-damage words |
+| 74/75/76 | +0x8e/+0x90/+0x92 | three TimeHeal words, kept SEPARATE from time damage |
+
+The embedded view also projects all existing common SkillDefinition fields:
+id/detail/effect, raw forced level 100, weapons/weapon value/bag, attribute,
+defense type/value, apply range, limit HP, aggro, change type/level, abilities,
+keep seconds, death-preservation flag and TimeHeal. It deliberately does NOT use
+the user SkillDefinitions loader: no 1..3 level admission, detail-93/122 effect
+remapping, zero-ability-value promotion, or keep-time hours conversion. The mob
+loader leaves zero ability values intact and keeps seconds directly even when
+the raw death-preservation flag is 1; offline_countdown is false. Original raw
+bytes remain available for fields not represented by the shared header.
+
+### Exact worker03 adapter / lifetime contract
+
+- Acquire `catalog.skill_definition(slot_id)` and retain that const pointer in
+  MobAppliedSkill::definition. It points INSIDE the original persistent slot;
+  do not copy a SkillDefinition per node or keep a pointer to a local adapter.
+  Forced level 100 is intentional, not a user-skill level to clamp/filter.
+- Given a retained `const SkillDefinition&`, use
+  `catalog.from_definition(&definition)` for identity-checked reverse access.
+  This scans existing slots and adds no map. An unrelated user definition with
+  the same ID/value is rejected; user-origin skills need their own genuine owner
+  adapter, not a mob-ID fallback or empty provider.
+- `slot->name()` is a bounded string_view INTO the same raw slot bytes; no
+  temporary string backing. `definition.keep_time_seconds` and
+  `definition.abilities` are the actual stable common view.
+- Project worker03 MobAppliedSkillTimeDamageDefinition from
+  `slot->time_damage_type` and `slot->time_damage` at the original read point.
+  Those members have stable per-slot addresses and update live. Do NOT use
+  definition.time_heal as periodic damage. No worker03 header is copied here.
+
+The catalog/arrays must outlive templates, active/recycled applied skills and
+all callbacks. Moves transfer existing storage and preserve raw/view/member
+addresses (tested); replacing/destroying a published owner is still forbidden.
+There are no per-node snapshots to mask later definition changes. Retained
+nodes can observe changed effects/abilities/keep/damage after a live reload,
+matching original pointer semantics.
+
+### Owner-controlled mutable record access / existing reload integration
+
+`mutable_skill_record(slot)` / `mutable_mob_record(slot)` expose bounded spans
+for ALLOCATED slots, including zero/empty slots that public admission lookups
+reject. No resize or insertion occurs. Existing reload services.target returns
+one of these actual owner buffers for the RETURNED row ID. After a successful
+ordered reload, call `publish_skill_record(returned_slot)` or
+`publish_mob_record(returned_slot)` under the SAME quiescence boundary. They
+synchronize existing legacy fields and embedded compatible/periodic views in
+place; addresses and borrowed skill links do not move. Do not use the older
+minimal reload projection alone on this expanded owner: it cannot refresh the
+new complete views. Never publish a failed staging row.
+
+Hold owner serialization across decode, pool cleanup, raw field publication and
+view synchronization. Raw mutable spans are low-level access, not concurrently
+readable mutation transactions. External callbacks that modify these records
+must synchronize/publish their own changes before exposing views. Skill reload
+does not re-evaluate mob links; a later actual mob reload can clear a now-invalid
+binding. Skill ID/name/padding and forced raw level behavior continue to come
+from the recovered ordered publisher, not whole-record replacement.
+
+Opaque link tokens are allocated slot indices, not mutable stored skill-ID
+metadata or truncated native pointers. A targeted native check changes stored
+ID while preserving the slot and confirms decoding still binds the indexed
+pointer, consistent with GetMobSkillInfo's nonzero-ID guard. The original
+one-past lookup remains safely unsupported. Complete normalized records now
+satisfy the old reload counter/storage dependency without const_cast.
+
+### New original and restored-data comparisons
+
+`--full-skills` adds varied names (empty, spaces, 29 bytes, UTF-8 octets and
+embedded NUL), all new fields, raw level extremes, zero/large ability values,
+wide periodic words, keep/death flags and NULL scratch retention. 256 COMPLETE
+original paired loaders compare 3,584 full allocated records, including holes
+and slot zero. The original GetMobSkillInfo and Init still execute; name/ODBC
+conversion is an explicit SQL_C_CHAR input port, not a Microsoft driver/codepage
+claim. Names are raw octet views rather than promised Unicode strings.
+
+The read-only restored SQL runner now hex-encodes actual name octets instead
+of replacing names. It compares ALL 356 skill records and ALL 2,747 mob records
+(793,156 raw bytes) plus the existing 3,101 selected projections. All match:
+355 skill rows, 2,747 mob rows, 2,746 nonzero definitions, 8,238 attack positions,
+1,871 links including 20 present-but-disabled. Maximum restored skill name is
+21 bytes, below the original name buffer's truncation boundary. Snapshots remain
+ignored; no actual game data or credentials are committed.
+
+New owner composition runs the EXISTING native R2 reload over these persistent
+records, then synchronizes views. It checks old applied-definition/raw/name
+addresses, live keep/ability/periodic updates, ignored replacement name, retained
+mob link after unsupported effect change, actual subsequent mob revalidation,
+reverse identity guards, allocated empty slots and pointer-preserving move.
+Shared worker03 code was inspected read-only; its actual scheduler/effect/world
+providers are not claimed as integrated by this data-owner test.
+
+Implementation commit: `36eab1d` (workers/08-mob-targeting).
+
+- `python3 tools/dev.py build`: final exit 0, no warnings;
+  `work/mob-targeting-bindings-full-final-build.log`.
+- `python3 tools/dev.py test`: final exit 0, all 127 tests passed (45.00 s).
+  New full owner suite: 0.34 s;
+  `work/mob-targeting-bindings-full-final-tests.log`.
+- Focused ASAN/UBSAN compile and full original/owner/reload suite under the
+  shared build lock: exit 0, no diagnostics;
+  `work/mob-targeting-bindings-full-final-sanitized.log`.
+- `python3 tools/mob_targeting_bindings_sql_oracle.py`: final exit 0;
+  `work/mob-targeting-bindings-full-final-sql.log`. Full normalized records and
+  names are included, not just the old targeting subset.
+- `--full-skills` original fixture regenerated identically into ignored
+  `work/mob-targeting-bindings-full-repeat.tsv`; comparison exit 0.
+- All twelve original EXE/PDB SHA256SUMS passed; git diff --check clean.
+  No restored SQL snapshots, logs, credentials or generated executable tracked.
+
+Remaining integration is actual root data-owner construction/lifetime and
+worker03's identity-based definition/name/periodic adapters, plus real SQL R2/
+pool/log and world/effect/scheduler providers. The mutable stable record/view
+access dependency itself is now implemented in the existing owner; no shared
+header patch or const_cast is needed for that interface. Do not continue using
+an out-of-date minimal projection adapter for the full catalog. No production
+world services or playable-server completion are claimed.
