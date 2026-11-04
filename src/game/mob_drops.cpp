@@ -172,7 +172,7 @@ void mob_deliver_item(const MobLootItem* definition,MobLootUser* user,MobLootPar
 }
 
 namespace eternity::game {
-const MobLootItem* MobDropCatalog::select(std::uint16_t grade,RandomSource& random,MobDropCatalogWorld& world) {
+const MobLootItem* MobDropCatalog::select(std::uint32_t grade,RandomSource& random,MobDropCatalogWorld& world) {
     if(grade>=grades.size() || grades[grade].empty()) return nullptr;
     auto* entry=grades[grade][static_cast<std::size_t>(random.next())%grades[grade].size()];
     if(!entry) throw std::invalid_argument("Original grade catalog requires non-null definitions");

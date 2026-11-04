@@ -115,7 +115,7 @@ void mob_deliver_item(const MobLootItem*,MobLootUser*,MobLootParty*,bool sequenc
 
 namespace eternity::game {
 struct MobDropCatalogEntry {MobLootItem item;MobDropLimit limit;};
-struct MobDropSequence {std::uint32_t divisor=1;std::array<std::uint16_t,10> grades{};};
+struct MobDropSequence {std::uint32_t divisor=0;std::array<std::uint32_t,10> grades{};};
 class MobDropCatalogWorld {
 public:
     virtual ~MobDropCatalogWorld()=default;
@@ -130,7 +130,7 @@ public:
     std::array<std::vector<MobDropCatalogEntry*>,1025> grades;
     std::array<std::size_t,1025> unrestricted_counts{};
     std::vector<MobDropSequence> sequences;
-    const MobLootItem* select(std::uint16_t grade,RandomSource&,MobDropCatalogWorld&);
+    const MobLootItem* select(std::uint32_t grade,RandomSource&,MobDropCatalogWorld&);
     const MobLootItem* sequence(std::uint16_t level,std::uint32_t object,RandomSource&,MobDropCatalogWorld&);
 };
 }
