@@ -271,3 +271,86 @@ Block 4 validation:
   isolated SQL integration remains coordinator-owned and was not run here.
 
 Block 4 implementation commit: `d69cb64e603f0fadef8f106162be0e0d5d5cd681`.
+
+## Block 5: shared buffer delivery for membership notifications
+
+Recovered immutable ps_game.exe `CParty::Send` 004455d0, `SConnection::Send`
+004d4cf0, `SPacketBufferSend::AllocBuffer` 004df9f0 and the required
+`SAgent::SendRequest` 004d8950 boundary. New focused Ghidra exports of allocation,
+Free 004df070 and SendRequest are ignored under
+`work/exports/05-party-state/ps_game.exe`; full CParty/connection assembly is in
+the coordinator's read-only full reverse export. The explicit pool/worker
+boundaries remain required real providers, not no-ops.
+
+`party_runtime_membership_send.hpp/cpp` adds a real `send_party` implementation
+on `PartyMembershipSendWorld`. Allocation selects capacity 32 for payload <=30,
+128 for <=126, otherwise 2048. It initializes reference count 1, custom-reference field 0,
+copies payload once and writes the little-endian total length including its two
+bytes. Allocation failure returns before locking. The original payload must fit
+the 2048-byte pool; native input >2046 throws instead of reproducing the original
+out-of-bounds write. Normal membership's largest valid roster is 2014 bytes.
+
+The party lock is recursive. Kind 0/1 selects the loop once; other kinds send to
+nobody but still allocate/lock/unlock/release. Ordered count/slots are reread on
+each iteration and holes skipped, so live enqueue callbacks can shrink/extend
+the active prefix or replace subsequent users. Only socket DWORD +0x68 == -1
+suppresses a connection send; all other values enqueue. Each connected enqueue
+increments the shared atomic reference first. Party unlock precedes release of
+the sender reference; Free is called only when the atomic decrement reaches
+zero. Async worker owners retain their own references until completion. The
+normal adapter exposes seven slots; this does not implement raid ownership.
+
+Required pool and worker providers: allocate requested size class (nullable),
+queue the same retained buffer to the actual connection/worker, and return the
+buffer to its real pool at zero references. `free_send_buffer` may destroy the
+object; the implementation never reads it after that callback. Atomics preserve
+original 32-bit Interlocked wrap/full-order semantics. The projected socket is
+separate from a native file descriptor; the canonical connection owner must
+supply the original valid/disconnected state, rather than use a default socket.
+Registry/guild/log/scene/direct-user transport providers remain independent.
+
+`party_runtime_membership_send_oracle.py` executes full original CParty::Send,
+AllocBuffer, SConnection::Send and SendRequest; only pool allocation/free,
+SendPost worker, locks and atomic OS intrinsics are ports. 1,024 cases compare
+all events, recipient identities, complete frame, reference/custom-reference state and
+pool return. Cases include allocation failure, kind gates, signed count <=0,
+holes, disconnected/zero sockets, all size-class boundaries, maximal payload,
+mutation of caller bytes after allocation, count/slot/socket/kind changes during
+enqueue, and explicit synchronous/asynchronous completion models. A native
+post-comparison check releases any retained async shares and requires one pool
+return. It does not claim to implement asynchronous OS I/O completion itself.
+
+The full membership oracle's `--real-party-send` mode adds another 512 original
+complete entry/leave executions with real GetPartyType AND CParty::Send /
+AllocBuffer / SConnection::Send / SendRequest. The native fixture composes the
+same recovered default providers and verifies exact notifications, recipients,
+frames, references and nested locks. Only actual worker completion is modeled
+synchronously at its required port. Earlier observed-port and real-type suites
+remain separately registered and unchanged in meaning.
+
+Block 5 validation:
+
+- Final `python3 tools/dev.py build`: exit 0, no warnings
+  (`work/party-runtime-membership-send-reviewed-build.log`). PDB member +0xc is
+  explicitly named m_nCustomRef, now exposed as custom_references; it is not
+  inferred to be a send offset.
+- Final `python3 tools/dev.py test`: exit 0; 126/126 pass in 30.92 seconds
+  (`work/party-runtime-membership-send-reviewed-test.log`). The earlier complete
+  suite also passed (41.20 seconds) before this identifier-only PDB correction.
+- Focused C++20 ASAN/UBSAN builds/runs in dev containers under the shared build
+  lock: all 1,024 send/ownership and 512 complete membership/send comparisons
+  pass, exit 0, no diagnostics
+  (`work/party-runtime-membership-send-final-sanitized.log`).
+- Both new original fixtures regenerate byte-identically (`cmp`, exit 0).
+  Original EXE/PDB hashes and `git diff --check`: exit 0. New outputs stay under
+  ignored work/. SQL/schema/lifecycle are unchanged; final isolated SQL suite
+  remains coordinator-owned and was not run in this worker block.
+
+Needed integration: supply the canonical connection's DWORD +0x68 to the new
+send_socket projection, allocate/free real 32/128/2048 pool objects, and enqueue
+frames through the worker while retaining one reference per send until its
+actual completion/cancellation. Never destroy a buffer while those references
+remain. User roster transport (SConnection::Send(void*,int) 004d4d20), scene/log
+transport, registry/guild owners and production dispatch remain pending.
+
+Block 5 implementation commit: `a06d652ef0fe90002a24a66117b80bc61273e2d9`.
