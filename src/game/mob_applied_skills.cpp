@@ -49,10 +49,13 @@ std::vector<MobAppliedSkill*> MobAppliedSkills::records() const {
 // No RemApplySkill, status reversal, damage or client-packet dispatch here.
 void MobAppliedSkills::clear(const MobAppliedSkillLogProjection& projection) {
     std::lock_guard lock(mutex_);
+    cursor_=nullptr;
     while (!records_.empty()) {
         auto* skill=records_.front();
+        cursor_=skill;
         if (projection.lua_ai || (projection.respawn_present && projection.respawn_logging))
             log_.removed(*skill,6);
+        cursor_=nullptr;
         records_.erase(records_.begin());
         pool_.recycle(skill);
     }

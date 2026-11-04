@@ -28,6 +28,7 @@ public:
     virtual void removed(const MobAppliedSkill&, std::uint8_t action) noexcept=0;
 };
 class MobAppliedSkills;
+class MobAppliedSkillRemovalServices;
 // One object-manager heap shared across owners. It must outlive every list.
 class MobAppliedSkillPool {
 public:
@@ -66,8 +67,11 @@ public:
     MobAppliedSkill* append_created(std::atomic<std::uint32_t>& counter);
     std::vector<MobAppliedSkill*> records() const;
     void clear(const MobAppliedSkillLogProjection&);
+    // Unsigned absolute tick comparison, including equality; no wrap-distance rule.
+    void expire(std::uint32_t now,const MobAppliedSkillLogProjection&,MobAppliedSkillRemovalServices&);
 private:
     MobAppliedSkill* append(std::atomic<std::uint32_t>* counter);
+    MobAppliedSkill* cursor_=nullptr; // nullptr represents the original sentinel.
     MobAppliedSkillPool& pool_;
     MobAppliedSkillLogServices& log_;
     mutable std::recursive_mutex mutex_;
