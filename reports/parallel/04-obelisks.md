@@ -920,3 +920,70 @@ flag setter and raw pool preparation changes from prior blocks remain canonical
 owner dependencies; worker03 now exclusively owns mobs/mob_pool and was not
 edited. SQL is unchanged; final isolated SQL validation remains coordinator-owned.
 The server is not playable.
+
+## Stable portal configuration binding and target-map routing
+
+Implementation commit: `ea242b556bbe59b4e8736eba667e6ac41378ed58`.
+
+`ObeliskRuntimePortalConfiguration::bind` recovers the portal materialization
+phase of **ps_game.exe, CMap::LoadObelisk 00427300**, beginning at **00428a94**.
+Explicit completed portal inputs carry the already decorated base ID, target
+map/portal and two lists of four (map, one-based ordinal) references. The binder
+uses retained map portal targets and actual stable obelisk spans. It owns the
+compacted live runtime link table and a matching target-map routing table for
+`ObeliskRuntimePortalWorld::map_broadcast(index,packet)`. Target countries and
+obelisk records are referenced directly, not copied.
+
+It chooses the first matching target portal, even when target IDs duplicate.
+Missing targets/maps do not consume IDs. A found target consumes the retained
+global ID before reference binding, even if no valid references remain and the
+candidate is discarded. Valid references compact independently into each
+country's four-entry array; ordinal1 selects the first actual runtime record,
+not an obelisk whose base ID is1. Repeated references remain repeated. Open flags
+start false, target-zone presence is explicit and each runtime portal ID retains
+the original WORD publication projection. Runtime counts and pointer sources
+are ready for the recovered update/publication/ownership functions.
+
+The unsafe original inclusive one-past record lookup is explicitly rejected;
+negative map accesses are safely skipped rather than dereferencing before the
+map table. Those malformed memory accesses are not equivalence claims. Missing
+country backing for an otherwise found portal fails explicitly. No required
+world service is replaced with a no-op.
+
+64 retained full original LoadObelisk executions compare source ID state, runtime
+link order, IDs, first-match target country, map routing/zone state, both counts,
+open flags and all eight reference identities. Six ordinary obelisks are loaded
+first with base IDs100/101, proving ordinal resolution is independent of base ID.
+The fixtures consume120 portal IDs but retain101 links, with14 empty resulting
+configurations. Cases include missing maps/portal IDs, sparse/duplicate references,
+references above count, zero ordinals and global ID wrap. Initial map/portal and
+completed native input projections are explicit; original text parsing executes
+but native portal text parsing is not claimed. Moving native configuration is
+also checked. A separate native boundary case verifies one-past rejection after
+ID consumption.
+
+Validation:
+
+- `python3 tools/dev.py build`: exit0, no warnings
+  (`work/obelisk-portal-config-build.log`).
+- `python3 tools/dev.py test`: exit0, **135/135 passed**, 28.29 seconds
+  (`work/obelisk-portal-config-tests.log`).
+- Independent original regeneration/`cmp`: exit0, byte-identical64 cases
+  (`work/obelisk-runtime-portal-config-repeat.tsv`).
+- Locked focused Ghidra export: exit0 (`work/obelisk-portal-config-ghidra.log`).
+- All original EXE/PDB SHA256SUMS passed
+  (`work/obelisk-portal-config-hashes.log`); `git diff --check`: clean.
+
+Integration: retain maps/portal country fields and ordinary obelisk configuration
+before binding portals, pass the same next-ID state used by ordinary obelisks,
+and retain this table throughout nested ownership/death/reset/publication calls.
+Use `target_map(index)` to route each map packet to the configured target map.
+Keep each runtime zone_present projection current as target-map zones are
+created/destroyed; binding does not substitute the actual map lifecycle owner.
+Next independent work is native portal-header/light/fury parsing into these
+completed inputs and recovered asset-wide comparison. Existing shared bObelisk
+setter/raw pool preparation and root-world/KC/calendar/transport dependencies
+remain open; canonical mobs/mob_pool belong exclusively to worker03 and were not
+edited. No canonical interface change is required for this binder. SQL is
+unchanged; final isolated SQL validation remains coordinator-owned. The server
+is not playable.
