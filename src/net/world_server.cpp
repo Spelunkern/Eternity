@@ -159,6 +159,9 @@ struct WorldServer::Impl::Connection : std::enable_shared_from_this<Connection> 
         result.disconnect=[weak,executor] {
             asio::post(executor,[weak] {if(auto self=weak.lock()) self->close();});
         };
+        result.disconnect_with_reason=[weak,executor](std::uint32_t reason) {
+            asio::post(executor,[weak,reason] {if(auto self=weak.lock()) self->close(reason);});
+        };
         return result;
     }
     void schedule() {

@@ -34,6 +34,8 @@ struct WorldChannel {
     std::function<void(std::function<void(bool)>)> pause_input;
     std::function<void()> resume_input;
     std::function<void()> disconnect;
+    // Preserve a known original service close reason (for example NProtect 111).
+    std::function<void(std::uint32_t)> disconnect_with_reason;
 };
 
 // Factory, open, receive and close run on one per-connection worker strand.
