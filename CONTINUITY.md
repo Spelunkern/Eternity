@@ -1454,3 +1454,13 @@ semantics still require tracing before changing the native bound; the new
 unmerged admission pause currently retains the existing eight-frame limit. Worker
 03 was assigned that evidence and test. Do not treat the arbitrary bound as
 original-equivalent.
+
+Independent 04 commits `3ddd3a4`/`7e04b0f` guard movement checker FP environment,
+rejecting unsupported rounding, FTZ/DAZ, nonfinite and overflow cases explicitly.
+`.local/vertical-movement-fenv-target.log` shows focused 4096-case test passed;
+full build passed, and SQL suite passed against previously built SQL executables.
+Full native suite after this exact revision was not rerun; unsupported cases are
+not original-equivalence claims. Independent 02 committed frame delegation
+`3fad53f`, but its report currently describes the prior population-first code;
+coordinator requested updated report and exact-revision validation, plus real
+single-lease idle/death/respawn composition. Neither delivery is merged.
