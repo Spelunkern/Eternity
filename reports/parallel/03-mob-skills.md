@@ -147,6 +147,8 @@ contract with actual owner operations and stable retained storage.
 
 | `0e4ce8b39d47ca3f2a00085f7b1d84532b19a3fd` | Catalog recursive Death/Clear/nested admission evidence | 160 native compositions; original replacement fixture regenerated identically; 131/131 tests, 35.70 s. |
 
+| `ce03a18ddc7ae1b07469e048a43b17205b7738e6` | Actual retained mob-pool binding, Init/reset/death/destructor lifetime | 64 original resets + 64 retained pool compositions; 132/132 tests, 39.89 s. |
+
 ## Vision cleanup milestone
 
 `MobAppliedSkills::remove_vision_fix(MobRuntime&)` now operates directly on the
@@ -384,3 +386,109 @@ Checkpoint validation: clean worker tree before this report update; prior
 implementation validation. No source/test/fixture changes and no build, SQL or
 original-execution rerun in this documentation-only checkpoint. git diff --check
 passed. Awaiting coordinator assignment; no main or other-worker files changed.
+
+## Retained MobRuntime/MobPool binding milestone
+
+Implementation commit: `ce03a18ddc7ae1b07469e048a43b17205b7738e6`.
+
+This assignment supersedes the catalog-only waiting checkpoint. Coordinator
+explicitly granted the four canonical mobs/mob_pool files, inspected against
+current main read-only (their prior APIs match this branch). No main, worker09,
+worker08, zone_users, storage or Actor files were edited.
+
+`MobAppliedSkillsRuntime` borrows the existing stable catalog, shared skill heap,
+shared atomic skill counter and required per-subject port resolver. The new
+three-argument MobPool constructor binds one MobAppliedSkillsCatalog to each fresh
+MobRuntime beside its actual damage ledger. Binding happens before CreateMob
+assigns the ID; port resolvers must retain the subject ADDRESS, not cache that
+initial ID. Reuse changes the mob ID but retains the same owner/ports and active
+skill pointers. No list, catalog or damage owner is duplicated.
+
+The historical two-argument MobPool constructor remains for existing damage-only
+projection fixtures. It does NOT provide skill or destructor-AI services;
+applied_skills() rejects unbound access instead of supplying no-ops. Production
+root construction must use the bound constructor. Migrating unrelated fixtures
+and root callers is not silently treated as completed integration.
+
+Bound mobs reject move construction/assignment before any field is moved, because
+the catalog bridge borrows their exact address. Unbound legacy projections retain
+their old move support. The initial build caught this legacy move requirement in
+zone-mobs-unit after adding an out-of-line destructor; a first-member move guard
+restores compatibility without permitting bound owner relocation. Initial failed
+build retained: `work/mob-applied-skills-runtime-build.log`.
+
+### Recovered lifecycle and providers
+
+ps_game.exe CMob::Init **00490040** / InitAttack **00490290** retain skills.
+initialize_mob and reset_mob_attack remain unchanged. The separate full
+ResetAttack **004905c0** adapter restores attack buffers/resources/status counters,
+then clears skills, sends current 10-byte 0305 HP when a zone exists, sends speed,
+and rebuilds attack. It preserves target/status/vision fields. HP world delivery
+must use the live zone/position, radius 60, zero options and priority 6; this is a
+required port, not a default packet sink. No per-skill effect reversal runs here.
+
+CObjectMgr::FreeMob **0040a630** releases compiled AI then stack/flags/VM and
+retains skill/damage lists. CMob::~CMob **0048ff10** releases compiled/Lua state
+before damage destruction and active skill-list deletion. Bound runtime
+destruction now executes this ordering while all required services are alive;
+manual unique_ptr resets prevent later member destruction from doing it twice.
+Active skills are deleted, not logged/recycled as ClearApplySkill would do.
+Death **004910f0** remains unchanged: actual world callbacks must delegate final
+clear to mob.applied_skills().clear AFTER actual damage-ledger reset.
+
+This supplies the bound-pool path for worker09's documented destructor dependency: bind release_stack_ai
+to stack-only teardown and close_lua to the real VM owner; do not call the entire
+ReleaseLuaFSM wrapper inside stack teardown. Providers can be invoked at FreeMob
+and again at final destruction, as in the original; compiled release must accept
+an already empty owner. Each extant stack/VM is closed once, and null/reset state
+prevents duplicate VM closure. No Lua backend or compiled FSM owner was invented.
+Destructor providers must not throw or destroy/recycle the subject during the
+callback. World serialization and deferred subject destruction remain required.
+
+Lifetime order: catalog and shared skill/damage pools/counters, per-subject
+ports, AI/VM services and their real world owners outlive every bound mob and its
+MobPool, including AVAILABLE objects. The runtime binding context also outlives
+the pool. Unlink all actual zone membership before pool destruction. Serialize
+catalog raw reload/publication against callbacks and retain definitions through
+all active/recycled skill nodes. No concurrent reload lock is invented here.
+
+### Validation
+
+New original ResetAttack oracle executes the complete reset and real empty-list
+ClearApplySkill; HP world view/SendSpeed/SetAttack are observed ports. All 64
+cases compare resources/control, exact HP packet and callback order, with dirty
+attack buffers asserted zero before SetAttack. Actual native SetAttack still runs;
+its arithmetic has prior original comparisons. Original inputs cover high word/
+DWORD values and both zone gates, preserving dirty target/status/vision values.
+Two original generations match byte-for-byte; fixture copied before tests.
+
+New native test also runs 64 actual retained-pool compositions: two mobs sharing
+catalog/heap/counter, Init retention, publish-in-place ability/keep mutation,
+reset logging before unlink with restored resources, actual Death damage-before-
+skill clear, pool release/reuse (including active skill retention), bound move
+rejection and destruction of both active/available objects. Required ports assert
+resource survival during AI teardown and reject duplicate VM closure. Shared
+heap counts prove active nodes were deleted at destruction rather than recycled.
+VM handles are scripted provider tokens, not an execution claim about real Lua.
+
+- Corrected `python3 tools/dev.py build`: exit 0, no warnings,
+  `work/mob-applied-skills-runtime-build-final.log`. A subsequent consistency
+  build also passed with no work remaining:
+  `work/mob-applied-skills-runtime-build-consistent.log`.
+- `python3 tools/dev.py test`: exit 0, **132/132 passed**, 39.89 seconds.
+  New 64-original/64-composition runtime suite passed in 0.01 seconds; no native
+  test failures. Full log: `work/mob-applied-skills-runtime-test.log`.
+- Original fixture repeat, py_compile and git diff --check passed. No sanitizer
+  run in this block. The first failed build is retained as described above.
+
+Original twelve EXE/PDB SHA256SUMS passed:
+`work/mob-applied-skills-runtime-hashes.log`. Serialized Ghidra process export
+for ResetAttack/destructor/FreeMob passed using the required JDK/Ghidra/output:
+`work/mob-applied-skills-runtime-export.log`. Oracle py_compile and whitespace
+checks passed. No SQL access in this block; complete isolated SQL remains central.
+
+Remaining root work: choose the bound MobPool constructor, supply stable actual
+AI/VM/combat/log/world owners, route full ResetAttack to the new adapter and final
+Death clear to the retained bridge. No further canonical fields are needed by
+this binding; real Lua/backend, scheduler/transport assembly and playability are
+not claimed complete.
