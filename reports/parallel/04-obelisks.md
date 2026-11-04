@@ -32,7 +32,7 @@ Native short-name log padding is zeroed; original unused stack padding is
 unspecified. Original fixtures use a 31-byte name to compare every packet byte
 without treating stack garbage as protocol behavior.
 
-## Validation
+## First milestone validation
 
 - `python3 tools/dev.py build`: exit 0, no compiler warnings
   (`work/obelisk-final-build.log`).
@@ -67,15 +67,78 @@ canonical header was modified. CMake additions register only this source/test.
   Required `mob_name` supplies it meanwhile. Canonical loader should retain this
   bounded name or expose an equivalent lookup by template identity.
 - Allocation provider must distinguish `CObjectMgr::CreateMob` **0040a5e0**
-  (principal) from heap allocation **0040ab80** (companion). Companion preparation
+  (principal and periodic replenishment) from heap allocation **0040ab80**
+  (companions in complete respawn). Raw-heap companion preparation
   must atomically assign the world mob ID and seed drop RNG with Unix time XOR
   ID; initialize must call real `initialize_mob`; enter must call real zone owner.
 - Required transports, KC totals/status-14 lookup, `SendObeliskChange`
   **0042b200** and `UpdatePortalLink` **0042a000** remain external world owners.
   These services have no default no-op implementation.
-- Production scheduler/configuration/reset orchestration remains unconnected:
-  `UpdateRespawnObelisk` **00429da0**, `ObeliskReset` **0042aa40**, loaders and
-  corpse deadline accounting need their world/map integration. The two assigned
-  destroy/respawn bodies do not themselves schedule the next principal respawn.
+- Production tick dispatch/configuration/reset orchestration remains unconnected:
+  the native `UpdateRespawnObelisk` body is now available (see below), but
+  `ObeliskReset` **0042aa40**, loaders and corpse deadline accounting still need
+  reconstruction/integration. Destroy/respawn do not themselves schedule the
+  next principal respawn.
 
 This is recovered native subsystem behavior, not a playable server.
+
+## Scheduler milestone — UpdateRespawnObelisk
+
+Implementation commit: `afccb884cb78f0ee54380bf24cdf52722ed2f2a6`.
+
+Recovered `ps_game.exe` **CMap::UpdateRespawnObelisk 00429da0**, with a locked
+focused Ghidra `--process` export to `work/exports/04-obelisks`. Native
+`update_obelisk_respawns` traverses stable per-zone projections in source order:
+
+- Requires a zone and a principal definition for the current country, even when
+  checking companion replenishment.
+- Signed principal current **< 1** chooses complete respawn only when unsigned
+  deadline **<= now**; companions are not separately replenished in that branch.
+  Complete respawn sets current=1 before allocation, so a failed principal
+  allocation sends the next tick into the companion branch, as in the original.
+- Otherwise each group with a definition, current **< count**, and deadline
+  **<= now** gets exactly one random candidate. Invalid/blocked terrain and
+  failed allocation leave its current/deadline unchanged, allowing a later retry.
+- Periodic replenishment uses manager **CreateMob 0040a5e0**, not the raw heap
+  path used by complete respawn's companions. `allocate(true)` means manager
+  creation, not necessarily a principal; header contract now states this.
+- On success: initialize, place, increment current, set deadline to **now + live
+  mob definition respawn_time**, add to the first free member slot, then enter.
+  Arithmetic wraps at 32 bits; deadline comparison is unsigned, not an elapsed
+  time subtraction. No companion spawn log is emitted by the periodic path.
+- Shared random-position/terrain helper preserves the previously validated
+  complete-respawn behavior rather than introducing a second coordinate rule.
+
+`obelisk_runtime_timers_oracle.py` executes the actual scheduler, actual complete
+respawn body, `CBitArray::GetBit` **0041b3a0**, and `AddMob` **00429930**. Allocation,
+Init, enter, transport, and random/time/atomic/seed remain observed external
+ports. 768 scenarios each run three consecutive ticks over two obelisks, retaining
+members/counters/deadlines. Fixtures cover equal/future/past deadlines, unsigned
+boundaries and wrap, negative/zero/full counters, missing country definitions,
+blocked/out-of-bounds candidates, failed allocation, and changed live definitions.
+Counters/deadlines are also compared at the EnterMob boundary, before snapshots.
+The trace contains 259 successful periodic replenishments, 230 principal spawns,
+359 complete-respawn companion spawns, and 24 periodic live-definition changes.
+
+Validation:
+
+- `python3 tools/dev.py build`: exit 0, no compiler warnings
+  (`work/obelisk-timers-build.log`).
+- `python3 tools/dev.py test`: exit 0, **121/121 tests passed**, 33.02 seconds
+  (`work/obelisk-timers-tests.log`), including both obelisk suites: the previous
+  432 destroy/respawn scenarios and the new 768 scenarios / 2,304 retained ticks.
+- Original fixture generation and independent regeneration/`cmp`: exit 0;
+  ignored outputs `work/obelisk-runtime-timers-final.tsv` and
+  `work/obelisk-runtime-timers-repeat.tsv` match the tracked fixture byte-for-byte.
+- Locked focused Ghidra export: exit 0, scheduler/respawn/GetBit exported.
+- `sha256sum -c SHA256SUMS`: exit 0 for all original EXE/PDB pairs
+  (`work/obelisk-timers-hashes.log`). `git diff --check`: clean.
+
+No SQL changes; final isolated SQL integration remains owned by the coordinator.
+No new canonical fields or virtual methods are required. The map tick owner must
+call this function with stable per-zone obelisk storage and the original unsigned
+millisecond tick, and implement the mandatory existing world services. Principal
+corpse deadlines/reset orchestration are still missing; this block does not make
+the server playable. Next independent obelisk work: reconstruct `ObeliskReset`
+**0042aa40** and its deadline/persistence ordering, then bind map configuration and
+corpse timing without altering shared canonical headers.
