@@ -1941,3 +1941,104 @@ independent proposal: recover +1428 expiration in **ChkKeepSkill 00487190**,
 including fresh-clock/equality/send ordering, and compose its skill-disable stage
 with existing applied-effect tick owner without duplicating that effect list.
 Overall server objective remains open.
+
+## Skill-disable expiration / existing effect cleanup tail — 2026-11-04
+
+Implementation **933f471**. Read current main continuity/parallel notes and
+`d929764/c0ccb72`; completed its proposed +1428 expiration block. Reused existing
+Actor.status().casting, ActorScene clock, speed delivery, EffectCycle and actual
+Actor cleanup methods. No second timer/effect list, copied Actor status, new clock
+provider or shared-header edits. Main/other workers remain untouched.
+
+Original `ps_game.exe` Ghidra/PDB evidence: WHOLE **ChkKeepSkill
+00487190..004877ad**, unlocked tail **00487750..00487795**, actual
+**RemApplySkillToMOB 00489560**, **RemApplySkillSleep 004893a0**, **SendSpeed
+004827b0** and both original speed getters. Added explicitly scoped
+`user_skill_runtime_keep_tail(Actor&, bool periodic_damage_seen)`, not a fake
+replacement for whole ChkKeepSkill.
+
+Recovered behavior:
+
+- Applied-effect list traversal finishes and its +a9c lock is released BEFORE
+  disable expiry. Only when live +1428 is nonzero sample a FRESH GetTickCount;
+  caller's periodic tick is not the expiry clock. Re-read live DWORD deadline
+  after clock callback. Clear and send speed iff deadline is unsigned STRICTLY
+  LESS than fresh tick. Equality remains blocked. No signed/modular repair.
+- A clock callback clearing deadline to0 can still trigger speed delivery when
+  fresh tick>0; there is no second nonzero guard. A callback rearming/equalizing
+  deadline changes the comparison. Field bits are existing signed casting
+  storage viewed as DWORD; high-bit deadlines are not treated as negative times.
+- AFTER expiry's actual speed callback, check the periodic loop's damage flag
+  and LIVE Actor attack_state.mode!=1. Then call actual cancel_shape_on_attack,
+  then actual remove_sleep, with no second life check between those calls.
+  A speed callback marking the actor dead suppresses both; a callback rearming
+  disable survives subsequent cleanup. Expiry itself is not gated on death.
+- Original damage flag is not equivalent to lost HP: a zero periodic-damage
+  calculation with damage service returning false still sets it. Required bool
+  argument has no default; caller must supply the real periodic traversal result.
+
+Oracle executes WHOLE original ChkKeepSkill on valid empty, benign nonempty and
+periodic-detail61 applied lists, actual shape/sleep/speed owners and balanced
+lock/stack/cookie paths. TimeDamage and damage application are explicit zero/no-
+death service ports; actual prefix still traverses nodes, updates previous tick,
+constructs periodic view and publishes its original flag. Unlock checkpoint
+verifies +a9c lock depth0 before fresh expiry clock. Complete cleanup call order
+is asserted to be absent or shape-then-sleep. Original null shape and no detail66
+node are deliberate inputs: real sleep owner traverses the surviving original
+list, clears sleep block and sends speed without effect removal. No immediate
+0902 backend-delivery equivalence is claimed or bypassed by a no-op sink.
+
+**512 original/native tail comparisons** cover absent/benign/periodic lists,
+zero/equal/past/future/high-bit deadlines, four near-boundary clock families,
+independent periodic caller ticks, clock clears/rearms/equality, dead modes,
+initialization/zone suppression and reentrant speed death/rearm. Native starts
+at observed unlocked boundary (explicit prefix projection), uses SAME existing
+EffectCycle for retained nodes and real cleanup; verifies node membership remains,
+exact ordered clock/speed state snapshots and final deadline/sleep/mode. It does
+NOT claim native execution of the original whole periodic prefix.
+
+Additional native lifecycle composition publishes a disable via the actual
+resolved-attack coordinator, probes equality then expiry through this helper,
+and checks actual Actor speed packets ff/ff then4/2. Learned runtime reset tick
+7010 remains unchanged: global disable is not another learned cooldown owner.
+
+Validation:
+
+- Original executable/PDB SHA256SUMS exit0;
+  `work/user-skill-runtime-disable-hashes.log`.
+- Independent oracle regeneration byte-identical (`cmp`,exit0), generated under
+  work/ and copied before readers; original binaries unchanged.
+- `python3 tools/dev.py build`: exit0,no warnings;
+  `work/user-skill-runtime-disable-build.log`.
+- Sequential `python3 tools/dev.py test`: exit0,**140/140 passed,26.48s**;
+  `work/user-skill-runtime-disable-tests.log`. Previous actual owner, learn,
+  snapshot/persistence, readiness/cost, casting, scheduler and zone tests pass.
+  `git diff --check`: exit0.
+- Shared wrappers respected. SQL unchanged; coordinator owns final isolated SQL
+  integration/whole-server checks. No gameplay completion claim.
+
+Integration and exact remaining owner contract:
+
+Call tail ONLY after actual ChkKeepSkill periodic/protect/hidden-user traversal and
+its applied-list lock release. Retain root Actor/scene, effect definitions and
+pools across clock/view/removal callbacks. Existing Actor services remain mandatory;
+there is no independent timer storage or fallback world clock. Actual speed Scene
+routing uses retained source/zone/radius60/channel5 as previously documented.
+
+Checked canonical main EffectCycle.hpp read-only: `expire` is ChkEndTimeSkill and
+`reset_keep_tick` only resets timer baselines. Neither is a whole ChkKeepSkill
+periodic visitor. Do NOT substitute expire or changed effect-count for this prefix.
+The missing canonical owner entry point must traverse the EXISTING EffectCycle
+nodes/shared cursor in original order, execute actual periodic/protect/detect
+providers, retain callback backing, publish per-node previous ticks, stop after
+live dead-mode checks and return the original processed-damage flag after lock
+release. Then invoke this tail exactly once. No generic second effect list or
+private cursor should be created here. This is an integration requirement, not
+an unauthorized edit of the canonical applied-effect owner.
+
+Actual effect/spending providers, full definition/shared CSkill manager, retained
+weapon middle and root update/save/admission assembly remain prior dependencies.
+Next independent user_skill_runtime task proposal: recover **UseSkillUser
+0044f110 / UseSkillMob 0044f2d0** preparation and their actual state/runtime writes,
+composing validated eligibility and the existing resolved attack coordinators;
+do not duplicate effect/damage/resource ownership. Overall objective stays open.
