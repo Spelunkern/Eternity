@@ -1182,3 +1182,13 @@ arguments; `integration` now rejects unexpected arguments instead of silently
 running the entire SQL suite. Mocked command construction verifies forwarding
 and rejection. Existing worker checkouts predate this fix; do not describe their
 runs as filtered unless the actual CTest output establishes it.
+
+## Independent combat caller integrated for validation
+
+Reviewed original caller fixture and integrated independent `abe9b2b`, `598421d`,
+`856d536` as `4865abe`, `603e6c4`, `2b49ef0`. These recover AttackMob caller
+ordering against intercepted original callees; they do not implement actual hit
+calculation, world dispatch or full combat. Main validation pipeline is waiting
+for the shared build slot, logs `.local/independent-combat-{build,test,sql}.log`.
+Worker 06 received a bounded AttackSuccess follow-up; preserve required actual
+providers and review independently before integrating.
