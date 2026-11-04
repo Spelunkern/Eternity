@@ -16,7 +16,8 @@ namespace eternity::game {
 namespace {
 static_assert(FLT_EVAL_METHOD==0 && std::numeric_limits<float>::is_iec559 && std::numeric_limits<float>::digits==24 && std::numeric_limits<double>::is_iec559 && std::numeric_limits<double>::digits==53 && sizeof(double)==8,
               "AttackSuccess requires IEEE binary64 intermediate evaluation");
-void require_float_environment(){
+} // namespace
+void vertical_combat_require_float_environment(){
     if(std::fegetround()!=FE_TONEAREST)throw std::logic_error("AttackSuccess requires nearest floating rounding");
 #if defined(__GLIBC__)
     if(::fegetexcept() & FE_ALL_EXCEPT)throw std::logic_error("AttackSuccess requires masked floating exceptions");
@@ -31,6 +32,7 @@ void require_float_environment(){
 #error AttackSuccess requires a supported floating exception mask check
 #endif
 }
+namespace {
 std::int32_t sum(std::int32_t a,std::int32_t b){return std::bit_cast<std::int32_t>(std::uint32_t(a)+std::uint32_t(b));}
 double spill(std::int32_t n){volatile float result=static_cast<float>(n);return result;}
 double mul(double a,double b){volatile double result=a*b;return result;}
@@ -45,7 +47,7 @@ bool vertical_combat_normal_success(const Actor& actor,const MobRuntime& mob,uns
     if(status==3)return false;
     if(kind>2)return true;
     if(!mob.definition)throw std::invalid_argument("AttackSuccess requires retained mob definition");
-    require_float_environment();
+    vertical_combat_require_float_environment();
     const auto& user=actor.status().calculated_attack[kind];const auto& enemy=mob.attack[kind];
     if(kind==2){
         const auto player_level=std::int32_t(actor.status().level),mob_level=std::int32_t(mob.definition->level);
