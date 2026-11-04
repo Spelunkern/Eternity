@@ -943,3 +943,39 @@ Reviewed6200faa doc-only previousfixture checkpoint; no new implementation/tests
 ## Fourteenth batch validated; raid transport evidence reviewed
 
 Session12060 exited0: build,246/246tests69.65s,complete isolated SQL,full restored binding catalog and real stream SQL all passed. Sourceff9f04445567d7f78cbb054c712614a99ed8a087; .local/fourteenth-batch-{build,tests,sql,bindings-sql,stream-sql}.log. Freeze released; newer queued deliveries not covered. Reviewed5fc2198/d38c171 raid original pooled-send composition evidence:64sequences/2650deliveries/41poolfailures,134tests+ASAN/UBSAN reported, no production membership changes. Exact commits queued. Assigned05 actual raid creation/conversion/remaining opcodes rather than repeated membership fixtures. Objective remains open.
+
+## Fifteenth batch integrated and frozen
+
+Reviewed fdbff48 old raid scope doc checkpoint; newer creation/conversion assignment already active. Integrated reviewed queue through a8abc5eb5d917bfa6a8d1c0be952f0e46ef105c0 including local VM reads, user skill snapshot, immediate0902 with corrected zone fixture, raid membership/pooled send and actual quest grant adapters. CMake conflicts combined and nesting audited. Frozen for full build/tests/isolatedSQL/catalog/stream pipeline .local/fifteenth-batch-*.log. Latest validated published2ac53b3; new source unvalidated.
+
+## Reviewed worker01 c57485e2 — learned cooldown persistence
+
+Revieweda6d1d1c/4a0a2cc learned0804 phase on actual UserSkillRuntime, retained initialized scratch/physical holes/runtime numbers, unsigned deadline comparison and definition reset_seconds cap; count256 processes rows without send. Reported192whole-original phase comparisons/116actual SkillReplica-load compositions,136/136tests46.85s. No whole native character-save equivalence claimed: real resource/position/equipment phases precede and later effects/quests reuse returned tick. Stabledefinition+4a/rootmanager/saveassembly remain required. Exact commits queued during fifteenth sourcefreeze;255native suite currently running after335actionbuild passed. Worker continues proposed EnableUseSkillUser/Mob recovery within owned prefix.
+
+## Reviewed worker09 e25d484b — counted integer VM comparisons
+
+Reviewed69e561f/72bad7f explicit int/DWORD subset, original pop order/retained slots and first-DWORD no-result, wrapped count of successful comparisons consumed by actual transition threshold. Reported3840original TravelCondition executions/140tests31.52s. Float/noninteger comparisons, arithmetic/assignment/functions/factory remain open and unsupported paths explicitly error. Exact commits queued during fifteenth freeze; no source mutation.
+
+## Fifteenth initial validation failed; fixture migration retry
+
+Session82269 exited1:254/255tests68.21s, mob-combat-scheduler-actor-unit missing required Actor0902 transport. SQL was not started. Preserved original fifteenth logs. Coordinator migrated only test Scene to explicit recording ActorEffectDatabase, same missing-capability correction as zone fixture. Retry full build/tests/SQL/catalog/stream with separate fifteenth-retry logs. Reviewed5b7a35b/cca7796 raid conversion/config/disband1280original requests34nested135tests+sanitizers;queued. Raw auto_join byte dependency remains explicit.
+
+## Reviewed worker04 ccf623ba — actual ServerMaps binding
+
+Reviewed4db2ac3/7b0a529 actual mutable country accessor and retained map/config/position identity, no second country table or const_cast. Live primary ZoneMobs routing and DB/world/map services remain required. Reported64original compositions/68recoveredmapload/142tests. Exact commits queued during fifteenth retry source freeze. Same-pool/init/zone adapter composition assigned03 next,04 ownership map_config unchanged.
+
+Reviewedf2d96ed worker04 doc-only checkpoint, no new runtime or suite execution. Actual main root only validates const local ServerMaps, no retained mutable primary-zone/network owner yet. Worker03 already owns pool/map composition; do not duplicate. Last04validation142tests remains historical. Fifteenth retry255/255tests79.97s passed; fullSQL/catalog/stream final exit still pending, do not publish.
+
+## Reviewed three owner milestones — queued during fifteenth retry
+
+01-mob-damage: reviewed ed28b5b/c11c253. Runtime readiness suffix only: cooldown/prerequisite/block/range actual handles;256original comparisons137tests. Cost/equipment prefix and actual action/root bindings remain open.
+
+02-mob-drops: reviewed a7d46ab/cca5d9e. Actual ActorResources raw replacement and existing zone_lifecycle presentation+1434 distinct attack+1448;512original instruction slices8actualbridgecompositions139tests. Includes minimalresources.hpp API necessary;wholeRebirth/rootports not newly completed.
+
+09-mob-events: reviewed 5f7c42e/0eb029e. Numeric comparison matrix int/float/DWORD with float staging/NaN,7936originalcalls141tests. Arithmetic/assignment/functions/factory still absent.
+
+Worker08/root actual Rebirth bridge can now bind Actor::replace_resources_raw and presentation_motion once integrated; shared life stays attack_state.mode. Original Actor user-shape/zone-entry now use existing zone_lifecycle motion, not attack motion. Minimal resources.hpp raw setter accepted as necessary access to existing owner, no second resources. Preserve all required corpse/move/recovery/log services. Currentretry255tests passed;SQL/catalog/stream final confirmation pending.
+
+## Fifteenth retry validated
+
+Session97601 exited0:build255/255tests79.97s/full isolatedSQL/fullbindingcatalog/realstreamSQL passed at408826d. Original254/255 failure remains .local/fifteenth-batch-tests.log; passing logs .local/fifteenth-retry-*.log. Freeze released, publish validated batch only. New queued snapshots excluded.
