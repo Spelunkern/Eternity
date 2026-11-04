@@ -1193,3 +1193,11 @@ if(BUILD_TESTING)
     target_link_libraries(obelisk-runtime-asset-unit PRIVATE eternity_game)
     add_test(NAME obelisk-runtime-asset-unit COMMAND obelisk-runtime-asset-unit ${CMAKE_CURRENT_SOURCE_DIR}/tests/data/obelisk-runtime-asset-oracle.tsv ${CMAKE_CURRENT_SOURCE_DIR}/.local/server-data/Obelisk.ini)
 endif()
+
+# Worker 05: retained normal party request dispatch.
+target_sources(eternity_game PRIVATE src/game/party_runtime_requests.cpp)
+if(BUILD_TESTING)
+    add_executable(party-runtime-requests-unit tests/party_runtime_requests_unit.cpp)
+    target_link_libraries(party-runtime-requests-unit PRIVATE eternity_game)
+    add_test(NAME party-runtime-requests-unit COMMAND party-runtime-requests-unit ${CMAKE_CURRENT_SOURCE_DIR}/tests/data/party-runtime-requests-oracle.tsv)
+endif()
