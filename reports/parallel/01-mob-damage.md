@@ -385,3 +385,121 @@ remain outside this prefix. Proposed next assignment: recover the user attack
 scheduler's guarded invocation of AttackMob/StatusAttackStop, or supply the
 canonical combat-owner API so the stop/death boundary can be connected. The
 server remains non-playable.
+
+## Assigned extension: actor attack polling / normal-mob dispatch
+
+Implementation commit: `b0f4a04` (`Recover normal mob attack polling on canonical Actor state`).
+
+Resolved PDB-backed names through the locked Ghidra `--process` export:
+
+- CZone::UpdateUserAttack **00421930**, 96 bytes.
+- CUser::UpdateAttack **0048ca50**, 1,356 bytes.
+- CUser::StatusNextAttack **0048c970**, 223 bytes.
+- CUser::GetAttackSpeed **0048a460** / GetAttackSpeedNow **0048a4b0**.
+
+Focused export is ignored under `work/exports/01-mob-damage/ps_game.exe`;
+`work/mob-combat-scheduler-ghidra.log` records successful completion (exit 0).
+No import or manual shared-project changes. Original executable/PDB hashes
+verified again (`sha256sum -c SHA256SUMS`, exit 0).
+
+Read canonical Actor/actor_actions source. Actor already owns attack state,
+target classification/identity, stop and movement cancellation. No existing
+UpdateAttack polling implementation was found there or elsewhere in canonical
+game source; the new module coordinates those owners directly, without another
+actor-state copy, zone list or polling process. No shared header/source edited.
+
+This block implements **normal-mob UpdateAttack**, skip paths and failures;
+it does not claim the complete skill/PvP scheduler. Required `remainder` dispatch
+is explicit, with no default success/no-op: casting mode 3 after the tick guard;
+normal mode's skill phase after speed/transform processing; and non-self normal
+user targets after the weapon/self guards. These stage-specific providers must
+supply actual missing coordination and must not re-enter UpdateAttack's prefix.
+StatusNextAttack and those branches are the next independent work in this prefix.
+
+Recovered normal-mob ordering:
+
+1. Compare `ActorAttackState::resume_tick` (+1450) to the supplied tick as an
+   unsigned absolute deadline. Future deadline returns false without callbacks;
+   equality proceeds. Other inactive modes return true. No clock is sampled.
+2. For mode 2, GetAttackSpeed == 255 stops and sends reason 10. Otherwise call
+   RemApplySkillToMOB 00489560 before reloading phase (+1440, canonical field
+   `next_tick`). Phase 1 selects normal attack; non-1/non-2 phases return true.
+3. Missing weapon (+1d8) stops and sends reason 7. Self user target stops without
+   a packet. Mob lookup/eligibility failure 0044cd80 also stops without a packet.
+4. Range failure 0044c030 writes deadline **before** stop and reason-5 delivery.
+   Failure responses are exactly 17 bytes: 0502, reason, user ID, ten zero bytes.
+5. Eligible/in-range mob: test IsBothmob 0044c610, optionally copy the user's
+   null-terminated name into previous_attack_user, invoke normal AttackMob
+   0044ce10, then clear only byte zero of the previous user/skill strings for
+   that naming branch. Retained tails survive. Query the mob's live FSM state;
+   state 2 invokes the existing Actor stop, even if AttackMob already stopped it.
+6. Compute the deadline from the LIVE speed after callbacks using clamped
+   GetAttackSpeedNow and image table 005424e0:
+   `4000,3000,2750,2500,2250,2000,1750,1500,1250,1000`. Add to the supplied tick
+   with 32-bit wrapping. Cancel movement, then write motion byte (+1448) zero.
+   Changes to the deadline during cancellation remain; its motion changes are
+   overwritten by the later zero. A stopped actor can still receive this deadline.
+
+Complete original UpdateAttack executions cover the implemented paths, not
+interior slices. Required lookup/range/effect/attack/send providers are observed
+ports; actual StatusAttackStop, GetAttackSpeedNow, CancleMove (pending move zero)
+and the security-cookie return execute. There are 1,536 cases, including 519
+AttackMob calls and 465 failure deliveries. Ordered snapshots at every provider
+include live Actor state, speed, weapon presence, mob state and both complete
+32-byte naming buffers. Callback mutation probes cover weapon/phase changes,
+post-hit mode/speed changes, and cancellation/send writes. These are synthetic
+boundary audits, not claims that each real provider performs those mutations.
+
+Native comparisons use the actual Actor and MobRuntime owners. An additional
+native composition invokes the previously recovered user-hit coordinator with
+real pooled party/user ledger additions, lethal native damage, actual Actor stop
+and an observed required Death boundary; the polling tail then preserves the
+stopped actor and schedules the expected post-hit deadline. No AttackMob damage
+calculation or Death reward body is replaced by a production no-op.
+
+Validation:
+
+- Ghidra focused `--process` export: exit 0; exact names/addresses/signatures
+  confirmed in its functions.tsv. Original SHA256SUMS: exit 0.
+- Oracle generated under work/ before copying; independent regeneration matches
+  the tracked 1,536-case fixture byte-for-byte (`cmp`, exit 0).
+- `python3 tools/dev.py build`: exit 0, no compiler warnings;
+  `work/mob-combat-scheduler-build.log`.
+- Initial `python3 tools/dev.py test`: exit 0, **125/125 passed**, 30.82 seconds;
+  `work/mob-combat-scheduler-test.log`.
+- After adding native lethal-hit composition: build exit 0, no warnings,
+  `work/mob-combat-scheduler-final-build.log`; final test exit 0,
+  **125/125 passed**, 39.33 seconds,
+  `work/mob-combat-scheduler-final-test.log`. This includes all original frame
+  comparisons and the real native hit/Actor-stop composition check.
+- `git diff --check`: exit 0. Shared build/test/Ghidra locks were respected.
+
+Production/lifetime requirements:
+
+- CZone::UpdateUserAttack holds the user-list lock (+118), uses its shared live
+  cursor (+114, head +110), calls UpdateAttack with the same supplied tick for
+  each user, discards the boolean, and advances from the live cursor after each
+  call. Do not break on false, snapshot the user list, restore a saved cursor or
+  sample a new clock per actor. This list visitor is not reimplemented here.
+- Bind one retained serialized Actor to the connection/zone owner. Keep Actor,
+  scene and bindings alive through all callbacks and the final motion write.
+  A returned MobRuntime must survive AttackMob (including nested Death), naming
+  cleanup and the following FSM read. Deferred corpse recycling must respect
+  that lifetime. Never copy stale actor/mob state back after provider callbacks.
+- Weapon presence must reflect the actual +1d8 equipment owner; update the live
+  binding before returning from equipment/transform callbacks. Do not guess an
+  inventory slot. Existing Actor attack/target/speed fields are sufficient for
+  the implemented frame; no new canonical fields requested for those values.
+- Bind `attack_speed`, transform removal, enable_mob, range, naming predicate,
+  actual AttackMob, cancellation and self transport to real owners. In
+  particular, EnableAttackMob is not just FindMob: its original checks zone,
+  lookup, non-dead status and unequal user/template country (+12d / definition
+  +78). Range must preserve the original helper's position/arithmetic behavior.
+- Bind cancellation to existing `Actor::cancel_move` and its actual action world;
+  bind stop to the existing Actor owner. Skills/PvP require their missing live
+  skill selection/target coordination; they remain mandatory remainder providers.
+
+SQL contracts unchanged; isolated SQL integration remains coordinator-owned.
+Next independent block: StatusNextAttack 0048c970 and skill-phase coordination,
+then normal user eligibility/dispatch. Production zone/connection wiring remains
+open. The server remains non-playable.
