@@ -1617,3 +1617,10 @@ if(BUILD_TESTING)
     target_link_libraries(mob-drops-actor-death-metadata-unit PRIVATE eternity_game)
     add_test(NAME mob-drops-actor-death-metadata-unit COMMAND mob-drops-actor-death-metadata-unit ${CMAKE_CURRENT_SOURCE_DIR}/tests/data/mob-drops-actor-death-metadata.tsv)
 endif()
+
+# Worker 09: finite float binary arithmetic with original x87 staging.
+if(BUILD_TESTING)
+    add_executable(mob-ai-states-finite-arithmetic-unit tests/mob_ai_states_finite_arithmetic_unit.cpp)
+    target_link_libraries(mob-ai-states-finite-arithmetic-unit PRIVATE eternity_game)
+    add_test(NAME mob-ai-states-finite-arithmetic-unit COMMAND mob-ai-states-finite-arithmetic-unit ${CMAKE_CURRENT_SOURCE_DIR}/tests/data/mob_ai_states_finite_arithmetic-oracle.tsv)
+endif()

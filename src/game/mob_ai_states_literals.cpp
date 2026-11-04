@@ -1,4 +1,4 @@
-#include "eternity/game/mob_ai_states_numeric_assignment.hpp"
+#include "eternity/game/mob_ai_states_finite_arithmetic.hpp"
 #include "eternity/game/mob_ai_states_bindings.hpp"
 #include <algorithm>
 #include <bit>
@@ -44,6 +44,10 @@ bool numeric_comparison(const MobAiParameter& first,const MobAiParameter& second
     if(first.type==2||second.type==2)return relation(floating_value(first),floating_value(second),opcode);
     return integer_comparison(first,second,opcode);
 }
+std::uint32_t x87_integer_bits(double value){
+    if(!std::isfinite(value)||value < -2147483648.0||value >= 2147483648.0)return 0x80000000U;
+    return static_cast<std::uint32_t>(static_cast<std::int32_t>(value));
+}
 void numeric_assignment(MobAiParameter& result,const MobAiParameter& source){
     if(result.type<1||result.type>3||source.type<1||source.type>3)throw std::logic_error("Mob AI assignment requires numeric operands");
     if(result.type==2){
@@ -55,8 +59,7 @@ void numeric_assignment(MobAiParameter& result,const MobAiParameter& source){
         // Original FISTP dword uses signed conversion with truncation even for
         // a DWORD destination. Masked invalid conversions return 0x80000000.
         const auto value=static_cast<double>(source.real);
-        if(!std::isfinite(value)||value < -2147483648.0||value >= 2147483648.0)bits=0x80000000U;
-        else bits=static_cast<std::uint32_t>(static_cast<std::int32_t>(value));
+        bits=x87_integer_bits(value);
     }else bits=source.type==1?static_cast<std::uint32_t>(source.integer):source.dword;
     if(result.type==1)result.integer=std::bit_cast<std::int32_t>(bits);else result.dword=bits;
 }
@@ -82,8 +85,29 @@ bool integer_arithmetic(MobAiParameter& result,const MobAiParameter& first,const
     if(result.type==1)result.integer=std::bit_cast<std::int32_t>(value);else result.dword=value;
     return true;
 }
+bool finite_arithmetic(MobAiParameter& result,const MobAiParameter& first,const MobAiParameter& second,std::int32_t opcode){
+    static_assert(std::numeric_limits<double>::is_iec559&&std::numeric_limits<double>::digits==53);
+    if(first.type<1||first.type>3||second.type<1||second.type>3)throw std::logic_error("Mob AI arithmetic requires numeric operands");
+    if(first.type!=2&&second.type!=2)return integer_arithmetic(result,first,second,opcode);
+    if(opcode<6||opcode>9)throw std::logic_error("Mob AI floating arithmetic opcode is not recovered");
+    if((first.type==2&&!std::isfinite(first.real))||(second.type==2&&!std::isfinite(second.real)))throw std::logic_error("Mob AI nonfinite operand propagation is not recovered");
+    if(std::fegetround()!=FE_TONEAREST)throw std::logic_error("Mob AI floating arithmetic requires original nearest rounding");
+    // Integer coercion stores float32 before the original x87 operation.
+    const double left=floating_value(second),right=floating_value(first);
+    double value=0;
+    switch(opcode){case 6:value=left+right;break;case 7:value=left-right;break;case 8:value=left*right;break;case 9:value=left/right;break;}
+    if(result.type==2){
+        // Masked x87 invalid operations on finite inputs produce negative QNaN.
+        result.real=std::isnan(value)?std::bit_cast<float>(0xffc00000U):static_cast<float>(value);
+    }else{
+        const auto bits=x87_integer_bits(value);
+        if(result.type==1)result.integer=std::bit_cast<std::int32_t>(bits);else result.dword=bits;
+    }
+    return true;
 }
-static std::int32_t interpret_values(MobAiConfiguredFsm& owner,MobAiConfiguredCondition& condition,bool local_reads,ComparisonMode comparisons,bool arithmetic,bool assignment=false,bool compound=false,bool numeric_assign=false){
+
+}
+static std::int32_t interpret_values(MobAiConfiguredFsm& owner,MobAiConfiguredCondition& condition,bool local_reads,ComparisonMode comparisons,bool arithmetic,bool assignment=false,bool compound=false,bool numeric_assign=false,bool finite=false){
     auto& stack=owner.value_stack;
     if(stack.capacity<0||static_cast<std::size_t>(stack.capacity)>stack.slots.size())throw std::logic_error("Mob AI literal stack requires its retained capacity/storage");
     stack.top=-1;condition.words[2]=0;std::uint32_t passed=0;
@@ -133,7 +157,7 @@ static std::int32_t interpret_values(MobAiConfiguredFsm& owner,MobAiConfiguredCo
                 const auto target=owner.variables.find(second.variable_id);
                 if(target==owner.variables.end())throw std::logic_error("Mob AI assignment requires an existing retained writeback target");
                 assign(target->second,numeric);
-            }else if(integer_arithmetic(numeric,first,second,token.opcode))push(stack,numeric);
+            }else if(finite?finite_arithmetic(numeric,first,second,token.opcode):integer_arithmetic(numeric,first,second,token.opcode))push(stack,numeric);
         }else if(token.type==9&&comparisons!=ComparisonMode::none){
             const auto first=pop(stack);const auto second=pop(stack);
             if(comparisons==ComparisonMode::numeric?numeric_comparison(first,second,token.opcode):integer_comparison(first,second,token.opcode))++passed;
@@ -164,4 +188,8 @@ std::int32_t interpret_mob_ai_integer_compound(MobAiConfiguredFsm& owner,MobAiCo
 
 namespace eternity::game {
 std::int32_t interpret_mob_ai_numeric_assignment(MobAiConfiguredFsm& owner,MobAiConfiguredCondition& condition){return interpret_values(owner,condition,true,ComparisonMode::numeric,true,true,true,true);}
+}
+
+namespace eternity::game {
+std::int32_t interpret_mob_ai_finite_arithmetic(MobAiConfiguredFsm& owner,MobAiConfiguredCondition& condition){return interpret_values(owner,condition,true,ComparisonMode::numeric,true,true,true,true,true);}
 }
