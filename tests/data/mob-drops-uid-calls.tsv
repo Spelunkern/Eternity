@@ -1,0 +1,96 @@
+# ps_game.exe SHA256 0fb7c9f13b5bcf186118f8bfe73ab214226b93e8aa502b8e6fded4a8312bc547; direct code references only; indirect aliasing is not proven absent. GenIDU/SetStartID have no direct call sites in this image. QuestionMgr uses its own generator, not global item state.
+# instruction	owner entry	owner	instruction text
+00448bb4	00448b60	CUserQuestionMgr::AddQuestion	call   0x4cbe60
+00457c95	00457b40	CUser::PacketBilling	mov    eax,0x547ce0
+00457c9a	00457b40	CUser::PacketBilling	call   0x4cbe60
+0045d105	0045cd10	CUser::ItemDrop	mov    eax,0x547ce0
+0045d10d	0045cd10	CUser::ItemDrop	call   0x457a50
+0045ef35	0045ede0	CUser::ItemCreate	push   0x547cf4
+0045ef4a	0045ede0	CUser::ItemCreate	cmp    eax,DWORD PTR ds:0x547cec
+0045ef52	0045ede0	CUser::ItemCreate	mov    edx,DWORD PTR ds:0x547ce8
+0045ef5d	0045ede0	CUser::ItemCreate	mov    ds:0x547cec,eax
+0045ef62	0045ede0	CUser::ItemCreate	mov    DWORD PTR ds:0x547ce4,edx
+0045ef6d	0045ede0	CUser::ItemCreate	mov    ds:0x547cf0,eax
+0045ef74	0045ede0	CUser::ItemCreate	mov    eax,ds:0x547cf0
+0045ef79	0045ede0	CUser::ItemCreate	mov    ecx,DWORD PTR ds:0x547ce4
+0045ef84	0045ede0	CUser::ItemCreate	mov    DWORD PTR ds:0x547ce4,ecx
+0045ef91	0045ede0	CUser::ItemCreate	push   0x547cf4
+00460a35	004608b0	CUser::ItemRemake	mov    eax,0x547ce0
+00460a3a	004608b0	CUser::ItemRemake	call   0x457a50
+004626e6	00461fc0	CUser::ItemGemRemoveAll	push   0x547cf4
+004626fb	00461fc0	CUser::ItemGemRemoveAll	cmp    eax,DWORD PTR ds:0x547cec
+00462703	00461fc0	CUser::ItemGemRemoveAll	mov    edx,DWORD PTR ds:0x547ce8
+0046270e	00461fc0	CUser::ItemGemRemoveAll	mov    ds:0x547cec,eax
+00462718	00461fc0	CUser::ItemGemRemoveAll	mov    DWORD PTR ds:0x547ce4,edx
+0046275e	00461fc0	CUser::ItemGemRemoveAll	mov    ds:0x547cf0,eax
+00462765	00461fc0	CUser::ItemGemRemoveAll	mov    eax,ds:0x547cf0
+0046276a	00461fc0	CUser::ItemGemRemoveAll	mov    ecx,DWORD PTR ds:0x547ce4
+00462775	00461fc0	CUser::ItemGemRemoveAll	mov    DWORD PTR ds:0x547ce4,ecx
+00462782	00461fc0	CUser::ItemGemRemoveAll	push   0x547cf4
+0046398e	004633a0	CUser::ItemGemRemovePos	mov    eax,0x547ce0
+00463993	004633a0	CUser::ItemGemRemovePos	call   0x457a50
+0046b8c9	0046af10	CUser::PacketShop	mov    eax,0x547ce0
+0046b8ce	0046af10	CUser::PacketShop	call   0x457a50
+0046bb3d	0046af10	CUser::PacketShop	mov    eax,0x547ce0
+0046bb42	0046af10	CUser::PacketShop	call   0x457a50
+0046fb3e	0046f910	CUser::ExchangeItemAdd	push   0x547cf4
+0046fb52	0046f910	CUser::ExchangeItemAdd	cmp    eax,DWORD PTR ds:0x547cec
+0046fb5a	0046f910	CUser::ExchangeItemAdd	mov    edx,DWORD PTR ds:0x547ce8
+0046fb65	0046f910	CUser::ExchangeItemAdd	mov    ds:0x547cec,eax
+0046fb6f	0046f910	CUser::ExchangeItemAdd	mov    DWORD PTR ds:0x547ce4,edx
+0046fbb5	0046f910	CUser::ExchangeItemAdd	mov    ds:0x547cf0,eax
+0046fbbc	0046f910	CUser::ExchangeItemAdd	mov    eax,ds:0x547cf0
+0046fbc1	0046f910	CUser::ExchangeItemAdd	mov    ecx,DWORD PTR ds:0x547ce4
+0046fbcc	0046f910	CUser::ExchangeItemAdd	mov    DWORD PTR ds:0x547ce4,ecx
+0046fbd9	0046f910	CUser::ExchangeItemAdd	push   0x547cf4
+00477d46	00477740	CUser::PacketMarket	mov    eax,0x547ce0
+00477d4b	00477740	CUser::PacketMarket	call   0x457a50
+0047935b	00478bd0	CUser::PacketMyShop	mov    eax,0x547ce0
+00479360	00478bd0	CUser::PacketMyShop	call   0x457a50
+00479b7a	004797c0	CUser::PacketPoint	push   0x547cf4
+00479b8f	004797c0	CUser::PacketPoint	cmp    eax,DWORD PTR ds:0x547cec
+00479b9c	004797c0	CUser::PacketPoint	mov    ds:0x547cec,eax
+00479ba1	004797c0	CUser::PacketPoint	mov    eax,ds:0x547ce8
+00479ba6	004797c0	CUser::PacketPoint	mov    ds:0x547ce4,eax
+00479bb0	004797c0	CUser::PacketPoint	mov    ds:0x547cf0,eax
+00479bb5	004797c0	CUser::PacketPoint	mov    eax,ds:0x547ce4
+00479bbd	004797c0	CUser::PacketPoint	mov    ds:0x547ce4,eax
+00479bc9	004797c0	CUser::PacketPoint	mov    eax,ds:0x547cf0
+00479bd2	004797c0	CUser::PacketPoint	push   0x547cf4
+0047a23c	004797c0	CUser::PacketPoint	mov    eax,0x547ce0
+0047a241	004797c0	CUser::PacketPoint	call   0x4cbe60
+0047cd2c	0047caf0	CUser::ExchangePvP	push   0x547cf4
+0047cd40	0047caf0	CUser::ExchangePvP	cmp    eax,DWORD PTR ds:0x547cec
+0047cd48	0047caf0	CUser::ExchangePvP	mov    edx,DWORD PTR ds:0x547ce8
+0047cd53	0047caf0	CUser::ExchangePvP	mov    ds:0x547cec,eax
+0047cd5d	0047caf0	CUser::ExchangePvP	mov    DWORD PTR ds:0x547ce4,edx
+0047cda3	0047caf0	CUser::ExchangePvP	mov    ds:0x547cf0,eax
+0047cdaa	0047caf0	CUser::ExchangePvP	mov    eax,ds:0x547cf0
+0047cdaf	0047caf0	CUser::ExchangePvP	mov    ecx,DWORD PTR ds:0x547ce4
+0047cdba	0047caf0	CUser::ExchangePvP	mov    DWORD PTR ds:0x547ce4,ecx
+0047cdc7	0047caf0	CUser::ExchangePvP	push   0x547cf4
+0047e854	0047e6f0	CUser::QuestAddItem	push   0x547cf4
+0047e869	0047e6f0	CUser::QuestAddItem	cmp    eax,DWORD PTR ds:0x547cec
+0047e876	0047e6f0	CUser::QuestAddItem	mov    ds:0x547cec,eax
+0047e87b	0047e6f0	CUser::QuestAddItem	mov    eax,ds:0x547ce8
+0047e885	0047e6f0	CUser::QuestAddItem	mov    ds:0x547ce4,eax
+0047e8ca	0047e6f0	CUser::QuestAddItem	mov    ds:0x547cf0,eax
+0047e8d1	0047e6f0	CUser::QuestAddItem	mov    eax,ds:0x547cf0
+0047e8d6	0047e6f0	CUser::QuestAddItem	mov    ecx,DWORD PTR ds:0x547ce4
+0047e8e1	0047e6f0	CUser::QuestAddItem	mov    DWORD PTR ds:0x547ce4,ecx
+0047e8ee	0047e6f0	CUser::QuestAddItem	push   0x547cf4
+00481750	00480e90	CUser::ProcessCharacterCreate	push   0x547cf4
+00481761	00480e90	CUser::ProcessCharacterCreate	cmp    eax,DWORD PTR ds:0x547cec
+00481769	00480e90	CUser::ProcessCharacterCreate	mov    edx,DWORD PTR ds:0x547ce8
+00481774	00480e90	CUser::ProcessCharacterCreate	mov    ds:0x547cec,eax
+0048177e	00480e90	CUser::ProcessCharacterCreate	mov    DWORD PTR ds:0x547ce4,edx
+004817c4	00480e90	CUser::ProcessCharacterCreate	mov    ds:0x547cf0,eax
+004817cb	00480e90	CUser::ProcessCharacterCreate	mov    eax,ds:0x547cf0
+004817d0	00480e90	CUser::ProcessCharacterCreate	mov    ecx,DWORD PTR ds:0x547ce4
+004817db	00480e90	CUser::ProcessCharacterCreate	mov    DWORD PTR ds:0x547ce4,ecx
+004817e8	00480e90	CUser::ProcessCharacterCreate	push   0x547cf4
+004a6663	004a65a0	CMob::ItemDrop	mov    eax,0x547ce0
+004a6668	004a65a0	CMob::ItemDrop	call   0x4cbe60
+0051fb61	0051fb60	$E18	mov    esi,0x547ce0
+0051ffb0	0051ffb0	$E19	mov    eax,0x547ce0
+00457a51	00457a50	SUniqueIDGenByServer::GenID	call 0x004cbe60 (E8 displacement scan; verify function-entry decode)

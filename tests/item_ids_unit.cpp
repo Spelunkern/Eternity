@@ -27,9 +27,14 @@ int main() {
         require(unique.size()==8000,"Concurrent item ID generation produced duplicates");
         ItemIds exhausted(0);
         for(unsigned int n=0;n<65535;++n) (void)exhausted.next({1000,base});
-        bool refused=false;try{(void)exhausted.next({1000,base});}catch(const std::overflow_error&){refused=true;}
-        require(refused,"Counter wrap was allowed to reissue an item ID");
-        require(exhausted.next({3000,base+std::chrono::seconds{2}})==0x6042000200010000ULL,"Exhausted item interval did not recover at its boundary");
+        require(exhausted.next({1000,base})==0x6042000000000000ULL,"Original low16 counter truncation changed");
+        require(exhausted.raw_next({1000,base})==0x6042000000010000ULL,"Raw and server adapters do not share counter");
+        require(exhausted.next({3000,base+std::chrono::seconds{2}})==0x6042000200010000ULL,"Wrapped item interval did not refresh at its boundary");
+        ItemIds truncated(255);
+        require(truncated.next({0xffffffffffffffffULL,base})==0x60420000000100ffULL,"Snapshot tick did not use low DWORD");
+        require(truncated.next({0x100000000ULL,base+std::chrono::seconds{2}})==0x60420000000200ffULL,"Absolute wrapped deadline did not retain cached calendar");
+        truncated.set_start_id(0xffffffffU);
+        require(truncated.next({1999,base+std::chrono::seconds{3}})==0x60420003000000ffULL,"Baseline DWORD increment did not wrap");
         return 0;
     } catch(const std::exception& error) {std::cerr<<error.what()<<'\n';return 1;}
 }
