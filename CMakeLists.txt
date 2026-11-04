@@ -1159,3 +1159,11 @@ if(BUILD_TESTING)
     target_link_libraries(mob-combat-scheduler-zone-unit PRIVATE eternity_game)
     add_test(NAME mob-combat-scheduler-zone-unit COMMAND mob-combat-scheduler-zone-unit ${CMAKE_CURRENT_SOURCE_DIR}/tests/data/mob-combat-scheduler-zone-oracle.tsv)
 endif()
+
+# Worker 09: full compiled callback composition and recovered factory startup.
+target_sources(eternity_game PRIVATE src/game/mob_ai_states_runtime.cpp)
+if(BUILD_TESTING)
+    add_executable(mob-ai-states-runtime-unit tests/mob_ai_states_runtime_unit.cpp)
+    target_link_libraries(mob-ai-states-runtime-unit PRIVATE eternity_game)
+    add_test(NAME mob-ai-states-runtime-unit COMMAND mob-ai-states-runtime-unit ${CMAKE_CURRENT_SOURCE_DIR}/tests/data/mob_ai_states_runtime-oracle.tsv)
+endif()

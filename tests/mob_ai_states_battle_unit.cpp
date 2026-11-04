@@ -1,4 +1,4 @@
-#include "eternity/game/mob_ai_states_battle.hpp"
+#include "eternity/game/mob_ai_states_runtime.hpp"
 #include "eternity/game/zone_mobs.hpp"
 #include <array>
 #include <bit>
@@ -10,7 +10,7 @@ using namespace eternity::game;
 using Fields=std::array<std::uint32_t,15>;
 unsigned current_case=0;
 void check(bool ok){if(!ok)throw std::runtime_error("Original compiled Battle mismatch case "+std::to_string(current_case));}
-struct Services:MobAiBattleServices,MobAiCompiledServices,ZoneMobServices {
+struct Services:MobAiBattleServices,MobAiRandomServices,MobAiDebugServices,MobAiCompiledServices,ZoneMobServices {
  MobRuntime& mob;MobAiConfiguredFsm& fsm;MobAiBattleDefinition& definition;MobAiBattleTarget target;
  unsigned mutation=0;bool present=false,found=false;std::string trace;
  Services(MobRuntime& m,MobAiConfiguredFsm& f,MobAiBattleDefinition& d):mob(m),fsm(f),definition(d){}
@@ -23,6 +23,9 @@ struct Services:MobAiBattleServices,MobAiCompiledServices,ZoneMobServices {
  void enter(MobRuntime&){emit('E');if(mutation==6){mob.status=17;mob.target_id=88;fsm.current=77;fsm.variables.at(7).integer=99;}}
  std::int32_t travel_condition(MobRuntime&,MobAiConfiguredFsm&,MobAiConfiguredCondition&) override {throw std::runtime_error("Unexpected condition");}
  void invoke(MobAiCompiledFunction,MobRuntime&,MobAiConfiguredFsm&) override {throw std::runtime_error("Unexpected external compiled handler");}
+ std::int32_t random() override {throw std::runtime_error("Unexpected RNG");}
+ void move(MobRuntime&,UserPosition,std::int32_t) override {throw std::runtime_error("Unexpected movement");}
+ void write(std::string_view) override {throw std::runtime_error("Unexpected debug output");}
  std::uint32_t tick_ms() override {throw std::runtime_error("Unexpected zone clock");}
  void send_cell_view(CellCoordinates,const eternity::net::Packet&) override {throw std::runtime_error("Unexpected zone broadcast");}
  std::unique_ptr<MobBroadcast> allocate_broadcast(const eternity::net::Packet&,std::optional<std::uint8_t>) override {throw std::runtime_error("Unexpected broadcast allocation");}
@@ -37,7 +40,7 @@ int main(int argc,char** argv){try{
   mob.status=std::bit_cast<std::int32_t>(input[0]);mob.target_kind=std::bit_cast<std::int32_t>(input[1]);mob.target_id=input[2];mob.next_attack=input[3];mob.current_time=input[4];mob.sleep=std::bit_cast<std::int32_t>(input[5]);mob.stun=std::bit_cast<std::int32_t>(input[6]);mob.attacked=input[7]!=0;mob.in_battle=input[8]!=0;for(unsigned i=0;i<4;++i)mob.attack_enabled[i]=(input[9]&(1U<<i))!=0;mob.attack_speed=std::bit_cast<std::int32_t>(speed);mob.stop=static_cast<std::int32_t>(stop);mob.only_lua_attack=static_cast<std::int32_t>(only_lua);
   MobAiParameter variable(1);variable.variable_id=7;variable.integer=std::bit_cast<std::int32_t>(input[12]);fsm.variables.emplace(7,variable);MobAiVariableDefinition locals;locals.count=1;locals.locals.push_back(variable);MobAiVariableCatalog catalog(1);catalog[0]=locals;
   services.target={42,std::bit_cast<std::int32_t>(input[14]),static_cast<std::uint8_t>(country),static_cast<std::uint8_t>(immunity),static_cast<std::uint8_t>(attackable),static_cast<std::uint8_t>(visible)};services.mutation=mutation;services.present=present!=0;services.found=found!=0;fsm.states[10].enter=[&](MobRuntime& m,MobAiConfiguredFsm&){services.enter(m);};
-  MobAiBattleCompiledServices compiled(definition,catalog,services,services);const std::array<MobAiCompiledStateNames,1> names{{{"BattleTest","","Battle",""}}};connect_mob_ai_functions(mob,fsm,names,compiled);
+  MapDefinition map;MobAiRandomDefinition random_definition;MobAiCompiledRuntime compiled(map,random_definition,definition,catalog,services,services,services);const std::array<MobAiCompiledStateNames,1> names{{{"BattleTest","","Battle",""}}};connect_mob_ai_functions(mob,fsm,names,compiled);
   if(operation)attack_mob_ai_battle(mob,fsm,definition,catalog,now,services.target,services);else execute_mob_ai_configured(mob,fsm,services);
   check((services.trace.empty()?"-":services.trace)==trace);check(services.fields()==expected);mob.zone=nullptr;++cases;
  }
