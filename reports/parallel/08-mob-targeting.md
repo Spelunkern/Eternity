@@ -367,3 +367,150 @@ code or fixtures changed. Last substantive validation remains milestone 5:
 124/124 native tests passed, 2,048 new original search comparisons. This is not
 production integration or original-client playability. Waiting for a concrete
 assignment/interface dependency resolution; no merge, push or main edits.
+
+## Milestone 6: authorized mob_targeting_bindings expansion
+
+Coordinator explicitly expanded ownership to the new mob_targeting_bindings
+prefix. Reviewed current canonical MobRuntimeTemplate and SkillDefinition
+read-only. Added a positional decoder/owned catalog; no shared headers or world
+owners changed. Earlier milestones and fixtures are preserved, not regenerated.
+
+### Recovered loader and Init behavior
+
+ps_game.exe evidence: `CGameData::LoadConstMobSkill` 004c0be0,
+`LoadConstMob` 004c1720, `GetMobSkillInfo` 004027e0, `CMob::Init` 00490040 and
+`SetAttack` 004902f0. Focused Ghidra exports were generated with the locked
+--process wrapper at `work/exports/08-mob-targeting/ps_game.exe/`.
+
+The assembly at 004c1d7a..004c1de8 is decisive: it saves/restores the requested
+SKILL ID and original enabled BYTE. Misleading decompiler aliases call these the
+mob ID and attack index. Those aliases must not be copied into native code.
+
+Each attack starts with the requested uint16 type/skill ID, uint8 byOK, and null
+skill pointer. If type is zero, preserve byOK and clamp attack range to 60 only
+when byOK != 0. If type is nonzero, lookup the separate mob-skill table; accept
+only effect 1, effect 3, or effect 2 with detail 0x29/0x2a. An accepted skill
+retains the original requested ID and byOK, including byOK=0. Rejected/missing
+skills clear type/byOK/pointer but do NOT run the normal-attack range clamp.
+First/second attack attributes >4 become zero; third attribute is retained.
+Third special >15 becomes zero (existing respawn selector convention).
+
+Country at stMOBInfo +0x78 is DERIVED from the third attack attribute, not loaded
+from an independent Country column: raw 1 -> country 0, raw 2 -> country 1,
+everything else -> country 2. Chase range +0x69 is an un-clamped byte. Mob-skill
+wResetTime +0x4a is a uint16 count of SECONDS, including 0 and 65535; multiplying
+by 1000 belongs to targeting, not loading. Skill level is forced to 100 by the
+mob-skill loader. Init retains the existing definition pointer, does not rewrite
+definition/skill bindings, and resets the three runtime attack timers to zero.
+No per-mob skill allocation/copy or reference ownership transfer occurs.
+
+### Positional SQL contract (one-based procedure columns)
+
+Load `usp_Read_MobSkillMaxID_R`, allocate/zero MaxID+1 mob-skill slots, then read
+`usp_Read_MobSkills_R` (82 columns). Only then load `usp_Read_MobMaxID_R`,
+allocate/zero MaxID+1 mob-definition slots and read `usp_Read_Mobs_R` (69 columns).
+These are distinct from user skill definitions/levels. Preserve fetch order;
+duplicate IDs overwrite the same stable slot (last row wins). Null selected
+fields are zero because each original row buffer starts zeroed. Column labels
+are not the binding contract; the native test deliberately supplies duplicate
+misleading labels. Do not use SELECT * from a guessed table or reorder aliases.
+
+| Procedure | Column | Projection / original offset | ODBC binding |
+| --- | ---: | --- | --- |
+| MobSkills_R | 1 | uint16 skill ID, +0 | length 2, C type 5 |
+| MobSkills_R | 17 | uint8 effect, +0x31 | length 1, C type -6 |
+| MobSkills_R | 18 | uint16 detail, +0x32 | length 2, C type 5 |
+| MobSkills_R | 38 | uint16 cooldown seconds, +0x4a | length 2, C type 5 |
+| Mobs_R | 1 | uint16 mob ID, +0 | length 2, C type 5 |
+| Mobs_R | 5 | uint8 AI, +0x26 | length 1, C type -6 |
+| Mobs_R | 45 | uint8 chase range, +0x69 | length 1, C type -6 |
+| Mobs_R | 46 + 8*i | requested uint16 skill/type | length 2, C type 5 |
+| Mobs_R | 47 + 8*i | uint32 attack time | length 4, C type 4 |
+| Mobs_R | 48 + 8*i | uint8 attack range | length 1, C type -6 |
+| Mobs_R | 49/50 + 8*i | uint16 damage/damage add | length 2, C type 5 |
+| Mobs_R | 51/52 + 8*i | uint8 attribute/special | length 1, C type -6 |
+| Mobs_R | 53 + 8*i | uint8 enabled | length 1, C type -6 |
+
+Here i=0,1,2 and attack base is +0x80+20*i (type +0, enabled +2, time +4,
+range +8, damage +10, add +12, attribute +14, special +15, skill pointer +16).
+Country comes from column 67 before the above country mapping. The fixture footer
+records EVERY original GetData column's length/C type, including unused fields.
+The decoder validates required row widths and selected numeric ranges, preserves
+16/32-bit signed-bit-pattern inputs and zero nulls, and rejects missing/out-of-
+allocation rows. Caller must validate MaxIDs fit the supported uint16 ID domain
+before passing them; no implicit narrowing from a database scalar is acceptable.
+It is a targeting projection, not a replacement for all 82 skill fields, all mob
+normalizations, ODBC diagnostics or the original loader's failure/publication FSM.
+
+### Concrete owner/lifetime and minimal canonical patch contract
+
+MobTargetingBindingCatalog allocates both arrays once, fills the skill array
+first, then resolves definitions' non-owning pointers into that array. Copying
+is disabled; moving transfers buffers and preserves pointers (tested). The data
+owner must retain the catalog for longer than every template, pooled MobRuntime
+and targeting/AI callback that references it. Do not return bindings pointing
+into a local ResultSet, temporary decoded row, or temporary catalog. Do not
+resize/replace the skill array while such definitions remain published.
+
+Minimal integration does NOT require changing user SkillDefinition or copying
+world membership: add this catalog to the canonical persistent game-data/template
+owner, initialize it from the same original procedure results/MaxIDs before
+publishing mobs, and expose a required lookup by canonical definition->id.
+MobTargetingRuntimeServices::bindings can return catalog.mob(id)->targeting();
+help/find source adapters read its country/chase_range. Missing definitions must
+fail owner setup rather than return empty bindings. Existing MobRuntime keeps
+its canonical definition pointer and timers; Init must not rebuild this catalog.
+
+If the coordinator elects to fold fields into canonical structs instead: add
+signed country and byte chase_range to MobRuntimeTemplate, three attack binding
+records retaining requested type, RAW enabled byte and nullable stable mob-skill
+reference, and uint16 cooldown_seconds to the separate mob-skill definition
+projection. Existing SkillDefinition effect/detail fields correspond to +0x31 /
++0x32, but its user-skill map must not substitute mob-skill storage. Preserve
+forced mob level 100 and distinct owners. Do not infer a skill from damage or
+conflate enabled=false with absent pointer.
+
+Original GetMobSkillInfo compares index <= stored COUNT, which is MaxID+1; this
+admits a one-past-allocation read. The fixture deliberately avoids that undefined
+slot. Native lookup safely rejects it and out-of-range IDs; holes and ID zero
+remain absent. Do not manufacture a native pointer from adjacent allocation
+contents. This boundary is documented, not claimed as deterministic original
+behavior. Live skill reload must update existing slots in place or hold all old
+owners until quiescent; this startup decoder does not implement reload or partial
+publication on SQL failure. The original runtime can observe live pointed-to
+cooldown changes; taking permanent per-mob cooldown snapshots would lose that.
+
+### Validation scope
+
+New oracle executes COMPLETE original skill and mob loaders, real GetMobSkillInfo,
+Init and SetAttack. SQL/allocator/cookie/random/tick/path/compiled-AI/Lua boundaries
+are explicit ports. 256 paired full loads yield 2,048 skill-slot comparisons,
+1,024 definition comparisons and 1,024 Init checks. All 3,072 attack projections
+match; 762 have skills, including 248 present-but-disabled; 178 normal attacks
+retain nonzero enabled with NO skill. Cases include missing/rejected effects,
+effect-2 details 40/41/42/43, wide enabled bytes, nulls, range clamps, unsigned
+cooldown boundaries, duplicate rows, country mapping and stable references.
+Native tests also compose existing Init and verify allocation/row guards and
+pointer-preserving catalog move. Old targeting fixtures were not repeated by
+the new oracle.
+
+Implementation commit: `4ab7f85` (workers/08-mob-targeting).
+
+- Locked Ghidra --process export: exit 0; log
+  `work/mob-targeting-bindings-ghidra.log`.
+- `python3 tools/dev.py build`: exit 0, no compiler warnings;
+  `work/mob-targeting-bindings-build.log`.
+- `python3 tools/dev.py test`: exit 0, all 125 native tests passed (35.87 s).
+  New `mob-targeting-bindings-unit`: pass, 0.15 s;
+  `work/mob-targeting-bindings-test.log`.
+- Original full-load fixture regenerated identically under
+  `work/mob-targeting-bindings-repeat.tsv`; byte comparison exit 0.
+- All twelve original EXE/PDB entries passed SHA256SUMS. `git diff --check`
+  clean. No generated Ghidra files, credentials or database data tracked.
+
+Actual restored SQL distribution comparison remains coordinator integration work:
+query the four ORIGINAL procedures above under Eternity's isolated SQL lock,
+retain their exact positional result order, then decode before enabling the
+production resolver. No SQL lifecycle/schema operation or credential exposure
+was performed. Required world visitors/FSM/helper services remain unconnected;
+this decoder and its tests do not make the server playable.
