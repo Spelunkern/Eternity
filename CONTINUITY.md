@@ -1590,3 +1590,10 @@ retention during a reentrant frame: a canonical pin or proven deferred reuse is
 still required before integrating that path. Ingress 03+09+pause passed all four
 focused tests, and its full build is still running; main SQL is queued. No live
 original-client admission or production game loop has been established.
+
+Resume validation update: the combined ingress branch completed its full build
+(636/636 build steps) and is queued for isolated SQL; its four focused tests
+had already passed. The main baseline SQL phase has acquired the shared lock
+and is running. Independent 07 completed its 642-step build and isolated SQL
+integration (`.local/vertical-inventory-full-{build,sql}.log` in that worktree);
+this does not establish live ActorScene or gameplay wiring.
