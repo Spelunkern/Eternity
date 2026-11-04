@@ -1809,3 +1809,11 @@ Independent 03 has an uncommitted inbound zone-wait/outbound-cipher split in
 `WorldProtocol` and new tests. It is not yet committed or validated; the original
 1000-snapshot queue, actual system/NProtect routing, lifecycle generations and
 production scheduler bindings remain separate requirements.
+
+World integration session 28365 passed the combined `vertical-world-unit` on
+`30d9e66`: actual primary/world/zone owners execute the mob idle/death frame
+before the one population pass, and the removed obelisk spawn remains absent
+until respawn. Log `.local/composed-world-frame.log`. Its second targeted
+`vertical-mobs-cursor-unit` is still queued/running. The test uses fixture AI
+services; canonical per-mob retention, real providers and the scheduler remain
+required before live gameplay.
