@@ -585,3 +585,111 @@ view using retained_inventory_item(0,5); the borrow is not a lifetime lease. Roo
 Actor serialization/lifetime must cover each whole callback sequence. Avoid
 replacing the retained owner with a copied inventory or second pool. Waiting for
 integration review or another explicitly scoped task.
+
+
+## Milestone 12: immediate Actor effect-removal DB delivery
+
+Implementation commit: `c964d62b52b6ca64403b1850c78807aa36b30845`.
+
+Read latest main continuity/parallel notes and worker01 d9bb675/8fce79c report.
+Expanded ownership covers actor.hpp/actor.cpp and matching tests. Inventory API
+and prior commits are preserved; worker06/07 adapters, zone/users/mobs, skill and
+SQL owners were not edited. No SQL lifecycle operations or credential changes.
+All twelve original EXE/PDB hashes pass; work/mob-drops-effect-transport-hashes.log.
+
+Original evidence (ps_game.exe, complete Ghidra exports / instruction execution):
+
+| Site | Immediate backend / client behavior |
+| --- | --- |
+| SendSkillRemove 00482a70 | 9-byte0902(account DWORD,skill WORD,level BYTE), then6-byte050e(instance DWORD); send return ignored |
+| RemApplySkillToMOB00489560 / Sleep004893a0 / Hide00489290 | unlink,0902,050e,original state reversal/free order |
+| ChkEndTimeSkill004865b0 / map check00484680 | completed unlink before0902/050e, then unapply/free and deferred party notices |
+| PvPClearDebuff0047c610 |0902 before cancellation/free; no050e |
+| ItemEquipmentRem004557ed..00455996 / AddApplySkillBuff00484f86..004850a2 | selected element removals0902/050e before unapply/free |
+| ClearApplySkillByDeath00488000 | selected reversal then0902/free; no050e |
+| PacketUserDBSetInfo0046d780 case0505 / AddApplySkill00487ce0 | filtered transient and offline-expired rows send0902; skipped unknown/non-effect/map-blocked rows do not |
+| ResetCharacter0044a050 | runtime release only, no persistence erase/0902/050e |
+
+Therefore current EffectCycle::erase_persisted hooks correspond to original0902
+sites, including restoration cleanup. EffectReplica::erase itself is NOT globally
+changed. release_all/shutdown and direct replica/save operations remain non-sending.
+Application0901 delivery is outside this removal assignment and remains unchanged.
+
+Actor now preserves its previous first-match replica erase, then sends exactly
+one0902 through a required ActorEffectDatabase binding before its existing client
+hook. It sends even when the mirror has no matching row; no acknowledgment gates
+client reversal/release. Packet account comes from account_id(), not Actor::id();
+instance ID is only in050e. No second cache, runtime pool or generic outbox added.
+
+Binding/construction:
+
+- New constructor overload accepts ActorEffectDatabase& explicitly. The existing
+  constructor remains source-compatible and detects an explicitly composed
+  ActorScene+ActorEffectDatabase adapter. This binds before ActorLoadPipeline's
+  restoration callbacks without editing that separately owned loader.
+- A legacy unbound actor can be inspected or shut down. Removal requires binding;
+  public Actor action preflight rejects an unbound active actor before mutation.
+  Direct EffectObserver callbacks are noexcept and fail fast if unbound. There is
+  no fallback send_self route, no silent DB no-op and no default-success sink.
+- Remote deployment supplies its real DB-agent queue/connection, retaining/copying
+  bytes before return. For cohosted native services ActorEffectReplicaDelivery is
+  a concrete route to the EXISTING SkillReplica (CharacterReplica::skills()). It
+  uses the SAME supplied recursive cache mutex as character saves, calls actual
+  apply(), and requires diagnostics for rejected/failed requests. It constructs
+  no replica/pool/connection and does not invent retry/rollback semantics.
+- Actor, scene, transport, receiver, cache mutex and diagnostics must be retained
+  through callbacks. Transport handles failures without throwing or blocking the
+  original reversal; root owner chooses the real route before loading/actions.
+  Do not feed the packet back into Actor::erase_persisted (double erase/recursion).
+
+Actual DB-agent evidence: ps_dbAgent.exe PacketUserSkillApply00406250 case0902
+unlinks the first matching cached pair WITHOUT recycling. The concrete delivery
+uses existing SkillReplicaPool::strand and preserves later skill_save_plan /
+SaveCharacter00423f55..004242c2 behavior. Runtime applied-skill ID release remains
+an existing required ActorScene service; no new native runtime heap is claimed.
+
+Validation:
+
+- Complete original SendSkillRemove execution:512 cases, alternating send return
+  values, account/skill/level boundaries and separate instance IDs. Exact0902 and
+  050e bytes/order match actual Actor removal. Only DB/client send boundaries are
+  observed ports; the original construction/control instructions execute.
+- Existing2304 original shape/sleep traces now pass through actual Actor observer,
+  transport and replica. Full DB/client/world/ID-release traces match, with unlink
+  and first-match mirror erase observed before DB, then client, then release.
+  EffectWorld operations remain explicit original-fixture ports, not new gameplay
+  implementations. Runtime original heap release is in the existing oracle;
+  native release boundary remains the mandatory Scene provider.
+-512 concrete receiver compositions also execute actual SkillReplica and its
+  existing pool: one duplicate removed/stranded, survivor timer9 retained,
+  available count unchanged, and canonical delete-all/add-survivor save plan
+  unchanged. Required receiver diagnostics observe malformed/wrong-owner requests.
+- Native checks cover explicit constructor and composed-scene binding, unbound
+  action rejection without mutation, restoration filters/expiry versus skipped
+  rows, death/duel without050e, shutdown withoutDB and direct replica semantics.
+  Existing Actor/action/hide/equipment/duel/HP fixtures now record explicit backend
+  bindings; their established client/world traces remain unchanged.
+- Build exit0, no compiler warnings in this block:
+  work/mob-drops-effect-transport-owner-build.log. Python oracle py_compile and
+  git diff --check pass. Original fixture generated under work/ before copy.
+- FULL SUITE IS NOT PASSED:136/137 pass in40.61seconds; ctest exit8 / dev wrapper
+  exit1. Only failure is zone-users-unit: "Actor effect removal requires a
+  DB-agent transport binding". Log work/mob-drops-effect-transport-tests.log;
+  detailed successful new outputs in build/Testing/Temporary/LastTest.log.
+- That existing zone fixture is worker01-owned and still constructs actors with
+  hide effects but no DB transport. Its source was left untouched. A minimal
+  recording-provider patch is prepared at
+  tests/data/mob-drops-effect-transport-zone-fixture.patch; git apply --check passes.
+  This check is NOT a claim that the patched fixture was executed. Explicit
+  authorization was requested asynchronously because file ownership is outside
+  this scope; no reply/approval has been inferred from elapsed time.
+- No SQL was executed in this transport/cache block. Actual canonical save-plan
+  composition is verified; coordinator full isolated SQL/character integration
+  remains required under its disposable-catalog lifecycle ownership.
+
+Integration/remaining: worker01/coordinator must migrate the zone fixture and any
+real scenes with removal-capable actors to the required transport binding. Apply
+and run the prepared patch only with that owner's authorization. Root must select
+actual DB queue or cohosted receiver on the same cache/save lock and retain runtime
+ID services; immediate packet construction/cache delivery is implemented, full
+root network/world assembly and global playability are not claimed.
