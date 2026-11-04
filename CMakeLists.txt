@@ -1695,3 +1695,13 @@ if(BUILD_TESTING)
     target_link_libraries(mob-targeting-lifecycle-route-unit PRIVATE eternity_game)
     add_test(NAME mob-targeting-lifecycle-route-unit COMMAND mob-targeting-lifecycle-route-unit ${CMAKE_CURRENT_SOURCE_DIR}/tests/data/mob-targeting-lifecycle-route-oracle.tsv)
 endif()
+
+# Worker 09: integer CalculateParam expressions and actual function/F_OUT pipeline.
+if(BUILD_TESTING)
+    add_executable(mob-ai-states-argument-math-unit tests/mob_ai_states_argument_math_unit.cpp)
+    target_link_libraries(mob-ai-states-argument-math-unit PRIVATE eternity_game)
+    add_test(NAME mob-ai-states-argument-math-unit COMMAND mob-ai-states-argument-math-unit ${CMAKE_CURRENT_SOURCE_DIR}/tests/data/mob_ai_states_argument_math-oracle.tsv)
+    add_executable(mob-ai-states-expression-pipes-unit tests/mob_ai_states_expression_pipes_unit.cpp)
+    target_link_libraries(mob-ai-states-expression-pipes-unit PRIVATE eternity_game)
+    add_test(NAME mob-ai-states-expression-pipes-unit COMMAND mob-ai-states-expression-pipes-unit ${CMAKE_CURRENT_SOURCE_DIR}/tests/data/mob_ai_states_expression_pipes-oracle.tsv)
+endif()
