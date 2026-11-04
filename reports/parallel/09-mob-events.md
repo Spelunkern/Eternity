@@ -2232,3 +2232,81 @@ providers must continue to error. SQL/contracts did not change; coordinator owns
 isolated SQL and complete integration checks. The server is not playable.
 
 Implementation commit: `e97c5bcf36db42f8631049a7ed6220738a2bf203`.
+
+## Milestone 32 — integer CalculateParam expressions through real function vectors
+
+### Evidence / behavior
+
+`ps_game.exe`, `CKFSM<CMob>::CalculateParam` `0049d020`, kind-8 operand
+extraction/copy `0049d436..0049d4df`, opcode table `0049ed10`, add
+`0049d4f7`, subtract `0049d789`, multiply `0049da17`, divide
+`0049dca7..0049df3b`. Full Ghidra export and original instructions recover
+right-first pops, copying the second value into numeric scratch, typed result
+pushes and the private capacity-20 stack.
+
+Added explicit arithmetic argument and expression-system providers. Int/DWORD
+opcodes 6..9 wrap add/subtract/multiply and use signed division only for int/int;
+mixed/DWORD division is unsigned. Result type, inactive payloads and VariableID
+come from the second operand. Arithmetic contributes no map write. Subsequent
+unknown numeric literals reuse the copied/result scratch. For admitted integer
+operands, kind-8 opcodes outside 6..16 pop/copy but push no result, matching the
+original dispatch. Assignment/compound opcodes 10..16 and float argument arithmetic
+remain explicit errors, as do undefined pops and faulting integer division.
+
+`MobAiExpressionServices` sends computed arguments through the same owned vector,
+actual bound queries and F_OUT path recovered in milestone 31. Calculated
+VariableID is retained for alias writeback; result publication follows F_OUT.
+The value-only CalculateParam and piped providers retain their earlier boundary.
+No nested system-call or nonfinite arithmetic behavior is invented.
+
+### Validation
+
+- 2,048 direct sequences / 4,095 complete original CalculateParam executions,
+  all four int/DWORD pairings, extrema/high-bit/wrapped operations, valid signed
+  and mixed division, local/literal operands, three cursor-delimited argument
+  segments, declared-count truncation, near-capacity private stacks, overflowed
+  final tops and scratch reuse. Unknown dispatch cases 0/5/17/-1 are included.
+  Every retained output byte/cursor/map/main-stack byte matches native. Real
+  capacity-20 constructors/destructors execute; all 10,239 allocations are freed
+  and poisoned. Undefined/faulting operand paths are excluded from equivalence.
+- 1,024 additional full-pipeline sequences / 1,920 original TravelCondition calls,
+  2,271 actual original CMob virtual DoFunction calls and 5,721 observed arguments.
+  Integer expressions feed real vector allocation/growth, known queries and
+  original F_OUT writes; all 27,826 allocations are freed and poisoned. Exact
+  defined argument payloads, full retained stack/map bytes, subject mutations,
+  cursor/top and per-round counts match native. 309 final maps change.
+- Only allocation/free/security-cookie imports are adapted in both oracles;
+  no arithmetic/parser/vector/map/query result port. Positive metadata remains
+  an explicit projection on known queries, not original factory-asset recovery.
+  String argument tails beyond NUL remain excluded as indeterminate storage;
+  retained map/stack/output storage is compared in full.
+- Actual native update expression computes Source*3, writes through its copied
+  VariableID and feeds a later state condition: Source 5 writes 15 and stays;
+  Source 10 writes 30 and enters the next state. Existing missing-target/first-
+  argument/callback metadata guards remain tested. Float argument arithmetic,
+  assignment and CPU-fault integer paths have explicit-error tests.
+- Both oracles regenerate byte-identically; original SHA256SUMS pass; diff check
+  clean. Build exit 0, no compiler warnings;
+  `work/mob_ai_states_argument_math-build.log`.
+- `python3 tools/dev.py test`: exit 0, 152/152 tests pass (47.48 s),
+  direct argument arithmetic test 4.12 s and expression pipeline test 1.11 s;
+  `work/mob_ai_states_argument_math-tests.log`.
+
+### Required integration / remaining work
+
+No shared canonical header or MobRuntime field change was needed. Preserve the
+private argument stack versus the existing owner's main stack, shared cursor,
+left/result VariableID and actual per-owner metadata/instance bindings. The
+existing coordinator request for retained SysFuncMap counts/CKFunctionParam
+vectors and +48 mob identity remains unchanged. No second production FSM/map or
+world no-op provider was introduced.
+
+CalculateParam assignment/compound updates, float arithmetic and nested calls,
+other DoFunction/world handlers, nonfinite propagation, nonnumeric comparisons,
+full factory/asset decoding and root world/Lua/scheduling/destruction remain open.
+Next independent block can recover nested system calls inside CalculateParam,
+reusing the owned argument/F_OUT pipeline without resetting the outer expression
+cursor or stack. SQL/contracts did not change; coordinator owns isolated SQL and
+complete integration checks. The server is not playable.
+
+Implementation commit: `6ab5cc4d3efd45a6b0b36a658614b979dc578567`.
