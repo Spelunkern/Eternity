@@ -5,6 +5,7 @@ import os
 from pathlib import Path
 import subprocess
 import sys
+import uuid
 from parallel_lock import resource_lock
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -20,6 +21,10 @@ def run():
         subprocess.run(["docker", "build", "-f", "deploy/Dockerfile.dev", "-t", IMAGE, "."], cwd=ROOT, check=True)
         return
     command = ["docker", "run", "--rm", "--mount", f"type=bind,source={ROOT},target=/src"]
+    container_name = None
+    if args.action in ("build", "test"):
+        container_name = "eternity-dev-" + uuid.uuid4().hex
+        command += ["--name", container_name]
     if args.action in ("run", "integration"):
         env = ROOT / ".local" / "runtime.env"
         if not env.is_file():
@@ -59,7 +64,13 @@ def run():
         return
     else:
         command += ["build/eternity-server", *args.arguments]
-    subprocess.run(command, cwd=ROOT, check=True)
+    try:
+        subprocess.run(command, cwd=ROOT, check=True)
+    except BaseException:
+        if container_name is not None:
+            subprocess.run(["docker", "stop", "--timeout", "5", container_name],
+                           stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, check=False)
+        raise
 
 
 def main():
