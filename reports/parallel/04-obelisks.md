@@ -371,8 +371,9 @@ The explicit portal projection binds nullable country and open-flag pointers;
 ordinary inputs are stable spans of map records. Required
 `ObeliskRuntimeOwnershipClock` exposes original packed `GetSystemTime`
 **004cb8e0** and `SubTimeSecond` **004cb9d0** semantics without default no-ops.
-The native coordinator does not claim to implement those calendar helpers or
-replace them with Unix/host calendar arithmetic. Original fixtures observe only
+Their native bodies are now implemented by the calendar milestone below, with
+required OS APIs rather than Unix/host calendar approximations. These earlier
+ownership-only fixtures observe only
 these two ports; actual lookup, branch/packing and **_allmul 0050d3b0** execute.
 512 cases cover ordinary/portal routing, duplicate/missing IDs, null portals,
 zero timestamps, neutral/last-country decoding, raw signed portal countries,
@@ -394,7 +395,8 @@ Validation:
 
 No SQL queries/schema/fixtures changed; final isolated SQL integration remains
 coordinator-owned. Decode persisted triplets and invoke this function before
-normal startup; actual packed calendar and DB/world dispatch remain required.
+normal startup; native calendar helpers are available below, while OS calendar
+APIs and DB/world dispatch remain required.
 
 Map ownership clarification from **CZone::MapInit 0041c8a0**, assembly
 **0041d010–0041d01b**: only `m_nCreateType == 0` attaches the zone to the original
@@ -402,6 +404,76 @@ CMap and invokes InitObelisk. This path does not clone obelisk records as it doe
 linked-mob records. Earlier per-zone wording must not be read as permission to
 instantiate independent ownership copies for every created map instance. Bind
 normal map records to its primary zone, with stable respawn/member sources.
-Further independent work remains configuration/source binding and packed
-calendar implementation; production world integration is not complete and the
+Further independent work remains configuration/source binding and OS calendar
+adapter wiring; production world integration is not complete and the
 server is not playable.
+
+## Calendar helper milestone — local packing and SubTimeSecond
+
+Implementation commit: `16f1e66075d50228f5dac44166e498890b8ceef1`.
+
+Recovered `ps_game.exe` **GetSystemTime 004cb8e0** and
+**SubTimeSecond(uint32,uint32) 004cb9d0**, locked focused Ghidra export plus
+assembly. `ObeliskRuntimeCalendarClock` now implements the existing ownership
+clock interface with these native helper bodies:
+
+- The misleadingly named GetSystemTime wrapper calls **GetLocalTime**, not UTC.
+  Pack the 16-bit calendar fields by wrapping additive shifts. There are no
+  original year/range checks; valid 2000..2063 timestamps match the usual format,
+  but years and oversized fields wrap/carry rather than throwing. Weekday and
+  milliseconds are ignored.
+- Decode the second operand first, then the first, with six-bit year +2000 and
+  month/day/hour/minute/second masks. Call SystemTimeToVariantTime in that order,
+  starting each output at +0.0 and ignoring its boolean return, as the original.
+- Spill the OLE-day subtraction to binary64, multiply by 86400 at default 53-bit
+  precision, truncate to signed 64 bits and return only the low 32 bits. Preserve
+  unsigned wrap for negative differences. Do not replace this with rounded or
+  exact civil-time seconds: 427 of the 1,065 valid-calendar fixture pairs differ
+  from exact integer civil seconds because of the original floating truncation.
+- Original CRT evidence: **_fpmath 00506081**, call **00506097**, and
+  **_setdefaultprecision 0051136e** set 53-bit precision. The oracle explicitly
+  uses its 0x027f control word; the native arithmetic uses binary64 spills.
+
+Only the OS imports remain mandatory platform services:
+`ObeliskRuntimeCalendarPlatform::local_calendar` and `variant_day`. They have no
+no-op/default approximation. Calendar acquisition/selection and OLE conversion
+semantics must be supplied by the platform owner. This block does not claim a
+native SystemTimeToVariantTime implementation or substitute generic Gregorian
+normalization for unverified OLE behavior. Existing ownership restoration can
+use the concrete calendar clock without further shared-header changes.
+
+The fixture executes real original GetSystemTime/SubTimeSecond and 512 complete
+SetKeepObelisk restorations with those helpers unpatched. Only GetLocalTime and
+SystemTimeToVariantTime imports are observed. 2,365 OLE responses are captured
+from **Wine 11.20** through an isolated generated Winelib probe; this is platform
+compatibility evidence, not execution of a Microsoft Windows OLE DLL. Wine's
+prefix/probe/output stay ignored under `work/`; probe compilation takes the
+shared build lock. Production native targets do not link or invoke Wine.
+
+Cases: 264 raw/wrapping calendar packs, 1,229 unsigned second differences,
+leap/day/year boundaries, future/reversed timestamps, failed OLE conversion,
+zero timestamps and 512 restorations retaining the original 24-hour calculation.
+Required calendar provider boundaries and real ownership composition are checked;
+no live SQL or world provider completion is claimed.
+
+Validation:
+
+- `python3 tools/dev.py build`: exit 0, no compiler warnings
+  (`work/obelisk-calendar-build.log`).
+- `python3 tools/dev.py test`: exit 0, **126/126 tests passed**, 44.97 seconds
+  (`work/obelisk-calendar-tests.log`), including all seven obelisk suites.
+- Original generator/regenerator: exit 0; final
+  `work/obelisk-runtime-calendar-final.tsv` matches the tracked fixture byte-for-byte.
+  First comparison after adding probe build locking failed because its waiting
+  diagnostic polluted stdout. Routed lock diagnostics to stderr and verified
+  regeneration again (`work/obelisk-calendar-generation.log`); that first
+  comparison is not counted as passed. Native fixtures/tests were unchanged.
+- Independent arithmetic check: all 1,229 original differences match explicit
+  binary64 subtraction/multiplication/truncation with the captured OLE values.
+- Locked focused Ghidra export: exit 0 (`work/obelisk-calendar-ghidra.log`).
+- Final `sha256sum -c SHA256SUMS`: exit 0 for all original EXE/PDB pairs
+  (`work/obelisk-calendar-final-hashes.log`). `git diff --check`: clean.
+
+SQL remains unchanged and final isolated integration remains coordinator-owned. Configuration/source binding, actual OS
+calendar adapter, transport/KC/portal services and production dispatch remain
+open. The server is not playable.
