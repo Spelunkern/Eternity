@@ -1021,3 +1021,30 @@ classification are now verified in membership/request compositions. No canonical
 Actor/zone/inventory change, extra party field, guessed heap return or main edit
 was needed. Actual raid creation/conversion and remaining PacketParty raid
 opcodes are concrete next scope; playable-server completion is not claimed.
+
+## Assignment checkpoint — repeated EnterRaidParty/LeaveRaidParty scope
+
+Re-read current coordinator continuity/parallel ownership and reviewed commits
+ba4f407/1c14552 and 5fc2198/d38c171. Coordinator continuity now records the
+regular raid membership review and queues it during the fourteenth integration
+freeze. The repeated assignment's actual entry/leave and PacketParty/ExpelUser
+compositions are implemented and verified in Blocks 12/13, including actual
+original transport composition. No additional implementation gap in those
+assigned routines was identified in this checkpoint; no tests were rerun or
+new gameplay coverage claimed. Worker tree was clean before this report update;
+`git diff --check` passes. This is a documentation-only handoff.
+
+Concrete next-task proposal within a newly confirmed raid dispatch scope:
+recover `ps_game.exe CParty::SetRaidParty 004458f0` and its callers in
+`CUser::PacketParty 004676c0`, composing normal-to-raid conversion with the SAME
+registry/membership owner and actual send adapter. Resolve the related leader
+operations (`SetRaidPartyBoth 004451e0/004452f0`,
+`SetRaidPartySubBoth 00445220/004452a0`) and distinguish raid-specific expulsion
+`ExpelRaidPartyUser 00446cd0` from the already recovered normal-request
+ExpelUser. Addresses are confirmed by complete Ghidra functions.tsv inventory;
+these bodies are NOT claimed implemented by this checkpoint.
+
+Separately, coordinator/root owners must supply the retained Actor binding and
+mandatory real pool/worker/lookup/scene/log/guild services documented above.
+Canonical Actor/inventory/zone sources remain read-only. Further repeated tests
+of the same entry/leave functions do not close those production dependencies.
