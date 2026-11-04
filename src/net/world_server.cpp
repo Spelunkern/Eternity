@@ -58,6 +58,7 @@ struct WorldServer::Impl::Connection : std::enable_shared_from_this<Connection> 
     std::array<std::uint8_t,8192> input{};
     std::deque<std::shared_ptr<Packet>> output;
     std::deque<Packet> pending;
+    std::deque<Packet> received;
     asio::strand<asio::thread_pool::executor_type> worker;
     asio::executor_work_guard<asio::any_io_executor> lifetime;
     std::unique_ptr<WorldApplication> application; // Worker strand only.
@@ -82,7 +83,7 @@ struct WorldServer::Impl::Connection : std::enable_shared_from_this<Connection> 
         if(protocol) protocol->close();
         asio::error_code ignored;socket.cancel(ignored);socket.shutdown(tcp::socket::shutdown_both,ignored);socket.close(ignored);
         if(auto server=owner.lock()) server->connections.erase(id);
-        output.clear();pending.clear();queued_bytes=0;
+        output.clear();pending.clear();received.clear();queued_bytes=0;
         asio::post(worker,[self=shared_from_this()] {
             if(self->application) {
                 try {self->application->close();} catch(...) {self->application_failed();}
@@ -158,9 +159,25 @@ struct WorldServer::Impl::Connection : std::enable_shared_from_this<Connection> 
                 const auto connection=weak.lock();if(!connection || connection->closed) return;
                 if(failed) return connection->close();
                 connection->working=false;if(initial) connection->loaded=true;
-                connection->schedule();
+                connection->process_received();
             });
         });
+    }
+    // Protocol state can change during an application call. Decrypt and
+    // dispatch subsequent frames only after that call and its channel posts
+    // have run on the socket executor, preserving the incoming cipher order.
+    void process_received() {
+        try {
+            while(!closed && !working && !received.empty()) {
+                auto packet=std::move(received.front());received.pop_front();
+                auto event=protocol->receive(std::move(packet),world_now_ms());
+                if(event.close) return close();
+                for(auto& reply:event.replies) send(std::move(reply));
+                if(closed) return;
+                if(event.application) pending.push_back(std::move(*event.application));
+                if(event.connected || event.application) schedule();
+            }
+        } catch(const std::exception&) {close();}
     }
     void read() {
         if(closed) return;
@@ -169,15 +186,9 @@ struct WorldServer::Impl::Connection : std::enable_shared_from_this<Connection> 
             if(error) return self->close();
             try {
                 for(auto& packet:self->decoder.feed(std::span(self->input).first(count))) {
-                    auto event=self->protocol->receive(std::move(packet),world_now_ms());
-                    if(event.close) return self->close();
-                    for(auto& reply:event.replies) self->send(std::move(reply));
-                    if(self->closed) return;
-                    if(event.application) {
-                        if(self->pending.size()>=8) return self->close();
-                        self->pending.push_back(std::move(*event.application));
-                    }
-                    if(event.connected || event.application) self->schedule();
+                    if(self->received.size()>=8) return self->close();
+                    self->received.push_back(std::move(packet));
+                    self->process_received();
                     if(self->closed) return;
                 }
             } catch(const std::exception&) {return self->close();}

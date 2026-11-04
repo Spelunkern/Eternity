@@ -122,6 +122,22 @@ int main() {
             retained.send({9,1,88});retained.enter_world();retained.disconnect();
             require(fixture.registry->size()==0 && fixture.world.application_failures()==0,"Disconnect leaked account or application failure");
         }
+        // A second frame can arrive while the first application call is still
+        // preparing the transition. It must be decoded after the posted state
+        // change rather than discarded as a character-selection opcode.
+        {
+            Fixture fixture(Behavior::block_receive);Peer peer(fixture,fixture.reserve());
+            require(peer.selection()==Packet({9,1,0}),"Missing initial application packet");
+            peer.command(1);
+            fixture.state->wait([&]{return fixture.state->entered;});
+            Packet entry{1,2,0};peer.outgoing.crypt(entry);peer.socket.write(net::frame(entry));
+            std::this_thread::sleep_for(50ms);
+            fixture.state->release();
+            require(peer.selection()==Packet({9,1,1}),"Selection packet order changed");
+            require(peer.in_world()==Packet({1,2,1}),"World transition packet changed");
+            require(peer.in_world()==Packet({9,1,2}),"Pipelined world entry was discarded");
+            peer.close();fixture.state->wait([&]{return fixture.state->destroyed==1;});
+        }
         // A remote close, account replacement and server stop must all wait for open/receive.
         for(const auto behavior:{Behavior::block_open,Behavior::block_receive}) {
             for(unsigned int cause=0;cause<3;++cause) {
