@@ -949,3 +949,105 @@ reruns with unchanged code; milestone 9 records the last 127-test/full-record/
 restored-SQL results. No main edits, SQL lifecycle writes, merges or pushes.
 Waiting for integration/interface resolution or a new scoped task; the server
 is still not playable.
+
+## Milestone 10: direct shared-cursor visitor and live targeting assembly
+
+Implementation commit: `6debf69` (workers/08-mob-targeting). Explicit expanded
+ownership covered zone_mobs.hpp/cpp and corresponding tests on this branch;
+main, Actor, zone-user ownership and worker03 files were not changed.
+
+Evidence remains ps_game.exe `FindHelpNormal` 0049ff70, `FindHelpNormal2`
+004a0200, `FindHelpAttack` 004a0470, `SSyncList<CMob>::Front` 0041f190,
+`Next` 0041f1c0, `Remove` 00424ac0, `AddBack` 00424a80 and `CCell::FindMob`
+00423680. Original helpers retain the cell critical section across SetTarget
+callbacks and advance the SAME list cursor after callbacks. Reused the complete
+milestone 4 original execution fixture, including real original list mutations;
+its SetTarget mutation driver remains an explicit port, not original AI execution.
+
+`ZoneMobs::visit_cell(CellCoordinates, const function<void(MobRuntime&)>&)` now
+exposes that existing cursor directly. It synchronously visits current members,
+then advances using the retained cell only. No actor dereference follows the
+callback, no next iterator is saved, and no cursor is restored. Removing current
+rewinds to predecessor, append is visible, nested successful find changes the
+remaining traversal, and nested miss/complete visit leaves the sentinel so the
+outer traversal restarts at head. Empty cells remain owned by ZoneMobs.
+Existing appearance/removal sends now use this SAME visitor. Existing all/in_cell
+snapshot APIs remain available but targeting does not use them.
+
+The 450-case cursor unit now invokes the direct production visitor; the packet
+probe is removed. Events/final membership remain identical to the original.
+Represented L/U events still describe owner exclusion boundaries; they do not
+claim new native OS mutexes or prove concurrent locking correctness.
+
+New `MobTargetingZone` borrows the actual ZoneMobs and full persistent binding
+catalog. Help projects current runtime FSM status/type/position and catalog AI;
+source country/radius come from the catalog, bounds from existing MapGeometry.
+Each acquisition calls the actual MobRuntime SetTarget bridge with initialize
+false, and refreshes live source position/type afterwards. Root SetTarget uses
+catalog attack links/enabled bytes/cooldowns and routes AI help recursively back
+to this coordinator. There is no duplicate mob/skill map, packet traversal,
+temporary SkillDefinition, snapshot cursor or replacement world owner.
+
+The new assembly unit verifies real FSM dispatch observing the published target,
+current removal and append from dispatch, separate retained subject lifetime,
+source type/position and user ID changes, subsequent acquisitions, root help and
+actual skill cooldown clocks, live published catalog country/radius/AI, user
+visibility/count gates and detached-source rejection. Direct visitor destruction
+of a removed actor and nested direct traversal also execute under ASAN/UBSAN.
+
+Production assembly contract:
+
+- Retain ONE existing full MobTargetingBindingCatalog loaded skills-before-mobs
+  using milestone 9 positional SQL contracts. Borrow it in each zone adapter;
+  canonical MobRuntimeTemplate pointers remain owned by the existing template
+  owner and supply the stable definition ID, not a copy of live catalog AI.
+- Construct MobTargetingZone(existing_zone, catalog, actual_world). Provide a
+  retained MobTargetingZoneUser adapter over the real user owner. Its target()
+  supplies live ID/life and help() supplies country/life/HP ability/admin
+  attackable/visible. Each acquisition reprojects that SAME retained user.
+- Required pure virtual MobTargetingZoneWorld ports are actual zone user_count,
+  original shared random provider, authoritative tick_ms, and actual FSM
+  DispatchEvent(subject,event,argument). No port defaults to success/no-op.
+  Actor/user-zone/AI owners must implement these; they were not copied here.
+- The existing zone owner serializes the COMPLETE call and all reentrant
+  membership/find/visit operations on its execution context. If implemented
+  using locks, they must allow synchronous original-style reentry. ZoneMobs
+  adds no mutex and does not become thread safe. Keep the zone/cell storage
+  alive; release_to_pool/destruction cannot run during traversal. Source stays
+  with this owning zone for the help call; cross-zone source migration is not
+  implemented by this adapter.
+- A generic visitor can remove/destroy its current actor before returning.
+  SetTarget has a stronger retained-subject requirement: runtime dispatch/help
+  may unlink the subject, but its owner must defer recycling/destruction until
+  that SetTarget call returns because the bridge republishes live state.
+  Retain source/user separately through the complete help call. Callbacks and
+  visitors are synchronous and must not escape.
+- Serialize catalog raw reload/publication against these calls under existing
+  owner quiescence. Retain the same allocated slots/embedded views and catalog
+  lifetime; do not replace arrays while runtime/applied-skill pointers exist.
+  This block changes no positional SQL loader or reload publication contract.
+
+Validation:
+
+- `python3 tools/dev.py build`: exit 0, no warnings/errors;
+  `work/mob-targeting-zone-build.log`.
+- `python3 tools/dev.py test`: exit 0, 128/128 passed, 46.93 seconds;
+  `work/mob-targeting-zone-tests.log`. Existing zone-mobs-unit passed and all
+  450 original cursor traces compare through the new direct visitor.
+- Full original cursor fixture regenerated with `.local/oracle-env/bin/python
+  tools/mob_targeting_cursor_oracle.py` into ignored work/; cmp exit 0.
+- Focused ASAN/UBSAN: real zone/target/catalog assembly and all 450 direct
+  visitor traces passed, exit 0 with no diagnostics. Changed visitor/adapter
+  and targeting/help/runtime/catalog sources were instrumented under the shared
+  build lock; `work/mob-targeting-zone-sanitized.log`.
+- All twelve original EXE/PDB SHA256SUMS passed; git diff --check clean.
+  No binaries, SQL lifecycle/state, credentials, main or other workers changed.
+  SQL loaders were unchanged; their full original/restored read-only SQL checks
+  are preserved in milestone 9 rather than repeated without a data-path change.
+
+Remaining integration is coordinator construction of these borrowed adapters
+and actual user-count/user-lifetime/random/clock/FSM ports under the real zone
+execution owner. The required shared canonical visitor change is now delivered;
+no additional Actor/user-zone/shared skill header patch is proposed here.
+No production network/world handler assembly or playable-server completion is
+claimed by the unit tests.
