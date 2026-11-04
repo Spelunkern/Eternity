@@ -1724,3 +1724,10 @@ reason 1, swallows 0003 and sends A302 to NProtect after incoming decryption.
 The current native selection-family filtering is not sufficient to reproduce
 those routes. Requested worker 03 to include the real packet-system and NProtect
 owners in the inbound split; this is pending and no fix is claimed here.
+
+Quest integration session 86245 exited 0: the separate quest worktree reused a
+copy of the completed admission build, reconfigured/rebuilt 55 targets, and
+`vertical-quests-unit` passed 1/1 on `7167c11` with admission, world, gameplay,
+and ingress ancestors present. Log `.local/composed-quests-test.log` in that
+worktree. This establishes the focused combined test only; full native suite,
+exact combined SQL, live reward providers and production dispatch remain open.
