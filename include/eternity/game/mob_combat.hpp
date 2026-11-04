@@ -11,6 +11,8 @@ struct MobCombatState {
     bool count_hits=false, stacked_fsm=false, long_corpse_delay=false;
     bool log_enabled=false, linked_log_enabled=false;
 };
+// Synchronous providers may update the projection. Event 3 observes zero HP
+// before this hit enters the ledger; later stages use the resulting live state.
 class MobCombatServices {
 public:
     virtual ~MobCombatServices()=default;
@@ -26,6 +28,7 @@ struct MobCombatCredit {
     std::int32_t bonus=0,base_aggro=0;
 };
 bool mob_combat_damage(MobCombatState&,MobDamageLedger&,MobCombatServices&,std::uint32_t,const MobCombatCredit&);
+// The triple remains live across callbacks (the original reloads its values).
 bool mob_combat_damage(MobCombatState&,MobDamageLedger&,MobCombatServices&,const std::array<std::int32_t,3>&,const MobCombatCredit&);
 // Both DamageParty overloads (00490e40/00490e90) use only first pointed value.
 bool mob_combat_party(MobCombatState&,MobDamageLedger&,MobCombatServices&,std::uint32_t party,std::int32_t damage);
