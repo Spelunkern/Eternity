@@ -1382,3 +1382,11 @@ independent 07 a bounded `vertical_scene` production owner composition after its
 existing pickup validation: real WorldChannel, ZoneUsers, party/effect/clock and
 mandatory lifecycle dependencies, with no no-op success. Actual WorldAdmission
 and executor/root wiring still required.
+
+Independent 02 changed the test fixture transport callbacks in `255f131` and
+its `.local/vertical-world-fix-tests.log` shows 304/304 passing. This does not
+resolve the separate integration issue: `VerticalWorld::frame` at `255f131`
+still calls `update_mob_population` before `ports_.frame`, whereas 05 reports
+original idle traversal and death cleanup before respawn. Do not integrate it
+until the order is reconciled with original evidence and tested. Prior aborted
+run remains documented. Main session 53983 remains active and waiting.
