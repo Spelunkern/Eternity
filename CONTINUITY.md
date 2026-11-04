@@ -1849,3 +1849,18 @@ session 39827 now runs full build, full native CTest suite and isolated SQL for
 this exact combined revision; all results are pending. The application remains
 roster-only and actual production world services and original-client play remain
 unfinished.
+
+User requested a simple live desktop dashboard. Created
+`/home/franco/Desktop/Eternity-progreso.html` and opened it with `xdg-open`.
+User service `eternity-dashboard.service` regenerates it every 30 seconds from
+`/home/franco/.local/share/eternity-dashboard/state.json`, live test logs/processes
+and main Git revision; the page refreshes itself every 30 seconds. When real
+milestones change what remains or the progress estimate, update that JSON as
+part of the same task; do not mark tests complete or client gameplay achieved
+without evidence. The dashboard service is enabled for future logins. HTML
+parser and active user service checks passed.
+
+Coordinator additionally cherry-picked 04 movement prefix `e86fa79` as
+`1a000f4` into `coordinator/movement` and queued session 61285 to validate its
+576 original movement-gate/correction cases and prior canonical dispatch test in
+sequence. The full movement continuation and live dispatch remain open.
