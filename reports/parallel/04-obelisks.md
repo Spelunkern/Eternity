@@ -74,11 +74,10 @@ canonical header was modified. CMake additions register only this source/test.
 - Required transports, KC totals/status-14 lookup, `SendObeliskChange`
   **0042b200** and `UpdatePortalLink` **0042a000** remain external world owners.
   These services have no default no-op implementation.
-- Production tick dispatch/configuration/reset orchestration remains unconnected:
-  the native `UpdateRespawnObelisk` body is now available (see below), but
-  `ObeliskReset` **0042aa40**, loaders and corpse deadline accounting still need
-  reconstruction/integration. Destroy/respawn do not themselves schedule the
-  next principal respawn.
+- Production tick/reset dispatch and configuration remain unconnected: native
+  `UpdateRespawnObelisk` and `ObeliskReset` bodies are available (see below), but
+  loaders and corpse deadline accounting still need reconstruction/integration.
+  Destroy/respawn do not themselves schedule the next principal respawn.
 
 This is recovered native subsystem behavior, not a playable server.
 
@@ -138,7 +137,71 @@ No SQL changes; final isolated SQL integration remains owned by the coordinator.
 No new canonical fields or virtual methods are required. The map tick owner must
 call this function with stable per-zone obelisk storage and the original unsigned
 millisecond tick, and implement the mandatory existing world services. Principal
-corpse deadlines/reset orchestration are still missing; this block does not make
-the server playable. Next independent obelisk work: reconstruct `ObeliskReset`
-**0042aa40** and its deadline/persistence ordering, then bind map configuration and
-corpse timing without altering shared canonical headers.
+corpse deadlines and production reset dispatch remain missing; this block does
+not make the server playable. The reset body was subsequently reconstructed below.
+
+## Reset milestone — ObeliskReset
+
+Implementation commit: `0c4b246df036a3ecbcb30065d8d37624b88fb3f8`.
+
+Recovered `ps_game.exe` **CMap::ObeliskReset 0042aa40**, checked against assembly
+and a locked focused Ghidra `--process` export. `reset_obelisks` preserves:
+
+- No zone: no clock or side effects. Otherwise sample GetTickCount once, even
+  with no obelisks; compute unsigned **tick + 600000** once for all records.
+- A present principal is removed by the required zone provider while
+  `reset_send=true`, then the flag becomes false. Reset itself does not clear
+  the principal, remove companions, or decrement current: these are removal
+  provider responsibilities, including nested `ObeliskDestroy` when applicable.
+- After removal returns, overwrite principal respawn deadline with the captured
+  ten-minute deadline. Read the live base country, assign current country, and
+  update last-destroy country only when the new country is non-neutral.
+- Send the change notification, then persist **0207** unconditionally for each
+  record, including unchanged countries and absent principals. Keep the live
+  change timestamp unchanged. Finally update portal links once, even for an
+  empty map. A nested destroy can already have persisted/relinked: preserve
+  those additional calls and their order.
+- An initially true reset-send flag is not normalized when no principal is
+  removed. The flag suppresses nested destroy's change notification; it does
+  not suppress reset's direct notification.
+
+The original-execution fixture runs real Reset plus **404 real nested Destroy**
+bodies across 648 cases, including zero/one/two/three records, neutral/base/last
+country combinations, missing principals, existing reset flags, unsigned deadline
+wrap, unchanged countries, and callback changes to base/last/change-time values.
+Clock/removal/transports are observed ports. Removal variants explicitly project
+an inert removal or a counter/deadline update followed by real Destroy; the full
+**CZone::MobRemoveByID 0041e910** body is not claimed as executed/reconstructed.
+The 271 changed nested destroys cause additional DB sends/portal updates, which
+are compared alongside reset's unconditional persistence. Send-change callbacks
+also observe current/deadline/country/flag, checking ordering before final state.
+The native test composes the existing real `destroy_obelisk` implementation.
+
+Validation:
+
+- Native build: exit 0, no compiler warnings (`work/obelisk-reset-build.log`).
+- First full suite: **121/122 passed**, 34.39 seconds; reset scenario 14 exposed
+  an oracle trampoline cached with a previous case's immediate country argument
+  (`work/obelisk-reset-tests.log`). This attempt did not pass. The oracle now
+  reads the live country from memory, invalidates the reused code translation,
+  and asserts the arguments at the real Destroy entry before accepting a case.
+- Corrected original fixture generation, independent regeneration, and `cmp`:
+  exit 0 (`work/obelisk-runtime-reset-checked.tsv`,
+  `work/obelisk-runtime-reset-final-repeat.tsv`).
+- Full native suite rerun: exit 0, **122/122 tests passed**, 35.57 seconds
+  (`work/obelisk-reset-final-tests.log`). This includes all three obelisk suites:
+  432 destroy/respawn scenarios, 2,304 retained scheduler ticks, and 648 reset
+  scenarios with 404 real nested destroys. `git diff --check`: clean.
+- Locked focused Ghidra export and original EXE/PDB hash verification: exit 0
+  (`work/obelisk-reset-ghidra.log`, `work/obelisk-reset-final-hashes.log`).
+
+No SQL contracts changed; final isolated SQL integration remains coordinator-owned.
+
+Integration: map reset command dispatch must call the new function with stable
+per-zone records, a mandatory millisecond clock callback, and the existing
+mandatory world services. `remove_by_id` must implement real zone unlinking,
+respawn accounting and nested obelisk destruction, not a no-op or unconditional
+pointer clear. No new canonical fields or virtual methods are needed. Further
+independent work: bind obelisk configuration/state loading and recover principal
+corpse deadlines/removal coordination; production world providers remain missing.
+This subsystem milestone is not a playable server.
