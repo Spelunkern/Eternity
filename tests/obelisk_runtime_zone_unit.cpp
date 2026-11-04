@@ -3,6 +3,7 @@
 #include "eternity/game/mob_death.hpp"
 #include "eternity/game/linked_mobs.hpp"
 #include "eternity/game/obelisk_runtime_publication.hpp"
+#include "eternity/game/obelisk_runtime_portal.hpp"
 #include <algorithm>
 #include <bit>
 #include <fstream>
@@ -59,8 +60,12 @@ struct OtherOwners final:MobRemovalOwners {
     void destroy_linked_group(std::int32_t) override {Services::unexpected();}
     void remove_linked_member(MobRuntime&,void*) override {Services::unexpected();}
 };
-struct World final:ObeliskRuntimeWorld,ObeliskRuntimePublication,MobDeathWorld {
+struct World final:ObeliskRuntimeWorld,ObeliskRuntimePublication,MobDeathWorld,ObeliskRuntimePortalWorld {
     Services& services;ObeliskRuntimeMap& map;ObeliskRuntime& obelisk;ObeliskRuntimeZoneRemoval* removal=nullptr;ObeliskRuntimeDeathOwnership* combat_owner=nullptr;MobDeathUser user;
+    bool portals=false,portal_mutated=false;
+    std::array<ObeliskRuntimePortalLink,4> portal_links;
+    std::array<std::int32_t,4> portal_countries{};
+    std::array<ObeliskRuntime,3> portal_records;
     World(Services& s,ObeliskRuntimeMap& m,ObeliskRuntime& o):services(s),map(m),obelisk(o),user{100,1,static_cast<std::uint8_t>(s.scenario/15%3)} {}
     std::string_view mob_name(const MobRuntime&) override {return "ABCDEFGHIJKLMNOPQRSTUVWXYZ12345";}
     void remove_by_id(std::uint32_t id) override {static_cast<void>(removal->remove_by_id(id));}
@@ -69,10 +74,21 @@ struct World final:ObeliskRuntimeWorld,ObeliskRuntimePublication,MobDeathWorld {
         services.event({tag,static_cast<std::uint32_t>(packet.size())});services.trace.insert(services.trace.end(),packet.begin(),packet.end());
     }
     void zone_packet(const Packet& bytes) override {packet(4,bytes);services.event({static_cast<std::uint32_t>(map.reset_send)});}
-    void database_packet(const Packet& bytes) override {packet(6,bytes);}
+    void database_packet(const Packet& bytes) override {
+        packet(6,bytes);
+        std::uint32_t id=0;if(bytes.size()>=6) for(unsigned i=0;i<4;++i) id|=static_cast<std::uint32_t>(bytes[2+i])<<(i*8);
+        if(portals&&bytes.size()==11&&id>=0x10001000U&&services.scenario%17==0&&!portal_mutated) {
+            portal_mutated=true;obelisk.last_destroy_country=(obelisk.last_destroy_country+1)%3;
+            for(std::size_t i=0;i<4;++i) portal_countries[i]=(services.scenario+static_cast<int>(i))%4;
+        }
+    }
     void database(const Packet& bytes) override {database_packet(bytes);}
     void game_log(const Packet& bytes) override {packet(5,bytes);}
-    void update_portal_links() override {services.event({7,static_cast<std::uint32_t>(map.reset_send)});}
+    void update_portal_links() override {
+        services.event({7,static_cast<std::uint32_t>(map.reset_send)});
+        if(portals) update_obelisk_portal_links(portal_links,*this);
+    }
+    void map_broadcast(std::size_t,const Packet& bytes) override {zone_packet(bytes);}
     void add_kill_count(std::int32_t country,std::int32_t amount) override {services.event({20,static_cast<std::uint32_t>(country),static_cast<std::uint32_t>(amount)});}
     bool kill_count_status14(std::int32_t) override {return services.scenario/4%2!=0;}
     void subtract_kill_count(std::int32_t country,std::int32_t amount) override {services.event({21,static_cast<std::uint32_t>(country),static_cast<std::uint32_t>(amount)});}
@@ -106,7 +122,7 @@ struct World final:ObeliskRuntimeWorld,ObeliskRuntimePublication,MobDeathWorld {
             static_cast<std::uint32_t>(mob.damage->fair_combat),static_cast<std::uint32_t>(services.zone->size()),static_cast<std::uint32_t>(services.damage_fixture.pool.available().size())});
     }
 };
-void run(int scenario,const std::vector<std::uint32_t>& expected,bool combat) {
+void run(int scenario,const std::vector<std::uint32_t>& expected,bool combat,bool portals) {
     Services s;s.scenario=scenario;s.combat=combat;s.unix=123456U+static_cast<std::uint32_t>(scenario);s.tick=std::array<std::uint32_t,4>{0,100,0xfffffff0U,0xffffffffU}[static_cast<std::size_t>(scenario/11%4)];
     auto counter=std::array<std::uint32_t,3>{0,0xfffffffdU,0xffffffffU}[static_cast<std::size_t>(scenario%3)];MobPool pool(counter,s);s.pool=&pool;
     ZoneMobs zone(MapGeometry(81),s);s.zone=&zone;ObeliskRuntimeMap map{true,scenario/7%2!=0,42,81,{}};s.map=&map;
@@ -132,11 +148,27 @@ void run(int scenario,const std::vector<std::uint32_t>& expected,bool combat) {
         if(credit) objects[0]->damage->add(credit==3?2:1,100,41,0,0);
         objects[0]->damage->fair_combat=scenario/7%2!=0;
     }
+    world.portals=portals;
+    if(portals) {
+        for(std::size_t j=0;j<3;++j) world.portal_records[j].last_destroy_country=(scenario/7+static_cast<int>(j))%3;
+        for(std::size_t i=0;i<4;++i) {
+            auto& link=world.portal_links[i];const auto n=static_cast<int>(i);
+            link.id=0x81002000U+static_cast<std::uint32_t>(i);link.base_id=0x10001000U+static_cast<std::uint32_t>(i);link.portal_id=static_cast<std::uint16_t>(1000+i);
+            world.portal_countries[i]=(scenario/3+n)%5-1;link.country=(scenario/13+n)%6==0?nullptr:&world.portal_countries[i];
+            link.zone_present=(scenario/3+n)%3!=0;link.open={(scenario+n)%2!=0,(scenario/2+n)%2!=0};
+            const auto kind=(scenario/5+n)%3;link.counts={kind==1?0:2,kind==2?0:2};
+            for(std::size_t j=0;j<8;++j) {
+                const auto* ref=j==0||j==4?&o:&world.portal_records[(j+i)%3];
+                link.links[j]=(scenario/11+n+static_cast<int>(j))%7==0?nullptr:ref;
+            }
+        }
+    }
     s.capture=true;
     auto snapshot=[&] {
         s.event({9,static_cast<std::uint32_t>(zone.size()),static_cast<std::uint32_t>(pool.available()),counter,static_cast<std::uint32_t>(map.reset_send),static_cast<std::uint32_t>(o.principal!=nullptr),
                  static_cast<std::uint32_t>(o.country),static_cast<std::uint32_t>(o.last_destroy_country),static_cast<std::uint32_t>(o.respawn.current),o.respawn.next,
                  static_cast<std::uint32_t>(group.respawn.current),group.respawn.next,s.identity(group.members[0]),s.identity(group.members[1])});
+        if(portals) for(std::size_t i=0;i<4;++i) s.event({26,static_cast<std::uint32_t>(world.portal_countries[i]),static_cast<std::uint32_t>(world.portal_links[i].open[0]),static_cast<std::uint32_t>(world.portal_links[i].open[1])});
     };
     snapshot();const auto mode=combat?7U:static_cast<unsigned>(scenario/5%2);s.event({10,mode});
     if(combat) {MobDeathExperience rules;mob_death(*objects[0],2,0xfedcba98U,rules,world);s.event({11,255});}
@@ -170,12 +202,12 @@ void run(int scenario,const std::vector<std::uint32_t>& expected,bool combat) {
 }
 int main(int argc,char** argv) {
     try {
-        require(argc==2 || argc==3,"Expected zone composition oracle and optional death mode");const bool combat=argc==3 && std::string_view(argv[2])=="death";std::ifstream input(argv[1]);require(input.good(),"Missing zone composition oracle");
+        require(argc==2 || argc==3,"Expected zone composition oracle and optional death mode");const bool portals=argc==3 && std::string_view(argv[2])=="death-portals";const bool combat=portals||(argc==3 && std::string_view(argv[2])=="death");std::ifstream input(argv[1]);require(input.good(),"Missing zone composition oracle");
         std::string line;unsigned cases=0;
         while(std::getline(input,line)) {
             if(line.empty()||line[0]=='#') continue;std::istringstream row(line);int scenario;row>>scenario;
             std::vector<std::uint32_t> expected;std::uint32_t word;while(row>>word) expected.push_back(word);
-            run(scenario,expected,combat);++cases;
+            run(scenario,expected,combat,portals);++cases;
         }
         require(cases==256,"Incomplete zone composition fixture");std::cout<<cases<<(combat?" original Death/obelisk/corpse/pool sequences passed\n":" original real-zone/obelisk/pool sequences passed\n");return 0;
     } catch(const std::exception& error) {std::cerr<<error.what()<<'\n';return 1;}

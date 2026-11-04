@@ -7,7 +7,7 @@ from unicorn.x86_const import (UC_X86_REG_EAX,UC_X86_REG_EBX,UC_X86_REG_ECX,
 from original_oracle import load_game
 
 
-def main(combat=False):
+def main(combat=False,portals=False):
     cpu,digest=load_game();base=0x30000000;cpu.mem_map(base,0x400000);cpu.mem_map(0,0x10000)
     zone,map_,ob,group,definition,manager= [base+x for x in (0,0x1000,0x2000,0x3000,0x4000,0x5000)]
     mobs,grid,heap,stack,stop= [base+x for x in (0x10000,0x20000,0x40000,0x3e0000,0x3f0000)]
@@ -22,7 +22,7 @@ def main(combat=False):
         (0x4d4e50,8),(0x4d4f10,8),(0x42a000,0),(0x4953f0,0),(0x5046b9,0),(0x505316,0),
         (0x421120,24),(0x415f30,4),(0x458240,12),(0x4a5ea0,12),(0x480140,4),
         (0x4a0990,0),(0x413600,8),(0x413750,8),(0x412ec0,0)):
-        cpu.mem_write(at,b'\xc2'+struct.pack('<H',cleanup))
+        if at!=0x42a000 or not portals: cpu.mem_write(at,b'\xc2'+struct.pack('<H',cleanup))
     put(0x546f3c,manager)
     for iat in (0x5210cc,0x5210d0): put(iat,stop+16)
     put(0x5210e4,stop+32);put(0x5210f8,stop+48)
@@ -46,7 +46,10 @@ def main(combat=False):
         elif address==0x4207f0:
             event(4,eax,*cpu.mem_read(machine.reg_read(UC_X86_REG_ECX),eax),cpu.mem_read(map_+0x1e4,1)[0])
         elif address in (0x4d4e50,0x4d4f10):
-            length=get(sp+8);event(5 if address==0x4d4e50 else 6,length,*cpu.mem_read(get(sp+4),length))
+            length=get(sp+8);pointer=get(sp+4);event(5 if address==0x4d4e50 else 6,length,*cpu.mem_read(pointer,length))
+            if portals and address==0x4d4f10 and length==11 and get(pointer+2)>=0x10001000 and state['scenario']%17==0 and not state['portal_mutated']:
+                state['portal_mutated']=True;put(ob+8,(get(ob+8)+1)%3)
+                for i in range(4): put(base+0xe000+i*0x40+0x14,(state['scenario']+i)%4)
         elif address==0x42a000: event(7,cpu.mem_read(map_+0x1e4,1)[0])
         elif address==0x421120:
             n=get(sp+12);event(24,n,*cpu.mem_read(get(sp+8),n),get(sp+24),get(zone+0x15c))
@@ -77,8 +80,11 @@ def main(combat=False):
     def snapshot():
         event(9,get(zone+0x15c),get(manager+0x44),get(manager+8),cpu.mem_read(map_+0x1e4,1)[0],int(get(ob+0x6c)!=0),
               get(ob+4),get(ob+8),get(ob+0x48),get(ob+0x4c),get(group+0x38),get(group+0x3c),identity(get(group+0x54) and get(get(group+0x54))),identity(get(get(group+0x54)+4)))
+        if portals:
+            for i in range(4): event(26,get(base+0xe000+i*0x40+0x14),*cpu.mem_read(base+0xd000+i*0x84+0x18,2))
+    if portals: print('# Composed real UpdatePortalLink 0042a000 / SendPortalLinkChange 0042b2c0; portal DB/map/world transports remain observed. Tag26 portal snapshot(country,open0,open1). First portal DB callback mutates live last-destroy/countries when scenario%17==0.')
     if combat: print('# Full CMob::Death 004910f0 with real selection/reset, obelisk ownership, nested zone removal and real corpse cleanup 00421a80. Rewards/user lookup/skill effects and KC/world broadcasts are observed ports. Explicit caller sets death state/deadline after Death. Tags 13 drop,14 quest,15 lookup,16 experience,20/21 KC add/sub,23 broadcast,24 death,25 skill-clear boundary.')
-    print(f'# ps_game.exe SHA256 {digest}; real MobRemoveByID 0041e910, FindMob/RemoveMob/cell unlink, ObeliskDestroy 0042a410, ObeliskReset 0042aa40, RemoveMob 0041d700, FreeMob 0040a630 and pooled CreateMob 0040a5e0/seed. Initial actors are explicit inputs. Ports: heap, locks, tick/Unix/atomic, compiled-AI cleanup, transport and portal updates.')
+    print(f'# ps_game.exe SHA256 {digest}; real MobRemoveByID 0041e910, FindMob/RemoveMob/cell unlink, ObeliskDestroy 0042a410, ObeliskReset 0042aa40, RemoveMob 0041d700, FreeMob 0040a630 and pooled CreateMob 0040a5e0/seed. Initial actors are explicit inputs. Ports: heap, locks, tick/Unix/atomic, compiled-AI cleanup, transport{'. Portal coordination executes.' if portals else ' and portal updates.'}')
     print('# scenario then trace uint32 words. 1=tick; 2=cell packet(length,bytes,zone size,raw zone/cell); 3=compiled cleanup(identity,id,zone size,free count,reset flag); 4=zone packet(length,bytes,flag); 5/6=log/DB(length,bytes); 7=portal flag; 8=reuse(identity,id,free count,counter,seed,word0); 9=snapshot; 10=operation; 11=result; 12=Unix time.')
     for scenario in range(256):
         cpu.mem_write(base,bytes(0x3ff000));state.update(scenario=scenario,heap=heap+0x10000,trace=[],capture=False,ticks=0,
@@ -116,6 +122,19 @@ def main(combat=False):
             put(0x5471c0,0 if scenario//6%2 else 30,-15 if scenario//7%2 else 0)
             put(0x546f38,base+0xb000)
             for country in range(3): put(base+0xb000+0x208+country*0x84,scenario//4%2)
+        if portals:
+            state['portal_mutated']=False;links=base+0xd000;put(0x5471c8,4,links)
+            for j in range(3): put(base+0xd800+j*0x70+8,(scenario//7+j)%3)
+            for i in range(4):
+                at=links+i*0x84;target=base+0xe000+i*0x40;target_map=base+0xf000+i*0x1f0
+                put(at,0x81002000+i,0x10001000+i,0,0,target_map,0 if (scenario//13+i)%6==0 else target)
+                put(target,1000+i);put(target+0x14,(scenario//3+i)%5-1)
+                put(target_map,zone if (scenario//3+i)%3 else 0)
+                cpu.mem_write(at+0x18,bytes([(scenario+i)%2,(scenario//2+i)%2]))
+                kind=(scenario//5+i)%3;put(at+0x1c,0 if kind==1 else 2,0 if kind==2 else 2)
+                for j in range(8):
+                    ref=ob if j in (0,4) else base+0xd800+(j+i)%3*0x70
+                    put(at+0x2c+j*12,0 if (scenario//11+i+j)%7==0 else ref)
         state['capture']=True;snapshot();mode=7 if combat else scenario//5%2;event(10,mode)
         if combat:
             cpu.reg_write(UC_X86_REG_ECX,mobs);cpu.reg_write(UC_X86_REG_FPCW,0x27f);call(0x4910f0,2,0xfedcba98);event(11,255)

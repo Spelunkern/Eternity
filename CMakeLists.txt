@@ -1044,3 +1044,7 @@ if(BUILD_TESTING)
     target_link_libraries(mob-ai-states-selected-unit PRIVATE eternity_game)
     add_test(NAME mob-ai-states-selected-unit COMMAND mob-ai-states-selected-unit ${CMAKE_CURRENT_SOURCE_DIR}/tests/data/mob_ai_states_selected-oracle.tsv)
 endif()
+
+if(BUILD_TESTING)
+    add_test(NAME obelisk-runtime-death-portal-unit COMMAND obelisk-runtime-zone-unit ${CMAKE_CURRENT_SOURCE_DIR}/tests/data/obelisk-runtime-death-portal-oracle.tsv death-portals)
+endif()
