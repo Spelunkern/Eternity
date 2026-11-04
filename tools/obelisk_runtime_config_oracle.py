@@ -7,7 +7,7 @@ from unicorn.x86_const import UC_X86_REG_EAX,UC_X86_REG_ECX,UC_X86_REG_EDI,UC_X8
 from original_oracle import load_game,ROOT
 
 
-def main(parser=False):
+def main(parser=False,portal_binding=False):
     cpu,digest=load_game();stack,world,maps,infos,heap,file,stop=0x20000000,0x30000000,0x31000000,0x32000000,0x34000000,0x38000000,0x10000000
     for at,n in ((0,0x10000),(stack,0x10000),(world,0x10000),(maps,0x100000),(infos,0x200000),(heap,0x3000000),(file,0x10000),(stop,0x10000)):cpu.mem_map(at,n)
     def put(at,*v):cpu.mem_write(at,struct.pack('<'+'I'*len(v),*[x&0xffffffff for x in v]))
@@ -55,6 +55,44 @@ def main(parser=False):
                     out.extend(int(get(get(g+0x54)+k*4)!=0) for k in range(get(g+0x14)))
         out.extend(cpu.mem_read(infos+i*268+0x7c,1)[0] for i in range(12))
         return out
+    if portal_binding:
+        print(f'# ps_game.exe SHA256 {digest}; full LoadObelisk 00427300, portal materialization 00428a94 onward. Explicit completed input projections in native comparison; actual original text parsing/binding executes. Targets include duplicate IDs and missing maps/portals; reference ordinal is not base ID.')
+        for scenario in range(64):
+            text=''
+            for mi in range(3):
+                text+=f'[zone_{mi}]\n'
+                for row in range(2):text+=f'[Obelisk_{100+row}]=(1,2,3),(1,2,3),1\n'
+            count=2+scenario%4
+            for i in range(count):
+                m=(scenario//3+i)%4;pid=(1001,1002,999)[(scenario+i)%3]
+                text+=f'[Portal_{10+i},{m},{pid}]\n'
+                for side,label in enumerate(('light','fury')):
+                    pairs=[((scenario//5+i+j)%4,(0,1,2,4)[(scenario+side+i+j)%4]) for j in range(4)]
+                    if scenario%7==0:pairs=[(3,0)]*4
+                    text+=f'[{label}]='+','.join(f'{m},Obelisk_{n}' for m,n in pairs)+'\n'
+            context.update(text=text.encode(),position=0,heap=heap);cpu.mem_write(file,bytes(32));cpu.mem_write(maps,bytes(0x30000));put(world+8,3,maps)
+            for mi in range(3):
+                at=maps+mi*496;put(at,0 if (scenario+mi)%2 else 123,40);portals=maps+0x20000+mi*3*48;put(at+80,3,portals)
+                for j,pid in enumerate((1001,1001,1002)):put(portals+j*48,pid);put(portals+j*48+20,mi*10+j-2)
+            put(0x541b0c,0xfffffffc if scenario%2 else 100);put(0x5471bc,0)
+            put(0xfcd2cc,0,0);put(0xfcd25c,1000);put(0xfd4e5c,-45)
+            put(stack+0xf000,stop);cpu.reg_write(UC_X86_REG_ESP,stack+0xf000);cpu.reg_write(UC_X86_REG_FPCW,0x27f)
+            cpu.emu_start(0x427300,stop,count=10000000)
+            if cpu.reg_read(UC_X86_REG_EIP)!=stop:raise RuntimeError('Original loader did not return')
+            n=get(0x5471c8);words=[get(0x541b0c),n]
+            for i in range(n):
+                at=get(0x5471cc)+i*0x84;portal=get(at+20);target_map=(get(at+16)-maps)//496
+                words.extend((get(at),get(at+4),target_map,get(portal)&65535,get(portal+20),int(get(get(at+16))!=0),*cpu.mem_read(at+24,2),get(at+28),get(at+32)))
+                for j in range(8):
+                    ref=get(at+44+j*12);key=0
+                    if ref:
+                        for mi in range(3):
+                            start=get(maps+mi*496+0x1ec)
+                            if start<=ref<start+2*112:key=mi*10+(ref-start)//112+1
+                        if not key:raise RuntimeError('Unmapped original obelisk reference')
+                    words.append(key)
+            print(scenario,' '.join(map(str,words)),sep='\t')
+        return
     if parser:
         print(f'# ps_game.exe SHA256 {digest}; actual LoadObelisk 00427300 parsing through 00427eef, before materialization; original CRT strtok/atoi/atof execute. Only ordinary obelisk temporary tables are compared.')
         header=b'[zone_1]\n[Obelisk_9]=(1.25,-2.5,3),(1,2,3),2\n'
