@@ -27,8 +27,8 @@ bool reload_mob_drop_rows(MobDropDefinitions&,std::int32_t& changes,MobDropReloa
 // and is rejected explicitly. Original query contract has four positional columns.
 bool reload_mob_drop_result(MobDropDefinitions&,const storage::ResultSet&,std::int32_t& changes,MobDropReloadDiagnostics&);
 // Read-only original usp_Read_MobItems_R2 request on the supplied native SQL
-// owner. No database/pool lifecycle, resets or implicit reconnects. SqlServer
-// buffers results, so transport/fetch errors occur before row publication; a
-// streaming canonical cursor is needed for original mid-fetch error publication.
+// owner. No database/pool lifecycle, resets or implicit reconnects. Uses the
+// retained typed SQL cursor: completed rows survive later fetch/GetData failure.
+// The caller serializes the connection and retained definition owner.
 bool reload_mob_drop_sql(MobDropDefinitions&,std::uint16_t request,std::int32_t& changes,storage::SqlServer&,MobDropReloadDiagnostics&);
 }

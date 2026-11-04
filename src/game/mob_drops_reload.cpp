@@ -1,4 +1,5 @@
 #include "eternity/game/mob_drops_reload.hpp"
+#include "eternity/game/mob_drops_stream.hpp"
 #include <bit>
 #include <charconv>
 
@@ -40,10 +41,11 @@ bool reload_mob_drop_result(MobDropDefinitions& definitions,const storage::Resul
     ResultCursor source(table);return reload_mob_drop_rows(definitions,changes,source,diagnostics);
 }
 bool reload_mob_drop_sql(MobDropDefinitions& definitions,std::uint16_t request,std::int32_t& changes,storage::SqlServer& database,MobDropReloadDiagnostics& diagnostics) {
-    std::vector<storage::ResultSet> tables;
-    try {const std::array<storage::Parameter,1> parameters{static_cast<std::int64_t>(request)};tables=database.query("EXEC dbo.usp_Read_MobItems_R2 ?;",parameters);}
-    catch(const storage::SqlError&) {diagnostics.failed(MobDropReloadFailure::query);return false;}
-    if(tables.size()!=1) {diagnostics.failed(MobDropReloadFailure::query);return false;}
-    return reload_mob_drop_result(definitions,tables[0],changes,diagnostics);
+    const std::array<storage::Parameter,1> parameters{static_cast<std::int64_t>(request)};
+    constexpr std::array columns{storage::SqlColumnType::short_integer,storage::SqlColumnType::tiny_integer,storage::SqlColumnType::short_integer,storage::SqlColumnType::long_integer};
+    try {
+        auto cursor=database.cursor("EXEC dbo.usp_Read_MobItems_R2 ?;",parameters,columns);
+        return reload_mob_drop_stream(definitions,changes,cursor,diagnostics);
+    }catch(const storage::SqlError&) {diagnostics.failed(MobDropReloadFailure::query);return false;}
 }
 }

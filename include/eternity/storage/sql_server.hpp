@@ -12,6 +12,7 @@
 #include <variant>
 #include <array>
 #include <utility>
+#include <memory>
 
 namespace eternity::game {class CharacterSaveStore;}
 namespace eternity::storage {
@@ -46,6 +47,30 @@ struct ResultSet {
 // Escape ODBC attribute values, including passwords containing semicolons/braces.
 std::string odbc_attribute(std::string_view value);
 
+class SqlServer;
+struct SqlConnectionLifetime;
+enum class SqlColumnType {short_integer,tiny_integer,long_integer};
+enum class SqlCursorRead {row,end,error};
+using TypedSqlRow=std::vector<std::optional<std::int64_t>>;
+// Serialized connection use, just like query(). Retains the actual statement and
+// connection until destruction, including when its SqlServer facade is destroyed.
+// Other operations on that connection require destruction of the cursor.
+// A completed row replaces output atomically; End/Error leave output untouched.
+class TypedSqlCursor {
+public:
+    ~TypedSqlCursor();
+    TypedSqlCursor(TypedSqlCursor&&) noexcept;
+    TypedSqlCursor& operator=(TypedSqlCursor&&) noexcept;
+    TypedSqlCursor(const TypedSqlCursor&)=delete;
+    SqlCursorRead next(TypedSqlRow&);
+    const SqlError* error() const noexcept;
+private:
+    friend class SqlServer;
+    struct Impl;
+    explicit TypedSqlCursor(std::unique_ptr<Impl>);
+    std::unique_ptr<Impl> impl_;
+};
+
 class SqlServer {
 public:
     explicit SqlServer(const SqlServerConfig& config);
@@ -53,6 +78,11 @@ public:
     SqlServer(const SqlServer&) = delete;
     SqlServer& operator=(const SqlServer&) = delete;
     std::vector<ResultSet> query(std::string_view sql, std::span<const Parameter> parameters = {});
+    // Original numeric C projections: SQL_C_SHORT/SQL_C_TINYINT/SQL_C_LONG.
+    // Input parameters use the same binding contract as buffered query().
+    // NULL stays explicit; caller decides whether a nullable column is valid.
+    TypedSqlCursor cursor(std::string_view sql,std::span<const Parameter> parameters,
+        std::span<const SqlColumnType> columns);
     void begin();
     void commit();
     void rollback();
@@ -67,6 +97,9 @@ public:
     void observe_query_error(std::string_view diagnostic) noexcept;
 private:
     friend class eternity::game::CharacterSaveStore;
+    friend class TypedSqlCursor;
+    void record_error(const SqlError&);
+    std::shared_ptr<SqlConnectionLifetime> lifetime_;
     SQLHENV environment_ = SQL_NULL_HENV;
     SQLHDBC connection_ = SQL_NULL_HDBC;
     bool transaction_active_ = false;

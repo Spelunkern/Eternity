@@ -1,0 +1,13 @@
+# ps_game.exe SHA256 0fb7c9f13b5bcf186118f8bfe73ab214226b93e8aa502b8e6fded4a8312bc547; complete SDatabase::GetData 004e15b0 and Fetch 004e2090; raw ODBC return/diagnostic lookup are ports. Success-with-info normalizes to zero; raw signed return remains in original +0c.
+G	0	0	0	0
+G	1	0	1	0
+G	100	100	100	0
+G	-1	-1	-1	0
+G	-2	-2	-2	0
+G	2	2	2	0
+F	0	0	0	0
+F	1	0	1	0
+F	100	100	100	0
+F	-1	-1	-1	1
+F	-2	-2	-2	1
+F	2	2	2	1
