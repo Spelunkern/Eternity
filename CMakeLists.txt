@@ -1409,3 +1409,7 @@ if(BUILD_TESTING)
     target_link_libraries(quest-start-items-actor-add-unit PRIVATE eternity_quest_start_items_actor)
     add_test(NAME quest-start-items-actor-add-unit COMMAND quest-start-items-actor-add-unit ${CMAKE_CURRENT_SOURCE_DIR}/tests/data/quest-start-add-flow-oracle.tsv)
 endif()
+
+if(BUILD_TESTING)
+    add_test(NAME party-runtime-raid-live-send-unit COMMAND party-runtime-raid-unit ${CMAKE_CURRENT_SOURCE_DIR}/tests/data/party-runtime-raid-live-oracle.tsv --live-send)
+endif()

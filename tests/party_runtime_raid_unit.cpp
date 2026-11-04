@@ -10,13 +10,14 @@ void check(bool ok) {if(!ok)throw std::runtime_error("Invalid request fixture/ow
 void append(Bytes& b,std::uint32_t n) {for(unsigned i=0;i<4;++i)b.push_back(static_cast<std::uint8_t>(n>>(8*i)));}
 Bytes unhex(const std::string& s) {Bytes b;if(s=="-")return b;for(std::size_t i=0;i<s.size();i+=2)b.push_back(static_cast<std::uint8_t>(std::stoul(s.substr(i,2),nullptr,16)));return b;}
 struct Record {PartyMembershipUser member;PartyRequestState requests;};
-struct World final:PartyRaidRequestWorld,PartyRegistryPorts,PartyMembershipWorld {
+struct World final:PartyRaidRequestWorld,PartyRegistryPorts,PartyRaidMembershipWorld {
     PartyRegistry reg;std::array<PartyRegistryParty,4> parties;std::array<std::shared_ptr<Record>,32> users;
+    PartyMembershipSendBuffer buffer;bool live_send{},pool_fail{};
     Bytes events;std::array<unsigned,6> depths{};
     unsigned mutation{},raw=2,root{},ticks{};std::uint32_t clock{};bool missing{},alloc_fail{},raid_success{},record{},mutated{},nested{};
-    World(unsigned profile,unsigned flags,unsigned m,bool miss,bool fail,bool raid,std::uint32_t now):mutation(m),clock(now),missing(miss),alloc_fail(fail),raid_success(raid) {
+    World(unsigned profile,unsigned flags,unsigned m,bool miss,bool fail,bool raid,std::uint32_t now,bool transport=false):live_send(transport),pool_fail(raid),mutation(m),clock(now),missing(miss),alloc_fail(fail),raid_success(raid) {
         for(unsigned i=0;i<32;++i) {
-            users[i]=std::make_shared<Record>();auto& u=users[i]->member;auto& s=users[i]->requests;u.id=100+i;u.level=static_cast<std::uint16_t>(10+i);u.job=static_cast<std::uint8_t>(i%6);u.name="user-"+std::string(15-std::to_string(i).size(),'0')+std::to_string(i);u.pending_request=9;u.in_zone=true;u.guild_creation=(flags&16) && i>=30;s.zone=1;s.scene_state=4;
+            users[i]=std::make_shared<Record>();auto& u=users[i]->member;auto& s=users[i]->requests;u.id=100+i;if(live_send)u.send_socket=i%3==0?-1:i%3==1?0:5;u.level=static_cast<std::uint16_t>(10+i);u.job=static_cast<std::uint8_t>(i%6);u.name="user-"+std::string(15-std::to_string(i).size(),'0')+std::to_string(i);u.pending_request=9;u.in_zone=true;u.guild_creation=(flags&16) && i>=30;s.zone=1;s.scene_state=4;
             u.hp=static_cast<std::uint16_t>(100+i);u.maximum_hp=static_cast<std::uint16_t>(200+i);u.mp=static_cast<std::uint16_t>(300+i);u.maximum_mp=static_cast<std::uint16_t>(400+i);u.sp=static_cast<std::uint16_t>(500+i);u.maximum_sp=static_cast<std::uint16_t>(600+i);u.instance=1;u.position={1.25F+static_cast<float>(i),-2.5F,3.75F};for(unsigned j=0;j<(i>=30?65:i%4);++j)u.effects.push_back({static_cast<std::uint16_t>(1000+j),static_cast<std::uint8_t>(j%255),static_cast<std::uint8_t>(j%3==0),now+1500+j*1000});
         }
         initialize_party_registry(reg,*this);for(unsigned i=0;i<2;++i){construct_registry_party(parties[i],*this);parties[i].id=10+i*10;}
@@ -68,8 +69,12 @@ struct World final:PartyRaidRequestWorld,PartyRegistryPorts,PartyMembershipWorld
         if(nested)return;
         for(unsigned i:{2U,0U})if(users[i]->member.party){nested=true;Bytes b;append(b,100+i);event('W',b);Bytes leave{5,0xb};dispatch_party_request(binding(i),leave,*this);return;}
     }
-    void send_party(PartyNormalMembership&,const Bytes& p) override {event('P',p);if(mutation==6 && p.size()>=2 && p[0]==6 && p[1]==0xb)nested_leave();}
-    void send_user(PartyMembershipUser& u,const Bytes& p) override {Bytes b;append(b,uid(&u));b.insert(b.end(),p.begin(),p.end());event('U',b);if(mutation==4 && !nested && p.size()>=2 && (p[0]==2 || p[0]==9) && p[1]==0xb){nested=true;Bytes n;append(n,uid(&u));event('V',n);Bytes accept{3,0xb,0};dispatch_party_request(binding(uid(&u)-100),accept,*this);}}
+    void send_party(PartyNormalMembership& party,const Bytes& p) override {event('P',p);if(mutation==6 && p.size()>=2 && p[0]==6 && p[1]==0xb)nested_leave();if(live_send)PartyRaidMembershipWorld::send_party(party,p);}
+    void send_user(PartyMembershipUser& u,const Bytes& p) override {Bytes b;append(b,uid(&u));b.insert(b.end(),p.begin(),p.end());event('U',b);if(mutation==4 && !nested && p.size()>=2 && (p[0]==2 || p[0]==9) && p[1]==0xb){nested=true;Bytes n;append(n,uid(&u));event('V',n);Bytes accept{3,0xb,0};dispatch_party_request(binding(uid(&u)-100),accept,*this);}if(live_send)PartyRaidMembershipWorld::send_user(u,p);}
+    PartyMembershipSendBuffer* allocate_send_buffer(std::uint16_t capacity) override {Bytes b;append(b,capacity);event('A',b);return pool_fail?nullptr:&buffer;}
+    void free_send_buffer(PartyMembershipSendBuffer& b) override {check(&b==&buffer && b.references==0);Bytes data;append(data,0);event('B',data);}
+    void enqueue_send(PartyMembershipUser& u,PartyMembershipSendBuffer& b) override {check(&b==&buffer);Bytes data;append(data,uid(&u));append(data,b.references);data.insert(data.end(),b.frame.begin(),b.frame.end());event('E',data);release_party_membership_buffer(b,*this);}
+    void close_send_socket(PartyMembershipUser&,std::int32_t) override {throw std::logic_error("Unexpected oversized raid frame");}
     std::uint8_t party_type(PartyMembershipUser& u) override {return raid_membership_type(u,*this);}
     void send_scene(PartyMembershipUser&,const Bytes& p) override {event('S',p);if(mutation==5)nested_leave();}
     void unregister_party(PartyNormalMembership& p) override {unregister_registry_membership(reg,p,*this);}
@@ -80,10 +85,10 @@ struct World final:PartyRaidRequestWorld,PartyRegistryPorts,PartyMembershipWorld
 }
 int main(int argc,char** argv) {
     try {
-        check(argc==2);std::ifstream input(argv[1]);check(input.good());std::string line;unsigned cases=0,nested=0,requests=0,expulsions=0;
+        check(argc==2 || argc==3);const bool transport=argc==3;std::ifstream input(argv[1]);check(input.good());std::string line;unsigned cases=0,nested=0,requests=0,expulsions=0;
         while(std::getline(input,line)) {
             if(line.empty() || line[0]=='#')continue;
-            std::istringstream start(line);char tag;unsigned scenario,profile,flags,mutation,missing,alloc_fail,raid;std::uint32_t clock;start>>tag>>scenario>>profile>>flags>>mutation>>missing>>alloc_fail>>raid>>clock;check(tag=='S' && static_cast<bool>(start));World world(profile,flags,mutation,missing!=0,alloc_fail!=0,raid!=0,clock);
+            std::istringstream start(line);char tag;unsigned scenario,profile,flags,mutation,missing,alloc_fail,raid;std::uint32_t clock;start>>tag>>scenario>>profile>>flags>>mutation>>missing>>alloc_fail>>raid>>clock;check(tag=='S' && static_cast<bool>(start));World world(profile,flags,mutation,missing!=0,alloc_fail!=0,raid!=0,clock,transport);
             while(std::getline(input,line) && line!="Z") {
                 std::istringstream command(line);std::string packet;command>>tag>>world.root>>packet;check((tag=='T' || tag=='J' || tag=='L' || tag=='X') && static_cast<bool>(command));const char operation=tag;const bool direct=tag!='T';auto p=unhex(packet);world.events.clear();
 
@@ -96,6 +101,6 @@ int main(int argc,char** argv) {
             }
             check(line=="Z");nested+=world.nested?1:0;++cases;
         }
-        check(cases==256 && nested>0);std::cout<<cases<<" cases / "<<requests<<" whole original requests / "<<expulsions<<" direct original membership/expulsion calls / "<<nested<<" literal nested requests passed\n";
+        check(cases==(transport?64U:256U) && nested>0);std::cout<<cases<<" cases / "<<requests<<" whole original requests / "<<expulsions<<" direct original membership/expulsion calls / "<<nested<<" literal nested requests passed\n";
     } catch(const std::exception& e){std::cerr<<e.what()<<'\n';return 1;}
 }

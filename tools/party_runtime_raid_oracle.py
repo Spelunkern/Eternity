@@ -1,12 +1,14 @@
 #!/usr/bin/env python3
 """Execute entire original PacketParty raid entry/leave, registry and request/expulsion compositions."""
 import struct
+import sys
 from original_oracle import load_game
 from unicorn import UC_HOOK_CODE
 from unicorn.x86_const import UC_X86_REG_EAX,UC_X86_REG_EBX,UC_X86_REG_ECX,UC_X86_REG_EDI,UC_X86_REG_ESI,UC_X86_REG_ESP,UC_X86_REG_EIP
 
 
 def main():
+    live_send="--live-send" in sys.argv
     cpu,digest=load_game();base=0x30000000;cpu.mem_map(base,0x400000);cpu.mem_map(0,0x10000);cpu.mem_map(0x31000000,0x10000)
     manager=0x547688;parties=[base+0x1000+i*0x1000 for i in range(4)];users=[base+0x10000+i*0x6000 for i in range(32)]
     packet,stack,stop=base+0x240000,base+0x3f0000,base+0x3ff000
@@ -48,6 +50,13 @@ def main():
             if at==u+0xa9c:return 3,i+100
         raise RuntimeError(f'Unknown lock {at:x}')
     ports={init:8,destroy:4,lock:4,unlock:4,increment:4,tick:0,0x503a3f:0,0x503ba1:0,0x415f30:4,0x40d840:4,0x4455d0:0,0x4d4d20:8,0x4208c0:12,0x45b0d0:0,0x4d4e50:8,0x505316:0,0x4d43a0:8}
+    pools={0x4df710:32,0x4df7b0:128,0x4df850:2048}
+    buffer,frame,agent,worker=base+0x260000,base+0x261000,base+0x250000,base+0x251000
+    decrement=stop+112
+    if live_send:
+        ports.pop(0x4455d0);ports.pop(0x4d4d20)
+        ports.update({decrement:4,0x4dc1b0:8,0x4df070:0,**{p:0 for p in pools}})
+        put(0x5211f0,decrement)
     for at,n in ports.items():cpu.mem_write(at,b'\xc2'+struct.pack('<H',n))
     for at,target in ((0x5210c8,init),(0x5210d8,destroy),(0x5210cc,lock),(0x5210d0,unlock),(0x5210f8,increment),(0x5210e4,tick)):put(at,target)
     for i,u in enumerate(users[:8]):
@@ -84,6 +93,18 @@ def main():
                 machine.reg_write(UC_X86_REG_EIP,{0x44670a:0x446806,0x44724d:0x447325,0x446ac1:0x446bae}[at])
         elif at in (init,destroy,lock,unlock):
             k,i=lock_id(get(sp+4));event({init:'I',destroy:'D',lock:'[',unlock:']'}[at],struct.pack('<2I',k,i))
+        elif live_send and at in pools:
+            event('A',struct.pack('<I',pools[at]));machine.reg_write(UC_X86_REG_EAX,0 if ctx['pool_fail'] else buffer)
+        elif live_send and at==decrement:
+            address=get(sp+4);n=(get(address)-1)&0xffffffff;put(address,n);machine.reg_write(UC_X86_REG_EAX,n)
+        elif live_send and at==0x4dc1b0:
+            user=get(sp+4);assert get(sp+8)==buffer
+            wire=bytes(cpu.mem_read(frame,struct.unpack('<H',cpu.mem_read(frame,2))[0]))
+            event('E',struct.pack('<2I',uid(user),get(buffer+8))+wire)
+            put(buffer+8,get(buffer+8)-1)
+            if get(buffer+8)==0:event('B',struct.pack('<I',0))
+        elif live_send and at==0x4df070:
+            assert get(sp+4)==buffer and get(buffer+8)==0;event('B',struct.pack('<I',0))
         elif at==increment:
             p=get(sp+4);n=(get(p)+1)&0xffffffff;put(p,n);machine.reg_write(UC_X86_REG_EAX,n)
         elif at==0x503a3f:
@@ -133,13 +154,17 @@ def main():
         cpu.emu_start(at,stop,count=1000000)
         assert cpu.reg_read(UC_X86_REG_EIP)==stop, "Original request did not return"
     print(f'# ps_game.exe SHA256 {digest}; entire EnterRaidParty 00445a30, LeaveRaidParty 00446510, GetEmptySlot 00446480; real PacketParty/ExpelUser/normal Leave/registry/map/GetPartyType. Only OS/raw allocator/lookup/transport/log and explicit guild cleanup block ports (44670a..446806,44724d..447325,446ac1..446bae). No raid membership stubs. W/V are actual nested requests.')
+    print('# Transport:', 'actual original Send/AllocBuffer/connection/agent; pool/worker completion are observed providers' if live_send else 'observed party/direct send boundaries')
     print('# S case count flags mutation missing alloc_fail unused clock; J/L/X actor placeholder; T actor packet; R return_or_packet state events; Z')
-    for case in range(256):
+    for case in range(64 if live_send else 256):
         cpu.mem_write(base,bytes(0x3ef000));cpu.mem_write(manager,bytes(84));cpu.mem_write(0,bytes(0x10000))
         count=case%31;flags=((case//4)%16)|(16 if case%4==3 else 0);mutation=(0,0,0,0,5,6)[case%6];clock=(0,0xfffffff0,0x7fffffff,2000)[case%4]
+        if live_send and mutation==6:mutation=0
         if mutation in (5,6):flags&=~1;count=max(count,4)
-        ctx.update(record=False,events=b'',raw=2,nodes=0,alloc_fail=False,clock=clock,ticks=0,mutation=mutation,mutated=False,nested=False,missing=False,raid_success=False,root=0)
+        ctx.update(pool_fail=case%13==0,record=False,events=b'',raw=2,nodes=0,alloc_fail=False,clock=clock,ticks=0,mutation=mutation,mutated=False,nested=False,missing=False,raid_success=False,root=0)
+        put(buffer+4,frame);put(agent+0x16c,worker)
         for i,u in enumerate(users):
+            if live_send:put(u+0x68,(-1,0,5)[i%3]);put(u+0xc8,agent)
             put(u+0xdc,100+i);cpu.mem_write(u+0x136,struct.pack('<H',10+i));cpu.mem_write(u+0x134,bytes([i%6]));cpu.mem_write(u+0x188,f'user-{i:015}'.encode()+b'\0');cpu.mem_write(u+0x1744,b'\x09');put(u+0xe0,base+0x60000);put(u+0x5758,4);put(u+0x175c,base+0x235000 if flags&16 and i>=30 else 0)
             for off,v in zip((0x17c,0x1238,0x184,0x1240,0x180,0x123c,0x164),(100+i,200+i,300+i,400+i,500+i,600+i,1)):cpu.mem_write(u+off,struct.pack('<H',v))
             cpu.mem_write(u+0xd0,struct.pack('<3f',1.25+i,-2.5,3.75));head=base+0x150000+i*0x4000;put(u+0xa94,head);put(head+4,head)
@@ -157,7 +182,7 @@ def main():
             put(p+0x14+i*8,0xffff if flags&2 else (i*7)%30)
             if not (flags&1 and i%5==2):put(p+0x18+i*8,users[i]);put(users[i]+0x173c,p)
         call(0x447780,(p+8,p),esi=manager+0x28)
-        print('S',case,count,flags,mutation,0,0,0,clock)
+        print('S',case,count,flags,mutation,0,0,int(live_send and case%13==0),clock)
         ctx.update(record=True,events=b'')
         # Whole dispatcher acceptance into the live raid (no create fallback).
         leader=get(p+12);put(users[31]+0x1740,100+leader);put(users[31]+0x5834,0xfffffff0)
