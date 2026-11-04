@@ -234,3 +234,210 @@ accepts the exact resume argument shape. Tests cover same-thread arguments,
 persistent two-block services, duplicate-writer prevention, durable snapshots,
 assignment waits/acknowledgments, pause/complete controls, bounded failures and
 coordinator notification spooling. No goal completion has been claimed.
+
+## Milestone 03 cf64bc8b — central validation pending
+
+Reviewed snapshot .local/parallel/workers/03-mob-skills/rounds/cf64bc8b0f789050f24fcc3f.json.
+Exact worker commits 0b9643a/e86a21b were cherry-picked locally as 2b705a6/7cd9619.
+Do not reset them or merge the moving worker branch. The worker is already
+reconstructing CMob::ChkEndTimeSkill 004a12f0 in its continuing context.
+
+Central build/full native tests: running session 96398; logs
+.local/mob-applied-integration-build.log and .local/mob-applied-integration-test.log.
+Focused ASAN/UBSAN: running session 21968; log
+.local/mob-applied-integration-sanitized.log. Both are waiting for the shared
+build slots at this record. Do not call them passed or publish this milestone
+before inspecting final results. No validation process was interrupted.
+
+Integration still needs actual MobRuntime/MobPool ownership and death/reset
+provider wiring, explicitly described in reports/parallel/03-mob-skills.md.
+Do not put an unconditional clear into reset_mob_attack: Init retains skills.
+
+## Milestone 01 1c527274 — reviewed, validation pending
+
+Reviewed exact snapshot .local/parallel/workers/01-mob-damage/rounds/1c5272742c4b56474d5e75b9.json.
+Applied commits 23a9179/9f13657 locally. Preserve their code and handoff report.
+Central review captures the corpse delay BEFORE the clock callback, matching
+00490d6a/00490f5c; worker's next callback fixture is also investigating this.
+Do not publish until central checks complete. Existing shared build jobs for
+milestone 03 remain authoritative; rebuild again after these combat additions
+because prior queued build may observe changed CMake input. ASAN 03 log now
+shows its focused test passed; inspect session 21968 final status.
+
+The worker continues in the same context; do not modify its live checkout.
+Damage/party credit projection still needs canonical MobRuntime/FSM/retarget/log
+providers; tests are not production combat or a playable server.
+
+## Milestone 04 a1a80441 — reviewed and applied locally
+
+Exact commits 5696038/6dc509f applied as 7d46c9b/ac20a9d. Resolved CMake
+registration conflict by preserving both combat and obelisk targets. No worker
+checkout touched. New obelisk runtime has 432 original comparisons; actual map,
+scheduler, transports and KC providers remain integration dependencies.
+Central skills/combat build passed. Its 124-test suite (session 96398) excludes
+this new obelisk target; inspect final exit and then run the 125-target build/test.
+No additional canonical build was started concurrently. Pending validations must
+not be described as passed, and accumulated local commits await central checks.
+
+## Milestone 08 efe16e98 — targeting reviewed and applied locally
+
+Applied exact 8a1d046/756aad8 from recorded snapshot. CMake conflict resolved by
+preserving combat, obelisk and targeting registrations. Source implements
+SetTarget/Ex with required help/FSM/random/tick providers and 4,096 original
+comparisons. Canonical skill bindings and world/FSM integration remain pending.
+
+Central obelisk build/test session 89902 was already active when this target was
+added. Do not start a concurrent build in the same canonical directory. Inspect
+its logs .local/obelisk-central-build.log and .local/obelisk-central-tests.log;
+then run one new canonical configure/build/test for the final target set (126).
+Do not assume the active older suite includes targeting or publish before checks.
+Worker continues independently; never edit or reset its live checkout.
+
+## Milestone 06 17f6a9a7 — admission/start applied locally
+
+Reviewed and applied exact f10cfb7/0cd4530 as 138133e/5279858. Preserved all
+existing CMake targets while resolving append conflict. 1,536 original traces
+and 479 starts are worker-verified; real QuestAdd/inventory/start-log/world
+providers remain pending. Worker continues; no live checkout modified.
+
+Central obelisk suite completed: 125/125 passed (47.83 s), session 89902 exit 0.
+This covers the prior applied skills, combat and obelisk milestone set, not the
+new targeting/start targets. Start a single canonical build/test for 127 targets
+in .local/quest-start-central-build.log / .local/quest-start-central-tests.log.
+Accumulated local commits remain unpublished until this newer validation passes.
+
+## Milestone 02 55e3da7d — loot applied locally
+
+Reviewed exact ad3247b/f133a52 and applied locally, preserving all existing CMake
+targets. Includes slot/catalog limits, quest/sequence/money loot, party delivery,
+position and positional SQL loader. Required world/item/quest/guild providers
+remain unconnected; no production no-op providers are accepted.
+
+Current single canonical validation is session 70613, logs
+.local/quest-start-central-build.log and .local/quest-start-central-tests.log.
+If it configures after this addition it should include 130 tests; otherwise run
+one subsequent configure/build/test after it ends. Do not start concurrent builds
+in canonical build/. Then run build/mob-drops-sql-unit inside the existing
+isolated container network/runtime env under resource_lock(ROOT,'sql'); it is
+read-only and not ordinary CTest. Worker verified 24,723 rows/27,470 slots, but
+central revalidation is still pending. Do not publish until central checks pass.
+
+## Milestones 03 f76f8c30 / 09 2b44bdb5 — applied locally
+
+The 03 delivery is shared CreateSkill IDs, NOT skill expiry (the worker changed
+its selected next block). Applied 7ac2fe0/528b1eb as a22484b/0b29553: native
+manager-wide atomic ID assignment, retained IDs and zero wrap, with 1,088
+original operations and native concurrent-owner checks. Expiry still separate.
+Applied exact ee5e0fa/50d8643 for eight CMob event handlers, Lua discriminator
+and reset rules, 512 original cases. Real Lua/FSM ownership remains required.
+CMake conflicts resolved by retaining every target. Worker 09 already has its
+next mob_ai_states assignment; neither live checkout was modified.
+
+Single canonical validation session 70613 was still waiting for build capacity
+before these additions. The complete registered set is now 132 tests. Inspect
+.local/quest-start-central-build.log and .local/quest-start-central-tests.log;
+ensure final configure/build covers all 132 before publishing. Read-only mob
+loot SQL check also remains pending. Do not start overlapping canonical builds.
+
+## Milestone 08 97a94923 — live targeting bridge applied locally
+
+Reviewed and applied exact dec69cb/0005635: MobRuntime overloads synchronize
+mutable projection fields around random/tick/help/dispatch, retain scene-stack
+transitions and preceding writes on exceptions. Required skill-binding resolver
+and actual help/FSM providers remain pending. 4,096 original cases through the
+bridge plus native callback/exception checks are worker-verified.
+
+CMake registrations preserved during conflict resolution. Central validation
+session 70613 had already configured/compiled the earlier 132-target set before
+this addition. Do not claim it validates mob-targeting-runtime-unit. Wait for its
+final exit, then one canonical configure/build/test must cover all 133 tests;
+also run the pending read-only mob-drops-sql-unit under the SQL lock. No parallel
+builds in canonical build/. Local commits remain unpublished pending checks.
+
+## Milestone 01 a0c57290 — callback regression applied
+
+Exact f009e09/d975e69 reviewed and applied locally. The worker independently
+confirmed the same pre-clock corpse-delay fix already made centrally; resolved
+that overlap by keeping one capture plus its source-address comment. Added 512
+original callback cases, covering event/log mutations, triple reload and credit
+ordering. All prior CMake registrations retained. No live worker checkout touched.
+
+Central session 10886 is the single active canonical build/test, logs
+.local/targeting-bridge-central-build.log and .local/targeting-bridge-central-tests.log.
+It configured 133 tests BEFORE this new callback target, so it cannot validate
+all latest code. Wait for final exit, then one new build/test must cover 134.
+Read-only mob loot SQL already passed centrally: .local/mob-drops-central-sql.log
+(24,723 rows, 2,747 definitions, zero rejected). Publish only after latest checks.
+Worker 01 has its queued Aggro extension; no user permission needed to continue.
+
+## CANONICAL VALIDATION FREEZE — current coordinator priority
+
+133/133 central tests passed (41.17 s), session 10886 exit 0. Latest callback
+suite makes 134. One final batch build/test/full isolated SQL integration is
+starting in .local/frozen-batch-build.log, .local/frozen-batch-tests.log and
+.local/frozen-batch-sql.log. Preserve this code snapshot until that pipeline ends.
+
+DO NOT cherry-pick additional worker code or change CMake/canonical sources
+while this frozen batch validates. Review new handoffs and append exact hashes /
+snapshot paths to .local/parallel/integration-queue.json instead. Workers continue
+in their own branches; adaptive assignments and metadata updates remain allowed.
+When all frozen checks pass, commit continuity/docs and push the accumulated
+verified main commits, then integrate the next reviewed queue batch. If a check
+fails, diagnose/fix and revalidate; never publish an assumed pass.
+
+The read-only mob-drop SQL check passed centrally (24,723 rows / 2,747 mobs /
+zero rejected). Full isolated SQL rerun in this frozen pipeline is still pending.
+
+## Reviewed integration queue: worker 05 dd410580
+
+Reviewed ec70b40/1aa9715 (PartyRuntime and reward range, 1,508 original cases).
+Recorded exact ordered commits and snapshot in .local/parallel/integration-queue.json.
+NOT cherry-picked: frozen batch 18658 remains active and canonical source/CMake
+must stay unchanged until its build/test/SQL pipeline ends. Worker 05 is already
+running its adaptive membership assignment. Integrate this reviewed queue only
+in the next validated batch; no live worker checkout changes or global progress
+claim from these test counts.
+
+## Reviewed integration queue: worker 07 65d0b8a4
+
+Reviewed 60be7af/4769b36: QuestEndRequest dispatch and inventory requirement/consumption routines. Worker reports 1,792 original comparisons. Exact snapshot and ordered commits recorded in the ignored integration queue. Not integrated during frozen validation. Actual inventory/world/QuestEnd adapters remain required. Worker already has independent PC-kill/pick-item progress assignment.
+
+## Reviewed integration queue: worker 04 3a932b8c
+
+Reviewed afccb88/07262e3: UpdateRespawnObelisk periodic scheduler, shared terrain helper, manager allocation on periodic replenishment and live definition deadline after Init. Worker reports 2,304 retained original ticks and 121 passing tests. Exact commits/snapshot queued; canonical validation pending. No source changes during freeze. Map tick/reset/corpse integration remains open. All nine workers observed running.
+
+## Reviewed integration queue: worker 09 a6474259
+
+Reviewed 1c85307/018f544 compiled mob stack FSM: five states, 23 transitions, callback-before-stack ordering, empty death polling, and explicit update/diagnostic providers. Worker reports 121 passing tests and original dispatch/registration/initial-state comparisons. Exact snapshot/commits queued, not integrated during freeze. Death rewards remain external after Damage, not automatic on state entry. Other state bodies, Lua ownership and production routing remain open.
+
+## Reviewed integration queue: worker 06 041a1ade
+
+Reviewed 6c607bf/eb6b84f quest-start 144-byte 0501 serialization and wrapping local-calendar time packing. Worker reports 256 complete original comparisons and 121 passing tests. Exact commits/snapshot queued during source freeze. Actual calendar acquisition/log transport remain required; active QuestAdd assignment already supersedes this older waiting handoff. Central frozen tests have acquired their slot and were observed running (23/134 completed), SQL not yet started.
+
+## Reviewed integration queue: worker 08 ec0b735e
+
+Reviewed 10b54f0/09912be three targeting-help paths, cached range/live source reads and float/double distance ordering. Reported 1,536 original cases and 122 passing worker tests. Exact snapshot and commits queued during freeze. Multi-candidate removal/reentrancy, locked live world cursor, canonical fields and SetTarget providers remain required. Frozen central suite observed at 108/134 passing; final result and SQL still pending.
+
+## Reviewed integration queue: worker 02 1b5c23c4
+
+Reviewed 3b1e120/f2d8376 catalog population and original limit initialization. Reported full original/SQL match: 16,047 item definitions, 15,505 members; 123 worker tests. Exact snapshot/commits queued during freeze. Sequence configuration and production catalog/loot providers remain open. Central frozen build and all 134 tests passed (48.11 seconds); full isolated SQL integration is running, not yet claimed passed.
+
+## Reviewed integration queue: worker 05 0fba35db
+
+Reviewed f34712a/bd89213 LevelUp party composition evidence, 256 original slice sequences and 121 reported worker tests. Queue after initial PartyRuntime milestone; no production owner claimed. Existing normal membership assignment supersedes this older waiting report. Central SQL progressing through account/game TCP and rollback contracts, still not complete. Frozen source remains unchanged.
+
+## Reviewed integration queue: worker 07 a491c039
+
+Reviewed 6ea9257/e30fbed complete request/item/replica/pool composition evidence: reported 512 original flows, 209 completions, 680 releases and 122 worker tests. Queue after initial requests implementation. Coordinator must expose serialized retained Actor item access, count synchronization and direct release; do not use Actor::remove_item (duplicate transport/log/exchange effects). Multi-item whole-stack release preserves old count at release. Independent PC-kill/item-pick progress assignment already supersedes older waiting report. Central isolated SQL still running; no source changes during freeze.
+
+## Reviewed integration queue: worker 03 d16a557c
+
+Reviewed 8053594/317a9c4 expiry and shared cursor with recursive clear: unlink precedes required effect reversal and recycling follows it. Worker reports 128 scenarios/1,600 operations and 122 passing tests after fixing an oracle translated-code cache issue; initial failing fixture is not counted as success. Exact commits/snapshot queued during freeze. Actual RemApplySkill effects, canonical ownership and scheduler remain open. Central SQL has progressed through TCP creation, player loading and core/inventory/skill saves; final completion pending.
+
+## Reviewed integration queue: worker 01 88ab6f92
+
+Reviewed 0a2c753/e68ce1c user hit composition: explicit secondary party credit amount, membership reload, stop-before-death and user-ID reload. Worker reports 768 original caller slices and 122 passing tests after rebuilding a stale object; initial failed run is not a pass. Exact snapshot/commits queued during freeze. Existing Aggro assignment supersedes this older waiting report. Central SQL has passed complete character save checks but pipeline exit remains pending.
+
+## Frozen batch completed successfully — 2026-11-04 UTC
+
+Session 18658 exited 0: canonical build, 134/134 native tests (48.11 seconds), and complete isolated SQL integration all passed for frozen source HEAD be9797bc61c45a68ae140619e5e6c33ad0befc7a. Logs: .local/frozen-batch-build.log, .local/frozen-batch-tests.log, .local/frozen-batch-sql.log. Final SQL output includes complete character saves and guild procedures in a disposable catalog. Freeze released after successful pipeline completion. Publish this verified batch before integrating queued worker milestones. Queue remains pending; these later reports are not included in the 134-test validation. Production world/gameplay integration remains incomplete and server is not playable.
