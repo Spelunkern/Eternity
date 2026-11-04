@@ -1994,3 +1994,13 @@ in the uniquely named fixture. Session 69040 runs roster unit, full build and
 isolated SQL sequentially; results pending. The two loader APIs must not both run
 for one selection: use the retained single PlayerSnapshot for Actor and replica.
 No live selection route or original-client play is claimed. Dashboard updated.
+
+Independent 03's `3af12e9`/`72a7d53` route decoded system and NProtect
+packets, with seven focused native checks and 32 original NProtect cases passed.
+Coordinator independently reproduced the original fixture byte-for-byte and
+cherry-picked both changes into `coordinator/protocol` as `ed49dd7`/`c14ea5c`;
+session 96503 runs combined system unit, TCP and handoff tests. Pre-auth A302
+currently fails closed because no early connection-owned NProtect service exists,
+unlike original absent-object behavior; 0003 reply owner is not wired, 1000-frame
+snapshot threshold and actual CCSAuth2 ownership remain open. These changes are
+not on main or in the already-running coordinator/entry branch. Dashboard updated.
