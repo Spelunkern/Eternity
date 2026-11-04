@@ -1488,3 +1488,12 @@ isolated SQL, but coordinator found `StartFrame::npc` retains a borrowed
 prevents removal/reuse across callbacks or implement a real same-NPC retention
 and nested release/reuse test. Do not merge the candidate solely on the current
 fixture's test reward provider or caller-lifetime comment.
+
+Ingress branch `6d68908` focused `world-application-unit` passed (1/1) in
+`.local/ingress-test-ack.log`, covering pause acknowledgment and deferred 0201
+resume. It is not merged, not yet bound to real WorldAdmission, and has not run
+full build/regression/SQL. Main 53983 is now building (not merely queued); avoid
+changing main sources until the pipeline finishes. Independent 05 committed
+cursor `45e40e9`, but still has no per-mob pool pin: its direct idle callback
+cannot enforce the report's required retention. Coordinator requested an actual
+retention guard/lease plus reentrant release/reallocation test before wiring.
