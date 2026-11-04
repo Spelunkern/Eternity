@@ -1,0 +1,6 @@
+# ps_game.exe SHA256 0fb7c9f13b5bcf186118f8bfe73ab214226b93e8aa502b8e6fded4a8312bc547; actual ReLoadConstMobItem comparison/write/counter block 004c3043..004c3105 over restored usp_Read_MobItems_R2 projections. Full query/GetData/failure coordinator has separate synthetic fixtures. Hash covers every live slot and cumulative DWORD change counter.
+A	1	35	15064773773159560042	9
+A	2	53	4087117104883249507	9
+A	17	71	8752691872909937614	9
+A	100	89	10085802950238230335	9
+A	2746	107	5870901446668967566	9

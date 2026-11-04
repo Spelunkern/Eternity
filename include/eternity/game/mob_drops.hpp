@@ -66,6 +66,9 @@ struct MobLootContext {
     std::uint8_t quest_type=0,quest_type_id=0;
     bool logged=false;
     MobDropDefinition slots{};
+    // Borrowed original definition storage; reload writes remain visible between
+    // drop callbacks. Leave null only for explicit standalone projections.
+    const MobDropDefinition* live_slots=nullptr;
 };
 // Required providers for the unreconstructed world/item/guild owners. There are
 // deliberately no default success/no-op implementations.

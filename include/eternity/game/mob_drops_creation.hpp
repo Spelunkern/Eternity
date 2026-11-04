@@ -14,8 +14,9 @@ class MobDropCreationWorld {
 public:
     virtual ~MobDropCreationWorld()=default;
     virtual std::uint32_t make_time()=0;
-    // SUniqueIDGen::GenID value BEFORE adding server ID. A shared ItemIds
-    // configured with server zero can provide this; do not add server twice.
+    // Shared original SUniqueIDGen::GenID value BEFORE adding server ID.
+    // Canonical ItemIds timing/wrap compatibility is a coordinator dependency;
+    // do not substitute per-drop generators or add server twice.
     virtual std::uint64_t raw_unique_id()=0;
 };
 // CMob::ItemDrop 004a662a..004a66cc. Uses the real shared GroundItemPool and

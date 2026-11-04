@@ -86,7 +86,7 @@ void mob_loot(const MobLootContext& mob,MobLootUser* user,MobLootParty* party,Ra
     }
     // Same loop as mob_drop_slots, retaining resolved item pointers explicitly.
     for(std::size_t i=1;i<mob.slots.size();++i) {
-        const auto& slot=mob.slots[i];if(!slot.grade) continue;
+        const auto& slot=(mob.live_slots?*mob.live_slots:mob.slots)[i];if(!slot.grade) continue;
         const auto roll=i<7?static_cast<std::uint32_t>(random.next()%100):server.next(1000000);
         if(roll<slot.rate) if(const auto* item=world.grade_item(slot.grade)) world.deliver(*item,user,party,false);
     }
