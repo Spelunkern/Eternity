@@ -1403,3 +1403,11 @@ while WorldChannel::send wraps std::function/asio::post and can throw. 07 was
 asked to provide explicit real queue-failure/disconnection handling in its
 future scene owner, rather than terminate or fabricate delivery. This remains
 an integration requirement, not implemented production functionality.
+
+Independent 09 committed `2bc3b1b` adding restore-with-products from an already
+loaded snapshot and a disposable-catalog SQL test for selection, mutation,
+exit-save and reload. The test is not yet wired to the existing disposable
+creation harness and has no SQL pass claim. Worker 01 owns creation harness
+changes; reconcile both tests centrally and preserve one `Players::load` per
+selection. Main validation session 53983 remains live and waits for the build
+lock; do not modify source under its pending build.
