@@ -1219,3 +1219,10 @@ Independent 06 has new `5c1e82b` AttackSuccess evidence and code (8192 normal,
 4096 skill original traces reported), still awaiting independent review/build;
 no actual AttackDamage or live root claim. Central combat validation remains in
 live session 99411 waiting on shared build slots.
+
+Coordinator independently regenerated both `5c1e82b` AttackSuccess original
+fixtures in the independent 06 checkout and byte-compared them to the checked-in
+vectors: 8192 normal and 4096 skill cases match. This verifies fixture
+reproducibility, not the native implementation or completeness beyond fixture
+coverage. Requested explicit x87/native floating-environment and zero-divisor
+review before integration; delivery remains unvalidated on main.
