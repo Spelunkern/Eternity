@@ -19,7 +19,7 @@ struct ObeliskRuntimeSpawn {
 };
 struct ObeliskRuntime {
     std::int32_t country=2,last_destroy_country=2,base_country=2;
-    std::uint32_t change_time=0,base_id=0;
+    std::uint32_t change_time=0,base_id=0,id=0; // id is stMapObelisk::dwID, distinct from base_id.
     UserPosition center;
     std::array<const MobRuntimeTemplate*,3> definitions{};
     MobRespawn respawn;

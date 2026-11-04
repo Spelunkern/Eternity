@@ -1,4 +1,4 @@
-#include "eternity/game/obelisk_runtime.hpp"
+#include "eternity/game/obelisk_runtime_publication.hpp"
 #include <algorithm>
 #include <bit>
 #include <cmath>
@@ -14,11 +14,6 @@ std::size_t slots(const ObeliskRuntimeSpawn& s) {
 }
 void country_check(std::int32_t country) {if(country<0 || country>2) throw std::invalid_argument("Invalid obelisk country");}
 void put(net::Packet& p,std::uint32_t v,unsigned n) {for(unsigned i=0;i<n;++i) p.push_back(static_cast<std::uint8_t>(v>>(i*8)));}
-net::Packet persistence_packet(const ObeliskRuntime& o) {
-    net::Packet p;put(p,0x207,2);put(p,o.base_id,4);
-    put(p,static_cast<std::uint8_t>(((static_cast<std::uint32_t>(o.last_destroy_country)+1U)*16U)|static_cast<std::uint32_t>(o.country)),1);
-    put(p,o.change_time,4);return p;
-}
 net::Packet log_packet(std::uint16_t opcode,const ObeliskRuntimeMap& map,const MobRuntime& mob,ObeliskRuntimeWorld& w) {
     net::Packet p;put(p,opcode,2);put(p,map.id,2);
     for(float f:{mob.position.x,mob.position.y,mob.position.z}) put(p,std::bit_cast<std::uint32_t>(f),4);
@@ -66,7 +61,7 @@ void destroy_obelisk(ObeliskRuntimeMap& map,ObeliskRuntime& o,std::size_t index,
     auto p=log_packet(0xa03,map,mob,w);put(p,static_cast<std::uint32_t>(previous),1);put(p,static_cast<std::uint32_t>(o.country),1);w.game_log(p);
     if(previous!=o.country) {
         if(o.country!=2) o.last_destroy_country=o.country;
-        w.database(persistence_packet(o));w.update_portal_links();
+        w.database(obelisk_database_change_packet(o));w.update_portal_links();
     }
 }
 namespace {
@@ -134,7 +129,7 @@ void reset_obelisks(ObeliskRuntimeMap& map,std::span<ObeliskRuntime> obelisks,co
         // Reset deliberately does not clear the principal or alter current itself.
         o.respawn.next=deadline;country_check(o.base_country);o.country=o.base_country;
         if(o.country!=2) o.last_destroy_country=o.country;
-        w.send_change(i);w.database(persistence_packet(o));
+        w.send_change(i);w.database(obelisk_database_change_packet(o));
     }
     w.update_portal_links();
 }
