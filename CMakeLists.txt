@@ -717,3 +717,11 @@ if(BUILD_TESTING)
     target_link_libraries(quest-start-add-flow-unit PRIVATE eternity_game)
     add_test(NAME quest-start-add-flow-unit COMMAND quest-start-add-flow-unit ${CMAKE_CURRENT_SOURCE_DIR}/tests/data/quest-start-add-flow-oracle.tsv)
 endif()
+
+# Worker 05: original normal-party membership coordinator.
+target_sources(eternity_game PRIVATE src/game/party_runtime_membership.cpp)
+if(BUILD_TESTING)
+    add_executable(party-runtime-membership-unit tests/party_runtime_membership_unit.cpp)
+    target_link_libraries(party-runtime-membership-unit PRIVATE eternity_game)
+    add_test(NAME party-runtime-membership-unit COMMAND party-runtime-membership-unit ${CMAKE_CURRENT_SOURCE_DIR}/tests/data/party-runtime-membership-oracle.tsv)
+endif()
