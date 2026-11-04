@@ -14,10 +14,10 @@ struct NpcServices final:ZoneNpcServices {
 };
 struct Services final:VerticalQuestPorts,QuestRewardWorld,QuestRuntimeWorld {
     Actor& actor;QuestRuntime& runtime;Scene& scene;QuestReplicaPool replica_pool;QuestReplica replica;
-    std::vector<unsigned> db;std::vector<unsigned> order;unsigned locks=0;std::int32_t experience=0;
+    std::vector<unsigned> db;std::vector<unsigned> order;std::function<void()> on_add;std::array<std::uint8_t,144> start_log{};unsigned locks=0;std::int32_t experience=0;
     Services(Actor& a,QuestRuntime& r,Scene& s):actor(a),runtime(r),scene(s),replica(a.account_id(),replica_pool) {}
     void send_database(Actor& a,const net::Packet& p) override {check(&a==&actor,"wrong actor");send_database(p);}
-    void send_database(const net::Packet& p) override {auto op=word(p,0,2);db.push_back(op);order.push_back(op);check(scene.packets.size()==(op==0xa01?0U:op==0xa05?1U:3U),"database/client ordering differs");check(replica.apply(p)==InventoryReplicaResult::applied,"quest replica rejected packet");}
+    void send_database(const net::Packet& p) override {auto op=word(p,0,2);db.push_back(op);order.push_back(op);check(scene.packets.size()==(op==0xa01?0U:op==0xa05?1U:3U),"database/client ordering differs");check(replica.apply(p)==InventoryReplicaResult::applied,"quest replica rejected packet");if(op==0xa01 && on_add) on_add();}
     void send_client(Actor& a,const net::Packet& p) override {check(&a==&actor,"wrong client actor");order.push_back(word(p,0,2));a.send_self(p);}
     std::uint32_t local_make_time(Actor&) override {return 1;}
     std::uint32_t tick_ms(Actor&) override {return 100;}
@@ -28,7 +28,7 @@ struct Services final:VerticalQuestPorts,QuestRewardWorld,QuestRuntimeWorld {
     void send_game_log(Actor&,const net::Packet& p) override {order.push_back(word(p,0,2));}
     QuestRewardWorld& reward_world(Actor& a) override {check(&a==&actor,"wrong reward actor");return *this;}
     QuestStartLogContext start_log_context(Actor&) override {return {};}
-    void send_start_log(Actor&,const std::array<std::uint8_t,144>&) override {order.push_back(0x501);}
+    void send_start_log(Actor&,const std::array<std::uint8_t,144>& p) override {start_log=p;order.push_back(0x501);}
     void add_experience(std::uint32_t,std::int32_t n,bool) override {experience+=n;order.push_back(0xffff);}
     void fill_game_log_main(std::span<std::uint8_t> p) override {fill_game_log_main(actor,p);}
     std::optional<QuestRewardItemReceipt> receive_item(std::uint8_t t,std::uint8_t,std::uint8_t) override {check(t==0,"unexpected reward item");return {};}
@@ -51,15 +51,27 @@ int main() {try {
     auto actor=std::make_shared<Actor>(9001,EffectStatus{},PlayerResources{},std::vector<PersistedEffect>{},scene,ActorEquipmentRules{*items,enchant,mobs});
     actor->account_id()=77;actor->status().level=20;actor->appearance().identity.job=0;
     PoolFactory factory;auto pool=std::make_shared<QuestRuntimePool>(factory);auto runtime=std::make_shared<QuestRuntime>(77,*pool);Services services(*actor,*runtime,scene);
-    NpcServices npc_services;NpcDefinition npc_definition;Npc npc;ZoneNpcs zone(MapGeometry(81),npc_services);npc_definition.record[0]=2;npc.id=99;npc.type=2;npc.type_id=9;npc.definition=&npc_definition;check(zone.enter(npc),"NPC entry failed");
+    NpcServices npc_services;NpcDefinition npc_definition,replacement_definition;NpcPool npc_pool;ZoneNpcs zone(MapGeometry(81),npc_services);
+    npc_definition.record[0]=2;npc_definition.record[20]='A';replacement_definition.record[20]='B';
+    auto* npc=npc_pool.allocate();npc->id=99;npc->type=2;npc->type_id=9;npc->definition=&npc_definition;check(zone.enter(*npc),"NPC entry failed");
+    auto guard=std::make_shared<VerticalQuestNpcGuard>(zone,npc_pool);Npc* replacement=nullptr;
     std::uint8_t last=0;std::uint32_t deadline=0;
-    VerticalQuests quests({items,item_pool,ids,defs,pool,actor,runtime},{last,deadline},zone,services);
+    VerticalQuests quests({items,item_pool,ids,defs,pool,actor,runtime},{last,deadline},zone,guard,services);
+    services.on_add=[&] {
+        check(guard->retire(*npc),"nested NPC retirement failed");
+        replacement=npc_pool.allocate();check(replacement!=npc,"leased NPC was recycled during callback");
+        replacement->id=99;replacement->type=2;replacement->type_id=9;replacement->definition=&replacement_definition;
+        check(zone.enter(*replacement),"replacement NPC entry failed");
+        check(!quests.start(1,99),"nested duplicate start accepted");
+    };
     check(!quests.start(1,98),"missing NPC accepted");check(quests.start(1,99),"quest not accepted");check(runtime->active().size()==1 && runtime->mob_kill_quests()==1,"accept did not use actual runtime");
+    check(services.start_log[112]=='A',"start log used replacement NPC");
+    auto* recycled=npc_pool.allocate();check(recycled==npc,"retired NPC not released after lease");npc_pool.release(*recycled);
     quests.end(1,99);check(runtime->active().size()==1,"unfinished quest completed");
     MobQuestLinks links({{}, {}, {}, {1}});quests.kill_mob(3,links);check(runtime->active().front()->packet.counters[0]==1,"actual quest counter not updated");check(runtime->active().size()==1,"NPC-gated quest completed early");
     quests.end(1,98);check(runtime->active().size()==1,"wrong NPC completed quest");quests.end(1,99);
     check(runtime->active().empty() && runtime->finished().size()==1 && runtime->mob_kill_quests()==0,"completion did not remove actual quest");check(services.experience==20,"experience callback mismatch");check(services.replica.active().empty(),"DB replica retains completed quest");
     check(scene.packets.size()==3 && word(scene.packets[0],0,2)==0x902 && word(scene.packets[1],0,2)==0x905 && word(scene.packets[2],0,2)==0x903,"client packet order differs");
     check(services.db==std::vector<unsigned>({0xa01,0xa05,0xa02}),"database ordering differs");check(services.locks==0,"quest lock leaked");
-    check(zone.leave(npc),"NPC leave failed");std::cout<<"Actual Actor quest acceptance, mob progress and NPC completion passed\n";
+    check(guard->retire(*replacement),"NPC retirement failed");std::cout<<"Actual Actor quest acceptance, mob progress and NPC completion passed\n";
 } catch(const std::exception& e) {std::cerr<<e.what()<<'\n';return 1;}}
