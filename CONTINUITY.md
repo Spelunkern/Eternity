@@ -1147,3 +1147,19 @@ Reviewedbcff828/ba6cd04 selectedskilldetail21..27/multihitlivecount/deathguards/
 ## End of day requested by user — 2026-11-04
 
 User explicitly requested stop all sessions, update documentation and power off after preservation. Continuous scheduling disabled via tools/parallel.py stop; objective remains OPEN, do not auto-resume tonight. Let current worker blocks finish before closing. Twentieth pipeline11245 exited0:build299/299tests103.07s/fullisolatedSQL/fullcatalog/realstreamSQL passed source3620439. Logs.local/twentieth-batch-*.log;freeze released. Latest handoff08 378d196f HEAD481b36c received and queued pending review,not integrated. Other reviewed pending queue entries remain for next session. Publish validated batch, preserve every worker checkout/HEAD/status and dirty changes before shutdown. Resume manually from queue/snapshots after user request; no playable-server/globalcompletion claim.
+
+## Final shutdown preservation
+
+Validated twentieth batch published5ea007d. All external Codex worker executions stopped gracefully by SIGINT at user request; interrupted blocks may show failed exit130, which is intentional shutdown rather than test failure. Scheduler disabled and Eternity worker terminals/supervisor closed. No automatic continuation tonight. Every worker HEAD/dirty status, binary patch and untracked-file archive saved under .local/parallel/end-of-day-2026-11-04/manifest.json and matching files; worktrees preserved in place, including unfinished code, not marked validated.
+
+- 01-mob-damage: HEAD ba6cd0456595cbba42f72185ef5a5d013707e670; dirty=True; untracked=5.
+- 02-mob-drops: HEAD f3368dde4377552065734a3bf31f8205485039e1; dirty=False; untracked=0.
+- 03-mob-skills: HEAD 495196fe8849a35f10662c8dd89b08465306125b; dirty=False; untracked=0.
+- 04-obelisks: HEAD f2d96ede6b137231e6cf6d29f6fef40ae84b8d41; dirty=False; untracked=0.
+- 05-party-state: HEAD 8ce709586dd4e4a446b08657de80b5ef417d7008; dirty=True; untracked=0.
+- 06-quest-start: HEAD 2e5413deedf0aff7808f5160bbd3858dd85136e9; dirty=False; untracked=0.
+- 07-quest-requests: HEAD c674ca72e5db76c54e69c12d30e4238f16638f63; dirty=False; untracked=0.
+- 08-mob-targeting: HEAD 481b36c0c6e7673904f5b3603747ab925e43c439; dirty=False; untracked=0.
+- 09-mob-events: HEAD 8e3e456fe16d0c771bc3ed0840f98e086515f260; dirty=True; untracked=7.
+
+Next session: inspect final preservation manifest and latest worker rounds; review pending queue, then resume only on user instruction. Objective remains open; estimated15-20percent with lowconfidence,not playable. Shutdown after final doc publication and filesystem sync.
