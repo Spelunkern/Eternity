@@ -1274,3 +1274,59 @@ Worker03's pool/init/zone adapter assignment was not duplicated. KC/calendar and
 other mandatory world services remain open. Canonical files and SQL were
 unchanged; final isolated SQL validation remains coordinator-owned. The server
 is not playable.
+
+## World-level initial persistence — one DB port and ordered live phases
+
+Implementation commit: `1112ff88203bf68d2813a8398243892818627a89`.
+
+`publish_world_obelisk_database_lists` recovers **ps_game.exe,
+CWorld::SendDBObeliskList 00413b90** using the actual native portal and ordinary
+list publishers. It calls portal persistence first (**00413b96**), even with an
+empty map table, then ordinary map lists in table order (**00413ba6–00413bbc**).
+Both paths feed the same required ObeliskRuntimePublication::database_packet;
+a private portal adapter does not create a second transport or cache. Accidental
+map/world service requests on this DB-only path fail explicitly.
+
+Each underlying publisher retains its original independent chunk state. A
+partial portal packet is sent before map publication starts, and partial map
+packets do not merge with the next map. This differs from the mixed user scene
+list, which shares its chunk across ordinary and portal rows. Portal country3/
+time0 and ordinary packed live country/last-destroy/change-time rules remain in
+the already recovered serializers. No map-zone guard filters initial DB lists.
+All row values remain live through prior portal/map transport callbacks; map
+and portal table counts/backing storage must stay stable.
+
+128 original executions run the complete world coordinator plus actual
+**SendDBPortalLinkList 0042b460 / SendDBObeliskList 0042b370**, observing only the
+shared DB Send. They compare452 packets and32,668 records across0–4 maps,
+0/1/99/100/101/199/200/201 portals and0/1/2/99/100/101/199/200 ordinary records
+per map. The original connection identity is checked on every send. In alternate
+blocks every callback mutates all ordinary base IDs/countries/last-destroy/time
+and all portal base IDs. Cross-phase and cross-map reads must reflect the exact
+number/order of preceding sends. Empty tables and full/partial chunk boundaries
+are retained. Native comparisons use the new coordinator and actual existing
+publishers; large tables stress serialization, not portal-update flag capacity.
+
+Validation:
+
+- `python3 tools/dev.py build`: exit0, no warnings
+  (`work/obelisk-world-publication-build.log`).
+- `python3 tools/dev.py test`: exit0, **141/141 passed**, 29.91 seconds
+  (`work/obelisk-world-publication-tests.log`).
+- Independent original regeneration/`cmp`: exit0, byte-identical128 cases
+  (`work/obelisk-runtime-world-publication-repeat.tsv`).
+- Locked focused Ghidra export: exit0 (`work/obelisk-world-publication-ghidra.log`).
+- All original EXE/PDB SHA256SUMS passed
+  (`work/obelisk-world-publication-hashes.log`); `git diff --check`: clean.
+
+Integration: use this one entry point for initial/reconnect persistence over
+the real shared DB connection. Pass the retained global portal table and ordinary
+map record spans in original map-table order. Preserve owners and synchronous
+callback lifetimes; no native provider may buffer stale snapshots of later maps
+before publishing earlier phases. This closes the world publication sequencing
+implementation, not connection startup/reconnect dispatch or DB delivery.
+No canonical interface change is required. Actual ServerMaps mutable portal/
+zone lifecycle, user scene dispatch, KC/calendar/transports and root assembly
+remain dependencies. Worker03's real pool/init/zone adapter was not duplicated.
+Canonical files and SQL were unchanged; final isolated SQL validation remains
+coordinator-owned. The server is not playable.
