@@ -2310,3 +2310,82 @@ cursor or stack. SQL/contracts did not change; coordinator owns isolated SQL and
 complete integration checks. The server is not playable.
 
 Implementation commit: `6ab5cc4d3efd45a6b0b36a658614b979dc578567`.
+
+## Milestone 33 — recursive CalculateParam system calls and nested F_OUT ordering
+
+### Evidence / behavior
+
+`ps_game.exe`, `CKFSM<CMob>::CalculateParam` `0049d020`, function case
+`0049d250..0049d431`; full Ghidra export and original instructions. Recursive
+argument construction is `0049d2c0..0049d2eb`, bound instance virtual call
+`0049d2ef..0049d305`, post-call metadata/F_OUT `0049d314..0049d379`, vector
+release `0049d37b..0049d389`, then private-stack result push
+`0049d38c..0049d40a`. The recursive call uses the same condition cursor and owner,
+but each CalculateParam invocation owns its capacity-20 stack. Nested returns
+use separate storage and do not overwrite the parent's numeric-literal scratch.
+
+Added explicit `MobAiNestedServices`, extending the integer-expression argument
+provider with recursive system dispatch. The same recovered vector/metadata/
+F_OUT pipeline is reused at each level without restarting TravelCondition or
+resetting its main stack/cursor. Child output writes occur before its result is
+pushed onto the parent's private stack; the parent later dispatches with the
+completed argument value. Each vector is released before result publication.
+Earlier argument and expression providers retain their nested-call boundary.
+
+Function definitions and actual +48 instance binding remain required. The six
+known CMob queries continue to use actual MobRuntime fields; other IDs require
+real world implementations. CalculateParam assignments/compound updates and
+float arithmetic remain errors, as do undefined first arguments, missing typed
+OUT targets, invalid metadata/storage and nonfinite arithmetic propagation.
+No untyped original default return or world no-op is supplied.
+
+### Validation
+
+- 768 retained sequences / 1,536 complete original TravelCondition executions,
+  4,145 observed actual CMob virtual DoFunction calls and 4,635 arguments.
+  Entry/return observers verify 4,635 real CalculateParam calls, up to five
+  simultaneous argument frames, with fully balanced returns. Real recursion,
+  private stacks, vector allocation/growth/copy/free, bound queries and F_OUT
+  execute. All 20,022 allocations are freed and poisoned. Only allocation/free/
+  security-cookie imports are adapted; no parser/stack/vector/query/map port.
+- Metadata counts 0/1/2, requested nested depths 0..4, six IDs, int/float/DWORD/
+  string values, integer arithmetic on nested results, literal-scratch reuse,
+  alias/zero-ID F_OUT, repeated calls, zero-capacity outer stacks and declared
+  count truncation are covered. Exact argument call order/payloads, full retained
+  map/stack bytes, subject changes, cursor/top and per-round truth counts match
+  native. 87 final maps and 149 final subjects change.
+- Positive metadata remains an explicit input projection on known queries, not
+  recovered factory-asset declarations. String bytes after NUL in argument
+  vectors remain excluded as original indeterminate storage; retained map/stack
+  bytes are compared in full.
+- Actual native nested update computes Source*3 inside an inner call, writes its
+  VariableID target before returning to the outer query, and feeds a later state
+  condition: 15 stays, then 30 enters the target state. The outer attack flag is
+  consumed afterward. Tests also verify that the previous expression provider
+  rejects nesting and the new provider accepts the same call stream. Earlier
+  callback/error-boundary tests remain in the suite; these are native projections,
+  not original reentrant world execution claims.
+- Oracle regenerates byte-identically; original SHA256SUMS pass; diff check clean.
+- Build exit 0, no compiler warnings; `work/mob_ai_states_nested-build.log`.
+- `python3 tools/dev.py test`: exit 0, 153/153 tests pass (58.57 s),
+  nested test 0.92 s; `work/mob_ai_states_nested-tests.log`.
+
+### Required integration / remaining work
+
+No shared canonical header or MobRuntime field change was needed. Preserve each
+owner's actual SysFuncMap/CKFunctionParam metadata and +48 bound mob identity;
+those remain the coordinator interface requirements from milestones 29/31.
+Do not replace recursive calls with a new TravelCondition invocation: that resets
+the main stack/cursor. Child argument vectors/private stacks must remain alive
+until their corresponding return/writeback and must not escape dispatch.
+
+CalculateParam assignment/compound updates and float arithmetic, other DoFunction/
+world handlers, nonfinite propagation, nonnumeric comparisons, full factory/asset
+decoding and root world/Lua/scheduling/destruction remain open. Next independent
+block can recover CalculateParam assignment/compound opcodes 10..16 and their
+same-map write ordering within recursive argument evaluation. Unknown functions
+and missing providers must continue to error. SQL/contracts did not change;
+coordinator owns isolated SQL and complete integration checks. The server is not
+playable.
+
+Implementation commit: `f76a372dee4b3490333dd3f586242b5cc707f6af`.
