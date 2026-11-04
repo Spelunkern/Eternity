@@ -9,6 +9,8 @@ std::uint32_t& raid_membership_index(PartyRegistryParty&,std::int32_t);
 std::int32_t empty_raid_membership_slot(PartyRegistryParty&); // 00446480
 bool enter_raid_party(PartyRegistryParty&,PartyMembershipUser&,PartyMembershipWorld&); // 00445a30
 bool leave_raid_party(PartyRegistryParty&,PartyMembershipUser&,PartyMembershipWorld&); // 00446510
+// ExpelRaidPartyUser 00446cd0: notify BEFORE clearing party; missing returns true.
+bool expel_raid_party(PartyRegistryParty&,PartyMembershipUser&,PartyMembershipWorld&);
 std::uint8_t raid_membership_type(PartyMembershipUser&,PartyMembershipWorld&); // 0048a330, 30 slots
 // Reuses existing allocation, direct send and reference completion owners.
 // Pool/worker/scene/log/guild/registry/locks remain REQUIRED real providers.

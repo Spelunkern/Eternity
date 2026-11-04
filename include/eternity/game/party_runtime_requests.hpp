@@ -41,5 +41,9 @@ public:
 // packet (normal lengths 2/3/6/23 as appropriate) and a pinned live user. Name
 // request 0b09 mutates byte 22 to NUL before lookup. Callbacks must not throw or
 // invalidate selected party/slot lifetimes; real locks must be recursive.
+// Shared recovered IsPartyBoth 00444e90 and FindUser 00445520 bodies. Find
+// captures array position under lock, then reloads its pointer AFTER unlock.
+bool is_party_request_leader(PartyRegistryParty&,PartyMembershipUser&,PartyMembershipWorld&);
+PartyMembershipUser* find_party_request_member(PartyRegistryParty&,std::uint32_t,PartyMembershipWorld&);
 void dispatch_party_request(PartyRequestUser,net::Packet&,PartyRequestWorld&);
 }

@@ -9,8 +9,8 @@ void configure_raid_party(PartyRegistryParty&,std::uint8_t,PartyMembershipWorld&
 class PartyRaidRequestsWorld:public PartyRaidRequestWorld {
 public:
     void raid_request(const PartyRequestUser&,net::Packet&) override;
-    // Required remaining original branches (invites, autojoin,
-    // raid expulsion), never a default success/no-op.
+    // Required remaining original branches (invites, autojoin), never a
+    // default success/no-op.
     // Also required for autojoin bytes >1: current registry bool cannot retain
     // those original raw +115 values. Ordinary decoded booleans use real code.
     virtual void remaining_raid_request(const PartyRequestUser&,net::Packet&)=0;

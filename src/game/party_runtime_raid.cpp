@@ -83,13 +83,16 @@ bool enter_raid_party(PartyRegistryParty& p,PartyMembershipUser& user,PartyMembe
     ++p.count;user.pending_request=0;refresh(p);w.unlock(p);
     notify_party_membership_scene(user,w);log_party_membership(p,user,0xf01,w);return true;
 }
-bool leave_raid_party(PartyRegistryParty& p,PartyMembershipUser& user,PartyMembershipWorld& w) {
+static bool remove_raid_party(PartyRegistryParty& p,PartyMembershipUser* subject,PartyMembershipWorld& w,bool expelled) {
     w.lock(p);std::int32_t removed=0;
-    while(removed<p.count && raid_membership_slot(p,removed)!=&user)++removed;
-    if(removed>=p.count){w.unlock(p);return false;}
+    while(removed<p.count && (!raid_membership_slot(p,removed) || raid_membership_slot(p,removed)!=subject))++removed;
+    if(removed>=p.count){w.unlock(p);return expelled;}
+    auto& user=*subject;
     bool leader_changed=removed==p.leader;
     bool sub_changed=!leader_changed && removed==p.sub_leader;
-    user.party=nullptr;notify(p,0xb0d,user,w);
+    if(!expelled)user.party=nullptr;
+    notify(p,expelled?0xb1a:0xb0d,user,w);
+    if(expelled)user.party=nullptr;
     for(auto from=removed+1;from<p.count;++from) {
         raid_membership_slot(p,from-1)=raid_membership_slot(p,from);
         raid_membership_index(p,from-1)=raid_membership_index(p,from);
@@ -99,7 +102,7 @@ bool leave_raid_party(PartyRegistryParty& p,PartyMembershipUser& user,PartyMembe
     --p.count;
     if(p.count==0)w.unregister_party(p);
     else if(p.count==1) {
-        if(p.experience.kind==1)leave_raid_party(p,*raid_membership_slot(p,0),w);
+        if(p.experience.kind==1)remove_raid_party(p,raid_membership_slot(p,0),w,false);
         else leave_normal_party(p,*raid_membership_slot(p,0),w);
     } else if(leader_changed || sub_changed) {
         if(leader_changed)p.leader=p.sub_leader;
@@ -116,6 +119,8 @@ bool leave_raid_party(PartyRegistryParty& p,PartyMembershipUser& user,PartyMembe
     w.unlock(p);notify_party_membership_scene(user,w);if(leader)notify_party_membership_scene(*leader,w);
     log_party_membership(p,user,0xf02,w);return true;
 }
+bool leave_raid_party(PartyRegistryParty& p,PartyMembershipUser& user,PartyMembershipWorld& w){return remove_raid_party(p,&user,w,false);}
+bool expel_raid_party(PartyRegistryParty& p,PartyMembershipUser& user,PartyMembershipWorld& w){return remove_raid_party(p,&user,w,true);}
 std::uint8_t raid_membership_type(PartyMembershipUser& user,PartyMembershipWorld& w) {
     auto* retained=user.party;
     if(retained){w.lock(*retained);if(!user.party){w.unlock(*retained);retained=nullptr;}}

@@ -1,6 +1,7 @@
 #include "eternity/game/party_runtime_raid_requests.hpp"
 #include "eternity/game/party_runtime_raid_requests_lock.hpp"
 #include "eternity/game/party_runtime_raid_requests_leaders.hpp"
+#include "eternity/game/party_runtime_raid_requests_expel.hpp"
 #include "eternity/game/party_runtime_registry_break.hpp"
 #include <bit>
 #include <stdexcept>
@@ -22,6 +23,7 @@ void configure_raid_party(PartyRegistryParty& p,std::uint8_t kind,PartyMembershi
     w.unlock(p);
 }
 void PartyRaidRequestsWorld::raid_request(const PartyRequestUser& u,net::Packet& request) {
+    if(dispatch_raid_expulsion_request(u,request,*this))return;
     if(dispatch_raid_leadership_request(u,request,*this))return;
     const auto op=word(request,0,2);
     if(op!=0xb0e && op!=0xb0f && op!=0xb10 && op!=0xb16){remaining_raid_request(u,request);return;}
