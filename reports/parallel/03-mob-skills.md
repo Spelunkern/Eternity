@@ -1,7 +1,7 @@
 # Worker 03: mob applied skill ownership
 
-The native list/pool owner, manager IDs, expiration, effect mutations and final-damage
-coordination are recovered.
+The native list/pool owner, manager IDs, expiration, effect mutations, final-damage
+coordination and complete TimeDamage calculation are recovered.
 Production world/skill-effect integration is still required; the server is not
 playable. Canonical headers and other owners' files remain untouched.
 
@@ -65,8 +65,8 @@ Required coordinator changes:
    canonical `reset_mob_attack` is also used by Init and is only a stat helper;
    adding unconditional clear there would incorrectly change Init behavior.
 5. Actual admission must initialize definition, ID/level, attacker, ticks and
-   effect state. `AddApplySkill`, periodic application (`ChkKeepSkill`), periodic
-   damage calculation and production combat/world wiring remain missing.
+   effect state. `AddApplySkill`, periodic application (`ChkKeepSkill`) and
+   production combat/world wiring remain missing.
 6. Bind removal to `remove_mob_applied_skill_effects(mob, skill, definition,
    original_base_attribute, services)`. It mutates existing MobRuntime fields;
    no new canonical field is needed. `base_attribute` explicitly projects the
@@ -76,8 +76,11 @@ Required coordinator changes:
    callback with `finish_mob_applied_skill_damage` and its required providers.
 7. Bind periodic TimeDamage (+0x6e type, +0x70/+0x72/+0x74 damage words) separately
    from `SkillDefinition::time_heal`; the canonical definition currently lacks
-   these original `byTimeDamageType` / `wTimeDamage[3]` fields. A later calculation
-   block needs an explicit definition projection until the coordinator adds them.
+   these original `byTimeDamageType` / `wTimeDamage[3]` fields. Project them to
+   `MobAppliedSkillTimeDamageDefinition` and call
+   `calculate_mob_applied_skill_time_damage` with the live mob/template resource
+   projection. Needed canonical fields: uint8 time-damage type and three uint16
+   damage words; their SQL mapping must preserve the recovered positional data.
    No SQL loader/fixture or canonical definition was changed by this worker.
 
 ## Non-damage effect behavior
@@ -123,10 +126,37 @@ PSendView **00421220** receives current position, radius 60, options 0/0 and
 priority 6. No node is recycled by this helper; the expiration owner does that
 only after the complete helper, including result delivery, returns.
 
-Clock, TimeDamage **004a3be0**, Damage **00490ee0/00490cf0**, Death **004910f0** and
-view delivery remain mandatory providers. Do not replace missing providers with
+Clock, definition resolution for TimeDamage **004a3be0**, Damage
+**00490ee0/00490cf0**, Death **004910f0** and view delivery remain mandatory
+providers. The actual TimeDamage math is now available as a pure native function. Do not replace missing providers with
 no-ops. The helper requires the subject/skill/definition to survive callbacks;
 `skill.name` projects the selected definition's NUL-terminated 32-byte name.
+
+## Complete periodic damage calculation
+
+`mob_applied_skills_time_damage.*` recovers TimeDamage **004a3be0** without world
+or calculation stubs. Type 0 copies the three unsigned damage words. Type 3
+multiplies each nonzero word by its current resource using low-32-bit products,
+then floors signed nonpositive intermediates to 1. Type 4 uses percentages of
+maximum resources, type 5 percentages of current resources. Other types produce
+zero. Percentage resources are rounded to binary32 before the multiply; the
+percentage division/product follow the CRT's 53-bit arithmetic precision. Each
+nonzero word's converted intermediate also has the original minimum of 1.
+
+All branches then scale by unsigned elapsed milliseconds / 3000, with the
+original binary64 factor store and signed int64 truncation retaining only the
+low DWORD. Final values are capped only when signed greater than 30000; negative
+wrapped results survive and fractional small results can become zero. This is
+not saturating or unsigned damage math. Current and maximum HP are uint32;
+SP/MP are uint16. `project_mob_applied_skill_time_damage` binds the existing
+MobRuntime and MobRuntimeTemplate fields without canonical edits.
+
+`_fpreset` **0051a1c0** calls `_setdefaultprecision` **0051136e**. The oracle runs
+the latter and actual `_controlfp` **0051a397**, yielding CW 023f in Unicorn:
+53-bit precision / nearest rounding. It then executes actual `_ftol2`
+**0051c424** and the routine's FISTP conversions. Native arithmetic follows that
+normal CRT environment and does not change the host rounding mode; custom
+nondefault precision/rounding modes are not claimed.
 
 ## Milestones
 
@@ -137,32 +167,33 @@ no-ops. The helper requires the subject/skill/definition to survive callbacks;
 | `8053594202a19aece9476e0926898319704e719d` | Expiration coordination and live cursor | 128 original scenarios / 1,600 operations; 122/122 tests, 41.03 s. |
 | `79f0cc8e36ff6261bb28c78d06fbfb0f44174e8e` | Non-damage effect removal and ability dispatch | 1,282 original cases plus native expiration/attack composition; 123/123 tests, 29.79 s. |
 | `b074babd303fba3abb92b97a68d13be1068b608e` | Final-damage removal coordination and packet | 1,024 original traces plus recursive expiration composition; 124/124 tests, 27.95 s. |
+| `e51bed4e907d5fffd2e5ce72fcbd19ca1acf7260` | Complete TimeDamage calculation | 12,544 original cases plus native periodic-removal composition; 125/125 tests, 38.83 s. |
 
 ## Current block validation
 
 - `sha256sum -c SHA256SUMS`: exit 0, all 12 original EXE/PDB files match.
-  Log: `work/mob-applied-skills-damage-hashes.log`.
+  Log: `work/mob-applied-skills-time-damage-hashes.log`.
 - Locked Ghidra process export: exit 0, JDK 21 / Ghidra 12.1.4, output
-  `work/exports/03-mob-skills`; RemApplySkill, IsBothmob and TimeDamage.
-  Log: `work/mob-applied-skills-damage-export.log`.
-- New original oracle: exit 0, 1,024 traces across both damage branches, all 16
-  Lua/respawn/both/zone flag combinations, both death outcomes and 16 callback
-  mutation modes. Repeat output matches the fixture byte-for-byte. Generated
-  under `work/` and copied before any native test reads the fixture.
-- The original RemApplySkill and IsBothmob bodies execute. Calculation, combat,
-  death and view ports are explicitly observed, not their underlying bodies.
-  Comparisons include full previous-name buffers and retained tails, skill/mob
-  payload, every call's live arguments/state, clock/previous-tick ordering,
-  mutable three-resource outputs, HP capture, narrowed packet bytes, view options
-  and zone changes during callbacks.
+  `work/exports/03-mob-skills`; TimeDamage, ftol2, fpreset and default precision.
+  Log: `work/mob-applied-skills-time-damage-export.log`.
+- New original oracle: exit 0, 12,544 cases: all 256 type bytes, systematic
+  supported/unsupported boundary combinations and 4,096 seeded random cases.
+  Uses complete original code, actual CRT precision setup/conversion, no ports
+  and no executable patches. Asserts output guards, read-only input memory and
+  restored x87 control after every call. Repeat generation matches the committed
+  fixture byte-for-byte; generation/copy preceded native fixture readers.
+- Cases cover zero words/resources, minimum intermediates, 2^24 float boundaries,
+  multiplication and signed boundaries, maximum DWORD elapsed time, conversion
+  wrap, zero results and the signed upper cap. There are 5,654 negative wrapped
+  output words in the matched original fixture; they must not be normalized.
 - `python3 tools/dev.py build`: exit 0, no compiler warnings.
-  Log: `work/mob-applied-skills-damage-build.log`.
-- `python3 tools/dev.py test`: exit 0, **124/124 passed**, 27.95 seconds.
-  All five applied-skill suites pass. Native composition executes expiration,
-  effect dispatch, final-HP coordination, death-driven recursive clear and view
-  delivery; it verifies pool order, name clearing and exact callback trace
-  `log, removal, damage, death, remaining-log, view` before current-node recycling.
-  Log: `work/mob-applied-skills-damage-test.log`.
+  Log: `work/mob-applied-skills-time-damage-build.log`.
+- `python3 tools/dev.py test`: exit 0, **125/125 passed**, 38.83 seconds.
+  All six applied-skill suites pass. New composition uses the actual native
+  resource projection/calculator inside final periodic removal, verifying mutable
+  combat results, resource changes, exact 15-byte packet, name cleanup and
+  unchanged previous tick. Native host rounding mode remains nearest/unchanged.
+  Log: `work/mob-applied-skills-time-damage-test.log`.
 - New oracle `py_compile` and whitespace checks: exit 0.
 
 Historical validation note: expiration's first fixture failed from Unicorn's
@@ -171,10 +202,10 @@ corrected complete run passed 122/122, 41.03 s, in
 `work/mob-applied-skills-expiration-test-fixed.log`.
 
 SQL contracts are unaffected; no SQL access or sanitizer run was performed for
-this block. The coordinator owns complete isolated SQL integration. Its canonical
-validation freeze was respected: only this private worker checkout was changed.
+this block. The coordinator owns complete isolated SQL integration. Only this
+private worker checkout was changed; canonical validation freezes were respected.
 
-Next independent block proposal: reconstruct TimeDamage **004a3be0** calculation
-using explicit byTimeDamageType/wTimeDamage projections, real resource limits,
-original floating-point/truncation behavior and capped result values. Continue to
-leave combat, Death and logging implementations with their established owners.
+Next independent block proposal: reconstruct ChkKeepSkill **004a10d0** using the
+real calculation/list owner, preserving previous-tick updates, death-driven list
+changes, result broadcasts and the subsequent expiration pass. Underlying combat,
+Death, logging and transport bodies remain with their established owners.
