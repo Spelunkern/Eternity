@@ -441,3 +441,53 @@ Reviewed 0a2c753/e68ce1c user hit composition: explicit secondary party credit a
 ## Frozen batch completed successfully — 2026-11-04 UTC
 
 Session 18658 exited 0: canonical build, 134/134 native tests (48.11 seconds), and complete isolated SQL integration all passed for frozen source HEAD be9797bc61c45a68ae140619e5e6c33ad0befc7a. Logs: .local/frozen-batch-build.log, .local/frozen-batch-tests.log, .local/frozen-batch-sql.log. Final SQL output includes complete character saves and guild procedures in a disposable catalog. Freeze released after successful pipeline completion. Publish this verified batch before integrating queued worker milestones. Queue remains pending; these later reports are not included in the 134-test validation. Production world/gameplay integration remains incomplete and server is not playable.
+
+## Next reviewed batch integrated locally — validation freeze
+
+All twelve queued reviewed milestones integrated in dependency order through d54ad6e238584b75e3550aa4257eb0e31714cefb. Append-only CMake conflicts resolved preserving both module/test blocks; other changes merged normally. Queue entries now integrated-awaiting-validation. Do not modify canonical code or cherry-pick while the new build/test/full isolated SQL pipeline runs. Logs: .local/reviewed-batch-build.log, .local/reviewed-batch-tests.log, .local/reviewed-batch-sql.log. Prior 134-test published result does not validate this new batch. Review incoming handoffs into a new pending queue only. Production providers/gameplay remain incomplete.
+
+## Reviewed integration queue: worker 08 aba4b14a
+
+Reviewed 9b49604/bc60231 cursor composition evidence: reported 450 original mutation traces and 123 worker tests. Test-only send_leave probe exercises real ZoneMobs shared cursor, not a production adapter. Pending canonical visit_cell_mobs must reuse shared cursor, permit nested lookup/removal/append, avoid restoring cursor or dereferencing actor after callback, and retain zone/cell serialization. Exact snapshot/commits queued for next batch. Current frozen pipeline session 25307 uses .local/reviewed-batch-* logs and is waiting for build capacity; do not integrate this handoff yet.
+
+## Reviewed integration queue: worker 04 4861ad57
+
+Reviewed 0c4b246/f7bc639 ObeliskReset: zone guard before single clock sample, reset flag around actual removal, captured ten-minute deadline, live base country, unconditional notification/persistence and final relink. Reported 648 original scenarios/404 nested destroys and 122 passing tests after oracle trampoline/cache correction; initial failed run not counted as pass. Exact snapshot/commits queued while session 25307 waits for build capacity. Real zone unlink/corpse accounting/configuration/world dispatch remain required.
+
+## Reviewed integration queue: worker 02 d35c8847
+
+Reviewed 52ab268/eace862 sequence init/reload partial state and retained inactive groups; grade values and selection now preserve 32 bits. Reported 256 complete original traces, six wide-grade lookups, original INI and read-only SQL comparison, 124 worker tests. Parser only claims supported unique decimal unquoted INI syntax. Publish configuration after every attempt; preserve backing groups across failures/reloads. Exact snapshot/commits queued during current source freeze. Session 25307 acquired build capacity and was observed at action 38/188; tests/SQL pending. Production loot providers remain required.
+
+## Reviewed integration queue: worker 06 c937d1ff
+
+Reviewed 0e2cb1b/693916e QuestAdd allocation/init/timers/append/accounting/DB ordering. Reported 512 original cases, 438 successful adds with real QuestReplica packets, 122 worker tests. Canonical adapter needs add_active_unaccounted: append/claim only, then live end-type counters increment outside insertion boundary. Existing add_active must retain accounting for other callers; do not double count or compensate after insertion. Exact snapshot/commits queued during freeze. Current central build passed and 147-test suite is running (10 completed when observed); SQL pending. Worker continues request-to-real-add composition independently.
+
+## Reviewed integration queue: worker 03 bc3dc6bd
+
+Reviewed 79f0cc8/fd97f8f non-damage RemApplySkill and SetSkillAbility: wrapped counters, immediate recognized callbacks and live later-slot reads; defense/evasion mapping checked. Reported 1,282 original cases and 123 worker tests with native expiration/attack composition. Damage details 0x3d/0x3f remain mandatory external provider, not reconstructed bodies. Base attribute must come from immutable template. Exact snapshot/commits queued during source freeze. Central 147-test suite observed through test 23 passing; SQL pending.
+
+## Reviewed integration queue: worker 08 fac70d3f
+
+Reviewed 667e37a/f28f799 Targeting/FindTarget first eligible user in cell order, live range, no country gate, SetTarget(true) before unlock and selected identity returned even if SetTarget rejects. Reported 2,048 original comparisons and 124 worker tests. Exact commits/snapshot queued during freeze. Requires early-stop shared user cursor visitor, actor lifetime and actual runtime providers. Central tests observed through 142/147 passing; final test result and SQL pending.
+
+## Worker 08 dependency checkpoint 440c627b and reassignment
+
+Reviewed d761dfa documentation-only checkpoint; queued exact snapshot/commit without claiming new tests. Assigned mob_targeting_bindings recovery for country/chase-range/three attack skills and enabled/cooldown projections, original loader/Init evidence and minimal canonical patch contract. Shared headers remain coordinator-owned during freeze. Central batch build and 147/147 tests passed (47.39 seconds); isolated SQL pipeline session 25307 now running, final exit pending. Do not publish or integrate new code until full pipeline passes.
+
+## Reviewed integration queue: worker 04 a1b1044a
+
+Reviewed 71b37a9/12e4def InitObelisk: startup principals and companions use raw allocation plus ID/seed preparation, without spawn log; complete respawn keeps manager principal/log path. Reported 768 startup scenarios/2,304 retained ticks and 123 worker tests. Exact commits/snapshot queued after reset. Correction: account_obelisk_mob_corpse and ZoneMobs forced removal already exist; bind them instead of duplicating. Canonical MobPool raw allocation/preparation split needed to prevent double IDs/seeding. Configuration/world ownership remain open. Central SQL still running through roster/rollback checks; canonical source freeze unchanged.
+
+## Reviewed integration queue: worker 09 bcd8c46f
+
+Reviewed c20b2e6/04c5139 WhileIdle tick/target cooldown, return-home gates, wandering arithmetic and retry ordering. Reported 1,536 original traces with exact float destinations and 123 worker tests. Exact snapshot/commits queued during freeze. Required template additions: normal_time +5c, normal_step +60, movement speed +68, definition obelisk +7c; chase/zone inputs must stay live. World target/random/map/move providers and remaining movement states remain open. SQL central still running, through TCP creation when observed.
+
+## Reviewed integration queue: worker 01 b435ad7d
+
+Reviewed ba820ce/e6ab5b1 Aggro and direct MobRuntime ledger bridge. Reported 4,096 comparisons across projection/runtime and 123 worker tests. Positive signed guard, status/HP checks, zero-damage user credit clearing party, post-allocation live status/retarget ordering retained; no new target/user gate. Exact snapshot/commits queued during freeze. Assigned next StatusAttackStop 00489ed0 under mob_combat_stop; shared Actor/world owners remain coordinator work. Central isolated SQL still running through quest persistence checks, final exit pending.
+
+## Reviewed batch validated — 147 tests and complete SQL
+
+Session 25307 exited 0: build, 147/147 tests (47.39 seconds), complete isolated SQL including character save and disposable guild catalog checks. Validated source HEAD d54ad6e; logs .local/reviewed-batch-{build,tests,sql}.log. Freeze released; publish verified batch before further integration. Queue statuses distinguish validated twelve milestones from later pending deliveries.
+
+Reviewed/queued worker 07 b666163d (3408c78/e9ac195) PC-kill/item-pick progress: 1,024 reported original cases, 123 tests. Canonical retained quest cursor/event dispatch and Actor inventory dependency remain open. Reviewed/queued worker 06 24bc60f0 (874b9db/ed577f4) real-QuestAdd flow evidence: 640 cases/253 starts/16 consumed-item failures, 123 tests after fixture empty-event fix. Neither new delivery is covered by this batch validation. Unaccounted insertion and real inventory/log/transport adapters remain coordinator work. Server playability incomplete.
