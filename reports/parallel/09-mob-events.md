@@ -822,3 +822,73 @@ access changed; final isolated SQL integration belongs to coordinator. The serve
 is not playable.
 
 Implementation commit: `60b71080f66ec9b02e1c16774d656a92befbf7f2`.
+
+## Milestone 13 — compiled selected-position movement on actual map owners
+
+Evidence: ps_game.exe CMob::onMoveAtSelectedPosition 004b01c0, SVector::Distance2
+0041b1f0, CMob::GetStatus 0041d760 and CMap::EnableLine 0042ab80. Serialized
+Ghidra export: `work/exports/09-mob-events/ps_game.exe`.
+
+Added the actual selected-position compiled body and MobAiSelectedCompiledServices
+adapter for the existing named registry/configured executor. It consumes real
+MobRuntime, MapDefinition::enable_line, ChaseTrail and canonical mob_status;
+there is no second path, status or trail owner. Actual movement/transport remains
+a mandatory service. Other compiled functions delegate to the required remaining
+provider, allowing composition with the already recovered Battle adapter.
+
+Without a zone it returns unchanged. Outside battle, it computes horizontal
+respawn/current distance. A trail with distance >0.5, or any distance >20,
+requests return: state 2 (death) preserves everything; otherwise only raw status
+becomes 3. The active stack is not replaced or dispatched. In battle this gate
+is bypassed. For the destination phase, selected.y becomes +0 before the range
+check. Selected-to-respawn distance must be <20 (not selected-to-current).
+Equality or unordered x87 comparison takes the rejection path. Rejection copies
+all three current position components to selected position, including current Y.
+
+For an accepted destination, X/Z endpoints truncate toward zero with original
+FISTP signed-DWORD invalid-conversion semantics. The actual map line decides
+whether to move. A failed line copies current position to selected; a successful
+line calls MoveMob with the live selected XYZ and mode 1. The original temporary
+line outputs are ignored, so this path needs no guessed clipped endpoint and
+out-of-map rejection does not read the uninitialized output scratch seen in the
+separate return-home block. Movement failure is not checked by the handler.
+Movement callback changes to position, respawn, selected position and status
+survive without post-call restoration.
+
+### Validation
+
+- 1,536 original paths on four actual bitmaps (open, wall with gap, solid wall,
+  isolated blocks). Original distance/CRT math, complete GetStatus including active
+  deque/empty stack/death and complete map line code execute. Only MoveMob and
+  Windows lock/CRT TLS platform boundaries are adapted. No distance or line oracle
+  provider replaces original execution.
+- Coverage: 748 original line checks, 264 original GetStatus checks and 483 moves.
+  Inputs distinguish 0.5/20 equality and adjacent float values, battle and zone
+  gates, negative/fractional endpoints, raw/active/empty/death statuses, selected Y
+  clearing and full-position rejection, movement success/failure and reentry writes.
+- Native comparison invokes the named MoveAtSelectedPosition binding through the
+  actual configured executor and uses actual ZoneMobs, MapDefinition and ChaseTrail
+  owners. Raw float bits, all retained position/status fields, movement arguments
+  and unchanged stack/trail are compared.
+- Initial build failed because the test used optional<MapTile> equality without
+  a canonical MapTile equality operator; corrected the test to compare coordinates.
+  No shared header was changed; that failed build is not counted as passed.
+- Original fixture regenerated identically; SHA256SUMS pass; diff check clean.
+- `python3 tools/dev.py build`: final exit 0, no compiler warnings;
+  `work/mob_ai_states_selected-build-final.log`.
+- `python3 tools/dev.py test`: exit 0, 132/132 tests pass (31.84 s),
+  new selected-movement test 0.02 s; `work/mob_ai_states_selected-tests.log`.
+
+### Remaining integration
+
+Coordinator must bind the same retained map as the mob's current zone, and retain
+map/subject/service lifetimes for compiled callbacks. The real MoveMob provider
+must perform original world movement/broadcast and preserve its callbacks; it
+cannot be a success-only no-op. This block needs no new canonical fields:
+selected_position, respawn_position, in_battle, zone, trail and stack/status
+already exist. Complete factory assembly and TravelCondition are still missing;
+compiled random/run-away/debug bodies remain available independent work. World,
+Lua, scheduling/destruction and full original-client playability remain open.
+No SQL access/contracts changed; final isolated SQL integration is coordinator work.
+
+Implementation commit: `a16ee679704efb4339a8216ab2be584fd891e475`.
