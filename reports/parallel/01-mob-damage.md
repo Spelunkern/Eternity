@@ -849,3 +849,92 @@ creating replacement providers. Same-zone retained actor visitation and active
 CSkill slot/index ownership remain coordinator API dependencies. Attack/range,
 transport and full zone/connection routing still need real production bindings;
 the server remains non-playable.
+
+## Scheduler concrete Actor ownership adapter
+
+Implementation commit: `d9bb675`
+(`Bind attack polling to actual actor effect movement and self delivery owners`).
+
+Added MobCombatSchedulerActorWorld, deriving from the complete user/skill/mob
+scheduler world and existing ActorActionWorld. Its three final methods bind
+actual canonical owners directly:
+
+- RemApplySkillToMOB **00489560** -> Actor::cancel_shape_on_attack and its existing
+  EffectCycle, retained definition, replica and effect-ID services.
+- CancleMove **0048a010** -> Actor::cancel_move with this actual action world.
+- Self delivery **004d4d20** -> Actor::send_self / the required ActorScene.
+
+No effect/action implementation, runtime list, replica, target resolver, FSM or
+transport owner is duplicated. The adapter remains abstract: real lookup/range/
+attack/skills/zone configuration and ActorActionWorld services are mandatory.
+Ordinary movement cancellation requires send_move_cancel, NOT ActorScene's
+prioritized proximity send or grid-cell send. No shared header/source edited.
+
+New original oracle executes 768 complete UpdateAttack calls with REAL
+RemApplySkillToMOB, list unlink, SendSkillRemove **00482a70**, SendShape,
+SendRunMode, shared FreeSkill **0040a7c0**, CancleMove, speed getters, stop and
+cookie returns. Attack/eligibility and actual transport/OS locks are ports.
+Cases include no effect, removable hide, protected transform 127 and a noncandidate
+buff; shape zero/nonzero; in/out-of-zone delivery; signed movement modes,
+zero/nonzero pending motion, slot 0/10/out-of-range, and DWORD deadline wrap.
+Unprotected transform stat rebuild is not newly claimed by this fixture; that
+path remains delegated to the existing Actor/equipment owner.
+
+There are 124 actual effect removals/shared-pool returns, 60 grid shape sends,
+103 ordinary ranged movement-cancel sends and 314 self packets. Real callbacks
+during 050e can set pending movement or remove the weapon binding; the scheduler
+then sees those LIVE fields after effect cleanup. Movement-send callbacks can
+change deadline/motion: the former survives and the scheduler's later motion zero
+wins. These are synthetic boundary probes, not assertions about real connection
+side effects. Required callbacks must retain the live Actor and bindings.
+
+The native comparison uses the actual Actor EffectCycle, ActorActionState,
+effect replica and ID release boundary through the new adapter. It validates
+retained movement-slot arrays, effect membership, shape/template, packet routes,
+complete ordered client/view/release events and final polling state. Scene
+checks confirm that effect unlink AND replica erase precede client 050e.
+Actual shared pool release executes in the original oracle and its free count
+must match the observed ID-release count; the native ID allocator remains the
+required ActorScene service. This fixture has no party membership; party delivery
+continues to use the existing owner rather than a new scheduler implementation.
+
+Backend limitation recorded honestly: the original 0902 removal request is
+captured separately, including its exact bytes. Canonical Actor's existing
+EffectObserver::erase_persisted updates its DB-agent replica for later persistence;
+it does not emit that immediate backend packet. Tests check equivalent erased
+replica state before client removal, NOT nonexistent native wire delivery.
+This module neither invents a DB-send no-op nor changes canonical persistence.
+Immediate backend transport equivalence still needs coordinator-owned integration.
+
+Validation:
+
+- Original executable/PDB SHA256SUMS verified, exit 0.
+- Fixture generated under work/ and copied before readers start; independent
+  regeneration byte-identical (`cmp`, exit 0).
+- `python3 tools/dev.py build`: exit 0, no compiler warnings;
+  `work/mob-combat-scheduler-actor-build.log`.
+- `python3 tools/dev.py test`: exit 0, **130/130 passed**, 40.28 seconds,
+  including all 768 new retained-owner polling traces and previous branches;
+  `work/mob-combat-scheduler-actor-test.log`.
+- `git diff --check`: exit 0. Shared wrappers/locks respected. SQL unchanged;
+  final isolated SQL integration remains coordinator-owned.
+
+Production contract: ActorScene and effect-ID services outlive Actor; its
+immutable definition/equipment sources outlive retained effects. The action world,
+connection/zone context and target objects survive the complete synchronous
+poll, including sends after effect removal and movement cancellation. Scene's
+noexcept delivery/release callbacks must follow the existing failure/lifetime
+contract. Do not destroy/recycle an Actor on a nested disconnect while its frame
+still writes state. Publish weapon-binding changes before returning from nested
+callbacks. Preserve ordinary SendView position/radius routing for movement.
+
+Dependency/next task: scheduler coordinator branches and reusable local Actor
+operations are covered. A production world cannot be instantiated correctly
+without coordinator-owned (1) retained whole-zone Actor visitation using the
+original shared live cursor/insertion order, (2) live active CSkill slot/index
+and equipment binding access, and (3) concrete scene/connection and target/action
+providers. Do not substitute an ID-sorted snapshot or a second private Actor list.
+Provide those canonical interfaces, then assign the production scheduler bridge
+within this prefix. No independent scheduler coordination gap is currently
+identified beyond these ownership/provider dependencies. Server remains
+non-playable.
