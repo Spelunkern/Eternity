@@ -1,4 +1,5 @@
 #include "eternity/game/vertical_scene.hpp"
+#include <algorithm>
 #include <stdexcept>
 
 namespace eternity::game {
@@ -17,7 +18,9 @@ void VerticalScene::unbind() {
     actor_=nullptr;
 }
 Actor& VerticalScene::actor() const {if(!actor_) throw std::logic_error("Scene has no retained Actor");return *actor_;}
-void VerticalScene::send_self(const net::Packet& p) noexcept {channel_.send(p);}
+void VerticalScene::send_self(const net::Packet& p) noexcept {
+    try {channel_.send(p);} catch(...) {services_.transport_failure(VerticalSceneFailure::self_send,std::current_exception());}
+}
 ZoneUsers* VerticalScene::user_zone() {
     auto& a=actor();auto* member=zone_.find_actor(a.id());
     if(member && member!=&a) throw std::logic_error("Zone Actor identity changed");
@@ -27,27 +30,54 @@ ZoneUsers* VerticalScene::user_zone() {
 void VerticalScene::send_nearby(const net::Packet& p) {if(auto* z=user_zone()) services_.nearby(*z,actor(),p);}
 void VerticalScene::send_cell_view(const net::Packet& p) {if(auto* z=user_zone()) services_.cell_view(*z,actor(),p);}
 std::optional<bool> VerticalScene::party_kind() const noexcept {
-    auto* p=services_.party(user_);if(!p) {if(user_.party) std::terminate();return {};}
-    party_world_.lock(*p);std::optional<bool> result;
-    if(user_.party==p) {if(p->experience.kind>1) std::terminate();result=p->experience.kind==1;}
-    party_world_.unlock(*p);return result;
+    bool locked=false;PartyRegistryParty* p=nullptr;
+    try {
+        p=services_.party(user_);if(!p) {if(user_.party) throw std::logic_error("Missing retained party owner");return {};}
+        party_world_.lock(*p);locked=true;std::optional<bool> result;
+        if(user_.party==p) {if(p->experience.kind>1) throw std::logic_error("Invalid party kind");result=p->experience.kind==1;}
+        party_world_.unlock(*p);return result;
+    } catch(...) {
+        auto error=std::current_exception();if(locked) party_world_.unlock(*p);
+        services_.transport_failure(VerticalSceneFailure::party_state,error);return {};
+    }
 }
 void VerticalScene::send_party(const net::Packet& packet) noexcept {
-    auto* p=services_.party(user_);if(!p) {if(user_.party) std::terminate();return;}
-    // CParty::Send 00445680: one actual pooled buffer, captured recursive
-    // party lock, live member slots/count, source excluded, release after send.
-    auto* buffer=allocate_party_membership_send_buffer(packet,party_world_);if(!buffer) return;
-    party_world_.lock(*p);
-    if(user_.party==p) {
-        for(std::int32_t i=0;i<p->count;++i) {
-            if(i>=30) std::terminate();
+    PartyRegistryParty* p=nullptr;PartyMembershipSendBuffer* buffer=nullptr;bool locked=false;
+    const auto release=[&](PartyMembershipSendBuffer* b) noexcept {
+        try {release_party_membership_buffer(*b,party_world_);}
+        catch(...) {services_.transport_failure(VerticalSceneFailure::party_send,std::current_exception());}
+    };
+    try {
+        p=services_.party(user_);if(!p) {if(user_.party) throw std::logic_error("Missing retained party owner");return;}
+        // Same buffer sizes and framing as allocate_party_membership_send_buffer;
+        // keep the allocated reference visible if vector allocation throws.
+        if(packet.size()>2046) throw std::length_error("Party send exceeds original buffer capacity");
+        const std::uint16_t capacity=packet.size()<31?32:packet.size()<127?128:2048;
+        buffer=party_world_.allocate_send_buffer(capacity);
+        if(!buffer) {services_.transport_failure(VerticalSceneFailure::party_buffer_unavailable,{});return;}
+        buffer->references.store(1,std::memory_order_seq_cst);buffer->custom_references=0;buffer->capacity=capacity;
+        buffer->frame.resize(packet.size()+2);
+        const auto size=static_cast<std::uint16_t>(buffer->frame.size());
+        buffer->frame[0]=static_cast<std::uint8_t>(size);buffer->frame[1]=static_cast<std::uint8_t>(size>>8);
+        std::copy(packet.begin(),packet.end(),buffer->frame.begin()+2);
+        // CParty::Send 00445680: shared buffer, captured recursive party lock,
+        // live member slots/count, source excluded, release after send.
+        party_world_.lock(*p);locked=true;
+        if(user_.party==p) for(std::int32_t i=0;i<p->count;++i) {
+            if(i>=30) throw std::out_of_range("Party member count exceeds retained slots");
             auto* member=i<7?p->slots[static_cast<std::size_t>(i)]:p->extra_slots[static_cast<std::size_t>(i-7)];
             if(member && member!=&user_ && member->send_socket!=-1) {
-                buffer->references.fetch_add(1,std::memory_order_seq_cst);party_world_.enqueue_send(*member,*buffer);
+                buffer->references.fetch_add(1,std::memory_order_seq_cst);
+                try {party_world_.enqueue_send(*member,*buffer);}
+                catch(...) {release(buffer);throw;}
             }
         }
+        party_world_.unlock(*p);locked=false;auto* completed=buffer;buffer=nullptr;release(completed);
+    } catch(...) {
+        auto error=std::current_exception();if(locked) party_world_.unlock(*p);
+        if(buffer) release(buffer);
+        services_.transport_failure(VerticalSceneFailure::party_send,error);
     }
-    party_world_.unlock(*p);release_party_membership_buffer(*buffer,party_world_);
 }
 void VerticalScene::reset_damage() {services_.reset_damage(actor());}
 std::optional<std::uint32_t> VerticalScene::allocate_effect_id() noexcept {return services_.allocate_effect_id();}

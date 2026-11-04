@@ -3,15 +3,22 @@
 #include "eternity/game/party_runtime_registry.hpp"
 #include "eternity/game/party_runtime_membership_send.hpp"
 #include "eternity/net/world_server.hpp"
+#include <exception>
 
 namespace eternity::game {
 // All methods are required live owners. The user-effect CSkill pool and the
 // original cell/priority broadcaster are not yet exposed by canonical owners.
 // Views must use this exact zone and actor, including the original direct and
 // priority sends, cell cursor and packet-buffer behavior; do not silently succeed.
+enum class VerticalSceneFailure {self_send,party_state,party_buffer_unavailable,party_send};
 class VerticalSceneServices {
 public:
     virtual ~VerticalSceneServices()=default;
+    // Must record the fault and initiate connection/world failure handling.
+    // A null exception identifies an unavailable party buffer. Party failure
+    // can follow partial delivery. The callback must not throw or destroy the
+    // scene synchronously; retained subjects survive until this call returns.
+    virtual void transport_failure(VerticalSceneFailure,std::exception_ptr) noexcept=0;
     virtual void nearby(ZoneUsers&,Actor&,const net::Packet&)=0;
     virtual void cell_view(ZoneUsers&,Actor&,const net::Packet&)=0;
     // Returns the actual retained registry party corresponding to user.party.
@@ -34,7 +41,12 @@ public:
 // construction, detach the Actor from ZoneUsers before unbind/destruction, and
 // unbind before destroying the Actor. All callbacks must retain their subjects
 // through synchronous reentry. Party membership and scene must not be recycled
-// during callbacks. noexcept service and party send callbacks must not throw.
+// during callbacks. A failing free must leave the buffer in an owner-defined
+// safe state; its exception is reported without attempting a second release.
+// Unlock is noexcept and must not throw.
+// A throwing party lock must not leave the lock held; a throwing enqueue must
+// not retain the reserved buffer reference or enqueue it. Successful enqueue
+// owns its reference, even if it completes synchronously.
 class VerticalScene final:public ActorScene {
 public:
     VerticalScene(net::WorldChannel,ZoneUsers&,PartyMembershipUser&,PartyMembershipSendWorld&,VerticalSceneServices&);

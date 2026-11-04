@@ -8,10 +8,10 @@ using namespace eternity;using namespace eternity::game;
 namespace {
 void check(bool value,const char* why) {if(!value) throw std::runtime_error(why);}
 struct PartyWorld final:PartyMembershipSendWorld {
-    PartyMembershipSendBuffer buffer;std::vector<std::uint32_t> sent;bool active=false;unsigned locks=0,frees=0;std::function<void()> on_enqueue;
-    PartyMembershipSendBuffer* allocate_send_buffer(std::uint16_t) override {check(!active,"Duplicate buffer allocation");active=true;return &buffer;}
-    void free_send_buffer(PartyMembershipSendBuffer& b) override {check(&b==&buffer && b.references==0,"Wrong buffer release");active=false;++frees;}
-    void enqueue_send(PartyMembershipUser& u,PartyMembershipSendBuffer& b) override {check(locks && &b==&buffer,"Missing party lock/buffer");sent.push_back(u.id);if(on_enqueue) {auto callback=std::move(on_enqueue);callback();}release_party_membership_buffer(b,*this);}
+    PartyMembershipSendBuffer buffer;std::vector<std::uint32_t> sent;bool active=false,deny_allocation=false,fail_allocation=false,fail_enqueue=false,fail_free=false;unsigned locks=0,frees=0;std::function<void()> on_enqueue;
+    PartyMembershipSendBuffer* allocate_send_buffer(std::uint16_t) override {check(!active,"Duplicate buffer allocation");if(fail_allocation) throw std::bad_alloc();if(deny_allocation) return nullptr;active=true;return &buffer;}
+    void free_send_buffer(PartyMembershipSendBuffer& b) override {check(&b==&buffer && b.references==0,"Wrong buffer release");active=false;++frees;if(fail_free) throw std::runtime_error("Free failure");}
+    void enqueue_send(PartyMembershipUser& u,PartyMembershipSendBuffer& b) override {check(locks && &b==&buffer,"Missing party lock/buffer");if(fail_enqueue) throw std::runtime_error("Queue failure");sent.push_back(u.id);if(on_enqueue) {auto callback=std::move(on_enqueue);callback();}release_party_membership_buffer(b,*this);}
     void lock(PartyNormalMembership&) override {++locks;}
     void unlock(PartyNormalMembership&) noexcept override {--locks;}
     std::uint32_t tick() override {throw std::logic_error("Unexpected tick");}
@@ -25,7 +25,8 @@ struct PartyWorld final:PartyMembershipSendWorld {
     void send_log(const net::Packet&) override {throw std::logic_error("Unexpected log send");}
 };
 struct Services final:VerticalSceneServices {
-    PartyRegistryParty* group=nullptr;std::vector<std::string> calls;std::uint32_t freed=0;
+    PartyRegistryParty* group=nullptr;std::vector<std::string> calls;std::uint32_t freed=0;unsigned failures=0;VerticalSceneFailure failure=VerticalSceneFailure::self_send;bool has_exception=false;
+    void transport_failure(VerticalSceneFailure kind,std::exception_ptr error) noexcept override {++failures;failure=kind;has_exception=bool(error);}
     void nearby(ZoneUsers& z,Actor& a,const net::Packet&) override {check(z.find_actor(a.id())==&a,"Wrong nearby owner");calls.push_back("near");}
     void cell_view(ZoneUsers& z,Actor& a,const net::Packet&) override {check(z.find_actor(a.id())==&a,"Wrong cell owner");calls.push_back("cell");}
     PartyRegistryParty* party(PartyMembershipUser&) noexcept override {return group;}
@@ -60,17 +61,23 @@ void network_channel() {
 }
 }
 int main() {try {
-    std::vector<net::Packet> outgoing;net::WorldChannel channel;channel.send=[&](net::Packet p){outgoing.push_back(std::move(p));};
+    std::vector<net::Packet> outgoing;bool fail_self=false;net::WorldChannel channel;channel.send=[&](net::Packet p){if(fail_self) throw std::bad_alloc();outgoing.push_back(std::move(p));};
     const MapGeometry geometry(160);ZoneUsers zone(geometry,0);PartyMembershipUser user;user.id=42;PartyWorld party_world;Services services;
     VerticalScene scene(channel,zone,user,party_world,services);const ItemDefinitions definitions;const EnchantValues enchant;const MobAttackTemplates mobs;
     Actor actor(42,{}, {},{},scene,{definitions,enchant,mobs});scene.bind(actor);
-    scene.send_self({5,2,1});check(outgoing==std::vector<net::Packet>{{5,2,1}},"Wrong channel send");
+    scene.send_self({5,2,1});check(outgoing==std::vector<net::Packet>{{5,2,1}},"Wrong channel send");fail_self=true;scene.send_self({5,2,2});check(services.failures==1 && services.failure==VerticalSceneFailure::self_send && services.has_exception && outgoing.size()==1,"Self queue failure not reported");fail_self=false;
     check(!scene.user_zone(),"Unattached actor has zone");actor.status().in_zone=true;bool foreign=false;try {scene.user_zone();} catch(const std::logic_error&) {foreign=true;}actor.status().in_zone=false;check(foreign,"Foreign zone binding silently accepted");scene.send_nearby({1,2});check(services.calls.empty(),"Detached view was sent");
     check(zone.attach_at_position(actor,{20,0,20}),"Cannot attach actor");scene.send_nearby({1,2});scene.send_cell_view({3,4});check(scene.user_zone()==&zone && services.calls==std::vector<std::string>{"near","cell"},"Zone views not routed");
     bool threw=false;try {scene.unbind();} catch(const std::logic_error&) {threw=true;}check(threw,"Attached unbind accepted");
     PartyRegistryParty party;PartyMembershipUser a,b,c;a.id=43;b.id=44;c.id=45;a.send_socket=1;b.send_socket=-1;c.send_socket=2;user.send_socket=3;user.party=&party;party.slots[0]=&user;party.slots[1]=&a;party.slots[2]=&b;party.extra_slots[0]=&c;party.count=3;services.group=&party;
     check(scene.party_kind()==false,"Normal kind lost");scene.send_party({1,2,3});check(party_world.sent==std::vector<std::uint32_t>{43} && party_world.frees==1 && !party_world.active,"Normal party source exclusion or buffer ownership failed");
     party.experience.kind=1;party.count=8;check(scene.party_kind()==true,"Raid kind lost");party_world.on_enqueue=[&]{party.experience.kind=0;};scene.send_party({9,8});check(party_world.sent==std::vector<std::uint32_t>({43,43,45}) && party_world.frees==2,"Raid extended slots or sender exclusion failed");
+    party_world.deny_allocation=true;scene.send_party({1,2});check(services.failures==2 && services.failure==VerticalSceneFailure::party_buffer_unavailable && !services.has_exception && !party_world.active,"Pool exhaustion not reported");party_world.deny_allocation=false;
+    party_world.fail_allocation=true;scene.send_party({1,2});check(services.failures==3 && services.failure==VerticalSceneFailure::party_send && services.has_exception && !party_world.active,"Pool exception not reported");party_world.fail_allocation=false;
+    party_world.fail_enqueue=true;scene.send_party({1,2});check(services.failures==4 && services.failure==VerticalSceneFailure::party_send && services.has_exception && !party_world.active && party_world.locks==0 && party_world.buffer.references==0,"Queue failure leaked lock or references");party_world.fail_enqueue=false;
+    const auto before=party_world.sent.size();party_world.on_enqueue=[&]{party_world.fail_enqueue=true;};scene.send_party({1,2});check(services.failures==5 && services.failure==VerticalSceneFailure::party_send && party_world.sent.size()==before+1 && !party_world.active && party_world.locks==0 && party_world.buffer.references==0,"Partial queue failure cleanup changed");party_world.fail_enqueue=false;
+    party.experience.kind=2;check(!scene.party_kind() && services.failures==6 && services.failure==VerticalSceneFailure::party_state && services.has_exception && party_world.locks==0,"Party state failure was silent or locked");party.experience.kind=0;
+    party_world.fail_free=true;scene.send_party({1,2});check(services.failures==7 && services.failure==VerticalSceneFailure::party_send && services.has_exception && !party_world.active && party_world.locks==0,"Buffer release failure was not reported");party_world.fail_free=false;
     scene.reset_damage();scene.stop_target_mob(44);scene.taunt(5,60);check(scene.allocate_effect_id()==19 && scene.tick_ms()==101,"Effect ID or clock delegation failed");scene.release_effect_id(19);check(services.freed==19 && scene.user_shape_social().guild_name=="guild","Effect release or social owner failed");
     EffectStatus status;SkillDefinition skill;EffectSource source;scene.finish_periodic_damage(status,skill,source,7);check(services.calls==std::vector<std::string>({"near","cell","reset","stop","taunt","damage"}),"Scene required service dispatch failed");
     check(zone.detach(actor.id()),"Cannot detach actor");scene.unbind();network_channel();std::cout<<"Scene channel, actual zone membership, normal/raid party buffer ownership and required services passed\n";
