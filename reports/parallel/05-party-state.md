@@ -58,3 +58,61 @@ coordinator can delegate it to PartyRuntime when integrating party ownership.
 This module and comparisons do not establish playable gameplay.
 
 Implementation commit: `ec70b402d8e8d914fbbe73b389dddb0c8d240ec1`.
+
+## Block 2: LevelUp integration evidence
+
+The next independent block verifies the existing native `notify_level_up` party
+port with the real `PartyRuntime`, rather than duplicating the LevelUp owner.
+`tools/party_runtime_level_up_oracle.py` executes the original CUser::LevelUp
+0048ad70 slice 0048af5c..0048b006 and its unmodified ChkPartyExpByLevel body.
+Only critical-section calls and SendParty transport are observed ports. The
+256-case fixture compares lock/recheck/recalculation/send/unlock ordering,
+exact eight-byte party notices (0c09 normal / 0c13 raid), retained/recomputed
+maximum, and maximum observed synchronously by transport. It includes absent
+membership, membership removed during lock acquisition, one-member retention,
+raid holes and previously retained signed-boundary maxima. Native comparison
+calls the existing full notify_level_up with a required test world whose
+update_party_experience delegates to PartyRuntime; unrelated providers are
+outside this slice comparison. No production provider is added or bypassed.
+
+Additional original integration sites from the full Ghidra disassembly:
+
+| Executable/symbol | Recalculation call address |
+| --- | --- |
+| ps_game.exe CParty::EnterRaidParty 00445a30 | 00445f44 |
+| ps_game.exe CParty::EnterNormalParty 00445fe0 | 004463d9 |
+| ps_game.exe CParty::LeaveRaidParty 00446510 | 00446808 |
+| ps_game.exe CParty::LeaveNormalParty 00446960 | 00446bb0 |
+| ps_game.exe CParty::ExpelRaidPartyUser 00446cd0 | 00446fd7 |
+| ps_game.exe CParty::ExpelUser 00447120 | 00447327 |
+| ps_game.exe CUser::LevelUp 0048ad70 | 0048af9d |
+
+LevelUp acquires party +0x118 at 0048af71, rechecks user +0x173c at
+0048af77, immediately unlocks an abandoned party at 0048af80, then rereads
+membership at 0048af93. It recalculates at 0048af9d before SendParty 004455d0
+at 0048afe5 and releases at 0048b000. The production LevelUpNoticeWorld owner
+must wire update_party_experience to the live ordered member projection while
+holding that same membership lock. This is now validated composition evidence,
+but a production owner is still missing.
+
+The reward-state field +0x5758 additionally transitions from 3 to 4 only after
+successful CZone::EnterUser (00415f80) in CWorld::ZoneEnterUserMove 0040d000
+(write 0040d04e). This supports a world-admission gate; its complete enum and
+canonical field ownership remain unproven, so the API name is unchanged.
+
+Block 2 validation: `python3 tools/dev.py build` exit 0 (two incremental
+steps, no warnings); `python3 tools/dev.py test` exit 0, 121/121 passed in
+43.24 seconds, including both party suites (1,508 + 256 original comparisons).
+Logs: ignored `work/party-runtime-round2-build.log` and
+`work/party-runtime-round2-test.log`. Repeat fixture generation matches byte
+for byte; `sha256sum -c SHA256SUMS` and `git diff --check` exit 0. SQL is unchanged;
+final isolated SQL integration remains coordinator-owned.
+
+Remaining independent scope in the originally assigned three functions is
+complete. Next useful scope proposal: reconstruct party membership mutation
+and ownership, beginning with EnterNormalParty 00445fe0 and LeaveNormalParty
+00446960, using the call sites above. This requires coordinator confirmation
+that broader party lifecycle scope is assigned, plus eventual canonical user
+membership/lock and transport interfaces. No canonical file was changed.
+
+Block 2 evidence commit: recorded in the following report update.
