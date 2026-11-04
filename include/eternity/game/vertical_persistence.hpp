@@ -11,6 +11,11 @@ namespace eternity::game {
 std::unique_ptr<CharacterReplica> vertical_persistence_restore(
     const PlayerSnapshot&, std::uint8_t max_grow, InventoryReplicaPool&,
     SkillReplicaPool* = nullptr, QuestReplicaPool* = nullptr, PointItemPool* = nullptr);
+// Use after the entry owner has performed its one Players::load call.
+// Product loading can throw; the caller must discard the incomplete selection.
+std::unique_ptr<CharacterReplica> vertical_persistence_restore_with_products(
+    const PlayerSnapshot&, PointItemStore&, std::uint8_t max_grow, InventoryReplicaPool&,
+    SkillReplicaPool* = nullptr, QuestReplicaPool* = nullptr, PointItemPool* = nullptr);
 // Selection uses Players' original SQL loaders; product rows are account-owned
 // and loaded by the existing PointItemStore on the same selected replica.
 struct VerticalPersistenceSelection {
