@@ -34,4 +34,17 @@ CharacterSelectionResult vertical_entry_select(CharacterSelectionState& state, s
     };
     return request_character_selection(state,packet,gate);
 }
+CharacterSelectionResult vertical_entry_select_persisted(CharacterSelectionState& state,std::span<const std::uint8_t> packet,
+    const CharacterRoster& roster,Players& players,PointItemStore& products,const std::string& username,
+    std::uint8_t max_grow,InventoryReplicaPool& pool,const VerticalEntryPersistencePorts& ports,
+    SkillReplicaPool* skills,QuestReplicaPool* quests,PointItemPool* points) {
+    if(!ports.loaded || !ports.unavailable || !ports.close)
+        throw std::invalid_argument("Incomplete persisted character selection handoff");
+    VerticalEntryPorts entry{
+        [&](PlayerSnapshot snapshot) {
+            auto replica=vertical_persistence_restore_with_products(snapshot,products,max_grow,pool,skills,quests,points);
+            ports.loaded(VerticalPersistenceSelection{std::move(snapshot),std::move(replica)});
+        },ports.unavailable,ports.close};
+    return vertical_entry_select(state,packet,roster,players,username,entry);
+}
 }

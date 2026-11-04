@@ -26,15 +26,16 @@ int main(int argc,char** argv) {
             "INSERT "+prefix+"PointGiftNotify(UserUID,ProductCode,SendCharName,RecvDate) VALUES(9951,'persist_gift','GiftSender','20240101');");
         Players players(db,1,catalog);PointItemStore products(db,1,catalog);InventoryReplicaPool pool;
         auto roster=characters.load(9951);CharacterSelectionState selection{9951,0,true};
-        std::optional<PlayerSnapshot> snapshot;
-        VerticalEntryPorts entry{[&](PlayerSnapshot p){snapshot=std::move(p);},
+        std::optional<VerticalPersistenceSelection> selected;
+        VerticalEntryPersistencePorts entry{[&](VerticalPersistenceSelection value){selected=std::move(value);},
             []{throw std::runtime_error("Retained selection unavailable");},
             [](std::uint32_t){throw std::runtime_error("Retained selection closed");}};
         net::Packet request{0x04,0x01};put(request,created.character_id,4);
-        require(vertical_entry_select(selection,request,roster,players,"persistuser",entry)==CharacterSelectionResult::requested && !selection.enabled && snapshot.has_value(),"Retained 0104 selection failed");
+        require(vertical_entry_select_persisted(selection,request,roster,players,products,"persistuser",2,pool,entry)==CharacterSelectionResult::requested && !selection.enabled && selected.has_value(),"Retained 0104 selection failed");
+        auto snapshot=std::make_optional(std::move(selected->snapshot));auto cache=std::move(selected->replica);
         require(snapshot->catalogs.at("GiftNotifications").rows.size()==1,"Selection did not retain consumed gift");
         db.query("INSERT "+prefix+"PointGiftNotify(UserUID,ProductCode,SendCharName,RecvDate) VALUES(9951,'after_select','GiftSender','20240101');");
-        auto cache=vertical_persistence_restore_with_products(*snapshot,products,2,pool);
+        require(vertical_entry_select_persisted(selection,request,roster,players,products,"persistuser",2,pool,entry)==CharacterSelectionResult::ignored,"Consumed selection latch loaded again");
         require(snapshot->catalogs.at("GiftNotifications").rows.size()==1 && cache->points().products()[4].count==3,"Snapshot or product load changed");
         require(db.query("SELECT COUNT(*) FROM "+prefix+"PointGiftNotify WHERE UserUID=9951;")[0].rows[0][0]==storage::Cell{"1"},"Replica construction consumed a second notification");
         auto money=packet(0x603);put(money,1234,4);auto resources=packet(0x606);put(resources,101,2);put(resources,102,2);put(resources,103,2);
