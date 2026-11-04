@@ -1249,3 +1249,9 @@ CUser::LeaveCharSelect 00466c80. Incoming traffic retains AES per existing crypt
 research. Sent evidence to independent 03 for exact socket/cipher transition,
 ordering relative to previous entry sends, world location 3 and 0201, and TCP
 regression. This evidence does not yet establish a working world entry.
+
+Coordinator independently regenerated independent 03's in-progress original
+PacketProcessing gate vectors (60 cases) and byte-compared them successfully;
+the native gate/actor admission composition and TCP cipher transition remain
+unvalidated. These inputs are currently uncommitted in worker 03 and are not a
+claim that original client world entry works.
