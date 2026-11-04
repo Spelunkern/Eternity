@@ -1,7 +1,8 @@
 # Worker 02: mob drops
 
 Status: loot selection, catalog/sequence configuration and pooled item/money
-creation are reconstructed. Production death/world adapters remain required;
+creation and drop eligibility are reconstructed. Production death/world adapters
+remain required;
 this is not a playable server. Only owned files/private CMake were changed.
 
 ## Source evidence and completed behavior
@@ -21,12 +22,14 @@ locked `tools/reverse.py --process --output work/exports/02-mob-drops` (ignored)
 | GetSequenceItem 004be490 | First divisor match, level/10 grade bucket, exact 32-bit grades |
 | InitSequenceItemCreate / ReSequenceItemCreate 004be520 / 004be6a0 | Eight retained groups, signed count, clamp and nontransactional failures |
 | CMob::GetDropPosRand 00490c70 | Two CRT draws, rounded offsets, y=0 |
+| EnableApplyRangeItem / EnableApplyZoneItem 004a64f0 / 004a6560 | Exact zone/state/instance gates and x87 unordered distance acceptance |
+| CMob::ItemDrop 004a6311..004a6433 | Separate party-money gate without credited-state/mob-zone checks |
 | CItem::CreateCraftExpansion / IsAccessory 004ba2e0 / 004b9ee0 | Six/nine-slot craft selection and minimum-of-three value draws |
 | CMob::ItemDrop 004a662a..004a66cc / 004a645b..004a64cc | Actual pooled item and money initialization |
 
 Prior implementation commits: `ad3247b` (loot), `3b1e120` (catalog),
-`52ab268` (sequence configuration). Their reports were committed separately.
-Current milestone implementation commit: `058df95db2ddec96c969660d6afcaf2fd70f61b7`.
+`52ab268` (sequence configuration), `058df95` (pooled creation/craft).
+Their reports were committed separately. Current milestone implementation commit: `b2f12a913fc11f467ae19cab26b0203c2a112344`.
 
 ## Milestone 4: pooled creation and generated craft stats
 
@@ -80,6 +83,45 @@ six wide-grade lookups. Original SQL catalogs match 24,723 MobItems rows / 2,747
 mobs / 27,470 slots and 16,047 Items / 15,505 grade members. Sequence INI matches
 the original seven groups. Fixtures identify all observed provider boundaries.
 
+
+## Milestone 5: drop eligibility and real range delivery
+
+`mob_drops_range.hpp/cpp` supplies the original zone and item-range predicates.
+Both users must be in state four, share zone identity and instance, and the
+credited user's zone must equal the mob zone. Zone-only ownership ignores death
+and position. Item range rejects exactly candidate dead==1 and uses X/Z radius;
+credited death is not checked. Zero zone identities are not specially rejected.
+
+Float differences round before double squares/add/sqrt; result and integer radius
+round back to float. The x87 condition accepts unordered NaN as well as <=.
+The separate inline money gate omits credited-state and mob-zone checks. The loot
+coordinator now uses this exact money predicate, correcting its prior NaN reject.
+
+Validation:
+
+- 2,048 complete original zone/item-range/inline-money comparisons, including
+  signed radius edges, exact float boundaries, tiny/huge coordinates, Inf, quiet
+  and signaling NaN. Native matches 55 unordered item-range accepts and 385
+  dead-candidate zone accepts. Actual Distance2 0041b1f0 and CRT sqrt execute.
+- 1,024 complete original ItemDrop delivery traces with actual zone/range bodies;
+  native compares allocation/log/grant/ground events, ownership, turn cursor and
+  CRT state. Other world/item providers remain observed ports as documented in
+  the fixture; this does not claim production inventory delivery.
+- Native full loot coordinator verifies the unordered money grant even when
+  credited state is three. Actual money/inventory transport remains a provider.
+- Original CRT TLS is supplied using the existing spatial-oracle boundary at
+  0050d0ca; no numerical/range body is replaced. The first attempt lacked TLS
+  and failed on the NaN errno path; it is not counted as a successful fixture.
+- Focused isolated SQL regression: exit 0; both new comparisons pass and all
+  16,047 item definitions still match original craft hash `14191292995060048443`
+  (9,430 eligible, 133,142 draws). Shared SQL lock held, no database writes.
+  Log: `work/mob-drops-range-integration.log`.
+- Native build: exit 0, 141 actions, no warnings. Log: `work/mob-drops-range-build.log`.
+- `python3 tools/dev.py test`: exit 0, all 127 tests passed in 34.33 seconds.
+  Log: `work/mob-drops-range-test.log`.
+- New oracle Python sources pass `py_compile`; `git diff --check` passes.
+- Focused locked Ghidra export and all original EXE/PDB hash checks pass again.
+
 ## Required integration and remaining work
 
 - Bind `MobDeathWorld::drop_items` to `mob_loot`, retaining the existing party
@@ -106,8 +148,13 @@ the original seven groups. Fixtures identify all observed provider boundaries.
 - User/party projections still require mode +104, leader +0c, cursor +108,
   type +114, ordered members +18, zone +e0, instance +164, state +5758, dead +142c,
   position +d0/+d8 and money mode/percentage +58b0/+58b4.
-- Real quest ownership/links, guild lock/revalidation/ranking, money grants,
-  range/zone helpers 004a64f0/004a6560 and inventory delivery remain required.
+- Bind zone/range providers to `mob_drop_zone_enabled` / `mob_drop_range_enabled`.
+  `MobLootUser.map` must mean live zone identity (original CZone pointer +e0),
+  not the numeric map ID; do not truncate native host pointers into that field.
+  Use stable projected identities consistently for mob/users. User references
+  must stay valid and retained; original helpers have no missing-user fallback.
+- Real quest ownership/links, guild lock/revalidation/ranking, money grants and
+  inventory delivery remain required.
   Both-mob logs (events 7/8) and 127-byte sequence log 0a06 belong to the
   coordinator's logging owner. Sequence callback must set make='V'. No required
   provider has a default no-op implementation. ItemCreate.ini crafting
