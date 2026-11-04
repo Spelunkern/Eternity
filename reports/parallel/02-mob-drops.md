@@ -868,3 +868,72 @@ corpse/admission/transport/subject leases remain separate root dependencies. No
 further independent raw-store/presentation change was identified inside the
 current assignment, and no worker08 or main source was edited. Awaiting review
 or another scoped task rather than repeating completed validation.
+
+## Milestone 15: pure Actor RecoverChange notification
+
+Implementation commit: ba1bd055e931229b0b5e5bfece8fcf64e6ca9210.
+
+Evidence: immutable ps_game.exe, CUser::SendRecoverChange00482230 and complete
+SendEnergyAllToParty00482360, exported decompilation plus instruction execution.
+SHA256SUMS verification passes for all 12 original files. Original arguments are
+HP/SP/MP; the public PlayerResources aggregate remains HP/MP/SP. SendRecoverChange
+constructs exactly 12 bytes: 0505, DWORD user+dc, low WORD HP/MP/SP. Only when
+user+e0 is nonnull it invokes CZone::PSendView00421220 with position user+d0,
+radius60, affected-user exclusion, zero and channel5. It then calls the party
+helper regardless of zone presence. That helper reads live party user+173c and
+live HP+1238/SP+1240/MP+123c after view dispatch; party kind0 selects0c03 and kind1
+selects0c0c, with DWORD user ID and three low WORD values. CParty::Send00445680
+receives length12, packet and affected-user exclusion. Invalid party-kind bytes
+are not assigned guessed semantics; existing optional<bool> models valid kinds.
+There is no self packet, energy write, maximum lookup, heal/recover, clamp, clock,
+life/motion change or damage reset in either notification body.
+
+Minimal owner integration: Actor::send_recover_change(PlayerResources) delegates
+to the existing ActorResources::send_recover_change. It reuses party_energy(),
+current_, and the required ResourceSink rather than copying resources or adding
+a sender/cache. Actor's existing ResourceSink routes to required Scene
+send_nearby (PSendView radius60/channel5), party_kind and send_party. Root must
+provide actual zone/party dispatch, correct affected-user exclusion, membership
+and surviving subject/group/transport leases. Same serialized Actor executor is
+required; callbacks may reenter and must not destroy Actor/resources/Scene while
+the outer call is active. No production no-op/default-success service was added.
+
+Exact worker08 adapter:
+`send_recover_change(Actor& a, PlayerResources p) { a.send_recover_change(p); }`.
+Keep the supplied snapshot p: group notification must reread the live resource
+owner and membership after view callbacks. Do not substitute Actor::recover or
+replace_resources_raw. Existing raw-resource/presentation adapters and shared
+attack_state.mode remain unchanged. The new bridge test compiles the existing
+worker08 lifecycle owner (read-only snapshot fallback on this branch) and binds
+this real Actor API, including successful same-map movement, 0551 cell packet,
+0304 game log, 0505 notice and shared life/recovery/presentation tail. Corpse,
+movement and log services in tests are explicit recording fixtures, not claimed
+production world assembly.
+
+Validation:
+- `.local/oracle-env/bin/python tools/mob_drops_actor_recover_change_oracle.py`
+  executes both complete original bodies in 768 scenarios. Only the actual
+  view/party transport entry points are observed/returned; their route length,
+  zone/position/radius/channel/user exclusion and party registers are asserted.
+  Coverage includes zero/65535/65536/signed-boundary/DWORD-max values, absent
+  zone, no party/party/raid, view callbacks changing membership/current values,
+  party callback mutation and nested original SendRecoverChange execution.
+- Fixture generated in work/fixtures/ before copy with no active readers;
+  native comparison reproduces all 768 packet/callback/final-state traces on
+  actual Actor/ActorResources, retaining the same resource reference, maxima,
+  presentation/attack/recovery/life state. Separate full-HP damage-credit check
+  preserves ledger and invokes no clock or damage reset.
+- Eight actual worker08 bridge compositions pass, including successful
+  same-map notification ordering and dead-only/absent-corpse guards.
+- `python3 tools/dev.py build` passes; final build log:
+  work/mob-drops-actor-recover-change-build-final.log.
+- `python3 tools/dev.py test`: **141/141 passed**, zero failures, **41.73 s**.
+  Full log: work/mob-drops-actor-recover-change-test.log; individual output in
+  build/Testing/Temporary/LastTest.log. No failed native comparison occurred.
+- `sha256sum -c SHA256SUMS`, oracle py_compile and git diff --check pass.
+
+Remaining: worker08/root must bind this API on the actual world implementation;
+actual group recipient traversal/locks and zone/admission/transport lifetime
+remain root services. No worker08 implementation or main/frozen source edited.
+This pure packet API has no SQL calls; no SQL lifecycle/integration writes were
+performed. Native comparisons do not establish playable-server completion.
