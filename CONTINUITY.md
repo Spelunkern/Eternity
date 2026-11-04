@@ -1627,3 +1627,14 @@ build a barrier-based regression; requested 04 live movement dispatch and 09
 single-snapshot selected-character lifecycle. These are queued independent tasks,
 not completed implementations. Gameplay session 58307 and ingress session
 69947 remain live in their respective locked build/SQL queues.
+
+Coordinator created `/home/franco/Projects/Eternity-world` on `coordinator/world`
+from gameplay and composed 02-world (`18e706c..2fd4c48`) with 05-mobs
+(`05df315..931a232`), preserving all CMake targets. Commit `30d9e66` extends the
+real world fixture to call `vertical_mobs_idle_frame` before the sole population
+pass for the same zone and tick, checking the removed obelisk mob remains absent
+through idle and respawns afterward. Session 28365 is running targeted locked
+`vertical-world-unit` then `vertical-mobs-cursor-unit`; results pending. This
+fixture uses test-owned AI services and does not solve canonical pooled mob pin,
+production scheduling/providers or live-client playability. Gameplay session
+58307 and ingress session 69947 remain running independently.
