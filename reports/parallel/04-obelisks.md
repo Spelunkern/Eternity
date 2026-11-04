@@ -339,3 +339,69 @@ coordinator-owned. Production transport routing, portal/KC services, stable
 configuration/state loading and world dispatch remain required. The canonical
 pool interface proposal from the startup block is still pending. This milestone
 does not make the server playable.
+
+## Persisted ownership milestone — SetKeepObelisk
+
+Implementation commit: `e6f7850aa24037620005e412f4a0c339ef392421`.
+
+Recovered `ps_game.exe` **CWorld::SetKeepObelisk 00413bd0** plus real
+**CMap::FindPortalLink 0042b500**, checked against assembly and a locked focused
+Ghidra export. `restore_obelisk_ownership` applies decoded persisted triplets:
+
+- Base ID bit **0x10000000** selects the portal branch exclusively. First matching
+  portal link wins; a null portal object stops without changing flags. A present
+  portal receives the complete signed country value and its two open flags:
+  0→both, 1→first, 2→second, other values→neither. Timestamp/calendar are ignored.
+- Ordinary IDs search maps and records in original order, stop at the first
+  matching base ID, and do not require an active zone. Duplicate IDs and missing
+  records preserve this behavior; no transport or persistence calls are emitted.
+- Decode current from the low nibble and last from the next nibble minus one.
+  Missing last falls back to current; any non-neutral current overrides last.
+  Preserve the original low-nibble decoding rather than adding sanitization.
+- For nonzero change timestamps, call required packed-calendar acquisition and
+  unsigned seconds subtraction, then compute **max(86400 - seconds, 0) * 1000**.
+  Timestamp zero stores remaining=0 and calls neither calendar service. Unsigned
+  subtraction results above one day, including wrapped values, also store zero.
+- Store remaining ownership milliseconds in original **dwResetTime +000c**,
+  exposed as `ObeliskRuntime::reset_time`; retain the input change timestamp.
+  This does **not** overwrite principal `respawn.next` or current. Calendar
+  callbacks may mutate live record values; the already-selected target is kept.
+
+The explicit portal projection binds nullable country and open-flag pointers;
+ordinary inputs are stable spans of map records. Required
+`ObeliskRuntimeOwnershipClock` exposes original packed `GetSystemTime`
+**004cb8e0** and `SubTimeSecond` **004cb9d0** semantics without default no-ops.
+The native coordinator does not claim to implement those calendar helpers or
+replace them with Unix/host calendar arithmetic. Original fixtures observe only
+these two ports; actual lookup, branch/packing and **_allmul 0050d3b0** execute.
+512 cases cover ordinary/portal routing, duplicate/missing IDs, null portals,
+zero timestamps, neutral/last-country decoding, raw signed portal countries,
+86400-second limits and unsigned extremes, plus live mutation during clock calls.
+The trace includes 221 ordinary writes and 177 paired calendar calls.
+
+Validation:
+
+- `python3 tools/dev.py build`: exit 0, no compiler warnings
+  (`work/obelisk-ownership-build.log`).
+- `python3 tools/dev.py test`: exit 0, **125/125 tests passed**, 32.44 seconds
+  (`work/obelisk-ownership-tests.log`), including all six obelisk suites.
+- Original fixture generation, independent regeneration and `cmp`: exit 0;
+  `work/obelisk-runtime-ownership-oracle.tsv` and
+  `work/obelisk-runtime-ownership-repeat.tsv` match the tracked fixture.
+- Locked focused Ghidra export: exit 0 (`work/obelisk-ownership-ghidra.log`).
+- Final `sha256sum -c SHA256SUMS`: exit 0 for all original EXE/PDB pairs
+  (`work/obelisk-ownership-final-hashes.log`). `git diff --check`: clean.
+
+No SQL queries/schema/fixtures changed; final isolated SQL integration remains
+coordinator-owned. Decode persisted triplets and invoke this function before
+normal startup; actual packed calendar and DB/world dispatch remain required.
+
+Map ownership clarification from **CZone::MapInit 0041c8a0**, assembly
+**0041d010–0041d01b**: only `m_nCreateType == 0` attaches the zone to the original
+CMap and invokes InitObelisk. This path does not clone obelisk records as it does
+linked-mob records. Earlier per-zone wording must not be read as permission to
+instantiate independent ownership copies for every created map instance. Bind
+normal map records to its primary zone, with stable respawn/member sources.
+Further independent work remains configuration/source binding and packed
+calendar implementation; production world integration is not complete and the
+server is not playable.
