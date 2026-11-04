@@ -224,3 +224,21 @@ real death/inventory/world/log services. Earlier creation-header warning about
 ItemIds timing/wrap describes the pre-fix implementation; coordinator can update
 that comment during integration. SQL streaming publication remains a separate
 storage-owner dependency. No production gameplay completion is claimed.
+
+## UID continuation checkpoint
+
+Re-read current main continuity/parallel instructions and reviewed commits
+5f94027/c2879e3. Main read-only snapshot `3e9e1a4` still has the pre-fix ItemIds
+header/source; the delivered generator has not yet been integrated there. The
+repeated assignment adds no unimplemented generator behavior identified by this
+review. No new runtime code or execution results are claimed. Previous milestone
+validation remains the applicable evidence; documentation diff check passes.
+
+Next concrete task proposal: coordinator integrates the delivered shared owner,
+then explicitly authorizes the CharacterCommands clock/UID call-site migration
+and retained quest/drop provider assembly. CharacterCommands currently owns the
+snapshot-clock caller; changing it exceeds the current item_ids.hpp/cpp/tests
+ownership. Inject the same retained ItemIds into all those providers, use next()
+for server-inclusive IDs and raw_next() for the existing drop creation boundary,
+and validate complete producer composition. This is owner wiring, not another
+UID generator. Awaiting assignment; no main/other-owner changes or repeated tests.
