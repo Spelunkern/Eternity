@@ -1330,3 +1330,52 @@ zone lifecycle, user scene dispatch, KC/calendar/transports and root assembly
 remain dependencies. Worker03's real pool/init/zone adapter was not duplicated.
 Canonical files and SQL were unchanged; final isolated SQL validation remains
 coordinator-owned. The server is not playable.
+
+## Scope completion checkpoint — retained map integration dependency
+
+Reviewed latest worker commits `1112ff88203bf68d2813a8398243892818627a89`
+and `2afd61c`, current main CONTINUITY/PARALLEL_WORK and canonical owner APIs.
+No new runtime implementation, original fixture or build/test result is claimed
+in this checkpoint. Last scoped validation remains141/141 tests,29.91 seconds,
+with clean native build from the preceding world-publication milestone.
+Current original EXE/PDB SHA256SUMS passed again
+(`work/obelisk-integration-checkpoint-hashes.log`); `git diff --check` passed.
+
+The next useful step is real retained-map binding, rather than another input
+projection. Canonical `ServerMaps::find` and `all` expose only const ConfiguredMap
+views. Portal ownership must mutate the actual `MapPortal::country`: the source
+**ps_game.exe, CMap::LoadObelisk 00427300** binds retained portal pointers,
+**UpdatePortalLink 0042a000** changes their country, and **CWorld::SetKeepObelisk
+00413bd0** restores it through that same pointer. Existing obelisk portal config,
+restore, update and publication APIs already retain that mutable country address.
+A second portal-country array or const_cast would not supply the real owner.
+
+Minimal proposed coordinator-owned interface:
+
+`std::int32_t* ServerMaps::mutable_portal_country(std::uint16_t map_id,
+std::size_t slot) noexcept;`
+
+Return the address of the retained definition.portals[slot].country, or nullptr
+for an absent map/slot. Keep map/portal vectors stable after loading; expose no
+resize/replacement operation. Existing const map/portal views already provide
+IDs, positions and stable map identity. The retained root owner must also supply
+actual primary-zone presence and target-map user/DB publication routing, updating
+zone-presence projections through creation/destruction. No such root map registry
+is attached to this worker's configuration components yet.
+
+Concrete next-task proposal: authorize the minimal canonical map-country
+accessor (or supply an equivalent existing real owner), then assign worker04
+`obelisk_runtime_maps`: bind native parsed/configured records, live portal
+countries, positions, primary-zone identity and scene/persistence routing to
+that actual ServerMaps owner. Validate mutation through ordinary public const
+views and original ownership/reset/scene fixtures, with retained map lifetime.
+Canonical map_config files are outside current worker04 ownership and were not
+edited. Worker03 explicitly owns the real MobPool/Init/ZoneMobs obelisk adapter;
+its task must remain separate. KC/calendar/root transport providers likewise
+need real coordinator-owned services, not silent fallbacks.
+
+All assigned destroy/respawn/ownership/configuration/publication behavior and
+available independent composition evidence are delivered. Await a concrete owner
+interface or expanded assignment before further integration. SQL was untouched;
+final integration remains coordinator-owned. This subsystem checkpoint does not
+establish playable-server completion.
