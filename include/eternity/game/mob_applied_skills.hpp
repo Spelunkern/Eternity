@@ -1,4 +1,5 @@
 #pragma once
+#include <atomic>
 #include <cstdint>
 #include <memory>
 #include <mutex>
@@ -59,9 +60,14 @@ public:
     // Ownership admission only: not AddApplySkill's effect/replacement logic.
     // Reused payload is deliberately retained, as in SSyncHeap<CSkill>::Alloc.
     MobAppliedSkill* append_from_pool();
+    // CObjectMgr::CreateSkill 0040a780 followed by AddBack. The counter is the
+    // object manager's shared skill counter, not a per-mob sequence. A wrapped
+    // zero ID remains zero until the next creation of that recycled object.
+    MobAppliedSkill* append_created(std::atomic<std::uint32_t>& counter);
     std::vector<MobAppliedSkill*> records() const;
     void clear(const MobAppliedSkillLogProjection&);
 private:
+    MobAppliedSkill* append(std::atomic<std::uint32_t>* counter);
     MobAppliedSkillPool& pool_;
     MobAppliedSkillLogServices& log_;
     mutable std::recursive_mutex mutex_;

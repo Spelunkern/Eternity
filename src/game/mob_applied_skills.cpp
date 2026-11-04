@@ -28,10 +28,16 @@ void MobAppliedSkillPool::discard(MobAppliedSkill* skill) {
     std::lock_guard lock(mutex_);
     std::erase_if(objects_,[skill](const auto& object){return object.get()==skill;});
 }
-MobAppliedSkill* MobAppliedSkills::append_from_pool() {
+MobAppliedSkill* MobAppliedSkills::append_from_pool() {return append(nullptr);}
+MobAppliedSkill* MobAppliedSkills::append_created(std::atomic<std::uint32_t>& counter) {
+    return append(&counter);
+}
+MobAppliedSkill* MobAppliedSkills::append(std::atomic<std::uint32_t>* counter) {
     std::lock_guard lock(mutex_);
     auto* skill=pool_.acquire();
     if (skill) {
+        if (counter && skill->instance_id==0)
+            skill->instance_id=counter->fetch_add(1)+1U;
         try {records_.push_back(skill);} catch (...) {pool_.recycle(skill);throw;}
     }
     return skill;
