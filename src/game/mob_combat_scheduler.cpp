@@ -51,4 +51,24 @@ bool mob_combat_scheduler(Actor& actor,MobCombatSchedulerBindings& bindings,std:
     }
     deadline(actor,now);world.cancel_move(actor);attack.motion=0;return true;
 }
+void mob_combat_scheduler_next(Actor& actor,bool force_stop,MobCombatSchedulerWorld& world) {
+    auto& attack=actor.attack_state();
+    if(force_stop || attack.previous_tick==0){mob_combat_stop(actor);return;}
+    if(attack.mode!=1 && attack.mode!=2) {
+        if(attack.mode==0) {
+            world.send_self(actor,net::Packet{0x12,0x02});
+            if(attack.recovery<2)attack.recovery=2;
+        }
+        attack.mode=2;
+    }
+    attack.next_tick=1;
+    auto& status=actor.status();
+    if(status.current_target_type==1 && status.current_target==actor.id()) {
+        const auto& actions=actor.actions();
+        if(actions.previous_target_type==0){mob_combat_stop(actor);return;}
+        status.current_target_type=actions.previous_target_type;
+        status.current_target=actions.previous_target;
+    }
+}
+
 }

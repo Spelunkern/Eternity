@@ -23,4 +23,7 @@ public:
 // attack/target state. Bindings stay live across callbacks. No private loop,
 // clock sample, target owner or damage implementation is created here.
 bool mob_combat_scheduler(Actor&,MobCombatSchedulerBindings&,std::uint32_t now,MobCombatSchedulerWorld&);
+// CUser::StatusNextAttack 0048c970. Reuses the same live Actor attack/action
+// owners; self delivery may synchronously mutate them before continuation.
+void mob_combat_scheduler_next(Actor&,bool force_stop,MobCombatSchedulerWorld&);
 }
