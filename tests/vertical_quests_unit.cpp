@@ -5,11 +5,12 @@ using namespace quest_actor_test;
 namespace {
 struct PoolFactory final:QuestRuntimePoolServices {std::unique_ptr<RestoredQuest> construct() override {return std::make_unique<RestoredQuest>();}};
 struct NpcServices final:ZoneNpcServices {
+    bool fail_broadcast=false;
     Npc* allocate() override {throw std::logic_error("unexpected allocation");}
     std::uint32_t next_id() override {throw std::logic_error("unexpected id");}
     std::uint32_t tick_ms() const noexcept override {return 100;}
     void invalid_guard_position(const MapNpc&) override {throw std::logic_error("unexpected guard");}
-    void send_cell_view(CellCoordinates,const net::Packet&) override {}
+    void send_cell_view(CellCoordinates,const net::Packet&) override {if(fail_broadcast) throw std::runtime_error("NPC broadcast failed");}
     std::unique_ptr<NpcBroadcast> allocate_broadcast(const net::Packet&,std::optional<std::uint8_t>) override {throw std::logic_error("unexpected broadcast");}
 };
 struct Services final:VerticalQuestPorts,QuestRewardWorld,QuestRuntimeWorld {
@@ -73,5 +74,13 @@ int main() {try {
     check(runtime->active().empty() && runtime->finished().size()==1 && runtime->mob_kill_quests()==0,"completion did not remove actual quest");check(services.experience==20,"experience callback mismatch");check(services.replica.active().empty(),"DB replica retains completed quest");
     check(scene.packets.size()==3 && word(scene.packets[0],0,2)==0x902 && word(scene.packets[1],0,2)==0x905 && word(scene.packets[2],0,2)==0x903,"client packet order differs");
     check(services.db==std::vector<unsigned>({0xa01,0xa05,0xa02}),"database ordering differs");check(services.locks==0,"quest lock leaked");
-    check(guard->retire(*replacement),"NPC retirement failed");std::cout<<"Actual Actor quest acceptance, mob progress and NPC completion passed\n";
+    check(guard->retire(*replacement),"NPC retirement failed");
+    auto* failed=npc_pool.allocate();failed->id=101;check(zone.enter(*failed),"failure NPC entry failed");
+    auto lease=guard->acquire(101);npc_services.fail_broadcast=true;bool threw=false;
+    try {guard->retire(*failed);} catch(const std::runtime_error&) {threw=true;}
+    npc_services.fail_broadcast=false;check(threw,"retirement failure was hidden");lease.reset();
+    auto* other=npc_pool.allocate();check(other!=failed,"failed retirement recycled NPC");npc_pool.release(*other);
+    // ZoneNpcs::leave unlinks before broadcasting and did not clear the cell on failure.
+    failed->cell.reset();npc_pool.release(*failed);
+    std::cout<<"Actual Actor quest acceptance, mob progress and NPC completion passed\n";
 } catch(const std::exception& e) {std::cerr<<e.what()<<'\n';return 1;}}
