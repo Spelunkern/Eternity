@@ -1175,3 +1175,10 @@ Integrated reviewed 9e7c0d8/481b36c as bfc2502/18a3891. Container build, 303/303
 ## Coordination checkpoint
 
 User resumed the active objective. Nine independent Terra sessions remain open; see `python3 tools/independent_status.py`. Follow-up assignments sent manually to 01-entry, 04-movement, 06-combat, 07-inventory and 08-quests. Reviewed drafts expose two integration hazards: 01-entry and 09-persistence must share exactly one Players::load (JoinDate and gift effects), and 02-world and 05-mobs must not execute population/respawn twice in one frame. Notifications queued to both relevant pairs. Independent branches are not yet integrated or validated centrally; several builds are queued under shared locks. 06-combat has bounded original caller evidence but still requires actual AttackSuccess/AttackDamage providers; 04-movement initially reported missing live owner services. Continue monitoring live sessions and review completed deliveries rather than treating report presence as completion.
+
+`tools/dev.py test` previously ignored all trailing CTest arguments, so apparent
+filtered worker commands could run the entire suite. Fixed in f899785 to forward
+arguments; `integration` now rejects unexpected arguments instead of silently
+running the entire SQL suite. Mocked command construction verifies forwarding
+and rejection. Existing worker checkouts predate this fix; do not describe their
+runs as filtered unless the actual CTest output establishes it.
