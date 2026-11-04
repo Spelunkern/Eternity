@@ -979,3 +979,43 @@ Worker08/root actual Rebirth bridge can now bind Actor::replace_resources_raw an
 ## Fifteenth retry validated
 
 Session97601 exited0:build255/255tests79.97s/full isolatedSQL/fullbindingcatalog/realstreamSQL passed at408826d. Original254/255 failure remains .local/fifteenth-batch-tests.log; passing logs .local/fifteenth-retry-*.log. Freeze released, publish validated batch only. New queued snapshots excluded.
+
+## Reviewed worker05 8c1a6380 — raid wire indices and leadership
+
+Reviewed999721b/6c5a403 actual0b12/13/17 on same30slot registry, wire index exchange without moving pointers, original leader/subleader callback ordering/live rereads. Reported1280originalrequests18nested136/136tests40.37s+ASAN/UBSAN. Invalid selected-null projections explicitly rejected; no actual root lifetime safety claimed. Exact commits queued after validated published d59d595. Remaining raw auto_join byte/autojoin/invites/responses/raidexpel/root services open; worker continues current raid request scope.
+
+Reviewed8228718 doc-only Rebirth ownership checkpoint, no new runtime/tests. Explicitly assigned02 pure SendRecoverChange00482230 Actor notification using existing resources/party owner, no heal/clamp/mutation/damage reset. Worker08 lifecycle stays separately owned. Prior139tests remain historical; pending actual APIs require central integration.
+
+## Reviewed worker08 63bd8b3d — NPC death coordinator
+
+Reviewedc2811ca/7105169 whole DeathByNPC/SendDeath, original subject exclusion/capturedpartylock/live rereads/NPC0c06 evenraid. Reported2064originaltraces16reentrant131tests39.47s+sanitizers after generated-thunk cache invalidation corrected fixture; original130/131failure preserved. ActualActor bridge only prefixes to missing same-ledger reset, not completed production NPCdeath. Needs actual penalty/soul/deadline/code owner fields, ledgerreset, corpse/PvP/partyexcludedtransport. GeneralDeath/PvPrewards remainopen. Queue exact snapshots; DB0902 mandatory fixture compatibility must be checked centrally. Actor02 rawresources/presentationAPIa7d46ab now delivered; pureSendRecoverChange assigned02.
+
+## Sixteenth batch integrated/source freeze
+
+Reviewed0d84227/9408243 raid0b1a sameowner expulsion:512originalrequests768direct43nested137tests+sanitizers reported, queued then integrated with all reviewed pending deliveries through f4e875cb6320d4e672b14226cc235e5765d5e6b8. Includes actual Actor Rebirth resource/presentation APIs,NPCdeath coordinator,maps binding,readiness/persistence,numericVM and raid requests. CMake conflicts combined/nesting audited. Freeze canonical sources during .local/sixteenth-batch-{build,tests,sql,bindings-sql,stream-sql}.log pipeline; latestvalidatedpublishedd59d595. No new batch validation claim. Known new NPCdeath fixture must satisfy mandatory0902binding if exercising removal.
+
+## Reviewed worker09 90fae173 — integer arithmetic VM
+
+Reviewed495a8a4/bbd680f int/DWORD add/sub/mul/div on same retained stack/map/resulttemporary, original copied second operand metadata and unsigned mixed division; counted conditions drive actualtransition. Reported3840originalexecutions142/142tests42.50s. Undefined operand storage/div0/INT_MINdiv-1 explicitly error, no CPUfault equivalence claim. Float arithmetic/assignment/control/functions/factory remain open. Exact commits queued during sixteenth freeze,build currently running; no sourcechanges.
+
+## Reviewed worker01 6466d39d — original CRT53 resource availability
+
+Reviewed165eb33/2bd193e exact SP/MP cost prefix float32operands/stageddouble53/truncation/overflow/wrap/signed availability and required nearest rounding.4096cases8192completeoriginalcalls; final138/138tests34.27s. Preserve unrelated prior137/138world-network replacement disconnect registry failure; teardown race hypothesis unproven,nofixclaim. No resource spending or full EnableUseSkill claimed. Equipment middle/action/full stabledefinition/rootservices remain required. Exact commits queued during sixteenth sourcefreeze;385actionbuild passed,tests pending.
+
+## Sixteenth initial failure and pure recovery notification review
+
+Session29069 exited1:265/266tests63.97s; new NPCdeath Actor fixture missing mandatory0902binding. SQL not started. Preserve .local/sixteenth-batch-tests.log as failure. Coordinator fixture-only recording transport migration; full retry .local/sixteenth-retry-*.log. Reviewedba1bd05/a49d54c actual pureActor recoverychange, view snapshot then liveparty energy,768originaltraces8Rebirthcompositions141tests41.73s reported. Queued for next batch,not partofretry.
+
+Reviewed05a347b doc-only RecoverChange checkpoint, no new execution. Assigned02 actual same damage_ ledger silent reset (existing private reset_damage adds scene callback and is unsuitable). Audit missing deathmetadata original owners before adding fields; worker08 lifecycle remains read-only. Sixteenth retry still active/sourcefreeze.
+
+## Reviewed worker09 c45dee34 — integer assignment
+
+Reviewed73dc722/bbb5956 actual same map/stack writeback via embeddedVariableID, resultpush beforewrite and retained metadata/text.1792originalcalls143/143tests42.76s reported. Missingwritebacktarget errors afterpush without invented insertion. Compound/float/functions/factory remainopen;workercontinuescompound. Queued during sixteenth retry freeze. Retry266/266tests54.90s passed;SQL/catalog/stream finalexit pending.
+
+## Reviewed worker06 f42d5e3a — concrete QuestStartWorld
+
+Reviewed73edfa4/2e5413d actual sameActor/runtime/admission/grants/logserialization bridge; family+12e correction distinct faction+12d.224originalflows79starts159actualgrants128/128tests45.64s reported. Root lastitemuse+57d4/+57d0 actualowner missing; references must be authoritative and retained, no zero shadow. RealNPC/07inventoryconsumption/log/DBclient routing required. Exact commits queued during sixteenth retry freeze.
+
+## Sixteenth retry validated; autojoin reviewed
+
+Session90533 exited0: build266/266tests54.90s/fullisolatedSQL/fullbindingcatalog/realstreamSQL all passed at4b4e16d. Original265/266failure retained .local/sixteenth-batch-tests.log; passing .local/sixteenth-retry-*.log. Freeze released. Reviewed3b806fc/1cb1faa actual0b11 active-name retainedlookup/same30slotadmission/errorordering;1024originalrequests46nested138tests+sanitizers reported. Exactcommits queued,newer deliveries not covered by validated batch. Invitations/rawauto_join/rootservices remainopen.
