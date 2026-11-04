@@ -1058,3 +1058,29 @@ startup/frame/shutdown assembly. Root zone leases do not replace actor lifetime
 leases or implement those backends. Coordinator owns full isolated SQL and final
 integration. Primary retained lifetime and dispatch are now concrete and tested;
 global gameplay completion is not claimed.
+
+## Retained primary-zone scope completion checkpoint
+
+Repeated assignment reviewed against current main CONTINUITY/PARALLEL_WORK,
+AGENTS.md and d4ea8e5/9a5aabe. The requested authoritative primary lifetime,
+serialized lease dispatch and actual registry/obelisk integration are already
+implemented and validated above. Main is now in nineteenth-batch source freeze;
+its serve path still calls world->start at line 96 and io.run at line 99, while
+ServerMaps::load remains validation-only at line 120. No primary root or actual
+ZoneRegistry construction is present there. Read-only inspection only.
+
+No additional independent behavior is identified within this completed scope.
+Concrete next assignment proposal: authorize a production ZoneServices assembly
+and concrete RuntimeZone factory, explicitly supplying retained canonical
+Init/AI/catalog/heap/clock/world providers and implementing partial Init/release
+ownership, then connect it to MobPrimaryZones at the coordinator-owned serve
+hook. Missing Lua/transport/KC providers must remain explicit dependencies;
+constructing a second registry or successful empty factory would not resolve
+this gap. Main wiring and other workers' backend implementations remain outside
+this assignment.
+
+Documentation-only checkpoint: no source/fixture changes or repeated execution.
+Latest validation remains 137/137 tests (44.83 seconds), four focused sanitized
+compositions, byte-identical original zones replay and all 12 binary hashes.
+Tree was clean before this update; git diff --check passed. No SQL access or
+global completion claim.
