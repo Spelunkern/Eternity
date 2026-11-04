@@ -32,6 +32,8 @@ class MobAppliedSkillRemovalServices;
 class MobAppliedSkillDamageServices;
 class MobAppliedSkillEffectServices;
 struct MobRuntime;
+struct MobAppliedSkillApplication;
+class MobAppliedSkillApplicationServices;
 // One object-manager heap shared across owners. It must outlive every list.
 class MobAppliedSkillPool {
 public:
@@ -72,9 +74,13 @@ public:
     void clear(const MobAppliedSkillLogProjection&);
     void keep(std::uint32_t now,MobRuntime&,MobAppliedSkillDamageServices&,MobAppliedSkillEffectServices&);
     void remove_sleep(MobRuntime&,MobAppliedSkillEffectServices&);
+    void apply(MobRuntime&,const MobAppliedSkillApplication&,std::uint8_t base_attribute,
+               std::atomic<std::uint32_t>& shared_counter,MobAppliedSkillApplicationServices&,
+               MobAppliedSkillEffectServices&);
     // Unsigned absolute tick comparison, including equality; no wrap-distance rule.
     void expire(std::uint32_t now,const MobAppliedSkillLogProjection&,MobAppliedSkillRemovalServices&);
 private:
+    MobAppliedSkill* acquire_created(std::atomic<std::uint32_t>& counter);
     MobAppliedSkill* append(std::atomic<std::uint32_t>* counter);
     MobAppliedSkill* cursor_=nullptr; // nullptr represents the original sentinel.
     MobAppliedSkillPool& pool_;
