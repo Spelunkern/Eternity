@@ -832,3 +832,7 @@ endif()
 if(BUILD_TESTING)
     add_test(NAME party-runtime-membership-live-send-unit COMMAND party-runtime-membership-unit ${CMAKE_CURRENT_SOURCE_DIR}/tests/data/party-runtime-membership-live-send-oracle.tsv --real-party-send)
 endif()
+
+# Explicit read-only isolated SQL check; uses the shared lock wrapper, not CTest.
+add_executable(mob-targeting-bindings-sql-unit tests/mob_targeting_bindings_sql_unit.cpp)
+target_link_libraries(mob-targeting-bindings-sql-unit PRIVATE eternity_game eternity_storage)
