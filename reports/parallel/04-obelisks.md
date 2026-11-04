@@ -680,3 +680,62 @@ previous composition fixture's observed portal callback. Raw pool preparation,
 configuration loading, calendar/KC and other production world dependencies from
 prior blocks remain open. SQL is unchanged and final isolated SQL validation
 remains coordinator-owned. The server is not playable.
+
+## Combat death through real portal ownership — composed evidence
+
+Evidence/test commit: `31d85d42a03416a780d4beb7f051a34541625a76`.
+
+The new `obelisk-runtime-death-portal-unit` replaces the earlier composition's
+observed portal-update callback with actual native `update_obelisk_portal_links`
+and publication. Its original counterpart now executes **ps_game.exe,
+CMob::Death 004910f0 -> CMap::ObeliskDestroy 0042a410 -> UpdatePortalLink
+0042a000 -> SendPortalLinkChange 0042b2c0**, alongside real nested zone removal,
+**FreeMob 0040a630**, **UpdateMobDeath 00421a80** and pooled **CreateMob
+0040a5e0**. No production implementation changed in this evidence block.
+Previously focused Ghidra exports provide the function evidence; no new symbols
+or speculative ownership rules were introduced.
+
+Four stable portal links reference the actual destroyed obelisk plus three
+explicit other-map ownership inputs. Cases vary nullable targets/references,
+country-zero priority versus country-one groups, existing open states, missing
+map zones, suppressed obelisk publication and both credited/fallback death
+ownership. The first portal DB callback in scenarios divisible by17 changes
+live portal countries and the actual obelisk's last-destroy country. Subsequent
+portal matching/publication and corpse snapshots must reflect those changes.
+The test preserves original DB/map/world packet order across this callback.
+
+256 retained sequences compare 2,048 operations, 202 actual portal-update
+entries, 106 portal DB changes, 69 target-map publications, 106 global portal
+transitions and 9,216 portal-state snapshots, together with 768 real actor
+recycles and 512 pool reuses. The principal remains zone-owned until strict
+natural corpse cleanup; portal work neither decrements its respawn counter
+again nor recycles it. Required production reward/quest/skill/KC/transport
+services remain observed boundaries. Initial actors/map/link structures are
+explicit projections; configured loading and network delivery are not claimed.
+
+Validation:
+
+- `python3 tools/dev.py build`: exit0, no compiler warnings
+  (`work/obelisk-death-portal-build.log`).
+- `python3 tools/dev.py test`: exit0, **130/130 passed**, 39.20 seconds
+  (`work/obelisk-death-portal-tests.log`).
+- Independent original generation/regeneration and `cmp`: exit0
+  (`work/obelisk-runtime-death-portal-final.tsv`,
+  `work/obelisk-runtime-death-portal-final-repeat.tsv`). The final metadata
+  correction clarifies that portal coordination executes; all256 data rows are
+  identical to those tested. The retained fixture was replaced after tests ended.
+- Earlier death and forced-removal original fixtures remain byte-identical
+  (`work/obelisk-runtime-death-portal-{death,zone}-regression.tsv`).
+- All original EXE/PDB SHA256SUMS passed
+  (`work/obelisk-death-portal-hashes.log`); `git diff --check` passed.
+
+Integration: the real death world's mandatory `update_portal_links` delegates
+to the retained global link table and real portal provider. Its DB and global
+send methods can serve both obelisk and portal services; `map_broadcast(index,p)`
+must route to that link's actual target map, rather than always the dying
+actor's map (the fixture observes that routing boundary). Retain the configured
+portal bindings and pointed-to country/obelisk storage through nested callbacks.
+No canonical interface change is needed for this composition. Production
+configuration, map routing, raw pool preparation, calendar/KC and other world
+providers remain open. SQL is unchanged; final isolated SQL checks remain
+coordinator-owned. This evidence does not establish client playability.
