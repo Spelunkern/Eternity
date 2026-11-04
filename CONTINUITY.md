@@ -1550,3 +1550,10 @@ isolated disposable creation/guild suite. This validates the candidate SQL
 adapter's tested cases, not original retained-roster gating, signed flags, live
 actor/replica composition or production dispatch. Those remain open; worker 01
 has the original 0407 roster evidence. The candidate is not merged.
+
+Ingress integration session 69947 passed focused `vertical-protocol-tcp-unit`
+and `vertical-protocol-gate-unit` on the combined 03+09+pause branch, logs
+`.local/composed-protocol-{tcp,gate}.log` in Eternity-ingress. The TCP fixture
+covers ordered AES/XOR handoff and admission with test-owned services; it is not
+an original client or production root. Remaining focused protocol/persistence,
+full build and disposable SQL phases continue in the same live session.
