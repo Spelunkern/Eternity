@@ -1909,3 +1909,129 @@ party/raid iteration, then composition into one complete Death continuation.
 Existing root exchange/shop/vehicle2/PvP/corpse/item-drop/party-exclusion/log/view
 transport requirements remain explicit. No full player-death, rebirth admission,
 production transport or playable-server completion is claimed.
+
+
+## Milestone 18 — complete PvPChkLoseDeath coordinator
+
+Implementation: `e8f1f1b`. Source: `ps_game.exe`, `CUser::PvPChkLoseDeath`
+0047b2c0..0047b528 (complete routine), original PDB CUser/stTarget layouts and
+called primitive addresses below. New mob_targeting_lifecycle_lose implements
+all raw type branches over retained existing owners. This completes the special
+loss coordinator, not the remaining ordinary rewards or complete general Death.
+
+Recovered order and state:
+
+- Raw type 4 first invokes ItemDropPvP 0047c990 for winner->winner, then
+  loser->winner. Both calls still occur on aliased user identity. Next, for loser
+  then winner: PvPClearDebuff 0047c610, CDamage::Reset 004b8aa0, +54cc=0,
+  +54d0=-1, +1528=0. Opponent ID +54d4, target ID +152c, casting, life +142c
+  and current resources are not explicitly cleared by this routine.
+- PDB stTarget is nType at +0 and dwID at +4. CUser::GetTargetMob 0044c0f0 also
+  compares +1528 to 2 before reading +152c as the mob ID. Thus the canonical
+  mapping here is EffectStatus::current_target_type, NOT current_target. The
+  decompiler's apparent dwID assignment is misleading.
+- Increment loser DWORD+158 and winner DWORD+154 only when the live unsigned
+  value is below 65535. Values already greater, including high-bit states, are
+  retained. Each write precedes its DB-agent send (004d4f10): 060c/11 bytes,
+  real billing DWORD+578c, subtype3/2, new DWORD count. No rollback/retry is
+  added on send failure. Read winner's live counter after the first send.
+- Winner receives 2405/01, then loser 2405/02 through actual self transports.
+  Logs are 0e01/winner-subject/loser-target then 0e02/loser-subject/winner-target,
+  99 bytes via 004d4e50. PrepareGameLog 0045b0d0 occurs before each opcode and
+  live target DB-character-ID/name copy. Entity ID +dc is not DB ID +128.
+  One buffer is reused, preserving shorter second-string tails. Explicit
+  scratch provenance covers the original unwritten bytes; the Actor wrapper
+  starts that otherwise undefined first buffer at zero.
+- Raw type 5 captures loser m_pGuild (+1758), locks its original +578 critical
+  section, rereads membership, releases the capture early if now null, and
+  calls CGuild::PvPUserLeave 00438160 on the LIVE guild with loser/reason3.
+  The original captured guild is released after the callback, even if live
+  membership changed. Other raw types, including 3/negative/high-bit values,
+  return without querying owners or invoking services.
+
+Actual owner composition:
+
+- Concrete Actor bridge uses the SAME UserRelations and EffectStatus fields,
+  Actor::clear_duel_debuffs, actual retained PlayerCore::kills[3]/[2], existing
+  drop_duel_wager/Actor::duel_wager and the canonical silent damage-ledger reset.
+  Do not substitute Actor::end_duel: its Scene reset side effects are different.
+  No new life value, Actor/list/guild/counter/catalog owner was introduced.
+- MobTargetingLoseDeathWorld inherits the existing DuelWorld. Allocation,
+  positions, shared CRT draws, zone item admission, calendar/log context and
+  transport ports remain required real providers. The coordinator does not
+  silently skip failed admission or preserve already-consumed stakes: native
+  composition verifies both real wager allocations with EnterItem=false and
+  confirms both stake owners clear, matching existing ItemDropPvP semantics.
+- Canonical Actor::reset_damage_ledger is available; the old private checkout
+  still lacks it, so its default fails explicitly after wager/debuff publication,
+  before clearing duel fields/counters/transports. Positive canonical execution
+  proves the same bridge completes using the actual silent ledger owner.
+- Existing GuildMembership/GuildUser records supply actual guild identity in
+  native composition. PvPUserLeave and its original guild lock remain mandatory
+  world ports, not an invented implementation based on disconnect/broadcast.
+  Native exception cleanup releases the captured guild once and preserves live
+  callback mutations. This is not a claim of complete Windows SEH equivalence.
+
+Validation:
+
+- 2064 complete original routine traces, including 16 actual nested calls at
+  wager/lock boundaries, match native final two-user state and ordered complete
+  primitive/packet traces. Original instructions were not patched; primitive
+  drop/effect/ledger/log/lock/guild/transport owners are explicit ports. Covers
+  aliasing, raw type returns, counter cutoffs, callback mutation of both users,
+  billing/character fields, reused log tails and guild removal/replacement.
+- Actual Actor composition checks wager allocation/admission failures, debuff
+  removal with retained buff/replica lifetime, chase cancellation, preserved
+  life/resources/target ID/opponent/casting, real guild captured/live routing
+  and an explicit absent-ledger failure. A native throwing guild callback also
+  checks exactly-once release without overwriting its changed live owner.
+- Initial build failed because the new test called nonexistent DamageLedger::
+  empty(); corrected the test to use the existing entries().empty() API. Initial
+  log remains work/mob-targeting-lifecycle-lose-build.log. No canonical API was
+  added or implementation altered to conceal the build error.
+- Final tools/dev.py build exit 0, 145 actions, no warnings/errors;
+  work/mob-targeting-lifecycle-lose-verified-build.log.
+- tools/dev.py test exit 0, 135/135 passed, 35.16 s; new unit 0.10 s;
+  work/mob-targeting-lifecycle-lose-tests.log.
+- ASAN/UBSAN under the shared build lock: exit 0, all 2064 comparisons and
+  Actor compositions passed, no diagnostics; actual Actor/resources/effect cycle/
+  effects/skills/duel/log sources instrumented, reset API0 explicit failure;
+  work/mob-targeting-lifecycle-lose-sanitized.log.
+- Read-only canonical snapshot at 4bbe21740b7a850640a670135455b202fa9098c1:
+  tools/mob_targeting_lifecycle_canonical_check.py --canonical
+  /home/franco/Projects/Eternity --suite lose exits0. All 2064 comparisons and
+  actual Actor compositions pass with reset API1, actual ledgers empty, counters/
+  DB060c/self/log publication completed and mandatory effect 0902 verified after
+  replica/runtime removal and before ID release. The selected-suite extension
+  avoids rerunning unchanged original NPC/ordinary checks. Snapshot manifest/
+  copied headers/archives remain in ignored work/mob-targeting-lifecycle-canonical-
+  check/; log work/mob-targeting-lifecycle-lose-canonical.log. No main writes.
+- Original fixture repeated byte-identically into work/; all 12 original
+  EXE/PDB SHA256SUMS pass; git diff --check clean. No SQL data path/lifecycle
+  writes or unchanged SQL fixture regeneration; central SQL checks remain the
+  coordinator's integration responsibility. No other-owner edits, new agents,
+  resets/rebases/merges or pushes.
+
+Exact root contracts / remaining work:
+
+- Keep loser AND winner Actor, PlayerCore, scenes, DuelWorld/item pool and current/
+  captured guild owners alive across all drop/effect/DB/self/log/lock callbacks,
+  including reentry. Borrowed ZoneUsers::find_actor alone is not such a lease.
+  Use the same actual world executor and existing shared CRT/clock services.
+- Bind world.player to authoritative retained PlayerCore records; world.billing_id
+  must expose the real +578c connection/billing owner. Never substitute account
+  ID or entity ID. Bind DB060c and ActorEffectDatabase0902 to actual DB-agent
+  queues, self sends to retained connections, logs to the actual game-log queue.
+  Original ignored enqueue results do not authorize fabricated transactionality.
+- Bind world.guild to the authoritative retained GuildUser.guild association,
+  and lock/unlock to that GuildMembership's REAL original recursive lock.
+  The actual PvPUserLeave backend must implement reason3 in its guild PvP owner;
+  existing normal membership disconnect is not equivalent. No new Actor field
+  is needed for these bindings; no empty provider is acceptable.
+- After the already-recovered Death route writes its penalty, call this special
+  coordinator once for type4/5, then resume the original Death log/tail. Do not
+  re-run the published Death prefix/GetMax. Ordinary player rewards, live normal/
+  raid party iteration and the single complete Death continuation remain next.
+  Exchange/shop/vehicle2/corpse and production admission/transport assembly remain
+  explicit required owners. No full player-death or playable-server completion
+  is claimed from these local and canonical checks.
