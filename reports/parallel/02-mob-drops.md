@@ -1046,3 +1046,21 @@ PvP cleanup, party identity/locks, excluded-user transports and retained lifetim
 remain mandatory root services. Worker08/party implementations, DamageLedger,
 main/frozen sources and SQL lifecycle remain unchanged. No SQL path changes in
 this silent primitive; central isolated SQL checks remain coordinator-owned.
+
+## Actor death reset continuation checkpoint
+
+Reviewed current canonical continuity/parallel instructions and a12ce74/cd52511.
+The repeated silent-reset assignment is complete in milestone16, including the
+four metadata owner audit. No additional independent reset behavior was found
+inside this scope. No new runtime changes or test executions are claimed;
+historical validation remains 65 original scenarios, two actual NPCdeath bridge
+compositions and142/142 tests in51.19s. Documentation diff check passes.
+
+Dependency: coordinator integrates a12ce74/cd52511; worker08/root binds its reset
+port to Actor::reset_damage_ledger(), retaining actual subject/transport/corpse
+owners. Concrete proposed next assignment: recover construction, initialization,
+restoration and writers of CUser+145c/+1430/+1454/+1458, then establish their
+canonical Actor ownership with original/native comparisons. That storage work
+requires explicit scope; this checkpoint adds no duplicate fields and changes
+no worker08, party, damage-owner or main source. Await the coordinator rather
+than rerunning completed fixtures or implementing another worker's services.
