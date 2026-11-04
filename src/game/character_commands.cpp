@@ -22,10 +22,11 @@ CharacterReply CharacterCommands::execute(std::uint32_t uid,const std::string& u
         if(!checked.request) return {{},true};
         auto draft=rules_->prepare(*checked.request,choose_start_(rules_->start_count(checked.request->family)));
         const auto now=clock_();
-        try {for(auto& item:draft.items) {
-            item.uid=identifiers_->next(clock_());item.made_at=clock_().local_calendar;
-        }}
-        catch(const std::overflow_error&) {return {{{2,1,1}},false};}
+        for(auto& item:draft.items) {
+            // ProcessCharacterCreate 00481750..00481877: shared locked UID first,
+            // then a separate local make-time sample, even when UID is cached.
+            item.uid=identifiers_->next();item.made_at=clock_().local_calendar;
+        }
         storage::SqlServer database(config_);Characters repository(database,options_.database_id,options_.world_base,options_.catalog);
         const auto created=repository.create(uid,username,draft,now.local_calendar);
         CharacterReply reply{{{2,1,created.result}},false};

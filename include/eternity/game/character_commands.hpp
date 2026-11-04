@@ -16,6 +16,10 @@ struct CharacterCommandOptions {
 };
 
 // Roster belongs to one connection; its commands execute sequentially on database workers.
+// identifiers is the same retained owner used by quest/drop producers. Its live
+// ItemIdClock owns UID sampling under the generator lock; clock below supplies
+// separate persistence/make-time samples only. Deterministic callers inject both
+// clocks explicitly; the timestamp clock does not override the UID clock.
 class CharacterCommands {
 public:
     CharacterCommands(storage::SqlServerConfig config,CharacterCommandOptions options,

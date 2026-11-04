@@ -7,7 +7,14 @@ void require(bool value,const char* message) {if(!value) throw std::runtime_erro
 std::uint64_t ticks() {
     return static_cast<std::uint64_t>(std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now().time_since_epoch()).count());
 }
+struct CreationIdClock:eternity::game::ItemIdClock {
+    std::uint32_t ticks_ms() override {return 10000;}
+    std::uint32_t packed_local_calendar() override {
+        return eternity::game::pack_item_id_time(std::chrono::sys_days{std::chrono::year{2024}/1/1});
+    }
+};
 struct Fixture {
+    CreationIdClock id_clock; // Must outlive commands and its retained ItemIds.
     asio::io_context io;
     std::shared_ptr<eternity::session::Registry> registry=std::make_shared<eternity::session::Registry>();
     std::shared_ptr<eternity::game::CharacterCommands> commands;
@@ -20,7 +27,7 @@ struct Fixture {
         auto rules=std::make_shared<game::CreationRules>(game::CreationRules::load(game::Definitions::load(database)));
         const auto base=std::chrono::sys_days{std::chrono::year{2024}/1/1};
         commands=std::make_shared<game::CharacterCommands>(config,game::CharacterCommandOptions{1,base,catalog},rules,
-            std::make_shared<game::ItemIds>(0),[base] {return game::CreationTime{10000,base};},[](std::size_t){return 0;});
+            std::make_shared<game::ItemIds>(0,id_clock),[base] {return game::CreationTime{10000,base};},[](std::size_t){return 0;});
         net::WorldServerOptions options;options.port=0;
         world=std::make_unique<net::WorldServer>(io,options,registry,[config,catalog,base](const session::LoginSession& owner) {
             storage::SqlServer connection(config);return game::Characters(connection,1,base,catalog).load(owner.user_id);
