@@ -8,7 +8,9 @@
 using namespace eternity;using namespace eternity::game;
 namespace {
 void check(bool b,const std::string& s){if(!b)throw std::runtime_error(s);}
-struct Scene final:ActorScene {
+struct Scene final:ActorScene,ActorEffectDatabase {
+    std::vector<eternity::net::Packet> effect_database_packets;
+    void send_effect_database(const eternity::net::Packet& packet) noexcept override {effect_database_packets.push_back(packet);}
     mutable unsigned calls=0;std::function<void(const net::Packet&)> on_send,on_view;std::function<std::uint32_t()> on_tick;
     void send_self(const net::Packet& p) noexcept override{++calls;if(on_send)on_send(p);}
     void send_nearby(const net::Packet& p) override{++calls;if(on_view)on_view(p);}
