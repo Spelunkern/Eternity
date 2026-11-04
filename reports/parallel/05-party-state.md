@@ -115,4 +115,4 @@ and ownership, beginning with EnterNormalParty 00445fe0 and LeaveNormalParty
 that broader party lifecycle scope is assigned, plus eventual canonical user
 membership/lock and transport interfaces. No canonical file was changed.
 
-Block 2 evidence commit: recorded in the following report update.
+Block 2 evidence commit: `f34712aecf0f3ca7ad8c44d5cc62cf942151f617`.
