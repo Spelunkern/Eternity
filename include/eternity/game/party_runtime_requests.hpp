@@ -26,12 +26,14 @@ public:
     virtual PartyRegistryPorts& registry_ports()=0;
     virtual std::optional<PartyRequestUser> find_zone_user(const PartyRequestUser&,std::uint32_t)=0;
     virtual std::optional<PartyRequestUser> find_user_name(std::string_view)=0; // FindUserZoneMove(char*)
+    // Lifetime acquisition only: return the same live record without dispatching
+    // gameplay callbacks or modifying membership. This is not an original call.
     virtual PartyRequestUser retain_member(PartyMembershipUser&)=0;
     virtual void close_connection(const PartyRequestUser&,std::int32_t reason,std::int32_t detail)=0;
-    // Required unreconstructed bodies; never default to success or normal Leave.
+    // Required raid bodies; never default to success or normal Leave.
     virtual bool enter_raid(PartyRegistryParty&,const PartyRequestUser&)=0;
     virtual void leave_raid(PartyRegistryParty&,const PartyRequestUser&)=0;
-    virtual void expel_user(PartyRegistryParty&,const PartyRequestUser&)=0; // ExpelUser 00447120
+    virtual void expel_user(PartyRegistryParty&,const PartyRequestUser&); // Real ExpelUser 00447120
     // Full original raid request branches are deliberately an explicit provider.
     virtual void raid_request(const PartyRequestUser&,net::Packet&)=0;
 };

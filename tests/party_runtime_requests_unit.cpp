@@ -1,4 +1,4 @@
-#include "eternity/game/party_runtime_requests.hpp"
+#include "eternity/game/party_runtime_requests_expel.hpp"
 #include <fstream>
 #include <iostream>
 #include <sstream>
@@ -20,7 +20,8 @@ struct World final:PartyRequestWorld,PartyRegistryPorts,PartyMembershipWorld {
         }
         initialize_party_registry(reg,*this);for(unsigned i=0;i<2;++i){construct_registry_party(parties[i],*this);parties[i].id=10+i*10;}
         std::vector<unsigned> members;
-        if(profile==1 || profile==2 || profile==5 || profile==6)members={0,2};
+        if(profile==9)members={0};
+        else if(profile==1 || profile==2 || profile==5 || profile==6)members={0,2};
         else if(profile==3)members={0,1,2,3,4,5,6};else if(profile==4)members={0,2,3,4,5,6};else if(profile==7)members={0,1};
         if(!members.empty() || profile==8) {
             auto& p=parties[0];p.count=static_cast<std::int32_t>(members.size());p.leader=profile==2?1:0;p.experience.experience_level=60;p.experience.kind=profile==5?1:0;
@@ -29,6 +30,7 @@ struct World final:PartyRequestWorld,PartyRegistryPorts,PartyMembershipWorld {
             reg.entries.emplace(p.id,&p);
         }
         if(profile==6){auto& p=parties[1];p.count=1;p.slots[0]=&users[1]->member;users[1]->member.party=&p;reg.entries.emplace(p.id,&p);}
+        if(flags&512){parties[0].item_cursor=5;for(unsigned j=0;j<7;++j)parties[0].slot_indices[j]=0x900+j;for(unsigned j=0;j<23;++j)parties[0].extra_indices[j]=0x907+j;}
         if(flags&1)users[0]->requests.activity=1;
         if(flags&2)users[1]->requests.activity=2;
         if(flags&4)users[1]->requests.country=1;
@@ -71,7 +73,6 @@ struct World final:PartyRequestWorld,PartyRegistryPorts,PartyMembershipWorld {
     void close_connection(const PartyRequestUser&,std::int32_t reason,std::int32_t detail) override {Bytes b;append(b,static_cast<std::uint32_t>(reason));append(b,static_cast<std::uint32_t>(detail));event('C',b);}
     bool enter_raid(PartyRegistryParty& p,const PartyRequestUser& u) override {Bytes b;append(b,pid(&p));append(b,uid(&u.member));event('R',b);return raid_success;}
     void leave_raid(PartyRegistryParty& p,const PartyRequestUser& u) override {Bytes b;append(b,pid(&p));append(b,uid(&u.member));event('r',b);}
-    void expel_user(PartyRegistryParty& p,const PartyRequestUser& u) override {Bytes b;append(b,pid(&p));append(b,uid(&u.member));event('X',b);}
     void raid_request(const PartyRequestUser&,Bytes&) override {throw std::logic_error("Required full raid dispatcher not supplied");}
     std::uint32_t tick() override {const auto n=clock+ticks++*17U;Bytes b;append(b,n);event('K',b);if(mutation==2 && !mutated){users[root]->member.id+=1000;users[root]->member.name="tick-name-0000000000";mutated=true;}return n;}
     void lock(PartyNormalMembership& p) override {lock_registry(PartyRegistryLock::party,static_cast<PartyRegistryParty*>(&p));}
@@ -89,21 +90,22 @@ struct World final:PartyRequestWorld,PartyRegistryPorts,PartyMembershipWorld {
 }
 int main(int argc,char** argv) {
     try {
-        check(argc==2);std::ifstream input(argv[1]);check(input.good());std::string line;unsigned cases=0,nested=0,requests=0;
+        check(argc==2);std::ifstream input(argv[1]);check(input.good());std::string line;unsigned cases=0,nested=0,requests=0,expulsions=0;
         while(std::getline(input,line)) {
             if(line.empty() || line[0]=='#')continue;
             std::istringstream start(line);char tag;unsigned scenario,profile,flags,mutation,missing,alloc_fail,raid;std::uint32_t clock;start>>tag>>scenario>>profile>>flags>>mutation>>missing>>alloc_fail>>raid>>clock;check(tag=='S' && static_cast<bool>(start));World world(profile,flags,mutation,missing!=0,alloc_fail!=0,raid!=0,clock);
             while(std::getline(input,line) && line!="Z") {
-                std::istringstream command(line);std::string packet;command>>tag>>world.root>>packet;check(tag=='T' && static_cast<bool>(command));auto p=unhex(packet);world.events.clear();
-                if(p[0]==3 && p[1]==0xb){world.users[1]->requests.inviter_id=flags&32?0:100;world.users[1]->requests.invitation_deadline=0xfffffff0;}
+                std::istringstream command(line);std::string packet;command>>tag>>world.root>>packet;check((tag=='T' || tag=='E') && static_cast<bool>(command));const bool direct=tag=='E';auto p=unhex(packet);world.events.clear();
+                if(!direct && p[0]==3 && p[1]==0xb){world.users[1]->requests.inviter_id=flags&32?0:100;world.users[1]->requests.invitation_deadline=0xfffffff0;}
                 check(static_cast<bool>(std::getline(input,line)));std::istringstream result(line);std::string expected_packet,state,events;result>>tag>>expected_packet>>state>>events;check(tag=='R' && static_cast<bool>(result));
-                dispatch_party_request(world.binding(world.root),p,world);
+                if(direct)p={static_cast<std::uint8_t>(expel_party_request_user(world.parties[0],world.binding(world.root),world))};
+                else dispatch_party_request(world.binding(world.root),p,world);
                 if(p!=unhex(expected_packet) || world.state()!=unhex(state) || world.events!=unhex(events)) {std::size_t i=0;const auto e=unhex(events);while(i<e.size() && i<world.events.size() && e[i]==world.events[i])++i;throw std::runtime_error("Original PacketParty mismatch case "+std::to_string(scenario)+" state equal "+std::to_string(world.state()==unhex(state))+" event byte "+std::to_string(i));}
                 for(auto depth:world.depths)check(depth==0);
-                ++requests;
+                if(direct)++expulsions;else ++requests;
             }
             check(line=="Z");nested+=world.nested?1:0;++cases;
         }
-        check(cases==1024 && nested>0);std::cout<<cases<<" cases / "<<requests<<" whole original normal requests / "<<nested<<" literal nested accepts passed\n";
+        check(cases==2048 && nested>0);std::cout<<cases<<" cases / "<<requests<<" whole original requests / "<<expulsions<<" direct original expulsions / "<<nested<<" literal nested accepts passed\n";
     } catch(const std::exception& e){std::cerr<<e.what()<<'\n';return 1;}
 }

@@ -1210,7 +1210,7 @@ if(BUILD_TESTING)
 endif()
 
 # Worker 05: retained normal party request dispatch.
-target_sources(eternity_game PRIVATE src/game/party_runtime_requests.cpp)
+target_sources(eternity_game PRIVATE src/game/party_runtime_requests.cpp src/game/party_runtime_requests_expel.cpp)
 if(BUILD_TESTING)
     add_executable(party-runtime-requests-unit tests/party_runtime_requests_unit.cpp)
     target_link_libraries(party-runtime-requests-unit PRIVATE eternity_game)

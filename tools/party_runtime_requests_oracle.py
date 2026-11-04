@@ -45,7 +45,7 @@ def main():
         for i,u in enumerate(users):
             if at==u+0xa9c:return 3,i+100
         raise RuntimeError(f'Unknown lock {at:x}')
-    ports={init:8,destroy:4,lock:4,unlock:4,increment:4,tick:0,0x503a3f:0,0x503ba1:0,0x415f30:4,0x40d840:4,0x4455d0:0,0x4d4d20:8,0x4208c0:12,0x45b0d0:0,0x4d4e50:8,0x505316:0,0x445a30:4,0x446510:4,0x447120:4,0x4d43a0:8}
+    ports={init:8,destroy:4,lock:4,unlock:4,increment:4,tick:0,0x503a3f:0,0x503ba1:0,0x415f30:4,0x40d840:4,0x4455d0:0,0x4d4d20:8,0x4208c0:12,0x45b0d0:0,0x4d4e50:8,0x505316:0,0x445a30:4,0x446510:4,0x4d43a0:8}
     for at,n in ports.items():cpu.mem_write(at,b'\xc2'+struct.pack('<H',n))
     for at,target in ((0x5210c8,init),(0x5210d8,destroy),(0x5210cc,lock),(0x5210d0,unlock),(0x5210f8,increment),(0x5210e4,tick)):put(at,target)
     for i,u in enumerate(users):
@@ -101,7 +101,6 @@ def main():
         elif at==0x445a30:
             event('R',struct.pack('<2I',pid(machine.reg_read(UC_X86_REG_ECX)),uid(get(sp+4))));machine.reg_write(UC_X86_REG_EAX,ctx['raid_success'])
         elif at==0x446510:event('r',struct.pack('<2I',pid(machine.reg_read(UC_X86_REG_ECX)),uid(get(sp+4))))
-        elif at==0x447120:event('X',struct.pack('<2I',pid(get(sp+4)),uid(machine.reg_read(UC_X86_REG_ECX))))
         elif at==0x4d43a0:event('C',struct.pack('<2I',get(sp+4),get(sp+8)))
     cpu.hook_add(UC_HOOK_CODE,hook)
     def call(at,args=(),ecx=0,esi=0):
@@ -110,12 +109,14 @@ def main():
         for r,v in ((UC_X86_REG_ESP,stack),(UC_X86_REG_ECX,ecx),(UC_X86_REG_ESI,esi)):cpu.reg_write(r,v)
         cpu.emu_start(at,stop,count=1000000)
         assert cpu.reg_read(UC_X86_REG_EIP)==stop, "Original request did not return"
-    print(f'# ps_game.exe SHA256 {digest}; entire PacketParty 004676c0 normal request paths; actual lock/leader/find/change-leader, registry create/map, normal entry/leave, experience and GetPartyType bodies. Ports: lookup, OS, raw memory, transport/log, missing ExpelUser and raid enter/leave. V is literal nested PacketParty accept via saved-register trampoline, not a modeled join.')
-    print('# S case profile flags mutation missing alloc_fail raid_success clock; T actor packet_hex; R final_packet_hex state_hex events_hex; Z')
+    print(f'# ps_game.exe SHA256 {digest}; entire PacketParty 004676c0 normal request paths; actual lock/leader/find/change-leader, registry create/map, normal entry/leave, experience and GetPartyType bodies. Ports: lookup, OS, raw memory, transport/log, raid enter/leave; actual ExpelUser 00447120. V is literal nested PacketParty accept via saved-register trampoline, not a modeled join.')
+    print('# S case profile flags mutation missing alloc_fail raid_success clock; T actor packet_hex or E actor identity_byte (direct ExpelUser); R final_packet_hex_or_return_byte state_hex events_hex; Z')
     opcodes=(0xb02,0xb03,0xb05,0xb0d,0xb09,0xb07,0xb06,0xb0c,0xb08)
-    for case in range(1024):
+    for case in range(2048):
         cpu.mem_write(base,bytes(0xef000));cpu.mem_write(manager,bytes(84));cpu.mem_write(0,bytes(0x10000))
         profile=(case//9)%9;flags=(0,1,2,4,8,16,32,64,128,256)[(case//81)%10];mutation=(case//29)%5
+
+        if case>=1024:profile=(case//9)%10;flags|=512
         missing=(case//17)%11==0;alloc_fail=(case//23)%13==0;raid_success=(case//31)%2;clock=(0,0xfffffff0,0x7fffffff,2000)[case%4]
         if mutation==4 and case%9 in (0,4):profile=(0,1,4)[(case//9)%3];flags=0;missing=False;alloc_fail=False
         ctx.update(record=False,events=b'',raw=2,nodes=0,alloc_fail=alloc_fail,clock=clock,ticks=0,mutation=mutation,mutated=False,nested=False,missing=missing,raid_success=raid_success,root=0)
@@ -126,7 +127,8 @@ def main():
         call(0x4473f0,(manager,))
         for i in range(2):call(0x444c60,esi=parties[i]);put(parties[i]+8,10+i*10)
         members=[]
-        if profile in (1,2,5,6):members=[0,2]
+        if profile==9:members=[0]
+        elif profile in (1,2,5,6):members=[0,2]
         elif profile==3:members=list(range(7))
         elif profile==4:members=[0,2,3,4,5,6]
         elif profile==7:members=[0,1]
@@ -137,6 +139,9 @@ def main():
             call(0x447780,(p+8,p),esi=manager+0x28)
         if profile==6:
             p=parties[1];put(p+0x10,1);put(p+0x18,users[1]);put(users[1]+0x173c,p);call(0x447780,(p+8,p),esi=manager+0x28)
+        if flags&512:
+            put(parties[0]+0x108,5)
+            for j in range(30):put(parties[0]+0x14+j*8,0x900+j)
         if flags&1:put(users[0]+0x15e0,1)
         if flags&2:put(users[1]+0x15e0,2)
         if flags&4:cpu.mem_write(users[1]+0x12d,b'\x01')
@@ -144,12 +149,12 @@ def main():
         if flags&16:put(users[1]+0x1740,900)
         if flags&128:put(users[1]+0xe0,base+0x61000)
         print('S',case,profile,flags,mutation,int(missing),int(alloc_fail),raid_success,clock)
-        op=opcodes[case%len(opcodes)];root=1 if op==0xb03 else 0
+        op=opcodes[case%len(opcodes)] if case<1024 else 0xb06;root=1 if op==0xb03 else 0
         if op==0xb03:
             put(users[1]+0x1740,0 if flags&32 else 100);put(users[1]+0x5834,0xfffffff0)
             data=struct.pack('<HB',op,int(bool(flags&64)))
         elif op==0xb09:data=struct.pack('<H',op)+f'user-{0 if flags&256 else 1:015}'.encode()+b'X'
-        elif op in (0xb02,0xb06,0xb07):data=struct.pack('<HI',op,(100 if flags&256 else 101) if op==0xb02 else 102)
+        elif op in (0xb02,0xb06,0xb07):data=struct.pack('<HI',op,(100 if flags&256 else 101) if op==0xb02 else (100,101,102,106,999)[case%5])
         else:data=struct.pack('<H',op)
         ctx.update(record=True,events=b'',root=root,mutated=False,nested=False)
         cpu.mem_write(packet,data);call(0x4676c0,(users[root],),ecx=packet)
@@ -159,6 +164,12 @@ def main():
             data=struct.pack('<H',0xb05);ctx.update(events=b'',root=1)
             cpu.mem_write(packet,data);call(0x4676c0,(users[1],),ecx=packet)
             print('T',1,data.hex());print('R',bytes(cpu.mem_read(packet,len(data))).hex(),state().hex(),ctx['events'].hex() or '-')
+        if case>=1024:
+            for attempt in range(2):
+                actor=case%8;ctx.update(events=b'',root=actor)
+                call(0x447120,(parties[0],),ecx=users[actor])
+                result=cpu.reg_read(UC_X86_REG_EAX)&255
+                print('E',actor,bytes([actor]).hex());print('R',bytes([result]).hex(),state().hex(),ctx['events'].hex() or '-')
         print('Z')
 
 if __name__=='__main__':main()
