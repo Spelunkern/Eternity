@@ -622,3 +622,24 @@ pool methods above. Real configuration/definition flags, world initialization,
 zone/transport, Lua/AI backend and root service construction remain required;
 no new canonical fields are needed for this split. Full isolated SQL and central
 integration remain coordinator-owned. The server is not claimed playable.
+
+## Raw/preparation scope completion checkpoint
+
+The repeated assignment is complete in 4d8e1ed/d00a223. Reviewed current main
+continuity and parallel rules: eleventh-batch validation freeze remains active;
+main's canonical MobPool header does not yet expose allocate_raw/prepare_allocated.
+Do not recreate the split elsewhere or copy main over the worker branch.
+
+No additional independent implementation is identified in this completed scope.
+Concrete next dependency/task: coordinator review/integration of 4d8e1ed after
+its freeze, then designate the production ObeliskRuntimeWorld construction owner
+to bind allocate(false) to allocate_raw, allocate(true) to allocate, and
+prepare_companion to prepare_allocated on the SAME bound MobPool. Other required
+init/zone/clock/world providers must remain actual retained services. Editing
+worker04's production adapter without a new ownership assignment is excluded.
+
+Documentation-only checkpoint; no source/test/fixture changes or repeated runs.
+Latest worker validation remains 134/134 tests (27.84 s), 2,816 original operations
+and 64 actual obelisk compositions. Clean tree before this report update and
+whitespace check passed. Central integration/SQL and global playability remain
+unresolved; awaiting coordinator assignment rather than repeating completed work.
