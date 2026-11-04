@@ -229,3 +229,97 @@ retained payload and connects actual PC-death/item-receipt dispatch to these
 entry points, or assigns a further independent quest progress routine. The Actor
 inventory adapter still awaits the separately specified canonical ownership API.
 No additional assigned progress body remains unreconstructed in this block.
+
+## Milestone 4: timed quest expiration
+
+Coordinator-assigned prefix: `quest_requests_timers`. PDB-derived Ghidra function
+catalog resolves **CUser::UpdateQuest 0048d1a0** (103 bytes) as the timed lifecycle
+routine; there is no separate named CUser quest-expiry routine in that catalog.
+Evidence: immutable `ps_game.exe`, full `functions.tsv`, `disassembly.txt` and
+`decompiled.c` exports; executable SHA256 remains the value above.
+
+Recovered behavior in `quest_requests_timers.hpp/cpp`:
+
+- Always acquire the user's active-list lock, even when the list is empty. Reset
+  the shared active cursor to its first quest. No clock call inside UpdateQuest:
+  the caller's supplied DWORD tick stays fixed across all callbacks.
+- Definition DWORD **+0x128** (maximum time) must be nonzero. Its magnitude is not
+  used; the absolute quest DWORD **+0x14** (`RestoredQuest::packet.end_tick`) is
+  compared with the supplied tick. Expire on **unsigned end_tick <= tick**,
+  including equality, zero and unsigned wrap boundaries. Do not use signed
+  elapsed arithmetic, minimum/success time, or `packet.timed` as this guard.
+- Call the required real QuestEnd provider with **NPC=0, success=false**, under
+  the active-list lock. The timer itself emits no packet, log or direct removal.
+  The original false branch of QuestEnd **0047ec40** sends client **0903**
+  (22 bytes), calls QuestRemove **0047e150**, then game-log **0502** (150 bytes).
+  QuestRemove sends DB **0a02** (9 bytes) after finished insertion or FreeQuest
+  **0040a820**. Repeatable removals use DB success=2; other failures use 0.
+- After that provider returns, read the owner's **current shared cursor** and
+  advance it. Do not prefetch a successor or reread the removed quest. Removal
+  moves the current cursor to predecessor/head; a reentrant lookup in transport
+  can replace it again, deliberately changing/skipping later timer visits.
+
+Caller evidence (read-only, not new scheduling code): `CZone::UpdateQuest`
+**00422320** holds its user-list lock and invokes the whole CUser routine per
+member. `CWorldThread::Update` **00407390**, **0040771d..0040775a**, gates that zone
+pass on DWORD deadline +0x90 and stores supplied tick + **60000** afterward.
+Thus integrate at the original minute scheduling boundary; do not invent a
+per-quest clock read or per-frame timer cadence from this small routine.
+
+### Complete original execution and callback evidence
+
+`tools/quest_requests_timers_oracle.py` executes whole original UpdateQuest,
+**real QuestEnd failure**, **real QuestRemove** and **real FreeQuest** in 512
+scenarios. Only locks, transports, SetGameLogMain and the cookie helper are ports.
+The log oracle compares initialized 0502 opcode/quest ID, not uninitialized
+log-main bytes. Traces include exact client/DB packets, recursive lock sequence,
+finished/recycled order and shared cursor. Explicit transport callbacks modify a
+future quest's deadline/definition (M), move the shared cursor to first/last live
+quest (J), or externally unlink a future quest without a persistence command (X).
+That last case is a declared callback mutation, not an invented QuestEnd action.
+
+Reference coverage: 609 failure completions, 609 client/DB/log deliveries,
+294 real heap releases, 202 cursor-changing callbacks, 145 future timer changes
+and 38 external unlinks. The native timer composes an explicit observed
+QuestEnd/owner **test port**, not a production duplicate of the coordinator core.
+It compares every trace and final list/deadline/definition/cursor state and applies
+all DB failure transitions to the real `QuestReplica`. Test `packet.timed` flags
+are deliberately the opposite of the definition guard to catch wrong binding.
+No canonical QuestRuntime or Actor file was edited.
+
+### Canonical adapter contract and remaining work
+
+Bind `QuestRequestsTimerWorld::first_active_quest/next_active_quest` directly to
+the same canonical `QuestRuntime::first_active/next_active` used by QuestFind and
+QuestRemove, with the user's recursive quest-list lock covering the whole pass.
+Do not snapshot active() into a separate iteration vector or maintain a second
+cursor. Bind `end_quest` to the coordinator's real QuestEnd failure path: it must
+own client failure, actual removal, DB persistence and game-log delivery, without
+additional timer packets. The supplied tick comes from the zone/world scheduler.
+The existing canonical cursor API is sufficient; no new canonical field is
+requested. The actual recursive lock, end provider and scheduler wiring remain
+required. The Actor inventory adapter dependency from milestone 2 is separate
+and unchanged. This does not implement core QuestEnd/Select or playable gameplay.
+
+Milestone 4 validation:
+
+- `.local/oracle-env/bin/python tools/quest_requests_timers_oracle.py`: exit 0;
+  generated first under `work/`, then copied into tests/data.
+- `python3 -m py_compile tools/quest_requests_timers_oracle.py`: exit 0.
+- `python3 tools/dev.py build`: exit 0, no compiler warnings;
+  `work/quest-requests-timers-build.log`.
+- `python3 tools/dev.py test`: exit 0, **124/124 passed**, 44.33 seconds;
+  `work/quest-requests-timers-test.log`. New suite confirms 512 complete original
+  lifecycles and 609 failure completions, matching cursor/removal/callback traces
+  and real QuestReplica failure transitions.
+- `sha256sum -c SHA256SUMS`: exit 0, all entries OK;
+  `work/quest-requests-timers-hashes.log`.
+- `git diff --check`: exit 0. No SQL contracts, schema or fixtures changed;
+  final isolated SQL integration remains coordinator-owned.
+
+Milestone 4 implementation commit: `7669d2c64e367629270c35e29340585ba039acb2`.
+
+Next task proposal: coordinator binds this timer to canonical QuestRuntime and
+real QuestEnd/zone scheduler, or assigns a new independent quest subsystem. No
+additional named CUser timed lifecycle body was found in the supplied catalog.
+The Actor inventory ownership dependency remains separately pending.
