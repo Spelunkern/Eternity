@@ -21,6 +21,7 @@ struct UserSkillDefinition {
     std::uint8_t ready_time=0; // +48, units of 250 milliseconds.
     std::array<std::uint8_t,16> need_weapon{}; // +34..+43; final byte selects shield.
     std::optional<std::uint8_t> weapon_padding={}; // +49, required only for real type22.
+    std::uint8_t multi_attack=0; // +58 byMultiAttack, reread between hits.
     std::uint8_t state_type=0; // +4d, distinct from normalized defense_type.
 };
 class UserSkillLearnWorld;
