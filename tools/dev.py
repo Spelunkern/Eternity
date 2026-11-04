@@ -33,8 +33,10 @@ def run():
     if args.action == "build":
         command += ["sh", "-c", "cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Debug && cmake --build build -j4"]
     elif args.action == "test":
-        command += ["ctest", "--test-dir", "build", "--output-on-failure"]
+        command += ["ctest", "--test-dir", "build", "--output-on-failure", *args.arguments]
     elif args.action == "integration":
+        if args.arguments:
+            parser.error("integration does not accept extra arguments")
         subprocess.run(command + ["build/linked-mob-config-unit", "tests/data/linked-mob-config-oracle.tsv", ".local/server-data/Obelisk.ini"], cwd=ROOT, check=True)
         subprocess.run(command + ["build/item-pick-unit", "tests/data/item-pick-oracle.tsv", ".local/server-data/NpcQuest.SData"], cwd=ROOT, check=True)
         subprocess.run(command + ["build/pathfinding-unit", "tests/data/pathfinding-oracle.tsv", ".local/server-data/Map"], cwd=ROOT, check=True)
