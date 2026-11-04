@@ -43,8 +43,9 @@ public:
     virtual void unlock_effects(PartyMembershipUser&) noexcept=0;
     virtual void send_party(PartyNormalMembership&,const net::Packet&)=0;
     virtual void send_user(PartyMembershipUser&,const net::Packet&)=0;
-    // Required CUser::GetPartyType 0048a330 provider (0 none/1 member/2 leader).
-    virtual std::uint8_t party_type(PartyMembershipUser&)=0;
+    // Recovered CUser::GetPartyType 0048a330 (0 none/1 member/2 leader).
+    // Default executes the original recursive lock/recheck algorithm.
+    virtual std::uint8_t party_type(PartyMembershipUser&);
     virtual void send_scene(PartyMembershipUser&,const net::Packet&)=0;
     // Required real manager/guild owners, not default empty implementations.
     virtual void unregister_party(PartyNormalMembership&)=0;

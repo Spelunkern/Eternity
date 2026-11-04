@@ -14,6 +14,7 @@ struct World final:PartyMembershipWorld {
     std::array<PartyMembershipUser,8> users;
     Bytes events;
     unsigned depth{};
+    bool real_type{};
     std::array<bool,8> effect_locks{};
     std::uint32_t now{};
     Bytes state() {
@@ -36,7 +37,7 @@ struct World final:PartyMembershipWorld {
     void send_party(PartyNormalMembership&,const Bytes& packet) override {check(depth>0);event('P',packet);}
     void send_user(PartyMembershipUser& user,const Bytes& packet) override {check(depth>0);auto b=id(user);b.insert(b.end(),packet.begin(),packet.end());event('U',b);}
     std::uint8_t party_type(PartyMembershipUser& user) override {
-        const std::uint8_t type=!user.party?0:(p.count>0 && p.slots[static_cast<std::size_t>(p.leader)]==&user)?2:1;
+        const std::uint8_t type=real_type?PartyMembershipWorld::party_type(user):!user.party?0:(p.count>0 && p.slots[static_cast<std::size_t>(p.leader)]==&user)?2:1;
         auto b=id(user);append(b,type);event('Y',b);return type;
     }
     void send_scene(PartyMembershipUser& user,const Bytes& packet) override {check(user.in_zone);event('S',packet);}
@@ -48,10 +49,10 @@ struct World final:PartyMembershipWorld {
 }
 int main(int argc,char** argv) {
     try {
-        check(argc==2);std::ifstream input(argv[1]);check(input.good());std::string line;unsigned cases=0;
+        check(argc==2 || (argc==3 && std::string(argv[2])=="--real-party-type"));std::ifstream input(argv[1]);check(input.good());std::string line;unsigned cases=0;
         while(std::getline(input,line)) {
             if(line.empty() || line[0]=='#')continue;
-            World world;unsigned operation,target;char tag;
+            World world;world.real_type=argc==3;unsigned operation,target;char tag;
             std::istringstream row(line);row>>tag>>operation>>world.p.count>>world.p.leader>>world.p.item_cursor>>world.p.experience.experience_level>>world.p.id>>world.now>>target;check(tag=='C' && static_cast<bool>(row));
             for(unsigned i=0;i<8;++i) {
                 check(static_cast<bool>(std::getline(input,line)));std::istringstream user_row(line);auto& user=world.users[i];unsigned job,zone,guild,count;

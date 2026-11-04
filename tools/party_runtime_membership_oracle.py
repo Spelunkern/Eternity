@@ -1,12 +1,14 @@
 #!/usr/bin/env python3
 """Execute full original normal-party entry/leave; observe required external owners."""
 import struct
+import sys
 from original_oracle import load_game
 from unicorn import UC_HOOK_CODE
 from unicorn.x86_const import UC_X86_REG_EAX, UC_X86_REG_EBX, UC_X86_REG_ECX, UC_X86_REG_EDI, UC_X86_REG_ESI, UC_X86_REG_ESP, UC_X86_REG_EIP
 
 
 def main():
+    real_type = '--real-party-type' in sys.argv[1:]
     cpu, digest = load_game()
     base = 0x30000000
     cpu.mem_map(base, 0x100000)
@@ -31,6 +33,7 @@ def main():
         context['events'] += tag.encode() + state() + struct.pack('<I', len(payload)) + payload
     for at, cleanup in {lock:4, unlock:4, tick:0, 0x4455d0:0, 0x4d4d20:8,
                         0x48a330:4, 0x4208c0:12, 0x45b0d0:0, 0x4d4e50:8, 0x505316:0}.items():
+        if at == 0x48a330 and real_type: continue
         cpu.mem_write(at, b'\xc2' + struct.pack('<H', cleanup))
     put(0x5210cc, lock); put(0x5210d0, unlock); put(0x5210e4, tick)
     context = {}
@@ -48,11 +51,13 @@ def main():
             event('P', bytes(machine.mem_read(machine.reg_read(UC_X86_REG_ECX), machine.reg_read(UC_X86_REG_EAX))))
         elif at == 0x4d4d20:
             event('U', struct.pack('<I', identity(machine.reg_read(UC_X86_REG_ECX))) + bytes(machine.mem_read(get(sp + 4), get(sp + 8))))
-        elif at == 0x48a330:
+        elif at == 0x48a330 and not real_type:
             user = get(sp + 4)
             membership = get(user + 0x173c)
             result = 0 if not membership else 2 if get(party + 0x10) and get(party + 0x18 + get(party + 0xc)*8) == user else 1
             event('Y', struct.pack('<2I', identity(user), result)); machine.reg_write(UC_X86_REG_EAX, result)
+        elif real_type and at in (0x48a3a6,0x48a3c8,0x48a3e1):
+            event('Y', struct.pack('<2I', identity(get(sp + 4)), machine.reg_read(UC_X86_REG_EAX)))
         elif at == 0x4208c0:
             event('S', bytes(machine.mem_read(get(sp + 8), get(sp + 12))))
         elif at == 0x45b0d0:
@@ -70,6 +75,7 @@ def main():
                 machine.reg_write(UC_X86_REG_EBX, unlock); machine.reg_write(UC_X86_REG_EIP, 0x446bae)
     cpu.hook_add(UC_HOOK_CODE, hook)
     print(f'# ps_game.exe SHA256 {digest}; full EnterNormalParty 00445fe0 / LeaveNormalParty 00446960 and real ChkPartyExpByLevel 00444d80. Ports: clock, locks, transport, GetPartyType, log context, party manager unregister block 00446a37..00446a7d, guild creation cleanup block 00446ac1..00446bae. Fixture stack initialized to zero, including unspecified name padding.')
+    print('# GetPartyType mode:', 'real original body' if real_type else 'observed external port')
     print('# C operation count leader cursor old_max party_id tick target; 8 U user projections/effects; R success state_hex events_hex')
     for case in range(512):
         cpu.mem_write(base, bytes(0xfd000))
