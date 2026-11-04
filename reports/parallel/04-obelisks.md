@@ -987,3 +987,70 @@ remain open; canonical mobs/mob_pool belong exclusively to worker03 and were not
 edited. No canonical interface change is required for this binder. SQL is
 unchanged; final isolated SQL validation remains coordinator-owned. The server
 is not playable.
+
+## Portal/light/fury text parsing and binding composition
+
+Implementation commit: `204047671f562ae7f1b8183d10a6d297dceeacdd`.
+
+`parse_obelisk_runtime_portal_configuration` completes the native portal parser
+from **ps_game.exe, CMap::LoadObelisk 00427300**. It uses the same recovered
+numeric/token helpers as the ordinary obelisk parser and outputs the existing
+binder's completed portal inputs. Headers decorate the wrapped base ID with
+0x10000000 and commit only after all three fields. A truncated header retains
+the previous active portal; later light/fury writes can therefore still change
+that earlier completed record. Each reference writes its map before validating
+the Obelisk_ label, preserving the old ordinal and trailing entries after a
+failed/incomplete replacement. Lists retain at most four pairs per side.
+
+The original compares six characters for `[fury]` but advances seven characters
+before tokenization; `[fury]12,Obelisk_9` consequently reads map2. Light advances
+seven after its seven-character label and reads map12. Mixed-case labels, decimal
+integer wrapping, ignored extra references, mode changes, CRLF, Ctrl-Z, embedded
+NUL and 8191-byte chunks are preserved. EOF retries cannot commit another portal
+header or reference and only revisit the same first field. An explicit bound
+rejects a65th raw portal row instead of reproducing out-of-array writes.
+
+50 retained original parser scenarios stop at **00427eef**, before the loader
+compacts or mutates temporary configuration. Original strtok/atoi execute;
+completed raw stPortalLink records (76 bytes each) are compared. Cases include
+partial/repeated headers/references, invalid labels, previous-active mutation,
+all64 rows, section gating and the fury offset difference. The initial stack is
+explicitly zeroed for deterministic empty input. Native text->parser->actual
+binder additionally compares all64 existing full original portal-binding cases,
+including ID gaps/wrap, duplicate target IDs, compacted ordinal references and
+actual target-map routing. Native bounds rejection is checked separately; no
+claim is made about original malformed-memory behavior.
+
+The first full run failed135/137 tests (31.09 seconds): parser scenario3 and
+binding scenario1 rejected valid references. The native prefix helper normalizes
+input to lowercase; its new Obelisk_ comparison incorrectly supplied an uppercase
+pattern. Using the lowercase pattern corrected native recognition. Original
+fixtures were unchanged. The initial build also reported a misleading-indentation
+warning, fixed before final validation. Both original logs remain retained.
+
+Validation:
+
+- Corrected `python3 tools/dev.py build`: exit0, no warnings
+  (`work/obelisk-portal-parser-final-build.log`).
+- Corrected `python3 tools/dev.py test`: exit0, **137/137 passed**, 28.28 seconds
+  (`work/obelisk-portal-parser-final-tests.log`). Initial failure/warning logs:
+  `work/obelisk-portal-parser-{build,tests}.log`.
+- Independent original regeneration/`cmp`: exit0, byte-identical50 cases
+  (`work/obelisk-runtime-portal-config-parser-repeat.tsv`). Ordinary parser and
+  prior full portal-binding fixtures remain byte-identical
+  (`work/obelisk-runtime-portal-parser-{ordinary,binding}-regression.tsv`).
+- All original EXE/PDB SHA256SUMS passed (`work/obelisk-portal-parser-hashes.log`);
+  `git diff --check`: clean. Existing focused Ghidra LoadObelisk export reused.
+- No SQL behavior changed or SQL lifecycle action ran.
+
+Integration: feed the same complete Obelisk.ini bytes to the ordinary and portal
+parsers, bind ordinary records first, then portal references with the shared
+next-ID state and stable actual map/portal storage. Retain the map routing table
+and keep runtime zone-presence projections current through real map lifecycle.
+The runtime update/ownership/publication providers can now consume the native
+parsed-and-bound portal table. Next independent validation is comparison against
+the recovered complete asset and live map/template owner assembly. Shared
+bObelisk flag mutation, raw pool preparation and root-world/KC/calendar/transport
+providers remain dependencies from prior blocks. Canonical files and SQL were
+unchanged; final isolated SQL validation remains coordinator-owned. The server
+is not playable.
