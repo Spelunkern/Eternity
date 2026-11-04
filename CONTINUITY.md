@@ -1397,3 +1397,9 @@ population pass; exact idle/death/respawn ordering is then the required real
 frame provider's responsibility. Draft is not compiled, reviewed or integrated.
 Notified independent sessions to keep live jobs intact, avoid frequent polling
 and repeated status messages, and perform safe useful work while waiting.
+
+Coordinator noted production ActorScene::send_self/send_party are noexcept,
+while WorldChannel::send wraps std::function/asio::post and can throw. 07 was
+asked to provide explicit real queue-failure/disconnection handling in its
+future scene owner, rather than terminate or fabricate delivery. This remains
+an integration requirement, not implemented production functionality.
