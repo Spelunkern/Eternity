@@ -938,3 +938,107 @@ Provide those canonical interfaces, then assign the production scheduler bridge
 within this prefix. No independent scheduler coordination gap is currently
 identified beyond these ownership/provider dependencies. Server remains
 non-playable.
+
+## Retained whole-zone attack polling — 2026-11-03
+
+Implementation commit: 71febf346af9f3ec3ec09d47089bbafc7a594ba0. Explicit coordinator ownership expansion
+covers canonical `zone_users.hpp/cpp` on this worker branch. Main and other
+workers remain untouched; existing interfaces and all previous milestones remain.
+Read current main continuity/parallel notes and inspected canonical ZoneUsers and
+WorldUsers before implementation. WorldUsers indexes borrowed Actor/admission
+references; it cannot manufacture the required connection/scene ownership lease.
+
+Evidence: `ps_game.exe`, `CZone::UpdateUserAttack` **00421930** (complete 96-byte
+loop), `CUser::UpdateAttack` **0048ca50**, `CZone::AddUser` **00415e30**,
+`RemoveUser` **00415ec0**, `FindUser` **00415f30**, complete Ghidra/PDB exports
+under main `work/reverse/ps_game.exe`. UpdateUserAttack holds +118 recursive
+critical section across callbacks, starts +114 at +110 head.next, supplies the
+same caller tick to each UpdateAttack and ignores its bool. After the call it
+reads only the LIVE shared cursor.next, never the old actor. AddUser appends;
+RemoveUser rewinds a matching current cursor to its predecessor before unlink.
+FindUser uses the separate ID-tree cursor (+84), not the global cursor.
+A completed nested whole-zone visit leaves the global cursor at head, so the
+outer visit restarts from head.next; no cursor save/restore is faithful here.
+
+Added retained `ZoneUsers::visit_all` and borrowed `find_actor`, recursive
+membership locking, stable arrival ordinal in EXISTING Member entries, and one
+owner-shared global cursor. Cell movement changes cell order but preserves zone
+arrival order. No Actor snapshot, ID-order polling, second Actor list/index or
+private per-call cursor. Next-member selection scans the existing ID map by
+arrival ordinal: O(n) per step / O(n squared) per unmutated full pass. This is a
+known performance limitation, not a claim of original linked-list complexity.
+Cell visitor interfaces and shared cell cursors remain intact.
+
+`mob_combat_scheduler_zone` composes this real owner with the previously recovered
+Actor scheduler; each actor receives exactly the supplied tick and a false poll
+does not stop traversal. Per-actor bindings and MobCombatSchedulerActorWorld are
+mandatory live service references. Nothing implements a fallback world/action
+provider. The owner service must supply a nonempty shared ownership token for
+Actor AND its ActorScene before visitor entry; empty retention is rejected.
+Retain/context accessors must not mutate membership. Visitor callbacks may remove
+current/future users, append, change cells and perform nested lookups/traversals.
+No Actor/member dereference follows the visitor. Zone and services survive the
+whole traversal; all Actor state still belongs to the serialized world executor.
+
+Complete-original fixture: 256 loops, non-ID insertion order, 3/4 initial users,
+ordinary/wrapped DWORD ticks, nested lookup, current/future removal, append,
+cell-independent coordinate mutation, nested whole-zone traversal, removal+append,
+and removal+failed lookup+append. Original AddUser/RemoveUser/FindUser execute their
+actual std ID-tree insert/search/delete and list code. Only allocation/free,
+OS critical sections and the per-user UpdateAttack action boundary are ports;
+there is no hand-coded replacement of the zone loop. Callback trampolines invoke
+original functions and preserve registers. Removed actors become inaccessible
+immediately, proving no later read by the original zone traversal. Every return
+checks balanced stack, released global lock, final cursor=head and actual member
+count/list. Initial harness run faulted on unmapped FS:0 in the original tree's
+SEH; mapping the exception-frame page fixed the fixture, without patching tree
+logic. Coordinate mutation proves global independence; native cell move also
+checks existing cell membership operations preserve global order.
+
+Native comparisons check complete ordered traces, nested lock depth and final
+membership. Additional composition runs the actual Actor scheduler and detaches
+and releases its registry owner inside AttackMob: Actor remains alive through
+scheduler deadline/motion writes, then retires exactly once. A false poll between
+active/current and appended actors cannot stop the walk. A cross-thread lookup
+blocks during the callback and proceeds after the whole-visit lock releases;
+empty retention is rejected and subsequent visitation still succeeds.
+
+Validation:
+
+- All original executable/PDB SHA256SUMS verified, exit 0;
+  `work/mob-combat-scheduler-zone-hashes.log`.
+- Oracle regenerated independently, byte-identical to tracked fixture (`cmp`,
+  exit 0); 256 complete original loops. Fixture copied before native readers.
+- Initial native build passed. An early concurrent test run reached the newly
+  registered target before its executable was linked: 130 passed, new target
+  Not Run. This scheduling mistake is superseded by sequential final validation.
+- Final `python3 tools/dev.py build`: exit 0;
+  `work/mob-combat-scheduler-zone-final-build.log`. Existing unrelated warnings
+  in guild_catalog/guild_sql/guild_bank/guild_bank_save remain; no warning from
+  the changed/new zone and scheduler sources.
+- Final sequential `python3 tools/dev.py test`: exit 0, **131/131 passed**,
+  **27.70 seconds**, including all 256 zone traces, actual retained scheduler
+  composition, mutex/invalid-lease probes and previous milestones;
+  `work/mob-combat-scheduler-zone-final-test.log`.
+- `git diff --check`: exit 0. Shared wrappers/locks used. No SQL changes or
+  database lifecycle commands; final isolated SQL suite belongs to coordinator.
+
+Production integration requirements: wire the existing ZoneUsers instance from
+the actual zone update path, pass its one caller tick, and provide an aliasing
+owner lease from the real retained connection/actor/scene registry. Do not create
+a second membership owner. Zone/scene/action-world/connection context and skill
+and equipment backing must survive the complete poll, including reentrant sends
+and disconnect. Acquiring a raw WorldUsers/ZoneUsers result alone does not retain
+it. Nested disconnect must detach immediately but defer destruction/recycle until
+all poll leases release. Hold the zone owner through nested traversals; recursive
+membership locking does not serialize arbitrary Actor state on other threads.
+Target providers still retain their own live targets. Active CSkill selection,
+actual equipment binding, world actions, scene/network and root world assembly
+remain coordinator/provider dependencies; this patch supplies the previously
+missing canonical whole-zone visitation and scheduler bridge, not those services.
+No additional Actor/shared-header changes are made or requested here. Server
+playability and full final isolated SQL integration remain coordinator-owned.
+
+Next proposal: coordinator supplies retained active CSkill/equipment binding APIs
+and concrete per-actor action contexts, then assigns their production scheduler
+assembly. No independent remaining zone-loop coordination gap is identified.
