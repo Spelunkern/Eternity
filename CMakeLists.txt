@@ -1079,3 +1079,11 @@ if(BUILD_TESTING)
     target_link_libraries(mob-targeting-zone-unit PRIVATE eternity_game)
     add_test(NAME mob-targeting-zone-unit COMMAND mob-targeting-zone-unit)
 endif()
+
+# Worker 09: compiled run-away displacement on retained map/trail/status owners.
+target_sources(eternity_game PRIVATE src/game/mob_ai_states_runaway.cpp)
+if(BUILD_TESTING)
+    add_executable(mob-ai-states-runaway-unit tests/mob_ai_states_runaway_unit.cpp)
+    target_link_libraries(mob-ai-states-runaway-unit PRIVATE eternity_game)
+    add_test(NAME mob-ai-states-runaway-unit COMMAND mob-ai-states-runaway-unit ${CMAKE_CURRENT_SOURCE_DIR}/tests/data/mob_ai_states_runaway-oracle.tsv)
+endif()
