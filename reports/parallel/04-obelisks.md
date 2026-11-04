@@ -739,3 +739,58 @@ No canonical interface change is needed for this composition. Production
 configuration, map routing, raw pool preparation, calendar/KC and other world
 providers remain open. SQL is unchanged; final isolated SQL checks remain
 coordinator-owned. This evidence does not establish client playability.
+
+## Forced removal/reset through real portals — suppression-order evidence
+
+Evidence/test commit: `b6c81d2d5cc688e82fe3c41df254584ea66e19fd`.
+
+`obelisk-runtime-reset-portal-unit` extends the real zone/pool composition with
+actual portal ownership during both direct forced removal and map reset. The
+original executes **ps_game.exe, CMap::ObeliskReset 0042aa40**, **CZone::
+MobRemoveByID 0041e910**, nested **ObeliskDestroy 0042a410**, and actual
+**UpdatePortalLink 0042a000 / SendPortalLinkChange 0042b2c0**. Native comparison
+uses the existing concrete forced-removal owner and actual reset/portal/zone/
+pool implementations. No production implementation changed in this block.
+
+The important integration contract is now composed rather than inferred from
+separate tests: **0042aa81** sets reset_send before nested removal,
+**0042aa95** clears it after removal, and **0042ab27** performs the final portal
+update after base-country restoration and reset publication. Obelisk change
+suppression must not suppress the nested portal DB/map/world publications.
+Nested portal transport callbacks may change the actual last-destroy country;
+subsequent reset writes and the final portal update must observe live storage.
+Existing tests' initial reset_send=true direct-removal cases also remain live.
+
+256 retained sequences comprise 126 map resets and130 direct forced removals,
+1,536 operations, 297 actual portal update entries (124 with reset_send=true),
+116 portal DB changes, 84 target-map and116 global portal publications, and
+7,168 portal snapshots. 47 target-map portal packets occur while reset_send is
+true, across41 sequences. The same traces retain 768 actual actor recycles and
+512 pooled reuses, duplicate/stale companion slots, wrapping IDs/deadlines,
+first-match ownership and final pool identity. Four configured portal links
+remain explicit inputs; heap/locks/clocks/cleanup/transports are observed ports.
+This does not establish loader/network/provider completion.
+
+Validation:
+
+- `python3 tools/dev.py build`: exit0, no warnings
+  (`work/obelisk-reset-portal-build.log`). Shared build-slot wait was respected.
+- `python3 tools/dev.py test`: exit0, **131/131 passed**, 34.86 seconds
+  (`work/obelisk-reset-portal-tests.log`), including earlier forced-removal,
+  combat-death, standalone portal and composed death/portal regressions.
+- Independent original regeneration and `cmp`: exit0, byte-identical fixture
+  (`work/obelisk-runtime-reset-portal-repeat.tsv`).
+- All original EXE/PDB SHA256SUMS passed
+  (`work/obelisk-reset-portal-hashes.log`); `git diff --check`: clean.
+- Existing focused Ghidra evidence was reused; no new symbol recovery or
+  separate SQL integration was needed for this composition-only change.
+
+Integration: bind the real forced-removal owner as world.remove_by_id, and bind
+world.update_portal_links to the retained global portal provider. Preserve the
+synchronous nested call while reset_send is set. Apply suppression at the
+recovered obelisk publication gate, not to all DB/map/world traffic. Route
+portal map packets to each link's configured target map. No canonical interface
+change is required for this evidence block. Production config/source retention,
+raw pool allocation/preparation, platform calendar/KC and transport services
+remain dependencies from prior blocks. SQL is unchanged; final isolated SQL
+integration remains coordinator-owned. The server is not playable.
