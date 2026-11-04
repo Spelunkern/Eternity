@@ -748,3 +748,30 @@ record after success; do not publish a failed staged row. Earlier world visitor,
 actor lifetime and FSM wiring remain required. No actual SQL lifecycle operation
 or repeat of the completed restored startup SQL check was performed. The native
 reload coordinator and tests do not imply a playable server.
+
+## Reload assignment completion / canonical access dependency
+
+Reviewed current main continuity/coordination notes and latest commits
+87abafd/a99fd79. Both explicitly assigned reload routines, failure/publication
+ordering, raw enabled/skill-pointer semantics, original trace comparisons and
+SQL/quiescence contract are delivered in milestone 8. The repeated assignment
+adds no new independent behavior to implement without repeating that work.
+
+Read-only canonical inspection confirms MobTargetingBindingCatalog still exposes
+only const mob()/skill() access, with no stable mutable allocated-slot API or
+complete raw reload record storage. Main is under the fifth-batch validation
+freeze. This worker cannot connect live publication by editing those shared
+headers, const-casting published storage or building another catalog owner.
+
+Concrete next task: coordinator integrates milestone 8 and adds owner-controlled
+mutable slot access/full normalized record views under quiescence, then assigns
+the production R2 reload adapter against that interface. Alternatively explicitly
+expand scope to the full stable mob-skill definition projection needed by worker
+03 (name/keep/ability/time-damage fields), using the recovered 82-column loader
+and the SAME persistent owner rather than another user-skill/world store.
+
+Documentation-only checkpoint: git diff --check clean; no native, sanitizer or
+SQL reruns with unchanged implementation. Milestone 8's 126/126 tests, 432
+original traces and clean sanitizer run remain the last substantive results.
+No main/other-worker edits, SQL lifecycle changes, merges or pushes. Waiting for
+a concrete owner interface or new assignment; global gameplay remains incomplete.
