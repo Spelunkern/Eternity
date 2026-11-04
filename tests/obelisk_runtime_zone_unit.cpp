@@ -202,7 +202,7 @@ void run(int scenario,const std::vector<std::uint32_t>& expected,bool combat,boo
 }
 int main(int argc,char** argv) {
     try {
-        require(argc==2 || argc==3,"Expected zone composition oracle and optional death mode");const bool portals=argc==3 && std::string_view(argv[2])=="death-portals";const bool combat=portals||(argc==3 && std::string_view(argv[2])=="death");std::ifstream input(argv[1]);require(input.good(),"Missing zone composition oracle");
+        require(argc==2 || argc==3,"Expected zone composition oracle and optional death mode");const auto mode=argc==3?std::string_view(argv[2]):std::string_view{};const bool portals=mode=="death-portals"||mode=="reset-portals";const bool combat=mode=="death-portals"||mode=="death";std::ifstream input(argv[1]);require(input.good(),"Missing zone composition oracle");
         std::string line;unsigned cases=0;
         while(std::getline(input,line)) {
             if(line.empty()||line[0]=='#') continue;std::istringstream row(line);int scenario;row>>scenario;

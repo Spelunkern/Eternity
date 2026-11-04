@@ -1087,3 +1087,7 @@ if(BUILD_TESTING)
     target_link_libraries(mob-ai-states-runaway-unit PRIVATE eternity_game)
     add_test(NAME mob-ai-states-runaway-unit COMMAND mob-ai-states-runaway-unit ${CMAKE_CURRENT_SOURCE_DIR}/tests/data/mob_ai_states_runaway-oracle.tsv)
 endif()
+
+if(BUILD_TESTING)
+    add_test(NAME obelisk-runtime-reset-portal-unit COMMAND obelisk-runtime-zone-unit ${CMAKE_CURRENT_SOURCE_DIR}/tests/data/obelisk-runtime-reset-portal-oracle.tsv reset-portals)
+endif()
