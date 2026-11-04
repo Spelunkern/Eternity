@@ -125,6 +125,11 @@ public:
     // Rebirth bridge: silent raw stores to the existing resource owner. No heal,
     // clamp, notifications, damage reset or change to attack_state.mode (+142c).
     void replace_resources_raw(PlayerResources) noexcept;
+    // Pure original SendRecoverChange, not recover/heal: view snapshot followed
+    // by live current-energy group notice. Existing scene transports are required.
+    // Execute on the actor serialized owner; actor/scene/group leases must survive
+    // both synchronous sends (including reentry). This method retains no state.
+    void send_recover_change(PlayerResources);
     // Existing ZoneLifecycleState owns original CUser+1434. Distinct from +1448.
     std::uint8_t presentation_motion() const noexcept {return zone_lifecycle_.motion;}
     void presentation_motion(std::uint8_t value) noexcept {zone_lifecycle_.motion=value;}

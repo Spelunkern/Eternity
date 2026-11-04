@@ -29,6 +29,7 @@ void Actor::gain_experience(PlayerCore& player,const StatusRules& rules,const Ex
     award_experience(player,status_.skills.equipment.base,rules,curve,source,amount,options,delivery);
 }
 void Actor::replace_resources_raw(PlayerResources value) noexcept {resources_.replace_raw(value);}
+void Actor::send_recover_change(PlayerResources value) {resources_.send_recover_change(value);}
 std::array<std::int32_t,3> Actor::heal(std::array<std::int32_t,3> amounts) {return resources_.heal(status_.skills.equipment.base.maximum,amounts);}
 void Actor::recover(std::array<std::int32_t,3> amounts,bool send_set,bool recovering) {resources_.recover(status_.skills.equipment.base.maximum,amounts,send_set,attack_.mode,recovering);}
 void Actor::wear_defense() {

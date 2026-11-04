@@ -25,6 +25,11 @@ public:
     // Requested/actual amounts use HP, SP, MP order, matching CUser::Heal's in/out buffer.
     std::array<std::int32_t,3> heal(PlayerResources maximum,std::array<std::int32_t,3> amounts);
     void recover(PlayerResources maximum,std::array<std::int32_t,3> amounts,bool send_set = false,std::int32_t attack_mode = 0,bool recovering = false);
+    // SendRecoverChange 00482230: view uses supplied HP/MP/SP snapshot; group
+    // notice rereads live current_ after the view callback. No mutation/clamp.
+    // Aggregate order HP/MP/SP differs from original stack HP/SP/MP.
+    // Borrowed sink and this owner must survive synchronous callback/reentry.
+    void send_recover_change(PlayerResources view_values);
     void announce_maximum(PlayerResources); // SendEnergyAllMax 004822f0.
     void maximum_changed(PlayerResources maximum,std::uint8_t resource,bool initializing); // HP=0, MP=1, SP=2.
     bool damage(ScalarDamageState state,std::int32_t kind,std::uint32_t source,std::int32_t amount,DamageObserver& observer);
