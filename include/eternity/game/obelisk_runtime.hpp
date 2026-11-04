@@ -48,7 +48,8 @@ public:
     // true: CObjectMgr::CreateMob (principal and periodic replenishment);
     // false: raw heap allocation (companions during complete respawn only).
     virtual MobRuntime* allocate(bool manager_create)=0;
-    // Raw heap path only: assign atomic world ID and seed drop random with time^ID.
+    // Raw heap path only (including startup principals): assign world ID and
+    // seed drop random with time^ID. Historical method name includes both.
     virtual void prepare_companion(MobRuntime&)=0;
     virtual void initialize(MobRuntime&,const MobRuntimeTemplate&,MobRespawn&)=0;
     virtual void enter(MobRuntime&)=0;
@@ -61,6 +62,9 @@ void destroy_obelisk(ObeliskRuntimeMap&,ObeliskRuntime&,std::size_t index,
                      const MobRuntime& destroyed,std::int32_t country,bool reset,
                      const std::array<std::int32_t,2>& kill_count_add,ObeliskRuntimeWorld&);
 void respawn_obelisk(ObeliskRuntimeMap&,ObeliskRuntime&,ObeliskRuntimeWorld&);
+// CMap::InitObelisk 00429a60. Raw heap allocation/ID preparation for principal
+// and companions, no spawn log. Records must already be bound to the zone copy.
+void initialize_obelisks(ObeliskRuntimeMap&,std::span<ObeliskRuntime>,ObeliskRuntimeWorld&);
 // CMap::UpdateRespawnObelisk 00429da0. Unsigned deadline <= now; one attempt
 // per eligible companion group per invocation. Calls complete respawn only for
 // principal current < 1, and never replenishes that group's companions that tick.

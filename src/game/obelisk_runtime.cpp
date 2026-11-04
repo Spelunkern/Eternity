@@ -69,13 +69,14 @@ void destroy_obelisk(ObeliskRuntimeMap& map,ObeliskRuntime& o,std::size_t index,
         w.database(persistence_packet(o));w.update_portal_links();
     }
 }
-void respawn_obelisk(ObeliskRuntimeMap& map,ObeliskRuntime& o,ObeliskRuntimeWorld& w) {
-    if(!map.zone_present) return;
+namespace {
+void populate_obelisk(ObeliskRuntimeMap& map,ObeliskRuntime& o,ObeliskRuntimeWorld& w,bool manager_principal,bool spawn_log) {
     country_check(o.country);const auto country=static_cast<std::size_t>(o.country);const auto* definition=o.definitions[country];if(!definition) return;
     o.respawn.next=0;o.respawn.current=1;
-    auto* mob=w.allocate(true);if(!mob) return;
+    auto* mob=w.allocate(manager_principal);if(!mob) return;
+    if(!manager_principal) w.prepare_companion(*mob);
     mob->definition=definition;w.initialize(*mob,*definition,o.respawn);mob->position=o.center;o.principal=mob;w.enter(*mob);
-    auto p=log_packet(0xa02,map,*mob,w);put(p,static_cast<std::uint32_t>(o.country),1);w.game_log(p);
+    if(spawn_log) {auto p=log_packet(0xa02,map,*mob,w);put(p,static_cast<std::uint32_t>(o.country),1);w.game_log(p);}
     for(auto& s:o.spawns) {
         definition=s.definitions[static_cast<std::size_t>(o.country)];if(!definition) continue;
         s.respawn.current=s.count;s.respawn.next=0;
@@ -85,6 +86,14 @@ void respawn_obelisk(ObeliskRuntimeMap& map,ObeliskRuntime& o,ObeliskRuntimeWorl
             w.prepare_companion(*mob);mob->definition=definition;w.initialize(*mob,*definition,s.respawn);mob->position=*position;s.add(mob);w.enter(*mob);
         }
     }
+}
+}
+void respawn_obelisk(ObeliskRuntimeMap& map,ObeliskRuntime& o,ObeliskRuntimeWorld& w) {
+    if(map.zone_present) populate_obelisk(map,o,w,true,true);
+}
+void initialize_obelisks(ObeliskRuntimeMap& map,std::span<ObeliskRuntime> obelisks,ObeliskRuntimeWorld& w) {
+    if(!map.zone_present) return;
+    for(auto& o:obelisks) populate_obelisk(map,o,w,false,false);
 }
 void update_obelisk_respawns(ObeliskRuntimeMap& map,std::span<ObeliskRuntime> obelisks,std::uint32_t now,ObeliskRuntimeWorld& w) {
     if(!map.zone_present) return;

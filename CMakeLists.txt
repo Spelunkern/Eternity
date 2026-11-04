@@ -685,3 +685,7 @@ if(BUILD_TESTING)
     target_link_libraries(mob-targeting-find-unit PRIVATE eternity_game)
     add_test(NAME mob-targeting-find-unit COMMAND mob-targeting-find-unit ${CMAKE_CURRENT_SOURCE_DIR}/tests/data/mob-targeting-find-oracle.tsv)
 endif()
+
+if(BUILD_TESTING)
+    add_test(NAME obelisk-runtime-initialize-unit COMMAND obelisk-runtime-timers-unit ${CMAKE_CURRENT_SOURCE_DIR}/tests/data/obelisk-runtime-initialize-oracle.tsv initialize)
+endif()

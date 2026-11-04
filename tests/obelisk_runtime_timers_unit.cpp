@@ -9,6 +9,7 @@ using namespace eternity::game;
 using eternity::net::Packet;
 namespace {
 struct World final:ObeliskRuntimeWorld {
+    bool initialization=false;
     int scenario=0,allocations=0,random_count=0;std::uint32_t id=500;
     std::vector<std::uint32_t> trace;
     std::array<MobRuntime,64> mobs;
@@ -56,6 +57,8 @@ struct World final:ObeliskRuntimeWorld {
     void enter(MobRuntime& mob) override {
         event({12,identity(&mob),std::bit_cast<std::uint32_t>(mob.position.x),std::bit_cast<std::uint32_t>(mob.position.y),
                std::bit_cast<std::uint32_t>(mob.position.z),static_cast<std::uint32_t>(mob.respawn->current),mob.respawn->next});
+        if(initialization && scenario%5==0 && mob.respawn->obelisk_source)
+            mob.respawn->current=std::bit_cast<std::int32_t>(static_cast<std::uint32_t>(mob.respawn->current)-1U);
     }
     std::int32_t random() override {
         const auto value=(random_count++*17+scenario*13)%32768;event({13,static_cast<std::uint32_t>(value)});return value;
@@ -70,8 +73,8 @@ struct World final:ObeliskRuntimeWorld {
         }
     }
 };
-void run(int scenario,const std::vector<std::uint32_t>& expected) {
-    World w;w.scenario=scenario;
+void run(int scenario,const std::vector<std::uint32_t>& expected,bool initialization) {
+    World w;w.scenario=scenario;w.initialization=initialization;
     const auto now=std::array<std::uint32_t,7>{0,1,100,0x7fffffffU,0x80000000U,0xfffffffeU,0xffffffffU}[static_cast<std::size_t>(scenario%7)];
     const std::array<std::uint32_t,6> deadlines{0,now-1U,now,now+1U,0xffffffffU,0x80000000U};
     for(std::size_t d=0;d<w.definitions.size();++d) {
@@ -89,11 +92,12 @@ void run(int scenario,const std::vector<std::uint32_t>& expected) {
             s.radius=1.5;s.radius_twice=4;s.count=g==0?3:1;s.members.resize(static_cast<std::size_t>(s.count));
             s.definitions[country]=(scenario/2+static_cast<int>(oi)*3+static_cast<int>(g))%5==0?nullptr:&w.definitions[2+g];
             s.respawn.current=std::array<int,4>{-1,0,1,3}[(static_cast<std::size_t>(scenario/11)+oi*2+g)%4];
-            s.respawn.next=deadlines[(static_cast<std::size_t>(scenario/5)+oi*2+g)%6];
+            s.respawn.next=deadlines[(static_cast<std::size_t>(scenario/5)+oi*2+g)%6];s.respawn.obelisk_source=&s;
         }
     }
     std::array<std::uint8_t,8> bitmap{};bitmap.fill(scenario/3%2?0xaa:0);
     ObeliskRuntimeMap map{scenario%19!=0,false,42,8,bitmap};
+    if(initialization) {w.event({16});initialize_obelisks(map,w.obelisks,w);w.snapshot();}
     for(auto tick:{now,now+1U,now+20U}) {w.event({14,tick});update_obelisk_respawns(map,w.obelisks,tick,w);w.snapshot();}
     if(w.trace!=expected) {
         std::size_t i=0;while(i<w.trace.size()&&i<expected.size()&&w.trace[i]==expected[i]) ++i;
@@ -105,15 +109,16 @@ void run(int scenario,const std::vector<std::uint32_t>& expected) {
 }
 int main(int argc,char** argv) {
     try {
-        if(argc!=2) throw std::runtime_error("Expected oracle fixture");
+        if(argc!=2 && argc!=3) throw std::runtime_error("Expected oracle fixture and optional initialization mode");
+        const bool initialization=argc==3 && std::string_view(argv[2])=="initialize";
         std::ifstream input(argv[1]);if(!input) throw std::runtime_error("Missing oracle fixture");
         std::string line;unsigned count=0;
         while(std::getline(input,line)) {
             if(line.empty()||line[0]=='#') continue;
             std::istringstream row(line);int scenario;row>>scenario;std::vector<std::uint32_t> expected;
-            std::uint32_t word;while(row>>word) expected.push_back(word);run(scenario,expected);++count;
+            std::uint32_t word;while(row>>word) expected.push_back(word);run(scenario,expected,initialization);++count;
         }
         if(count!=768) throw std::runtime_error("Incomplete original fixture");
-        std::cout<<count<<" original scheduler scenarios / "<<count*3<<" stateful tick comparisons passed\n";return 0;
+        std::cout<<count<<(initialization?" original startup scenarios and ":" original scheduler scenarios / ")<<count*3<<" stateful tick comparisons passed\n";return 0;
     } catch(const std::exception& e) {std::cerr<<e.what()<<'\n';return 1;}
 }
