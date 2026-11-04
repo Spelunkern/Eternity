@@ -30,6 +30,9 @@ public:
     // Alloc 0040ab80: constructor/binding on fresh objects, LIFO reuse otherwise.
     // Does not change retained ID/random state or consume the manager counter.
     MobRuntime* allocate_raw();
+    bool has_applied_skills_runtime()const noexcept{return skills_!=nullptr;}
+    // Live host ownership query; false for foreign, available or raw-pending actors.
+    bool is_prepared(const MobRuntime&)const noexcept;
     // Exactly one manager preparation for an outstanding raw allocation:
     // increment world ID, then sample Unix time and seed time^ID.
     // Foreign, released or already prepared objects are rejected without writes.

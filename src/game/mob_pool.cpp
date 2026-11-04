@@ -10,6 +10,9 @@ MobRuntime* MobPool::allocate_raw() {
     else {auto object=services_.construct();++construction_attempts_;if(!object) return nullptr;object->damage=std::make_unique<MobDamageLedger>(services_.damage_pool());if(skills_)skills_->bind(*object,services_);mob=object.get();objects_.push_back(std::move(object));}
     unprepared_.push_back(mob);return mob;
 }
+bool MobPool::is_prepared(const MobRuntime& mob)const noexcept {
+    return std::any_of(objects_.begin(),objects_.end(),[&](const auto& p){return p.get()==&mob;}) && std::find(available_.begin(),available_.end(),&mob)==available_.end() && std::find(unprepared_.begin(),unprepared_.end(),&mob)==unprepared_.end();
+}
 void MobPool::prepare_allocated(MobRuntime& mob) {
     if(mob.membership_owner_)throw std::invalid_argument("Cannot prepare an attached mob");
     const auto pending=std::find(unprepared_.begin(),unprepared_.end(),&mob);
