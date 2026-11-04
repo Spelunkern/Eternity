@@ -1749,3 +1749,8 @@ services and world scheduling work. Also observed worker 07 running its SQL
 integration and a targeted scene build in the same worktree concurrently; both
 were allowed to finish, but SQL results from that overlap must be treated as
 potentially mixed-binary provenance and not exact-scene-commit validation.
+
+Main session 7699 passed its own locked `world-admission-unit` on `25d85e2`
+(`.local/main-zone-wait-target.log`); full build is now running, with SQL next.
+Ingress session 69947 acquired the isolated SQL lock and has begun its integration
+phase (`Eternity-ingress/.local/composed-sql.log`); result remains pending.
