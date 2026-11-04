@@ -1783,13 +1783,13 @@ Exact recovered semantics:
 
 The input is a synchronous borrowed value projection, with explicit actual-user
 identity supplied by the caller; no new Actor/life/guild/user owner or lookup map.
-Actor::id() and the retained PlayerCore::guild_id can provide existing ID fields.
-Production still needs authoritative live +54cc/+54d4/+54e4 from the actual PvP
-owner: Actor's exposed wager/exchange objects do not provide these fields. Do
-not derive a duel status from life/attack mode or a guild opponent from current
-membership alone. Retain both real users and their PlayerCore/PvP owners on the
-existing serialized executor until classification and subsequent callbacks end.
-No canonical accessor was invented or shared header changed.
+The initial integration review missed Actor::relations(), whose existing
+UserRelations already owns duel_state, duel_opponent, guild_id and
+opposing_guild_id. Milestone 17 below corrects this dependency and adds direct
+Actor adapters; no new PvP fields/accessors are needed. Do not derive a duel
+status from life/attack mode. Retain both real users on the existing serialized
+executor until classification and subsequent callbacks end. No shared header
+was changed.
 
 Validation:
 
@@ -1819,3 +1819,93 @@ do not re-run Death's published prefix to reach them. Existing canonical death
 metadata/resource/ledger APIs and previously documented retention/admission/
 transport contracts remain applicable. No production Death or playable-server
 completion is claimed.
+
+
+## Milestone 17 — Death forced/unforced routes and live Actor relations
+
+Implementation: `31c98fa`. Source: `ps_game.exe`, `CUser::Death` decision region
+0045885c..004588bd plus special-defeat prefix 00458cab..00458cb6; complete called
+PvPGetDeathType 0047b270. New mob_targeting_lifecycle_route implements this bounded
+post-lookup decision. Rewards, PvPChkLoseDeath and common Death tail are exits,
+not empty success providers. It is not the full player-maximum Death coordinator.
+
+Exact behavior:
+
+- Input requires a NONNULL looked-up attacker AFTER its name copy. Missing
+  attacker bypasses this decision in the original; never fabricate a peer or
+  write penalty -1 merely because the forced flag was set on an earlier call.
+- Any nonzero raw forced byte first publishes penalty -1. Duel requires victim
+  state exactly 4 AND reciprocal victim/attacker opponent IDs. Attacker duel
+  state is not inspected; same-user identity is not rejected. Otherwise a
+  nonzero VICTIM opposing-guild ID selects guild defeat, without checking either
+  actual guild ID or reciprocal opposing-guild relationship. If absent, skip
+  rewards at 00458cbe, retaining penalty -1. This does not mean defeat succeeded.
+- Unforced input calls the recovered helper. Ordinary type 3 enters rewards and
+  preserves penalty. Types 4/5 additionally publish penalty -1 at 00458cac before
+  the special-defeat call. They do not preserve penalty as an isolated helper
+  invocation would. No life/resources/effects/target mutation belongs here.
+
+Owner integration correction:
+
+The previous report missed Actor::relations(). Its existing UserRelations owns
+all four fields: duel_state (+54cc), duel_opponent (+54d4), guild_id (+1748) and
+opposing_guild_id (+54e4). Existing same_team/Actor::end_duel already consume
+this SAME owner. The previous missing-accessor claim is corrected above.
+New concrete Actor overloads query those fields and Actor::id(), use actual
+address identity, and observe live updates on every invocation. No new field,
+PvP map, PlayerCore copy, life counter or canonical accessor is required.
+
+Production assembly: after one Death prefix/GetMax and a retained nonnull
+same-zone attacker lookup, call the Actor overload with the actual forced byte
+and authoritative victim penalty reference. Canonical Actor::death_metadata().
+penalty is now available for that reference (allocation/admission must already
+have bound metadata with the explicit inherited context). The overload returns
+rewards/duel/guild/skip_rewards only; the owner must then perform the actual
+corresponding continuation exactly once. It cannot retry the original Death
+prefix, which already published state/resources/cancellations. Existing
+ZoneUsers::find_actor returns a borrowed pointer; its documented contract
+requires the root to acquire its own owner lease before crossing subsequent
+callbacks. Retain both Actors/zone and serialize live state on the existing world
+executor. No hidden lock, retention registry or success provider was added.
+
+Validation:
+
+- 16384 original bounded decision executions, without instruction patches or
+  helper hooks. The oracle stops at actual reward/defeat/tail branch exits and
+  checks the actual pushed attacker for defeat. This is bounded region evidence,
+  NOT complete Death execution. Raw flags 0/1/2/128/255, raw states/IDs/penalties,
+  self identity, reciprocal/asymmetric matches and guild/duel precedence are
+  compared. Results: 232 duel, 11520 guild, 1618 skip, 3014 reward exits; 264
+  unforced special routes explicitly exercise the extra penalty write.
+- The native suite also constructs actual existing Actors for every row, assigns
+  their real UserRelations, compares both concrete overloads, mutates live duel
+  relations and checks the next call observes them. Life mode and resource HP
+  remain unchanged. Required scene ports fail on unexpected calls; no world
+  operation is replaced with an empty provider.
+- Initial build passed. Initial full tests: 133/134 passed, 27.96 s; new test
+  found mismatch at case 70 because the implementation omitted 00458cac's
+  unforced special penalty write. Initial sanitizer likewise failed that
+  assertion and emitted a fatal abort stack. Both logs are preserved, neither
+  counted as a pass. Corrected native behavior from disassembly; original data
+  was not changed to fit the implementation (fixture header was clarified to
+  list the additional executed special-defeat prefix).
+- Final tools/dev.py build exit 0, 145 actions, no warnings/errors;
+  work/mob-targeting-lifecycle-route-verified-build.log.
+- Final tools/dev.py test exit 0, 134/134 passed, 39.87 s; new unit 0.03 s;
+  work/mob-targeting-lifecycle-route-verified-tests.log.
+- Final ASAN/UBSAN under shared build lock exit 0, all 16384 comparisons and
+  Actor compositions passed, no diagnostics. Instrumented new route/helper/test
+  and actual Actor/resources/effect cycle/effects/skills sources;
+  work/mob-targeting-lifecycle-route-verified-sanitized.log.
+- Original fixture regenerated into ignored work/ byte-identically after the
+  correction; all 12 original SHA256SUMS passed; git diff --check clean.
+  No unchanged original startup/SQL fixture regeneration, SQL path change or
+  lifecycle write. No main, Actor/zone-user/other-owner edits, agents, merges,
+  resets or pushes. SQL/root/transport integration remains centrally owned.
+
+Remaining: actual PvPChkLoseDeath 0047b2c0 (duel item drops/debuffs/ledger/counters/
+DB060c/self2405/logs; guild captured-lock/PvPUserLeave), ordinary player rewards/
+party/raid iteration, then composition into one complete Death continuation.
+Existing root exchange/shop/vehicle2/PvP/corpse/item-drop/party-exclusion/log/view
+transport requirements remain explicit. No full player-death, rebirth admission,
+production transport or playable-server completion is claimed.
