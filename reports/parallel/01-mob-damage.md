@@ -1833,3 +1833,111 @@ Next independent proposal: recover actual runtime tick/definition capture in
 existing damage/effect services; no duplicate damage or resource owner. Concrete
 retained equipment middle should follow after canonical accessor dependency is
 available in the integration base. Overall server objective remains open.
+
+## Resolved runtime attacks and actual casting adapter — 2026-11-04
+
+Implementation **d929764**. Read current main continuity/parallel notes and
+`165eb33/2bd193e`; completed its proposed resolved-attack runtime block. Existing
+UserSkillRuntime/handles, Actor state/speed delivery and scheduler are reused.
+Only user_skill_runtime*, private CMake and report changed. No Actor/inventory/
+main/other-worker edits, shadow runtime/catalog/target owner or ID generator.
+
+Original `ps_game.exe` complete Ghidra/PDB evidence:
+**AttackMob(CSkill*) 00450cf0..00450def**, **AttackUser(CSkill*)
+00451c80..00451d6c**, user dispatch table **00451d70**, **SendUseSPMP 00481ca0**,
+**SendSpeed 004827b0**, **GetAttackSpeed 0048a460**, **GetMoveSpeed 0048a4d0**.
+
+Implemented behavior:
+
+- Capture the ACTUAL runtime and its original definition. Publish reset tick
+  BEFORE effects. Nonpositive Actor SkillStatus.cool_time -> caller_tick +
+  definition reset_seconds*1000. ANY positive cool_time, independent of amount,
+  sets reset tick to caller_tick when WORD reset_seconds<=**500**; >500 retains
+  full seconds*1000. DWORD wrap preserved. No guessed subtract/clamp formula.
+- Mob effect1/target3 delegates attack-select00450e20; target7 attack-range
+ 00450f70. Effect3/target3 delegates debuff0044fd90 with BOTH original bool flags
+  true; target6 around00451980 with NO mob target argument; target7 debuff-range
+ 00451570. Other combinations skip effects but still execute cost/disable tail.
+- User effects1..6 delegate their EXISTING owner boundaries: SkillAttack00451d90,
+  SkillHeal00452b50, SkillDebuff00452bf0, SkillBuff00453470, SkillField004534e0,
+  SkillOnce00453610. Other values skip effect callback, not the remaining tail.
+  These are required effect services, not reconstructed damage implementations.
+- After effect callback, reread SP/MP costs from ORIGINAL captured definition.
+  If either nonzero, require actual SendUseSPMP service with captured WORD costs.
+  Runtime->definition may now point elsewhere; it does not replace frame info.
+  No availability-check substitute, refund or resource-owner copy is introduced.
+- After spending, test live captured definition disable_seconds WORD **+50**.
+  If nonzero, sample a FRESH real tick, reread that WORD AFTER clock callback,
+  publish caller-independent deadline then call actual Actor::speed_changed.
+  Even if callback changes disable_seconds to0, publication/send still occurs.
+  Source +1428 is ALREADY canonical `Actor.status().casting`: corroborated by
+  identical nonzero guards in both original speed getters and existing
+  effects.cpp attack_speed/move_speed. Store DWORD bits using int32 bit-cast;
+  no new Actor field or transient private deadline introduced.
+- Existing Actor speed owner suppresses during initialization/out-of-zone and
+  emits its actual speed packet otherwise. Clock writes are overwritten by later
+  deadline publication; nested speed delivery may override deadline/runtime
+  reset tick afterward, and this coordinator does not restore earlier values.
+
+`UserSkillRuntimeAttackWorld` concretely binds the existing retained runtime
+scheduler's final casting action methods to these coordinators, preserving the
+captured shared handle and original Actor identity. Its UseSkill preparation,
+normal actions, targets and remaining world providers remain ABSTRACT. No
+fallback action world is added. Eligibility/resource/weapon checks must precede
+these resolved attacks via their actual callers; this is not full UseSkill.
+User definition projection gains only target_kind BYTE **+56** and disable_seconds
+WORD **+50**, distinct from existing WORD TypeDetail/target_type.
+
+Validation:
+
+- **768 complete original resolved-attack comparisons**: both overloads,effects
+ 0..7,target kinds3/6/7/0,reset0/1/499/500/501/65535,nonpositive/positive cooldown
+  modifiers, ordinary/wrapped ticks, costs0/nonzero, disable and original zone/
+  initialization suppression. Mutations independently replace runtime definition,
+  overwrite runtime reset, change original definition costs/disable, change
+  disable during clock and overwrite published state during speed callback.
+  Compare complete ordered effect/spend/clock/view snapshots and final fields.
+- Oracle executes WHOLE both Attack functions and actual SendSpeed/GetSpeed
+  helpers. Actual effect, SendUseSPMP, OS time and PSendView are ports only;
+  this does NOT claim their damage/resource bodies newly executed. Every effect
+  hook checks exact actor/target/captured-definition calling convention and
+  debuff true/true flags. Around has no target. Speed route checks actual zone,
+  position,radius60,source ID,channel5 and complete8-byte packet. Native compares
+  existing Actor's packet/broadcast boundary; production Scene must route it.
+- **8 additional native compositions** run actual scheduler mode3 for user/mob,
+  reset7/501 and cooldown flag0/1, through the new final adapter, actual runtime
+  capture and resolved coordinator. Check reset publication and scheduler
+  mode/deadline/motion. These composition tests are separate from the direct
+  original Attack fixtures; no new whole-original combined UpdateAttack claim.
+- Original executable/PDB SHA256SUMS exit0;
+  `work/user-skill-runtime-attack-hashes.log`. Independent oracle regeneration
+  byte-identical, including final calling-convention assertions (`cmp`,exit0);
+  `work/user-skill-runtime-attack-final-repeat.tsv`. Fixtures generated under work/
+  and copied before readers; original binaries unchanged.
+- `python3 tools/dev.py build`: exit0,no warnings;
+  `work/user-skill-runtime-attack-build.log`.
+- Sequential `python3 tools/dev.py test`: exit0,**139/139 passed,44.26s**;
+  `work/user-skill-runtime-attack-tests.log`. Previous cost/ready/persist/snapshot/
+  learn/owner/scheduler/zone tests pass. `git diff --check`: exit0.
+- Shared wrappers respected. SQL unchanged; coordinator owns final full isolated
+  SQL integration and whole-server validation. No gameplay completion claim.
+
+Production/lifetime contract: retain owner/Actor/scene, targets, action services
+and original definition/name backing for ENTIRE frame. Retaining runtime alone
+is insufficient for a definition swapped out during nested effects; catalog/root
+backing must survive. Services must execute actual enum-specific effect owners
+(including debuff true/true flags), actual SendUseSPMP and same process clock;
+there are no default no-ops. Spend must see LIVE Actor modifiers/resources after
+prior effects. Root Scene routes speed through real retained zone/view services.
+Callback must not destroy/recycle retained subjects/catalogs before returns.
+
+Remaining dependencies: actual effect/spending providers, UseSkill preparation,
+shared CSkill manager/full user definitions/root assembly and retained equipment
+middle. Main already has the retained item accessor as previously documented;
+worker base still lacks that dependency and shared headers stay02-exclusive.
+No new canonical field needed for disable publication: use existing casting bits.
+Expiry scheduling is NOT implemented by this publication coordinator. Next
+independent proposal: recover +1428 expiration in **ChkKeepSkill 00487190**,
+including fresh-clock/equality/send ordering, and compose its skill-disable stage
+with existing applied-effect tick owner without duplicating that effect list.
+Overall server objective remains open.
