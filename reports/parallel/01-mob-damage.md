@@ -1314,3 +1314,133 @@ append and existing runtime reuse in-place, including points, admission failures
 publication/callback ordering, using this owner instead of constructing another
 skill container. Actual shared manager/definition/root connections remain central
 integration dependencies, not evidence of overall server completion.
+
+## Learned skill admission and in-place upgrades — 2026-11-04
+
+Implementation **c813863**. Read current main continuity/parallel notes and
+`317980f/fc1a9eb` owner milestone; continued its explicit next independent block.
+All code stays under `user_skill_runtime*`, private CMake and this report. Actor,
+inventory, main and other workers remain untouched. Prior owner, zone cursor,
+retention and scheduler implementations are preserved.
+
+Added `UserSkillRuntime::learn(PlayerCore&, int32 ID, int32 level,
+UserSkillLearnWorld&)` operating on the SAME actual retained runtime slots.
+PlayerCore supplies the existing live WORD skill-point owner; mismatched Actor
+identity fails explicitly. User-definition projection now also borrows original
+required-level, country, six job flags, grow, points and type-show metadata. No
+second skill/catalog container, passive-ID inference or competing allocator/ID
+counter. All allocations use the previous mandatory shared manager port.
+
+Original evidence, `ps_game.exe` complete Ghidra/PDB exports:
+**LearnSkill 004842e0**, **EnableLearnSkill 00484080**, **SendGetSkill 00484260**,
+**SetGameLogMain 0045b0d0**, **ChkGetSkillPassive 00489a40**, **CreateSkill
+0040a780**, **GetSkillInfo 00402770**. Country dispatch table at **00484244**
+confirms the six family predicates, rather than substituting country equality.
+
+Recovered/implemented behavior:
+
+- Requested levels outside signed 1..3 send 0209 reason3 immediately. Missing
+  definition also sends reason3. Scan slots in physical index order below signed
+  learned count, skip holes and choose first matching runtime SkillID. Same/higher
+  existing SIGNED runtime level rejects with reason3; a corrupt ffffffff level
+  compares as -1, not the largest unsigned level. Missing skill with requested
+  level other than1 silently returns; no invented sequential-level requirement.
+- EnableLearnSkill performs a SECOND live definition lookup. Missing second
+  definition silently returns. Check WORD points (reason1), WORD actor level
+  (reason2), then family predicate (silent reject), job/grow/type-show (reason3).
+  Definition country0/1/2 permits family0/1/(0 or1), country3/4/5 permits
+  family3/2/(3 or2); country>5 imposes no family check. Grow0 requires definition
+  grow0; grow1 permits0/1; grow2 rejects only definition grow3; grow>=3 imposes no
+  grow restriction. Type-show zero rejects, not a passive-ID substitution.
+- Eligibility uses the second definition's cost, but actual point deduction
+  uses the FIRST captured definition's BYTE cost with WORD wrap. Test changes the
+  second lookup to cost0: initial points1 then deduct first cost7 ->65530.
+  New allocation happens AFTER deduction; failure returns silently without refund,
+  runtime publication, DB/client success packet or game log.
+- New runtime writes info/ID/level1/number=current count, samples actual tick,
+  rereads live count for insertion and increments that count. Preserves other
+  pooled fields/ID. Upgrade changes the existing runtime's definition/level in
+  place, samples tick and rereads physical slot before setting reset tick.
+  No new allocation or ID occurs on upgrades. Clock callback resetting the skill
+  owner demonstrates original old-number/new-live-insertion-index distinction.
+- Call actual ChkGetSkillPassive owner AFTER publication. This required provider
+  can change runtime ID/level/number/definition and points before notices. New
+  notices capture those runtime ID/level/number values; upgrade notices retain
+  requested ID/level but reread live runtime number. No private passive stat owner
+  or default success/no-op callback is introduced.
+- Actual ordered notifications: backend **0801/11 bytes** (account DWORD,
+  remaining-points WORD, SkillID WORD, level BYTE), client **0209/7 bytes**
+  (result0, slot BYTE, ID WORD, level BYTE), then SetGameLogMain context and
+  game log **0309/110 bytes**. DB/client arguments stay captured across nested
+  sends. A DB callback can change live points without rewriting an already-built
+  packet. Log context runs after both sends and must observe current world state.
+- Log tail uses requested ID and new level1/requested upgrade level, CURRENT
+  definition name after context callback, and FIRST requested definition's cost.
+  New path keeps its allocated runtime handle; upgrade rereads physical slot at
+  log time. Runtime handles and definition/name backing survive callbacks.
+
+World services are mandatory: actual clock, actual passive/stat/network owner,
+backend transport, shared log-header population and game-log transport. Client
+packets use the actual bound Actor::send_self. populate_log receives only shared
+header bytes [2,74), leaving the recovered tail to this coordinator. Root must
+populate actual current account/name/identity/time/map/position there; the test
+provider is not production wiring. Existing user-definition provider must populate
+metadata from stSkillInfo +24/+26/+27/+2d/+2e/+2f; zero metadata is not permission.
+
+Validation evidence:
+
+- New oracle executes WHOLE original LearnSkill, EnableLearnSkill, SendGetSkill,
+  SetGameLogMain and CreateSkill. Initial existing objects are loaded through the
+  complete 0504 dispatcher; shared pool/ID logic is actual original code. Only
+  definition lookup, raw allocation/OS time/locks, actual passive callback and
+  transport boundaries are ports. Original scratch stack is zeroed input; full
+  110-byte log matches that controlled input, not a claim that arbitrary original
+  untouched padding bytes are deterministic. Native packets zero their padding.
+- **192 complete original/native comparisons**: 32 profiles x absent/matching/
+  other existing skill x ordinary/wrapped tick. Cover invalid levels/definitions,
+  no-downgrade, skipped levels, allocation failure after deduction, each admission
+  gate, family combinations/wildcard, signed runtime level, stale field/ID
+  preservation, passive/runtime mutation, backend/client/context callbacks,
+  second-lookup failure/cost change and live count reset during clock callback.
+  Compare every runtime payload field/definition identity, points/count/selection,
+  ID counter, exact packets/logs and ordered callback-state snapshots.
+- Independent fixture regeneration byte-identical (`cmp`, exit0), generated under
+  work/ then copied before readers. Original executable/PDB SHA256SUMS exit0;
+  `work/user-skill-runtime-learn-hashes.log`.
+- First build/test passed **134/134**,42.68s with one new misleading-indentation
+  warning. Braced the statement and made test-manager stranding retain objects
+  according to the required manager contract; no original behavior was changed.
+- Final `python3 tools/dev.py build`: exit0, no warnings,
+  `work/user-skill-runtime-learn-final-build.log`.
+- Final sequential `python3 tools/dev.py test`: exit0, **134/134 passed,47.19s**,
+  `work/user-skill-runtime-learn-final-tests.log`, including prior actual-owner
+  scheduler and zone/binding fixtures. `git diff --check`: exit0.
+- Shared resource wrappers respected. SQL unchanged; coordinator owns final full
+  isolated SQL integration. Test counts do not imply server playability.
+
+Integration/lifetime requirements and limits:
+
+The same retained connection root supplies Actor, PlayerCore and UserSkillRuntime;
+keep all three plus action world alive through the whole synchronous learn/send/
+log frame. Preserve the existing strong-Actor owner variant without an Actor-owned
+cycle. Definition storage/names, global manager, scene and transport outlive every
+captured runtime. Reentrant passive/transport callbacks must not destroy/recycle
+captured runtimes or replace stable definition backing. Missing slots during a
+recovered reload fail explicitly instead of dereferencing null. Out-of-range job
+or append index, overlong names and int SkillIDs outside native WORD definition
+space fail explicitly; original out-of-bounds memory access is not emulated.
+The new function does not execute packets on arbitrary invalid owners or roll back
+already-applied points/publications when real provider callbacks fail.
+
+Central shared-manager backend, stable full user-definition source, root assembly
+and live weapon-presence binding remain the previous documented dependencies.
+No Actor/inventory accessor changes are needed for this block. Actual passive
+service must delegate to the existing canonical effects/equipment owner; no
+counterfeit DB/log sink is supplied. Native full skill-reset request/persistence
+coordination remains separate from ResetCharacter's recovered skill-owner reset.
+
+Next independent task proposal within user_skill_runtime: recover
+**SendCharacterSkill 00483540** and learned cooldown serialization/restore against
+this same runtime owner, preserving sparse slot/count behavior and shared tick
+sampling, then connect actual admission/output paths centrally. Server objective
+remains open.
