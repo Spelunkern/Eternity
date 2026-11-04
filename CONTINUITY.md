@@ -1661,3 +1661,13 @@ masked normal hit/damage implementation remains conditionally validated, not
 proven for every original gameplay thread; do not silently bind it universally.
 The original Windows thread context and post-packet/Lua callback control words
 remain unobserved. No new runtime combat behavior is claimed by this trace.
+
+Coordinator created `coordinator/admission` in `/home/franco/Projects/Eternity-admission`
+from the world integration and added `WorldAdmission::update_zone_wait_packets`
+in `69c389d`. It visits the existing zone-wait list's shared cursor and invokes
+its real packet service, following `ps_game.exe CZone::UpdatePackets` 004215e0.
+The added test distinguishes world-wait from zone-wait and removes each current
+user via real `client_enter` during traversal. Targeted `world-admission-unit` is
+running/queued in session 11319; no result yet. This only exposes the missing
+zone-wait traversal; actual scheduling, decrypted packet ownership, cipher
+ordering, production services and full client admission remain unwired.
