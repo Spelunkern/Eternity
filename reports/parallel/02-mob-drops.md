@@ -568,3 +568,20 @@ Validation:
 Remaining: workers06/07 can now bind their existing required providers to these
 exact Actor primitives, with real retained scene/transport/UID owners. Coordinator
 integrates and runs shared full SQL; no global playability completion is claimed.
+
+## Retained inventory continuation checkpoint
+
+Re-read current main continuity/parallel instructions and reviewed c02b69c/302dcb2.
+Read-only main snapshot 48f2c32 still lacks the delivered retained-inventory API;
+its eleventh-batch validation freeze is active. The repeated assignment is already
+implemented and validated in milestone 11. No additional independent behavior was
+identified in the authorized primitive scope. No new implementation/test results
+or shared-source changes are claimed; documentation diff check passes.
+
+Next concrete proposal: coordinator integrates c02b69c, then assigns workers06/07
+the actual Actor-backed QuestAddItem/QuestFindItem adapters described above with
+mandatory transports and shared UID. Worker01 can also bind its retained weapon
+view using retained_inventory_item(0,5); the borrow is not a lifetime lease. Root
+Actor serialization/lifetime must cover each whole callback sequence. Avoid
+replacing the retained owner with a copied inventory or second pool. Waiting for
+integration review or another explicitly scoped task.
