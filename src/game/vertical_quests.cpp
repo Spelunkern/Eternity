@@ -19,7 +19,9 @@ bool VerticalQuestNpcGuard::retire(Npc& npc) {
     if(npc.zone!=&zone_) return false;
     auto it=entries_.find(&npc);
     if(it!=entries_.end()) it->second.retired=true;
-    if(!zone_.leave(npc)) {if(it!=entries_.end()) it->second.retired=false;return false;}
+    try {
+        if(!zone_.leave(npc)) {if(it!=entries_.end()) it->second.retired=false;return false;}
+    } catch(...) {if(it!=entries_.end()) it->second.retired=false;throw;}
     if(it==entries_.end()) pool_.release(npc);
     return true;
 }
