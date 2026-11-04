@@ -1444,3 +1444,84 @@ Next independent task proposal within user_skill_runtime: recover
 this same runtime owner, preserving sparse slot/count behavior and shared tick
 sampling, then connect actual admission/output paths centrally. Server objective
 remains open.
+
+## Learned client snapshot / signed cooldown output — 2026-11-04
+
+Implementation **979e1a2**. Reviewed current main continuity/parallel notes and
+`c813863/df90d11` learning milestone; completed its next independent client-output
+block. Existing canonical owner/learn/scheduler/zone code is reused unchanged.
+Only user_skill_runtime_snapshot files, fixture/test/tool, private CMake and this
+report changed. No shared Actor/inventory/main/other worker edits.
+
+Source: `ps_game.exe`, complete Ghidra/PDB exports, **CUser::SendCharacterSkill
+00483540..004835e7**. New `user_skill_runtime_snapshot` sends actual client
+**0108** (wire prefix `08 01`), using existing runtime fields directly, with no
+SkillID-to-definition inference, replacement owner or skill/catalog copy.
+
+Recovered exact behavior:
+
+- Write opcode before GetTickCount. Sample clock exactly once, then snapshot the
+  SIGNED learned count. Clock port mutations before that snapshot are visible.
+- Loop by physical index, not by populated count; each index reserves an 8-byte
+  row. A nonnull runtime writes low WORD ID, BYTE level, BYTE runtime number and
+  DWORD remaining seconds. Null slots leave all eight existing scratch bytes
+  untouched. Do not compact, synthesize an empty runtime or substitute index for
+  the runtime's m_nNumber. Definitions are not read by this function.
+- Remaining seconds = max(truncate_toward_zero(int32(reset_tick-now))/1000,0),
+  with DWORD-wrapped subtraction. This follows original signed IMUL/SAR rounding,
+  not an unsigned deadline comparison or ceiling. No definition reset-time cap.
+- Header count/length use the LOW BYTE of loop count. At signed count256 all
+  256 rows are processed but header becomes zero and only the three-byte header
+  is transmitted. Count0 sends that header too; no early-return approximation.
+- Build complete packet before synchronous Actor::send_self; no Actor/runtime
+  dereference follows its callback. Retain root/owner/Actor/scene for the frame.
+
+The API requires a caller-initialized 2051-byte scratch span and a mandatory clock
+provider. This explicitly represents original preexisting stack input for holes;
+it never reads uninitialized native memory or invents a default zero-hole policy.
+Scratch is packet workspace, not a second skill store. Root chooses/initializes
+its workspace under its protocol policy. Count>256 throws rather than reproducing
+original stack overwrite; negative count does not iterate and sends count0.
+Negative-count corruption is not manufactured via a new public owner mutator.
+
+Oracle executes WHOLE **PacketUserDBSetInfo 0046d780** 0504 admission, actual
+**CreateSkill 0040a780** / shared heap / ID counter and WHOLE SendCharacterSkill.
+Only definition lookup, raw allocator/OS/clock and transport are fixture ports.
+**192 complete original/native comparisons** cover counts0/1/4/16/255/256,
+contiguous/permuted/only-slot255/duplicate slots, four caller ticks, two initialized
+scratch patterns, DWORD subtraction/sign boundaries, subsecond rounding and
+low-width field truncation. Compare exact packet bytes, clock-before-count order,
+final count/selection and FNV of ALL 2051 workspace bytes, including rows processed
+but not sent at count256. Synthetic clock/send callbacks reset count/selection to
+probe ordering/lifetime; this does not assert that real OS GetTickCount reenters.
+
+Validation:
+
+- Original executable/PDB SHA256SUMS exit0;
+  `work/user-skill-runtime-snapshot-hashes.log`.
+- Independent oracle regeneration byte-identical (`cmp`, exit0); generated in
+  work/ and copied before readers. No original binary modification.
+- Initial build failed on test token `0x1fe+i` (C++ pp-number lexing). Corrected
+  whitespace; initial attempt is not claimed passed.
+- Final `python3 tools/dev.py build`: exit0, no warnings,
+  `work/user-skill-runtime-snapshot-final-build.log`.
+- Final sequential `python3 tools/dev.py test`: exit0, **135/135 passed,28.70s**,
+  `work/user-skill-runtime-snapshot-final-tests.log`, including all prior owner,
+  learning, scheduler and retained-zone comparisons. `git diff --check`: exit0.
+- Shared resource wrappers respected. SQL unchanged; coordinator retains final
+  full isolated SQL integration. This is not evidence of server playability.
+
+Production connections: invoke this function in actual character-output/admission
+ordering, with retained root, real clock and initialized scratch; it delivers via
+existing ActorScene transport. No Actor/shared header changes required. Shared
+CSkill manager backend, full user-definition/name source and root world assembly
+remain previous documented dependencies; no fake providers added here.
+
+Next independent block: learned persistence phase of **SendDBAgentCharGetInfo
+0046c980**, **0046cab9..0046cb63**. Its backend0804 uses unsigned absolute deadline
+comparison, integer seconds capped by original definition WORD reset time +4a,
+and three-byte physical rows. It must not reuse this client's signed/unbounded
+DWORD formula. Complete original surrounding function and actual backend owner
+must be recovered before composing that phase; existing DB-agent SkillReplica
+save owner is not duplicated. Full cooldown persistence/restore equivalence is
+not newly claimed. Overall server objective remains open.
