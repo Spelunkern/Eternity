@@ -14,7 +14,8 @@ bool damage(MobCombatState& m,MobDamageLedger& ledger,MobCombatServices& svc,std
             if(m.stacked_fsm) svc.dispatch_death_event(m);
         }
         m.secondary_state=0;
-        m.death_tick=svc.tick()+(m.long_corpse_delay?10000u:5000u);
+        const auto delay=m.long_corpse_delay?10000u:5000u;
+        m.death_tick=svc.tick()+delay;
     }
     const auto current_damage=[&] {return triple?static_cast<std::uint32_t>((*triple)[0]):hp;};
     if(m.log_enabled || m.linked_log_enabled) svc.log_damage(m,current_damage());
