@@ -208,3 +208,95 @@ same prefix: CMob::Aggro 00491080, its positive-aggro/status/HP guards and nativ
 ledger/retarget coordination, leaving targeting bodies with worker 08. An
 alternative integration assignment is CUser::StatusAttackStop 00489ed0 plus a
 coordinator-supplied canonical combat-owner interface.
+
+## Assigned extension: CMob::Aggro and live damage ownership
+
+Implementation commit: `ba820ce` (`Recover mob aggro accumulation and live runtime ownership bridge`).
+
+New files use the assigned `mob_combat_aggro` prefix. Recovered ps_game.exe
+CMob::Aggro **00491080** from the complete Ghidra disassembly; all immutable
+executable/PDB hashes verified again with `sha256sum -c SHA256SUMS`, exit 0.
+The entry receives signed amount in EAX, mob in ECX and user ID on the stack;
+its RET 4 confirms that stack argument count despite the decompiler's signature.
+
+Behavior:
+
+- Signed amount <= 0 returns before GetStatus. Otherwise status 2 or zero HP
+  rejects the call (00491083–0049109d). There is no user-ID lookup, target-present
+  check, or identity-zero rejection here. Target resolution belongs to retarget.
+- Adds type 1, supplied user ID, **zero damage**, supplied aggro and **party 0**
+  to this mob's existing CDamageMob at +1f0 (0049109f–004910b5). Existing damage
+  survives; existing user membership is cleared to zero. Same-ID type 2/type 5
+  records and another mob's records remain independent. No party aggregate is
+  added. Aggro accumulation wraps at 32 bits rather than saturating; selection
+  still compares signed values (e.g. INT_MAX + 1 becomes INT_MIN).
+- After Add, rechecks live status and calls retarget only for status 1, using
+  the current +44 selector: ReTargetByAggro **00490ab0** or ReTargetByAggroEx
+  **004b7490** (004910ba–004910d9). Allocation failure does not suppress this
+  recheck/call. HP is not checked again after allocation.
+- Aggro itself leaves MP/SP, hit count, corpse time and secondary state alone.
+  These unchanged fields are asserted in both the original oracle and native
+  comparisons. No damage/death/clock/log operation is introduced.
+
+The projection entry requires status/retarget providers with no default bodies.
+The MobRuntime overload directly uses its existing `damage` owner and native
+`state_stack`/`status`/HP fields. It refreshes those fields at each status read,
+including after allocator callbacks, and delegates actual retarget through a
+required MobCombatAggroWorld. It never substitutes a temporary ledger or silently
+accepts missing ownership; absent `damage` throws `invalid_argument`. Subject and
+ledger storage must survive the synchronous invocation. No canonical header or
+previous combat module was edited.
+
+Original-execution coverage:
+
+`tools/mob_combat_aggro_oracle.py` executes complete Aggro 00491080, actual
+GetStatus 0041d760 (ordinary, single-scene stack and empty stack), Add 004b8dd0,
+shared heap operations, Reset 004b8d10 and GetMaxAggro 004b9000. Only OS locks,
+allocation and world retarget are ports. It observes 2,007 status calls,
+435 new-allocation attempts and 267 retargets across 2,048 cases. Two live owners
+share one heap; cases cover existing user/non-user/party records, recycled
+records, failed allocations, signed boundaries, zero/maximum identities, fair
+flags, record identities, and complete selection output including untouched
+bytes. Synthetic allocator changes audit live status/FSM/HP reads; a synthetic
+retarget provider executes real Reset to audit pool returns. These mutations
+are not claims about real allocator/targeting world behavior.
+
+The native suite replays every fixture through both the explicit projection and
+the MobRuntime overload: **4,096 comparisons**. The bridge compares final state,
+heap/records, selection and external allocation/retarget observations; its status
+reads are internal native code, so original GetStatus-entry observations apply
+only to the explicit projection run. Missing runtime ownership is also rejected.
+
+Validation:
+
+- Fixture regenerated twice with `.local/oracle-env/bin/python`, byte-identical
+  via `cmp`, exit 0. No tracked fixture was replaced while a reader was active.
+- Projection build: `python3 tools/dev.py build`, exit 0; projection/full test
+  run: `python3 tools/dev.py test`, exit 0, **123/123 passed**, 31.55 seconds.
+  Logs: `work/mob-combat-aggro-build.log`, `work/mob-combat-aggro-test.log`.
+- After adding the actual runtime bridge: `python3 tools/dev.py build`, exit 0,
+  no compiler warnings; `work/mob-combat-aggro-runtime-build.log`.
+- Final `python3 tools/dev.py test`, exit 0, **123/123 passed**, 35.96 seconds;
+  the Aggro suite compares all 2,048 original cases through both entries (4,096
+  comparisons). Log: `work/mob-combat-aggro-runtime-test.log`.
+- `git diff --check`, exit 0. All builds/tests used the shared-resource wrapper.
+  Prior damage/credit/callback/caller tests remain passing.
+
+Integration: no new canonical fields are needed for Aggro. Bind the existing
+MobPool-owned ledger and connect MobCombatAggroWorld to the real normal/stacked
+retarget implementations, with actual user lookup/target/FSM world services.
+Do not add an early target/user-presence gate or reset the ledger on entry.
+Compiled FSM ownership/transitions remain with worker 09 and targeting bodies
+with worker 08. Production combat dispatch must invoke this overload; this block
+does not claim such dispatch is connected. SQL contracts were not changed and
+SQL lifecycle/final isolated integration remain with the coordinator. The server
+remains non-playable.
+
+
+Assignment boundary: Aggro 00491080, its actual ledger/helper execution and native
+runtime entry are now implemented and verified. Further production progress
+requires the world retarget/compiled-FSM providers and combat dispatch owned
+outside this prefix. Proposed next coordinator assignment: recover
+CUser::StatusAttackStop 00489ed0 under a newly assigned combat-action prefix,
+then bridge the existing user-hit stop/death ports once the canonical actor owner
+interface is supplied. No new scope is taken in this milestone.
