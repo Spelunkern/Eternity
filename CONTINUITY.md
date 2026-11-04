@@ -1427,3 +1427,12 @@ of its bounded raw inbound queue plus a TCP wait/resume regression. It is NOT
 wired into actual WorldAdmission or merged. Its locked focused test is live in
 session 94920, log `Eternity-ingress/.local/ingress-test.log`; main session
 53983 is still running separately. Never claim complete entry from this bridge.
+
+Ingress branch follow-up `6d68908` replaces fire-and-forget pause with an
+asynchronous success acknowledgment on the socket executor, so the world owner
+can await the applied pause without blocking before zone handoff; resume before
+that acknowledgment would race across executors. Original 94920 was cancelled
+while still waiting for its build lock because source changed; no container had
+started. New focused test session 68410 is queued with the revised source. This
+is not merged, not yet validated and not bound to WorldAdmission. The owner must
+handle closed connections and schedule the acknowledgment onto its world executor.
