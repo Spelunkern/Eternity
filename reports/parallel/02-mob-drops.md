@@ -124,3 +124,43 @@ Earlier commit reports retain detailed fixture limits and corrected harness runs
   top-level dispatch and logging remain required. Both-mob events 7/8 and sequence
   0a06 stay with the coordinator's logging owner. No required service defaults to
   a no-op. No shared canonical header, SQL fixture or main checkout was modified.
+
+## Continuation checkpoint: production owner dependencies
+
+Read current main CONTINUITY.md and PARALLEL_WORK.md and reviewed the preceding
+implementation/report. Read-only main snapshot inspected:
+`b19f469ae285bda44b0e0526a90f1b7c2409601a` (sixth-batch validation freeze).
+No independent unimplemented loot algorithm was identified in the assigned
+ItemDrop/MobItems scope. No new runtime implementation or test results are claimed
+by this documentation checkpoint; milestone 7 validation above remains unchanged.
+
+Concrete current dependencies confirmed in canonical sources:
+
+- `mobs.hpp`: MobRuntime already owns `drop_random`, but MobRuntimeTemplate lacks
+  original money WORDs +28/+2a and quest bytes +2c/+2d. The stable full definition
+  owner must expose those fields or a retained view; do not create a competing
+  mob table. Bind the existing mob's RNG, never a fresh per-death generator.
+- `mob_death.hpp/cpp`: drop_items remains a required pure provider, invoked under
+  the existing party lock on the party path. Death user/party projections expose
+  experience fields only; actual user/roster owners must supply retained loot
+  views and publish cursor updates to the same party. A copied roster/cursor is
+  insufficient for nested delivery and reload behavior.
+- `item_ids.cpp`: the canonical generator still uses a 64-bit deadline, zero-stamp
+  initialization and an overflow exception at counter 65535. Original DWORD
+  deadline/wrap and global baseline compatibility remains unresolved. Do not
+  silently replace the required raw_unique_id provider with this implementation.
+- `SqlServer::query` still buffers results; the streaming publication dependency
+  described above remains necessary for original mid-fetch failure semantics.
+
+Proposed next task: once the coordinator supplies/authorizes the retained full
+mob-definition and live Actor/party owner bindings, assign `mob_drops_runtime`
+composition of the concrete MobDeathWorld::drop_items provider with the existing
+catalog, delivery and money owners. Keep callbacks under the existing serialized
+world/party owner, preserve one shared CRT stream and MobRuntime::drop_random,
+and compare complete death-to-inventory/ground traces. Canonical UID and actual
+transport/log services must be supplied rather than defaulted. A second layer of
+abstract ports would not resolve these production dependencies.
+
+Checkpoint validation: documentation-only `git diff --check` passes. No rebuild,
+SQL execution or original-fixture regeneration was needed or claimed. Main and
+other workers remain unchanged. Waiting for the coordinator's next scoped task.
