@@ -12,6 +12,8 @@ struct UserSkillDefinition {
     std::uint8_t country=0,grow=0,learn_points=0,type_show=0; // +26/+2d/+2e/+2f.
     std::array<std::uint8_t,6> jobs{}; // +27.
     std::uint16_t reset_seconds=0; // Original stSkillInfo +4a, DB delay cap.
+    std::uint16_t required_skill=0; // +52, must still be in cooldown.
+    std::uint8_t attack_kind=0,attack_range=0; // +30/+4c.
 };
 class UserSkillLearnWorld;
 struct UserSkillRuntimeSkill:MobCombatSchedulerSkillBinding,std::enable_shared_from_this<UserSkillRuntimeSkill> {
