@@ -1,4 +1,5 @@
-#include "eternity/game/mob_ai_states_literals.hpp"
+#include "eternity/game/mob_ai_states_locals_vm.hpp"
+#include "eternity/game/mob_ai_states_bindings.hpp"
 #include <algorithm>
 #include <bit>
 #include <limits>
@@ -16,7 +17,7 @@ void push(MobAiValueStack& stack,const MobAiParameter& value){
     if(stack.top<stack.capacity)assign(stack.slots[static_cast<std::size_t>(stack.top)],value);
 }
 }
-std::int32_t interpret_mob_ai_literals(MobAiConfiguredFsm& owner,MobAiConfiguredCondition& condition){
+static std::int32_t interpret_values(MobAiConfiguredFsm& owner,MobAiConfiguredCondition& condition,bool local_reads){
     auto& stack=owner.value_stack;
     if(stack.capacity<0||static_cast<std::size_t>(stack.capacity)>stack.slots.size())throw std::logic_error("Mob AI literal stack requires its retained capacity/storage");
     stack.top=-1;condition.words[2]=0;
@@ -37,10 +38,21 @@ std::int32_t interpret_mob_ai_literals(MobAiConfiguredFsm& owner,MobAiConfigured
         }else if(token.type==7){
             if(std::find(token.value.begin(),token.value.end(),'\0')==token.value.end())throw std::logic_error("Mob AI string literal has no retained terminator");
             MobAiParameter string(4);string.text=token.value;push(stack,string);
+        }else if(token.type==3&&local_reads){
+            const auto end=std::find(token.text.begin(),token.text.end(),'\0');
+            if(end==token.text.end())throw std::logic_error("Mob AI local name has no retained terminator");
+            const auto key=mob_ai_name_code(std::string_view(token.text.data(),static_cast<std::size_t>(end-token.text.begin())));
+            const auto value=owner.variables.find(key);
+            if(value==owner.variables.end())throw std::logic_error("Mob AI local read requires a factory-populated typed variable");
+            if(value->second.type==4&&std::find(value->second.text.begin(),value->second.text.end(),'\0')==value->second.text.end())throw std::logic_error("Mob AI local string has no retained terminator");
+            push(stack,value->second);
         }else if(token.type==3||token.type==4||token.type==8||token.type==9){
             throw std::logic_error("Mob AI token requires the unrecovered full TravelCondition provider");
         }
         // Kinds outside the dispatch range and original cases 5/6 are ignored.
     }
 }
+std::int32_t interpret_mob_ai_literals(MobAiConfiguredFsm& owner,MobAiConfiguredCondition& condition){return interpret_values(owner,condition,false);}
+std::int32_t interpret_mob_ai_local_values(MobAiConfiguredFsm& owner,MobAiConfiguredCondition& condition){return interpret_values(owner,condition,true);}
+
 }

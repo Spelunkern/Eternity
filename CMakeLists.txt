@@ -1337,3 +1337,10 @@ if(BUILD_TESTING)
     target_link_libraries(quest-requests-actor-unit PRIVATE eternity_game)
     add_test(NAME quest-requests-actor-unit COMMAND quest-requests-actor-unit ${CMAKE_CURRENT_SOURCE_DIR}/tests/data/quest-requests-flow-oracle.tsv ${CMAKE_CURRENT_SOURCE_DIR}/tests/data/quest-requests-actor-oracle.tsv)
 endif()
+
+# Worker 09: actual local variable lookup on retained map/value-stack owners.
+if(BUILD_TESTING)
+    add_executable(mob-ai-states-locals-vm-unit tests/mob_ai_states_locals_vm_unit.cpp)
+    target_link_libraries(mob-ai-states-locals-vm-unit PRIVATE eternity_game)
+    add_test(NAME mob-ai-states-locals-vm-unit COMMAND mob-ai-states-locals-vm-unit ${CMAKE_CURRENT_SOURCE_DIR}/tests/data/mob_ai_states_locals_vm-oracle.tsv)
+endif()
