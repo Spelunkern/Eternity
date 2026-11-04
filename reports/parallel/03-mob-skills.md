@@ -1,7 +1,7 @@
 # Worker 03: mob applied skill ownership
 
 The native list/pool owner, manager IDs, expiration, effect mutations, final-damage
-coordination and complete TimeDamage calculation are recovered.
+coordination, complete TimeDamage calculation and live keep/sleep traversal are recovered.
 Production world/skill-effect integration is still required; the server is not
 playable. Canonical headers and other owners' files remain untouched.
 
@@ -15,6 +15,8 @@ complete read-only exports: `/home/franco/Projects/Eternity/work/reverse/ps_game
 | Original symbol/address | Recovered behavior |
 | --- | --- |
 | `CMob::ClearApplySkill` **004a0990** | Head-to-tail log-before-unlink; return records to shared LIFO skill heap. No effect reversal, final periodic damage or client removal packet. |
+| `CMob::ChkKeepSkill` **004a10d0** | Live list traversal, real periodic calculation and previous-tick writes; post-record status checks and post-unlock sleep removal. |
+| `CMob::RemApplySkillSleep` **004a16c0** | Recycle every sleep record without per-skill reversal, force sleep zero and send speed once while locked. |
 | `CMob::ChkEndTimeSkill` **004a12f0** | Unsigned `end_tick <= now`; log, unlink, `RemApplySkill`, recycle, advance live shared cursor. |
 | `CMob::RemApplySkill` **004a0da0** | All branch coordination implemented; damage types 0x3d/0x3f require calculation/combat/death/view providers and can recursively clear the remaining list. |
 | `CMob::SetSkillAbility` **004a1420** | Immediate wrapping additions to base/attack fields; individual attack rebuild or speed callback. Disable counters have no callback. |
@@ -65,8 +67,12 @@ Required coordinator changes:
    canonical `reset_mob_attack` is also used by Init and is only a stat helper;
    adding unconditional clear there would incorrectly change Init behavior.
 5. Actual admission must initialize definition, ID/level, attacker, ticks and
-   effect state. `AddApplySkill`, periodic application (`ChkKeepSkill`) and
-   production combat/world wiring remain missing.
+   effect state. `AddApplySkill` and production combat/world wiring remain
+   missing. The existing list owner now exposes `keep(now, mob, damage, effects)`
+   and `remove_sleep(mob, effects)` using the actual MobRuntime, not copied state.
+   Use the same bound subject/list, shared pool, real TimeDamage resolver and
+   combat/death/view/speed providers. Schedule expiry separately: Keep does not
+   invoke ChkEndTimeSkill.
 6. Bind removal to `remove_mob_applied_skill_effects(mob, skill, definition,
    original_base_attribute, services)`. It mutates existing MobRuntime fields;
    no new canonical field is needed. `base_attribute` explicitly projects the
@@ -158,6 +164,34 @@ the latter and actual `_controlfp` **0051a397**, yielding CW 023f in Unicorn:
 normal CRT environment and does not change the host rounding mode; custom
 nondefault precision/rounding modes are not claimed.
 
+## Live keep and sleep ownership
+
+`MobAppliedSkills::keep` in `mob_applied_skills_keep.cpp` executes against the
+existing owner and MobRuntime. For each definition type 0x3d, calculate
+`now - previous_tick`, then commit previous_tick=now before combat. It shares the
+already verified periodic hit/name/packet path with final removal. No new clock
+sample or expiration check is inserted. Even an initial dead status does not
+skip the first record; status is checked after each record, including non-DOT
+records. The canonical `mob_status` implements the original GetStatus
+**0041d760** distinction between inactive status, active empty stack (zero), and
+active stack top. The list's actual shared cursor survives callbacks.
+
+After any periodic hit, unlock the first traversal, reload status and remove
+sleep only if it is not 2. Unlike expiration, Keep has not unlinked its current
+record: death-driven Clear can recycle that record before the result packet is
+built. Storage must remain alive, and live packet-field reads must not become
+cached/deferred-release substitutes. Previous-tick and other payload changes
+survive recycling. Owner matching and subject lifetime remain caller contracts.
+
+`remove_sleep` checks only sleep!=0, not positivity or mob status. It logs before
+unlink, recycles all type-0x42 nodes without RemApplySkill, then forces sleep=0 and
+calls SendSpeed exactly once while locked, even if no matching nodes existed.
+Zero initial sleep leaves matching nodes untouched. The native owner/counter and
+pool behavior is complete; SendSpeed remains a mandatory transport provider.
+Its **004906d0** listing writes opcode and two speed bytes but does not initialize
+packet bytes +2..+5; caller scratch/protocol evidence must be resolved before
+claiming complete speed-wire reconstruction or inserting a guessed actor ID.
+
 ## Milestones
 
 | Implementation commit | Completed block | Native/original validation |
@@ -168,44 +202,46 @@ nondefault precision/rounding modes are not claimed.
 | `79f0cc8e36ff6261bb28c78d06fbfb0f44174e8e` | Non-damage effect removal and ability dispatch | 1,282 original cases plus native expiration/attack composition; 123/123 tests, 29.79 s. |
 | `b074babd303fba3abb92b97a68d13be1068b608e` | Final-damage removal coordination and packet | 1,024 original traces plus recursive expiration composition; 124/124 tests, 27.95 s. |
 | `e51bed4e907d5fffd2e5ce72fcbd19ca1acf7260` | Complete TimeDamage calculation | 12,544 original cases plus native periodic-removal composition; 125/125 tests, 38.83 s. |
+| `3d8b480c25acefe9aa66a15bc3bc6619d2fa74b1` | Live Keep/Sleep owner methods | 640 complete original traces; 126/126 tests, 32.87 s. |
 
 ## Current block validation
 
-- `sha256sum -c SHA256SUMS`: exit 0, all 12 original EXE/PDB files match.
-  Log: `work/mob-applied-skills-time-damage-hashes.log`.
+- `sha256sum -c SHA256SUMS`: exit 0; all 12 original EXE/PDB files match.
+  Log: `work/mob-applied-skills-keep-hashes.log`.
 - Locked Ghidra process export: exit 0, JDK 21 / Ghidra 12.1.4, output
-  `work/exports/03-mob-skills`; TimeDamage, ftol2, fpreset and default precision.
-  Log: `work/mob-applied-skills-time-damage-export.log`.
-- New original oracle: exit 0, 12,544 cases: all 256 type bytes, systematic
-  supported/unsupported boundary combinations and 4,096 seeded random cases.
-  Uses complete original code, actual CRT precision setup/conversion, no ports
-  and no executable patches. Asserts output guards, read-only input memory and
-  restored x87 control after every call. Repeat generation matches the committed
-  fixture byte-for-byte; generation/copy preceded native fixture readers.
-- Cases cover zero words/resources, minimum intermediates, 2^24 float boundaries,
-  multiplication and signed boundaries, maximum DWORD elapsed time, conversion
-  wrap, zero results and the signed upper cap. There are 5,654 negative wrapped
-  output words in the matched original fixture; they must not be normalized.
+  `work/exports/03-mob-skills`; Keep, Sleep and GetStatus.
+  Log: `work/mob-applied-skills-keep-export.log`.
+- Original oracle: exit 0, 512 Keep and 128 direct Sleep traces. Actual Keep,
+  Sleep, recursive Clear, TimeDamage/CRT, status/deque reads and list/pool
+  instructions execute; combat/death/log/view/speed/allocation/locks are observed
+  required ports. A fixed trampoline executes real Clear on death.
+- Comparisons cover mixed/empty lists, zero and negative sleep counters,
+  inactive/dead/active-empty/active-dead stacks, first-record dead behavior,
+  zone/name gates, wrapping elapsed time, previous-tick writes, metadata reloads,
+  stop after callbacks, full retained node/name payloads, exact 0607 packets and
+  free-list order. Stack counts project active frames only; inactive retained
+  implementation bytes are not new canonical state. Original lock assertions
+  verify view delivery under Keep's lock, post-unlock Sleep reentry and speed
+  delivery under Sleep's single lock. No native fields were added or copied.
+- Repeat oracle output matches the fixture byte-for-byte; generated under work/
+  and copied before any native fixture reader. New oracle py_compile passed.
 - `python3 tools/dev.py build`: exit 0, no compiler warnings.
-  Log: `work/mob-applied-skills-time-damage-build.log`.
-- `python3 tools/dev.py test`: exit 0, **125/125 passed**, 38.83 seconds.
-  All six applied-skill suites pass. New composition uses the actual native
-  resource projection/calculator inside final periodic removal, verifying mutable
-  combat results, resource changes, exact 15-byte packet, name cleanup and
-  unchanged previous tick. Native host rounding mode remains nearest/unchanged.
-  Log: `work/mob-applied-skills-time-damage-test.log`.
-- New oracle `py_compile` and whitespace checks: exit 0.
+- `python3 tools/dev.py test`: exit 0, **126/126 passed**, 32.87 seconds.
+  All seven applied-skill suites pass. The new comparisons use the actual native
+  owner, MobRuntime, TimeDamage, shared hit/result coordinator, pool and status
+  helper. Prior final-removal fixtures still pass after sharing the hit helper.
+  Logs: `work/mob-applied-skills-keep-build.log`,
+  `work/mob-applied-skills-keep-test.log`.
+- Staged whitespace checks: exit 0.
 
 Historical validation note: expiration's first fixture failed from Unicorn's
-translated-code cache. Invalidation and actual AddBack assertions fixed it; the
-corrected complete run passed 122/122, 41.03 s, in
-`work/mob-applied-skills-expiration-test-fixed.log`.
+translated-code cache. Invalidation and actual AddBack assertions fixed it; its
+corrected complete run passed 122/122 (41.03 s).
 
 SQL contracts are unaffected; no SQL access or sanitizer run was performed for
-this block. The coordinator owns complete isolated SQL integration. Only this
-private worker checkout was changed; canonical validation freezes were respected.
+this block. The coordinator owns complete isolated SQL integration. Only the
+private worker checkout changed; canonical owner-interface work remains required.
 
-Next independent block proposal: reconstruct ChkKeepSkill **004a10d0** using the
-real calculation/list owner, preserving previous-tick updates, death-driven list
-changes, result broadcasts and the subsequent expiration pass. Underlying combat,
-Death, logging and transport bodies remain with their established owners.
+Next independent block proposal: reconstruct AddApplySkill admission/refresh and
+replacement directly on this same native owner, sharing manager IDs, effect
+mutations and required world services instead of adding disconnected projections.
