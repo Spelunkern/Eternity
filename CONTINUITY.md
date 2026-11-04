@@ -1513,3 +1513,10 @@ being voluntarily routed through that new wrapper; direct canonical release can
 bypass it. Requested pin/deferred-reuse in canonical NpcPool/zone ownership or
 proof of a single enforced existing retirement path, plus direct release/reuse
 and nested-callback tests. Draft is uncommitted and not approved for integration.
+
+Independent 06's `.local/vertical-combat-damage-final.log` shows the focused
+normal AttackDamage original-vector test passed; focused normal and skill
+AttackSuccess tests also passed. The caller composition test is still queued in
+`.local/vertical-combat-damage-caller.log`, and its isolated SQL run is in
+progress; no complete validation or production combat claim yet. Main 53983 is
+still live waiting for the shared build slot after its successful build.
