@@ -1872,3 +1872,14 @@ worktree. Logs `.local/composed-movement-prefix.log` and
 `.local/composed-movement-prefix-dispatch.log`. This does not implement the
 zone move, cell visibility, production packet dispatch or all continuations.
 Desktop dashboard state was updated with the validated milestone.
+
+Independent 02's uncommitted `reports/independent/02-world-admission.md` identifies
+that `MobPrimaryZones` owns the only actual `ZoneRegistry`, but its current lease
+API covers permanent primaries and cannot safely retain selected dynamic
+instances. Production admission additionally requires one retained connection/
+Actor/user/scene owner and actual zone, grid, rank, NProtect and transport
+services. Coordinator directed 02 to extend the existing authority with atomic,
+generation-checked primary/instance selection and deferred lifecycle tests, not
+create another registry. Its report's suggestion to wait for the outgoing cipher
+transition before zone dispatch is superseded by 03's independent-thread evidence:
+original zone entry can precede that transition. No implementation is claimed yet.
