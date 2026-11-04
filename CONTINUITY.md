@@ -1019,3 +1019,37 @@ Reviewed73edfa4/2e5413d actual sameActor/runtime/admission/grants/logserializati
 ## Sixteenth retry validated; autojoin reviewed
 
 Session90533 exited0: build266/266tests54.90s/fullisolatedSQL/fullbindingcatalog/realstreamSQL all passed at4b4e16d. Original265/266failure retained .local/sixteenth-batch-tests.log; passing .local/sixteenth-retry-*.log. Freeze released. Reviewed3b806fc/1cb1faa actual0b11 active-name retainedlookup/same30slotadmission/errorordering;1024originalrequests46nested138tests+sanitizers reported. Exactcommits queued,newer deliveries not covered by validated batch. Invitations/rawauto_join/rootservices remainopen.
+
+## Reviewed worker09 fbcf5ccc — compound integer writeback
+
+Reviewed55abbe4/c18c19f compoundint/DWORDupdates11..16, originaltwo-pop increment/decrement/embeddedVariableIDwriteback/secondoperandmetadata on sameFSMmapstack.3072originalcalls144/144tests42.08s reported. Missingtargets/CPUfaultdivision expliciterrors,noindeterminateinsertionclaim. Float/functions/factory/rootservices remainopen. Exactcommits queued, latestvalidatedpublished27798a7.
+
+## Reviewed worker02 8c156299 — silent same-ledger reset
+
+Revieweda12ce74/cd52511 Actor::reset_damage_ledger delegates existing damage_.reset only,noScene/resource/life/effect changes.65originalReset scenarios142/142tests51.19s and actualNPCdeath success/corpsefailure compositions reported. Root can bind reset_damage(Actor&) to this method. Four authoritative deathmetadata owners/initialization still missing; explicit02followup assigned. Realcorpse/PvP/partyexclusion/transport remainrequired. Exactcommits queued,latestvalidated27798a7.
+
+## Seventeenth batch integrated/sourcefreeze
+
+Reviewed29c7fd9 doc-only old ledger scope checkpoint;newer02metadata assignment already running. Integrated all reviewedqueue through 86811964a1fc00020b6fbe1d0d0ede5714c8dc0b including integerarithmetic/assignment/compound,costprefix,RecoverChange,QuestStartWorld,autojoin,silentledgerreset. CMake conflicts combined/nesting audited. Sourcefreeze during .local/seventeenth-batch-{build,tests,sql,bindings-sql,stream-sql}.log pipeline. Lastvalidatedpublished27798a7. Newbatchnotvalidated.
+
+## Reviewed worker09 53a53166 — full numeric assignment subset
+
+Reviewed057dc30/def67fe int/float/DWORD assignment ninepairs,original signedFISTP conversion includingDWORDdestination/invalid80000000 and retainedNaNpayloads.4608originalcalls145/145tests37.41s reported. Existingtypedtargets/nearestmaskedmode required;missingtargetinsertion,FPexceptionstatus equivalence notclaimed. Floatbinarycompound/functions/factory/rootremainopen. Exactcommits queued during seventeenthfreeze;379actionbuildpassed,tests underway.
+
+## Reviewed worker03 2281ff98 — retained per-primary composition
+
+Reviewed8e4f19d/716a0c4 same ServerMaps/config/fullcatalog/boundpool/sharedInitRNG/actualZoneMobs startup/tick/reset/removal/death composition.16native two-mapcycles136/136tests35.71s;64worker04originalmapcasesregeneratedbyteidentical,not fullcombinedworldoriginalclaim. Drainactualzone/members/principals then detach whileoldzonealive before replacement;maps/config/servicesoutlivepoolincludingrecycledmobs,routerdestructionalone doesnotdrain. RequiredAI/Lua/KC/linked/transports/lifecycle/rootdispatchremainopen. Exactcommits queued during seventeenthfreeze.
+
+Revieweddfd08d3 doc-only compositioncheckpoint;no newexecution. Explicit03newscope authoritative retainedprimaryZoneMobs lifecycle/leases under mob_primary_zones, reuse existingauthority ifpresent, no competingregistry;productionroot construction hook proposed,main coordinator-owned. Actual requiredbackends stay explicit. Seventeenth275/275tests89.69s passed;SQL/catalog/streamfinalexitpending,sourcefreeze active.
+
+## Reviewed worker01 edf21542 — resolved skill action dispatch
+
+Reviewedd929764/c0ccb72 actual retained skill/resetdeadline/captureddefinition and originaleffect/spend/disable callbackordering, concrete casting scheduler adapter.768originalcomparisons8compositions139/139tests reported. Actualdamage/effects/spending/eligibility/world services remainrequired,no fullcastclaim. WorkercontinuesChkKeepSkill+1428expiration. Exactcommits queued during seventeenthfreeze;SQLstillrunning.
+
+## Reviewed worker02 cb2a3f26 — authoritative death metadata
+
+Reviewed1b6b0c1/d1e0929 sameActor optionalmetadata owner, initializeonce requires explicitinheritedpenalty/soul/code and clearsdeadlineonly; resetprojectiononlydeadline.216originalconstructor/resetprojections143/143tests43.83s plus actualNPCdeath->Rebirth sameActor reported. Originalinitialization preserves otherDWORDresidues;no inventedzeroseed orSQLcolumns. Rootallocation/admissionmustsupplyactualcontext and resetatcorrectstage;realcorpse/PvP/party/transportrequired. Exactcommits queued during seventeenthfreeze.
+
+## Seventeenth batch validated; metadata checkpoint reviewed
+
+Session44687 exited0:build275/275tests89.69s/fullisolatedSQL/fullbindingcatalog/realstreamSQL allpassed at8681196. Logs.local/seventeenth-batch-*.log. Freeze released; publish validated batch. Reviewedf3368dd doc-only metadata checkpoint no new runtime/tests. ActualActorconstruction/admission/reuse must supply explicit inherited metadata and resetatcorrectstage;no zeroseed/shadowpool/SQLcolumns. New queued snapshots excluded from275validation. Objective remainsopen.
