@@ -764,3 +764,11 @@ if(BUILD_TESTING)
     target_link_libraries(obelisk-runtime-ownership-unit PRIVATE eternity_game)
     add_test(NAME obelisk-runtime-ownership-unit COMMAND obelisk-runtime-ownership-unit ${CMAKE_CURRENT_SOURCE_DIR}/tests/data/obelisk-runtime-ownership-oracle.tsv)
 endif()
+
+# Worker 09: complete return-home state with native path and damage owners.
+target_sources(eternity_game PRIVATE src/game/mob_ai_states_return.cpp)
+if(BUILD_TESTING)
+    add_executable(mob-ai-states-return-unit tests/mob_ai_states_return_unit.cpp)
+    target_link_libraries(mob-ai-states-return-unit PRIVATE eternity_game)
+    add_test(NAME mob-ai-states-return-unit COMMAND mob-ai-states-return-unit ${CMAKE_CURRENT_SOURCE_DIR}/tests/data/mob_ai_states_return-oracle.tsv)
+endif()
