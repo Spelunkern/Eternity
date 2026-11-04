@@ -1753,3 +1753,69 @@ Remaining integration and next block:
 
 No complete player-death, production lifecycle assembly or playable-server
 completion is claimed from these checks.
+
+
+## Milestone 16 — complete PvP death-type helper
+
+Implementation: `945a074`. Recovered the complete `ps_game.exe`
+`CUser::PvPGetDeathType` 0047b270..0047b2bf into
+mob_targeting_lifecycle_pvp. This is the prerequisite classification helper for
+Death's outstanding player-maximum branch, not that entire reward coordinator.
+No unchanged ordinary/NPC/Rebirth oracle was regenerated in this block.
+
+Disassembly resolves the decompiler's incorrect implicit register signature:
+EAX is the subject, ESI is the peer. At Death 004588b1..004588b5 these are the
+dead victim EDI and looked-up attacker EBP respectively. PDB CUser fields identify
++54cc as m_nPvPStatus, +54d4 as m_dwPvPUser, +1748 as m_dwGuildID and +54e4 as
+m_dwPvPGuildID (decimal offsets 21708/21716/5960/21732). These guild values are
+IDs, not pointers or inferred guild-membership objects.
+
+Exact recovered semantics:
+
+- Same user identity returns 3, regardless of all relationship fields. Equal
+  projected values on distinct users do not imply identical users.
+- Subject status exactly 4 plus subject peer ID equal to peer +dc returns 4.
+  The peer's own status and peer ID are NOT checked. This takes precedence over
+  an otherwise valid guild-war relationship.
+- Otherwise both guild IDs must be nonzero and each opposing-guild ID must equal
+  the other's actual guild ID to return 5. All remaining cases return 3.
+  Raw signed/high-bit states and IDs retain their original 32-bit comparisons.
+
+The input is a synchronous borrowed value projection, with explicit actual-user
+identity supplied by the caller; no new Actor/life/guild/user owner or lookup map.
+Actor::id() and the retained PlayerCore::guild_id can provide existing ID fields.
+Production still needs authoritative live +54cc/+54d4/+54e4 from the actual PvP
+owner: Actor's exposed wager/exchange objects do not provide these fields. Do
+not derive a duel status from life/attack mode or a guild opponent from current
+membership alone. Retain both real users and their PlayerCore/PvP owners on the
+existing serialized executor until classification and subsequent callbacks end.
+No canonical accessor was invented or shared header changed.
+
+Validation:
+
+- Executed the COMPLETE original helper without hooks or instruction patches
+  for 8192 raw/correlated relationship cases. Native comparison passes all:
+  211 duel, 221 guild and 4096 same-user cases. Explicit native assertions also
+  preserve asymmetric duel eligibility and duel-over-guild precedence.
+- Oracle regeneration into ignored work/ is byte-identical to the tracked
+  fixture. Original EXE loading verifies its expected SHA256; additionally all
+  12 SHA256SUMS pass (work/mob-targeting-lifecycle-pvp-sha.log).
+- tools/dev.py build exit 0, 144 actions, no warnings/errors;
+  work/mob-targeting-lifecycle-pvp-build.log.
+- tools/dev.py test exit 0, 133/133 passed, 40.55 s; new unit 0.08 s;
+  work/mob-targeting-lifecycle-pvp-tests.log.
+- ASAN/UBSAN and -Wall/-Wextra/-Werror compile/run under shared build lock:
+  exit 0, all 8192 comparisons passed, no diagnostics;
+  work/mob-targeting-lifecycle-pvp-sanitized.log. git diff --check clean.
+- No SQL data path changed or SQL lifecycle writes performed. No main,
+  Actor/zone-user/other-owner edits, additional agents, merges/resets or pushes.
+
+Next block remains the player-maximum Death continuation/reward coordination.
+Its forced-PvP flag path 0045885c..004588ac is deliberately NOT replaced by this
+helper: it writes penalty -1 and has different reciprocal-duel/guild eligibility.
+Only the unforced call uses PvPGetDeathType. PvPChkLoseDeath 0047b2c0 and the
+actual reward/drop/party/transport boundaries remain to be recovered/composed;
+do not re-run Death's published prefix to reach them. Existing canonical death
+metadata/resource/ledger APIs and previously documented retention/admission/
+transport contracts remain applicable. No production Death or playable-server
+completion is claimed.
