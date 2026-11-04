@@ -2061,3 +2061,20 @@ passed the 2048-case roster test and completed its full 689-step build on
 `6e57801`; isolated SQL remains queued/running. Main session 39827's SQL log
 has passed the selected persistence mutation/save/reload fixture, but the full
 integration and cleanup have not yet completed; do not report exit success yet.
+
+Main session 39827 finished exit 0: full build, 308/308 native CTests and
+isolated SQL including persistence reload and disposable guild cleanup passed
+for entry/persistence (`.local/main-entry-persistence-{build,tests,sql}.log`).
+Coordinator then cherry-picked validated combat success/FP/normal damage,
+movement check/FP, pickup, canonical Actor movement access and prefix, skill and
+magic damage as `7d44f7f..896d2c1`. A CMake conflict on `7d18acc` was resolved
+by including only its movement target; world/mob/quest targets are not on main.
+Main session 35289 runs full build, full CTest and isolated SQL on this combined
+revision; results pending. The prior code remains component-level and is not
+wired into production gameplay. Updated desktop dashboard to point at the NEW
+main validation logs rather than incorrectly treating the earlier pass as the
+current revision's pass; earlier 308/SQL milestone remains clearly historical.
+
+Protocol session 96503 finished exit 0: system unit, system TCP and handoff TCP
+passed on `c14ea5c` in the combined protocol worktree. Pre-auth NProtect and
+original queued threshold remain unresolved; no production equivalence claimed.
