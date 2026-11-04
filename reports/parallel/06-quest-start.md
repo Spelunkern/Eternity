@@ -41,10 +41,11 @@ references. No existing canonical header was modified.
 
 Required `QuestStartWorld` methods have no default bodies: NPC lookup, active and
 finished lookup, inventory requirement/consumption, clock, quest allocation/add,
-client send, start logging, and start-item grants. The log provider owns common
-log-header construction and original `0x0501`/144-byte transport serialization;
-this coordinator verifies its call ordering, not its payload. These are explicit
-unimplemented production dependencies, not successful gameplay services.
+client send, start logging, and start-item grants. Block 2 below implements full
+`0x0501`/144-byte log serialization; the production adapter must supply the
+context, snapshot it before client delivery and send the captured packet.
+Remaining world providers are explicit unimplemented production dependencies,
+not successful gameplay services.
 
 Canonical integration changes needed:
 
@@ -88,3 +89,65 @@ SQL lifecycle/final isolated SQL integration are reserved for the coordinator;
 this module introduces no SQL contract/schema changes.
 
 Implementation commit: `f10cfb7b8b64e9cfbd32b5600a5a9f62f5e47872`.
+
+## Block 2: complete quest-start log serialization
+
+`quest_start_log.hpp/cpp` reconstructs `TP_GAMELOG_QUEST_START` (144 bytes,
+`0x0501`) and its common header. Evidence: `ps_game.exe`,
+`CUser::SetGameLogMain` **0045b0d0**, `CUser::QuestStart` **0047ea70**, and
+Ghidra `TP_GAMELOG_MAIN` / `TP_GAMELOG_QUEST_START` types.
+
+Offsets: user ID 2, account name 6 (19 bytes), character ID 25, character name
+29 (21 bytes), level 50, experience 52, map 56, position bit patterns 58/62/66,
+system time 70, quest ID 74, quest name 76 (32 bytes), NPC type 108, NPC name
+112 (32 bytes). Absent NPC writes type zero and only the name's first NUL.
+The NPC runtime handle is exclusive to the separate client packet, not the log.
+String writes retain initialized bytes after the first NUL. The writer validates
+all string bounds before modifying storage; fresh packet construction explicitly
+starts with zeroed storage rather than leaking original stack contents.
+
+Integration: production `prepare_start_log` can now build/capture the full packet
+with `quest_start_log_packet`, and `log_start` must send that captured packet.
+`QuestStartLogContext` requires user/account/character names and IDs, level,
+experience, map, raw position bits and the original system-time value. This is
+not admission's monotonic clock. Actual time acquisition and log transport remain
+required world providers. No shared canonical header changes were made.
+
+Original-execution fixture: `quest_start_log_oracle.py` executes both complete
+original functions. Only OS GetLocalTime, transports and security check are
+ports. Client send mutates live user state, proving that the log captured data
+before that callback. The native test composes the existing `quest_start`
+coordinator with the real new writer and compares both packets exactly.
+
+Validation: `python3 tools/dev.py build`: exit 0; final 131-step build has no
+warnings. `python3 tools/dev.py test`: exit 0, **121/121** tests in **37.48 s**.
+Both `quest-start-unit` (1,536 traces / 479 starts) and `quest-start-log-unit`
+(256 complete log/client pairs plus original calendar packing) pass. Final logs:
+`work/quest-start-log-build-final.log`, `work/quest-start-log-test-final.log`.
+The obsolete pre-calendar test was cancelled while still waiting for its lock;
+it was not counted as validation. `git diff --check`: exit 0.
+
+256 original cases generated successfully
+under ignored `work/`; repeated generation is byte-for-byte identical (`cmp`,
+exit 0). Original hashes and Python compilation pass. Cases cover all string
+lengths through each original maximum, nonzero retained tails, absent/present
+NPC, arbitrary 32-bit IDs/types and raw floating-point bit patterns.
+Focused Ghidra re-export: `work/exports/06-quest-start/ps_game.exe` (locked
+`tools/reverse.py --process`, exit 0). `GetSystemTime` **004cb8e0** calls Windows
+GetLocalTime and packs local year/month/day/hour/minute/second using wrapping
+`(((((year-16)*16+month)*32+day)*32+hour)*64+minute)*64+second`.
+`quest_start_log_time` implements that arithmetic. The expanded oracle executes
+this original helper too; only GetLocalTime itself is a clock port. Native
+calendar acquisition must supply local calendar fields rather than Unix/UTC time.
+Calendar cases include years 0/15/16/1999/2000/2026/65535 and overflow behavior.
+SQL lifecycle/integration remains the coordinator's responsibility; no SQL code
+or contracts changed in this block.
+
+Block 2 implementation commit: `6c607bfc8267a7e644ec0681cbe1b7e020806e8b`.
+
+Next dependency: canonical `QuestRuntime` is present only in the read-only main
+checkout and has no admission/add method yet. The coordinator must integrate the
+worker's code with that owner and the item-requirement/grant owners. Proposed
+next assignment: a production `QuestStartWorld` adapter under `quest_start`, once
+canonical runtime, inventory and log transport interfaces are available in this
+worker's base. Do not duplicate QuestRuntime ownership or QuestAddItem here.
