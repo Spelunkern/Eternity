@@ -1817,3 +1817,10 @@ until respawn. Log `.local/composed-world-frame.log`. Its second targeted
 `vertical-mobs-cursor-unit` is still queued/running. The test uses fixture AI
 services; canonical per-mob retention, real providers and the scheduler remain
 required before live gameplay.
+
+Movement integration session 17196 exited 0: 226-step target build and
+`vertical-movement-dispatch-unit` passed 1/1 on `a4e413a` with canonical mutable
+Actor movement state and all ingress/world/quest ancestors. Log
+`Eternity-movement/.local/composed-movement-dispatch.log`. This covers only the
+speed-check stage and ownership checks, not full 0501 gates, visibility, actual
+movement or production dispatch.
