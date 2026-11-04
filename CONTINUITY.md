@@ -1801,3 +1801,11 @@ test-owned world services, not live admission. Main session 7699 still waits for
 its own SQL phase; keep main source frozen until that run completes. Review the
 known original receive queue/cipher divergence before using pause as production
 behavior; this SQL pass does not resolve it.
+
+Independent 05's uncommitted MobPool retention draft completed 305/305 native
+unit tests (`.local/vertical-mobs-retain-tests.log`); it remains under review for
+deferred cleanup exceptions and nested ownership, and is not integrated.
+Independent 03 has an uncommitted inbound zone-wait/outbound-cipher split in
+`WorldProtocol` and new tests. It is not yet committed or validated; the original
+1000-snapshot queue, actual system/NProtect routing, lifecycle generations and
+production scheduler bindings remain separate requirements.
