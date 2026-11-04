@@ -1928,3 +1928,13 @@ integrated entry/persistence source revision (`.local/main-entry-persistence-
 session passed until it exits 0. This suite remains component coverage and does
 not establish production world entry or original-client gameplay. Desktop
 progress state now records the 308-test result.
+
+Protocol integration session 11481 finished exit 0 on `dfb22e7`: split routing,
+TCP handoff and world-protocol focused tests all passed in the combined worktree;
+logs `.local/composed-protocol-{split,handoff,world}.log`. Independent 03's
+`e09e38b` improves its TCP test to dispatch the received 0201 through the actual
+zone-wait visitor (still called explicitly by a fixture). Coordinator cherry-
+picked it as `18d1058` and queued session 39684 for combined handoff/gate tests.
+No original-client, real socket queue scheduler, system/NProtect, threshold or
+lifetime equivalence is established. Desktop progress state records the earlier
+three-test combined pass.
