@@ -1294,3 +1294,10 @@ the selection transition is blocked. Validation pipeline session 69227 runs
 focused target, build, relevant network/combat tests and isolated SQL; it is
 waiting for the shared build lock. This remains unvalidated until it finishes;
 original timing and complete playable entry still require further evidence.
+
+Independent 07 committed pickup request adapter `1a5d2f7` and report `552f881`;
+512 original handler cases regenerated successfully, but native build/test and
+SQL integration have not run. Its focused runner is waiting on a build slot.
+Keep unintegrated until validation and review of actual action/shop/Actor/zone
+bindings. Main serialized-transition validation session 69227 also remains live
+and waiting; do not restart while its handle is active.
