@@ -1979,3 +1979,18 @@ traced original instance retirement: wait/active user counts and expiry, removal
 from actual world-thread list and owner/map indexes, then release and reuse.
 The existing ZoneRegistry has no removal/recycling or actual thread unlink owner;
 a safe generation lease depends on those real owners, not a parallel registry.
+
+Independent 01 `2f49adb` implements a retained-roster selection gate. Its
+original 2048-case ps_dbAgent fixture and focused unit passed; build and isolated
+SQL retry passed, while the initial SQL run hit the known creation-network login
+timeout. Original loader reads rename as an unsigned byte and remaining-time as
+DWORD, so bool projections preserve the relevant populated-slot decisions.
+Zero-ID/empty-slot residue is unrepresentable and explicitly rejected; stale SQL
+state remains stricter than original retained state. Coordinator independently
+regenerated the fixture byte-for-byte. Cherry-picked 01's adapter, SQL harness
+and gate into `/home/franco/Projects/Eternity-entry` `coordinator/entry` commits
+`82a5135..6e57801`, preserving BOTH entry and persistence SQL test invocations
+in the uniquely named fixture. Session 69040 runs roster unit, full build and
+isolated SQL sequentially; results pending. The two loader APIs must not both run
+for one selection: use the retained single PlayerSnapshot for Actor and replica.
+No live selection route or original-client play is claimed. Dashboard updated.
