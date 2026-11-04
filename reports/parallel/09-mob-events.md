@@ -2072,3 +2072,79 @@ missing providers must continue to error. SQL/contracts did not change;
 coordinator owns isolated SQL and full integration. The server is not playable.
 
 Implementation commit: `b3c480c21a352c4bd9f067244aaee015cce1dd95`.
+
+## Milestone 30 — CalculateParam cursor, private stack and retained argument values
+
+### Evidence / behavior
+
+`ps_game.exe`, `CKFSM<CMob>::CalculateParam` `0049d020`, literal
+`0049d0dd..0049d161`, variable `0049d166..0049d1d8`, string
+`0049d1dd..0049d24b`, delimiter `0049ec48..0049ec94`, exhausted count
+`0049ec96..0049ecc6`; full Ghidra export and original instructions.
+
+Constructor call `0049d061..0049d08e` passes capacity 20 to
+`KStack<AI_Param>::KStack` `0049af80`, creating a private stack for every call.
+The condition cursor is shared and continues from its current index; it is not
+reset and the configured owner's main value stack is not used. Kind 5 copies
+only a valid top value into the caller's retained output, then returns. Empty or
+overflowed tops leave output intact. Reaching the declared count returns without
+publishing a value even if the private stack contains typed values.
+
+Added `calculate_mob_ai_argument` for typed numeric literals, local reads and
+strings. Numeric scratch keeps inactive fields and can be reused by unknown
+number types only after a typed numeric literal. Locals use TokenStr +a0 and the
+existing signed-byte hash, preserving embedded VariableID independently of key.
+String literals use +20 and copy only through NUL into retained output. Kind 6
+and values outside the dispatch interval, including kind 9, are ignored by the
+original CalculateParam; kind 5 differs from the outer TravelCondition loop.
+
+Operators and nested functions remain explicit errors pending their separate
+CalculateParam recovery. Undefined first numeric scratch, invalid cursor/storage,
+missing typed locals and unterminated strings are rejected. No partially
+recovered argument provider is silently used for positive system-call counts:
+`MobAiZeroArgumentServices` keeps its previous boundary.
+
+### Validation
+
+- 1,024 retained sequences / 2,047 complete original CalculateParam executions.
+  Every call observes the real capacity-20 constructor; original constructors,
+  private array destructors and map lifecycle execute. All 5,119 allocations
+  are freed and poisoned. Only allocation/free/security cookie imports are
+  adapted; no token parser/value/stack/map result port.
+- Three argument segments, nonzero initial cursor, declared-count truncation,
+  delimiter versus exhaustion, empty/19/20/21/22/40-value cases, repeated calls,
+  typed int/float/DWORD payloads including NaN bits, numeric scratch reuse,
+  signed-byte local names, independent VariableID and strings through 127 bytes
+  are exercised. All 148 retained output bytes after each call, cursor and map
+  bytes match native; 370 final outputs change.
+- Original main-stack capacity/top/all retained bytes and maps stay unchanged.
+  Native sequential consumption verifies separate numeric/string arguments,
+  retained destination string tail and unchanged output on missing delimiter.
+  Explicit unsupported/undefined-boundary tests leave caller output intact.
+- Oracle regenerates byte-identically; original SHA256SUMS pass; diff check clean.
+- Initial build failed because vector resizing required a missing default
+  MobAiParameter constructor; preserved `work/mob_ai_states_arguments-build.log`.
+  Corrected to explicit typed element initialization. Final build exits 0 with
+  no compiler warnings; `work/mob_ai_states_arguments-build-final.log`.
+- `python3 tools/dev.py test`: exit 0, 149/149 tests pass (42.78 s),
+  arguments test 2.19 s; `work/mob_ai_states_arguments-tests.log`.
+
+### Required integration / remaining work
+
+No canonical header or MobRuntime field change was needed. Argument evaluation
+must use the same owner's local map and shared condition cursor but an independent
+capacity-20 stack. Preserve caller output on exhausted or invalid-top returns;
+do not reset to zero or return the last valid stored value after overflow.
+
+Positive-count system-call integration, actual parameter-vector ownership and
+F_OUT metadata/writeback remain open. Next independent block can wire recovered
+value arguments through the actual vector/DoFunction/output pipeline, retaining
+explicit errors for unsupported argument expressions. CalculateParam operators
+and nested calls, other DoFunction/world providers, nonfinite propagation,
+nonnumeric comparisons, full factory/asset decoding and root world/Lua/scheduling/
+destruction remain open. Per-owner SysFuncMap/+48 instance binding remains the
+coordinator interface request documented in milestone 29. SQL/contracts did not
+change; coordinator owns isolated SQL and full integration. The server is not
+playable.
+
+Implementation commit: `a14f20dcdbac3d4000a8db6c8e550c99f9dcd479`.
