@@ -354,3 +354,79 @@ remain. User roster transport (SConnection::Send(void*,int) 004d4d20), scene/log
 transport, registry/guild owners and production dispatch remain pending.
 
 Block 5 implementation commit: `a06d652ef0fe90002a24a66117b80bc61273e2d9`.
+
+## Block 6: direct roster transport and reference transfer
+
+The entry/leave bodies were already complete, so this block replaces their last
+packet-assembly/connection-send abstraction: immutable ps_game.exe
+`SConnection::Send(void*,int)` 004d4d20 (PDB/Ghidra inventory body size 107
+bytes). New `party_runtime_membership_user_send.hpp/cpp` implement the direct
+send and provide `PartyMembershipUserSendWorld::send_user`. Buffer allocation/
+copy is factored from the already recovered broadcast implementation and reused;
+existing broadcast/classification/LevelUp behavior remains unchanged.
+
+For lengths <=2048, a disconnected socket (-1) returns BEFORE allocation.
+Otherwise allocation initializes one reference and the original frame, then
+that initial reference is transferred directly to SendRequest/worker. There is
+NO broadcast-style increment or sender release. The socket is not rechecked
+after allocation, even if its provider changes connection state. Allocation
+failure returns without delivery. No party or effect lock is acquired.
+
+Length >2048 follows the recovered error path: DWORD +0x18 becomes 12 only if
+previously zero, DWORD +0x1c retains its previous value, then a live socket is
+captured and closed through a required provider. The socket field is written -1
+AFTER that provider returns, regardless of callback mutation. A previously
+closed connection still receives the conditional error update but is not closed
+again. These two fields remain explicit projections; their wider lifecycle
+semantics/PDB names are unresolved. New close_send_socket is mandatory.
+
+The original accepts 2047/2048 payload bytes before copying into a 2048-byte
+pool plus length prefix, which overruns that original buffer. The safe allocator
+continues rejecting this range for open connections. Original fixtures exclude
+that unsafe copy; normal-party rosters never exceed 2014. Valid payloads through
+2046 and the >2048 error/close branch are recovered and compared exactly.
+
+`party_runtime_membership_user_send_oracle.py` runs the entire original direct
+send, real AllocBuffer and SendRequest. Pool allocation, closesocket and worker
+SendPost/completion are explicit ports. 1,024 cases compare order, errors,
+socket/reference/custom-reference state, full frames and provider events. Cases
+include zero/disconnected/nonstandard sockets, allocator failure, size-class
+boundaries, maximal safe payload, oversized close, retained errors/details,
+changes to caller bytes/socket during allocation, synchronous completion and
+retained asynchronous worker reference. Native post-comparison release verifies
+one pool return. Callback-driven close changes verify the final socket write.
+
+The full membership oracle's new `--real-user-send` mode executes another 512
+entry/leave scenarios with real ChkPartyExpByLevel, GetPartyType, CParty::Send,
+both SConnection send overloads, AllocBuffer and SendRequest. Native composition
+uses both recovered delivery providers. Roster transfers observe reference 1;
+broadcast enqueues observe reference 2. Pool/worker, close, scene/log and registry/
+guild services remain mandatory real integration dependencies. Existing fixtures
+remain registered separately, including their earlier external-port contracts.
+
+Block 6 validation:
+
+- `python3 tools/dev.py build`: exit 0, no warnings in initial or final build
+  (`work/party-runtime-membership-user-send-final-build.log`).
+- `python3 tools/dev.py test`: exit 0; 128/128 pass in 45.59 seconds, including
+  all earlier state, LevelUp, classification, broadcast and membership suites
+  (`work/party-runtime-membership-user-send-final-test.log`).
+- Focused C++20 ASAN/UBSAN comparisons in dev containers under the shared build
+  lock: all 1,024 direct-send and 512 complete membership/delivery cases pass,
+  exit 0, no diagnostics
+  (`work/party-runtime-membership-user-send-final-sanitized.log`).
+- Both new original fixtures regenerate byte-identically (`cmp`, exit 0).
+  Original EXE/PDB manifest hashes and `git diff --check`: exit 0. Generated
+  outputs remain ignored under work/. No SQL/schema/lifecycle operations were
+  added; the final isolated SQL suite remains coordinator-owned, not run here.
+
+Block 6 implementation commit: `df2e00b09fafaa4e8f080defcd134608fd73e58b`.
+
+Remaining integration requires the actual connection owner for socket/error
+projections, real send-buffer pools and worker completion/cancellation, plus
+serialized party-manager and guild-creation owners. This worker has no canonical
+Actor/connection/registry write ownership. Normal membership and its delivery
+coordinators are now reconstructed; proposed next scope is party creation/
+registry lifetime (CParty constructor/Init and manager allocation/removal), or a
+coordinator-owned production adapter using these interfaces. Do not substitute
+placeholder pool/worker services or infer server playability from fixtures.
