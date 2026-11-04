@@ -1333,3 +1333,13 @@ returns different results for controls 027f vs 037f and for 027f vs 067f, as
 reported. The CRT default-precision helper behavior also reproduced, but that
 alone does not establish each real combat thread's control word. Requested
 worker 06 trace actual combat executor initialization before production binding.
+
+Independent 01 delivered selection adapter and SQL test, but its new SQL path was
+not run because the disposable creation catalog did not exist. Coordinator
+explicitly authorized using the existing uniquely named disposable creation
+harness and assigned integration of the test; existing databases must not be
+reset. 01 owns that harness change; 09 supplies its separate fixture requirements.
+The original DB-agent 0407 path checks the retained five-slot roster before load;
+`vertical_entry_select` appears to call Players::load directly. Requested 01
+verify/adapt the live roster gate and test eligibility against original evidence
+before integration. Do not assume SQL ownership check replaces the roster gate.
