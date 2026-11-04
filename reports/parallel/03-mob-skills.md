@@ -141,8 +141,9 @@ contract with actual owner operations and stable retained storage.
 | `3d8b480c25acefe9aa66a15bc3bc6619d2fa74b1` | Live Keep/Sleep owner methods | 640 complete original traces; 126/126 tests, 32.87 s. |
 | `5c91dc31a5049e461848dee7e8fe78b953815651` | Admission, refresh, replacement and debuff application | 64 original scenarios / 1,536 operations; 127/127 tests, 31.19 s. |
 | `7ecf7f3a3ced7ec5c19b032c81d21fd1fd7367d1` | Damage/reentrant replacement composition evidence | 256 complete original flows; 128/128 tests, 32.24 s. |
-
 | `2037bb01f581144fad24bd8a4d178181e2645b01` | Selective vision cleanup on live owner and shared pool | 512 original scenarios / 3,072 operations; 129/129 tests, 42.70 s. |
+
+| `bbaac402578986a9d1cdeb4907cf733f4c0e1aa4` | Actual stable catalog / retained applied-owner integration | 12,544 original damage rows, 256 ability cycles, 256 actual R2 cycles; 130/130 tests, 44.43 s. |
 
 ## Vision cleanup milestone
 
@@ -166,7 +167,7 @@ orders are compared. No canonical field changes are needed for this method. The 
 must call this owner method when releasing a fixed vision target; production call
 site wiring remains outside this worker scope.
 
-## Current validation
+## Previous vision validation
 
 - Original EXE/PDB SHA256 verification passed (12 files), exit 0:
   `work/mob-applied-skills-vision-hashes.log`.
@@ -191,6 +192,105 @@ pool services must be bound to live production owners; there is no no-op default
 Historical replacement test initialization and expiration oracle cache failures
 were corrected before their previously documented successful full reruns.
 
-Next independent proposal: inspect `CMob::RemStateSkill` **004a5a30** and
-`CMob::CancleApplySkillDebuff` **004a5d90** for a selective cancellation boundary
-on the same owner; recover evidence before choosing implementation.
+## Stable catalog integration milestone
+
+Assignment prefix: `mob_applied_skills_catalog`. Implementation commit: `bbaac402578986a9d1cdeb4907cf733f4c0e1aa4`. Reviewed worker08 implementation
+`36eab1da3fbfadbf83931c83fcd2aff9e85225c9` and report `849a0fc` using read-only
+`git show`. Source contracts are `ps_game.exe` CGameData::LoadConstMobSkill **004c0be0**,
+GetMobSkillInfo **004027e0**, ReLoadConstMobSkill **004c50c0** (field publication
+**004c5c26** onward), plus the already recovered CMob admission **004a0aa0**,
+keep **004a10d0**, expiry **004a12f0**, removal **004a0da0** and TimeDamage
+**004a3be0**. This block adds native integration rather than new x86 recovery.
+New `MobAppliedSkillsCatalog` retains the actual `MobAppliedSkills`
+owner and borrows the existing `MobTargetingBindingCatalog`; no second catalog,
+lookup map, replacement definition array or temporary SkillDefinition is created.
+Admission obtains `skill_definition(allocated_slot)`; logging, names and periodic
+calculation resolve the original identity with `from_definition`. Metadata ID is
+not treated as the allocated slot. Missing/foreign retained definitions fail
+closed with termination at noexcept provider boundaries; absent admission slots
+return false without creating nodes. Existing effect filtering remains in apply.
+
+Admission copies only the name string for the synchronous existing application
+API, which immediately owns its own node string. Before scheduling/removal the
+adapter synchronizes those copies from the catalog's current name view; detached
+final-damage nodes also refresh from their live definition. Log ports receive the
+live string_view directly. No borrowed temporary name reference is retained.
+Name octets are not reinterpreted as a promised Unicode encoding.
+
+The real owner's admission/refresh/replacement, keep and expiry methods run with
+the recovered pure TimeDamage calculator. Catalog periodic views supply type and
+three words; the subject's actual runtime template supplies maximum resources and
+live base attribute. Published keep seconds affect new admission/refresh; existing
+absolute deadlines remain unchanged. Published abilities and damage metadata are
+read through old active pointers, including old-node replacement reversal.
+
+### Lifetime and publication contract
+
+The catalog must outlive definitions, every active/recycled skill, bridges and
+callbacks. Never resize/replace/move-assign a published catalog. Shared pool and
+shared atomic manager counter are retained world owners, not per-mob substitutes.
+Each bridge's subject, runtime template and required ports outlive the bridge.
+Serialize subject operations and raw ordered R2 reload + publish under world
+quiescence; no catalog reload during callbacks. This bridge does not provide a
+new global reload lock. Complete successful R2 raw publication must be followed
+by catalog.publish_skill_record on the actual affected slot before resuming
+readers. Existing node definition addresses, raw name addresses and slot identity
+remain fixed. Low-level mutable records do not constitute concurrent transactions.
+
+All clocks, combat, death, logging, speed/rebuild and view transport are mandatory
+ports with no defaults. Death can synchronously clear the same owner; callers may
+use owner() for that recovered coordination, but must not admit foreign definition
+pointers. Real production world assembly remains coordinator-owned. No shared
+canonical headers or worker08 files were changed.
+
+### Old-branch validation arrangement
+
+This branch predates worker08. Private CMake conditionally compiles exact committed
+worker08 source from ignored read-only `work/mob_applied_skills_catalog_snapshot`
+only when the normal catalog header is absent. Eight files are extracted using
+`git show 36eab1d:<path>`: mob_targeting.hpp, mob_targeting_runtime.hpp,
+mob_targeting_bindings.hpp, mob_targeting_bindings_records.hpp,
+mob_targeting_reload.hpp and the three corresponding bindings/records/reload cpp
+files. Every extracted file is mode 0444 and byte-compared against that commit.
+Integrated trees use normal include paths and existing normal catalog/reload
+sources; the fallback is not another implementation and must not be provisioned
+in a central checkout that already has the real owner.
+
+### Current validation
+
+- Original 12,544-row TimeDamage fixture regenerated by original execution and
+  matched byte-for-byte: `work/mob-applied-skills-catalog-time-damage-repeat.tsv`.
+- New native composition checks all 12,544 original expected damage triples
+  through retained catalog admission, in-place periodic/name/keep publication,
+  keep, refresh and old-node replacement, then actual final-damage expiry.
+  Additional 256 cycles verify live ability reversal/replacement and pooled node
+  reuse; 256 cycles execute the existing recovered R2 coordinator with typed SQL
+  input ports, actual stable raw target, cleanup-before-target checks and explicit
+  view publication. R2 preserves the original name despite a different row name.
+  Direct name publication tests are explicit owner mutations, not R2 renaming.
+- All eight ignored snapshot files match worker08 commit bytes and are mode 0444.
+- Initial build failed at link after the interface and R2 CMake inputs changed
+  while compilation was active; completed configuration is being rebuilt.
+  Initial log retained: `work/mob-applied-skills-catalog-build.log`. Its unrelated
+  pre-existing guild warnings are not treated as new adapter diagnostics.
+- Final `python3 tools/dev.py build`: exit 0, no warnings in final rebuild,
+  `work/mob-applied-skills-catalog-build-final.log`.
+- `python3 tools/dev.py test`: exit 0, **130/130 passed**, 44.43 seconds; new
+  composition suite passed in 0.16 seconds. Full log:
+  `work/mob-applied-skills-catalog-test.log`. No native assertion failures.
+- `git diff --check` passed. Existing fixtures and prior implementation remain
+  unchanged. No sanitizer run in this block.
+
+Original twelve EXE/PDB SHA256 verification passed:
+`work/mob-applied-skills-catalog-hashes.log`. Existing original execution fixtures
+are reused unchanged; this is new native composition evidence, not a new claim
+that the entire world pipeline ran in the original process. No SQL lifecycle or
+access is performed by this worker; isolated full SQL and actual world owner
+construction remain coordinator checks. Playability is not established.
+
+Next integration: construct this bridge with the normal retained catalog, live
+subject/template, global shared pool/counter and actual combat/log/transport ports;
+route scheduler/admission into it. Preserve the explicit world quiescence contract
+when wiring the existing SQL R2 publisher. Coordinator owns this production root
+assembly and complete isolated SQL validation. No additional canonical header
+changes are required by this adapter.
