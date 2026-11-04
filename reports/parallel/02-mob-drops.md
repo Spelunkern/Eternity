@@ -960,3 +960,89 @@ reset ordering and add a minimal Actor adapter plus original/native callback
 ordering comparisons; do not implement worker08 lifecycle or root world assembly
 in this worker. Until integration or a new scoped task, avoid repeating completed
 fixtures/tests or editing other workers' owners.
+
+## Milestone 16: silent same-owner Actor damage reset
+
+Implementation commit: a12ce74dadff7e7f4a9eb2f42aed775272e6d120.
+
+Owner audit before any metadata additions: Actor owns damage_, resources_,
+attack_.mode (+142c life), attack_.motion (+1448), existing zone_lifecycle_.motion
+(+1434 presentation), and actions_.pending_move (+581c). PlayerCore/CharacterSummary
+own persistent character state, but have no authoritative +145c death-penalty,
++1430 soul DWORD, +1454 rebirth deadline or +1458 raw code. ZoneLifecycleState
+contains presentation/location/movement checks, not these four fields; ActorActionState
+contains action cancellation/vehicle/move slots, not them. EffectStatus benefits
+amulet/no_exp_loss are inputs to penalty selection, not the penalty owner;
+SkillBenefits::rebirth and map rebirth locations are unrelated owners. Searching
+both this branch and current canonical game headers found only worker08's explicit
+required projections for the four metadata fields. No duplicate fields/map were
+added. Exact remaining mapping is death_penalty -> CUser+145c signed DWORD,
+soul_state -> +1430 DWORD, rebirth_deadline -> +1454 DWORD, rebirth_code -> +1458
+DWORD. Initialization/restoration/general-Death ownership remains to be recovered
+before introducing canonical storage; worker08/root must keep missing providers
+explicit rather than silently use test projections in production.
+
+Evidence: ps_game.exe CDamage::Reset004b8aa0, complete instruction body through
+004b8b52. ESI is the existing CDamage owner; it locks owner+8, walks/removes list
+nodes, decrements owner+20 count, and returns each retired node to m_heapDamage
+(first03ed3518/count03ed3520/critical-section03ed3524), then unlocks the ledger.
+Empty/repeated reset still takes/releases the ledger exclusion, with no heap
+operations. No resources/effects/life/Scene/transport callbacks occur. Existing
+DamageLedger::reset clears its retained entries; the native vector allocator is
+not claimed to reproduce the original global heap's physical addresses/free list.
+Actor::reset_damage_ledger() noexcept now delegates to that SAME private damage_.
+No damage owner change was necessary. Existing private reset_damage still invokes
+Scene::reset_damage and is unsuitable for this death primitive. No end_duel,
+recover/heal, resource write or second ledger was introduced. Execute only on the
+same serialized Actor owner; the borrowed ledger reference/Actor/Scene must remain
+alive during surrounding lifecycle callbacks.
+
+Original DeathByNPC00458fe0/SendDeath00458470 ordering, corroborated by worker08
+c2811ca/7105169 complete original traces: log0301 -> PvPChkLeaveByDeath0047b530 ->
+ClearApplySkillByDeath00488000 -> CDamage::Reset004b8aa0 -> EnterDead004584d0 ->
+pending move zero -> tick -> DWORD(tick+200000) deadline / zero code -> optional
+excluded-user0504 -> captured-party lock/live-member0c06/unlock. Reset itself
+publishes no later-stage changes. NPCdeath does not zero HP/MP/SP.
+
+Exact worker08/root adapter:
+`reset_damage(Actor& a) { a.reset_damage_ledger(); }`.
+New tests compile the actual read-only worker08 NPC-death bridge snapshot and
+bind this API. Actual buff cleanup/clamp, replica erase, mandatory recording
+DB0902 transport and effect release run before ledger reset; corpse callback
+observes the empty SAME ledger with pending_move still77. Successful continuation
+clears pending move and sets deadline/code; an injected corpse failure preserves
+the already-reset ledger and effect/resource changes without running later stages.
+Dead reentry does not reset/publish corpse again. Missing metadata use explicit
+fixture-only input projections, and corpse/PvP/log operations are recording test
+services. This is not a production corpse/PvP/party/world assembly claim.
+
+Validation:
+- `.local/oracle-env/bin/python tools/mob_drops_actor_death_oracle.py`: 65 valid
+  circular-list scenarios (0..64 nodes), each executes complete original Reset
+  twice. Only Enter/LeaveCriticalSection imports are observed/returned. Original
+  final list links/count, heap reclaimed count/free-chain order and complete
+  ledger/heap exclusion trace are checked. Fixture generated under work/fixtures/
+  then copied before native readers started. No pool-lock concurrency equivalence
+  is claimed for the serialized native vector owner.
+- Native test seeds actual Actor damage for each original count, compares empty
+  final ledger/maximum, repeated reset and reuse, same owner identity and unchanged
+  resources/life/attack/presentation/pending-move/maxima-independent scene activity.
+  No Scene reset, packet, clock or party query occurs during the primitive.
+- Two actual NPCdeath bridge compositions (success and injected corpse failure)
+  verify effect/DB0902/replica/release -> real ledger reset -> corpse boundary,
+  preserving resources and later-stage partial-failure semantics. Explicit
+  recording DB transport is bound; no missing-service success adapter was used.
+- `python3 tools/dev.py build`: passed, including final two-action assertion
+  rebuild; work/mob-drops-actor-death-build{,-final}.log.
+- `python3 tools/dev.py test`: **142/142 passed**, zero failures, **51.19 s**;
+  work/mob-drops-actor-death-test.log and build/Testing/Temporary/LastTest.log.
+  No new failing native execution was encountered in this milestone.
+- All12 original EXE/PDB SHA256SUMS pass; both new tools pass py_compile;
+  git diff --check passes. No SQL operations or main-source modifications.
+
+Remaining: integrate API and bind it in worker08/root; recover four metadata
+owners/initialization under a new explicit assignment. Real corpse publication,
+PvP cleanup, party identity/locks, excluded-user transports and retained lifetimes
+remain mandatory root services. Worker08/party implementations, DamageLedger,
+main/frozen sources and SQL lifecycle remain unchanged. No SQL path changes in
+this silent primitive; central isolated SQL checks remain coordinator-owned.
