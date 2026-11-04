@@ -13,6 +13,19 @@ Actor::Actor(std::uint32_t id,EffectStatus status,PlayerResources current,std::v
 Actor::Actor(std::uint32_t id,EffectStatus status,PlayerResources current,std::vector<PersistedEffect> replica,ActorScene& scene,
     ActorEquipmentRules equipment,ActorEffectDatabase& database,std::vector<PlayerItem> inventory)
     :Actor(id,std::move(status),current,std::move(replica),scene,equipment,std::move(inventory)) {effect_database_=&database;}
+void Actor::initialize_death_metadata(ActorDeathMetadata inherited) {
+    if(death_metadata_) throw std::logic_error("Actor death metadata already bound");
+    inherited.deadline=0;death_metadata_=inherited;
+}
+ActorDeathMetadata& Actor::death_metadata() {
+    if(!death_metadata_) throw std::logic_error("Actor death metadata requires inherited allocation values");
+    return *death_metadata_;
+}
+const ActorDeathMetadata& Actor::death_metadata() const {
+    if(!death_metadata_) throw std::logic_error("Actor death metadata requires inherited allocation values");
+    return *death_metadata_;
+}
+void Actor::reset_death_metadata() {death_metadata().deadline=0;}
 void Actor::require_effect_database() const {
     if(!effect_database_ && effects_.size()!=0) throw std::logic_error("Actor effect removal requires a DB-agent transport binding");
 }

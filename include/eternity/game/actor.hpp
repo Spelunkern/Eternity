@@ -19,6 +19,12 @@ class InventoryRemovalWorld;
 class ItemDropWorld;
 enum class ItemDropResult;
 enum class InventoryReceipt;
+// Original constructor/reset preserve three inherited DWORDs; only deadline is
+// cleared. Raw code is kept unsigned even where original callers interpret it.
+struct ActorDeathMetadata {
+    std::int32_t penalty;
+    std::uint32_t soul,deadline,code;
+};
 struct ActorInventoryItem {GroundItem* item;GroundItemPool* pool;};
 // Required scene/transport services. Implementations own zone binding, combat
 // and connection queues; none default to no-op.
@@ -117,6 +123,14 @@ public:
     const UserRelations& relations() const noexcept {return relations_;}
     ActorAttackState& attack_state() noexcept {return attack_;}
     const ActorAttackState& attack_state() const noexcept {return attack_;}
+    // Bind inherited allocation/pool values explicitly; no invented zero seed.
+    // One-time construction projection clears deadline like CUser004499d0.
+    void initialize_death_metadata(ActorDeathMetadata inherited);
+    ActorDeathMetadata& death_metadata();
+    const ActorDeathMetadata& death_metadata() const;
+    bool death_metadata_bound() const noexcept {return death_metadata_.has_value();}
+    // Metadata projection ONLY of ResetCharacter0044a050, not a full reset.
+    void reset_death_metadata();
     ActorActionState& actions() noexcept {return actions_;}
     const ActorActionState& actions() const noexcept {return actions_;}
     std::uint32_t& guard_target_after() noexcept {return guard_target_after_;}
@@ -212,6 +226,7 @@ private:
     ActorAppearance appearance_;
     ActorAttackState attack_;
     ActorActionState actions_;
+    std::optional<ActorDeathMetadata> death_metadata_; // Actual owner; no second life word.
     ZoneLifecycleState zone_lifecycle_;
     DuelWager duel_wager_;
     ItemExchangeState exchange_,duel_exchange_;
