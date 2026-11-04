@@ -1163,3 +1163,7 @@ Validated twentieth batch published5ea007d. All external Codex worker executions
 - 09-mob-events: HEAD 8e3e456fe16d0c771bc3ed0840f98e086515f260; dirty=True; untracked=7.
 
 Next session: inspect final preservation manifest and latest worker rounds; review pending queue, then resume only on user instruction. Objective remains open; estimated15-20percent with lowconfidence,not playable. Shutdown after final doc publication and filesystem sync.
+
+## Resume — 2026-11-04
+
+User requested continued work toward playable EP4.5. Integrated reviewed 60e3e18/8e3e456 and bcff828/ba6cd04 as f15d705..f52bbbf; combined CMake test blocks. Container build succeeded, 302/302 tests and isolated SQL integration passed; logs .local/resume-{build,tests,sql}.log. Full catalog and stream SQL checks not rerun yet. Worker 08 commit 9e7c0d8 remains pending review; preserved dirty worker work untouched. Actual world entry and runtime providers remain open; server not playable.
