@@ -946,3 +946,11 @@ if(BUILD_TESTING)
     target_link_libraries(mob-ai-states-parameters-unit PRIVATE eternity_game)
     add_test(NAME mob-ai-states-parameters-unit COMMAND mob-ai-states-parameters-unit ${CMAKE_CURRENT_SOURCE_DIR}/tests/data/mob_ai_states_parameters-oracle.tsv)
 endif()
+
+# Worker 05: party manager initialization, publication and retained lifetime.
+target_sources(eternity_game PRIVATE src/game/party_runtime_registry.cpp)
+if(BUILD_TESTING)
+    add_executable(party-runtime-registry-unit tests/party_runtime_registry_unit.cpp)
+    target_link_libraries(party-runtime-registry-unit PRIVATE eternity_game)
+    add_test(NAME party-runtime-registry-unit COMMAND party-runtime-registry-unit ${CMAKE_CURRENT_SOURCE_DIR}/tests/data/party-runtime-registry-oracle.tsv)
+endif()
