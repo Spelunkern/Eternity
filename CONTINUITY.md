@@ -1671,3 +1671,13 @@ user via real `client_enter` during traversal. Targeted `world-admission-unit` i
 running/queued in session 11319; no result yet. This only exposes the missing
 zone-wait traversal; actual scheduling, decrypted packet ownership, cipher
 ordering, production services and full client admission remain unwired.
+
+Coordinator created `/home/franco/Projects/Eternity-quests` on `coordinator/quests`
+from admission and composed the independent quest adapter and canonical NpcPool
+lease change (`e73ddd8..7167c11`), preserving all CMake targets. The canonical
+pool prevents direct `release()` from recycling a pinned NPC until its last
+lease; the pool must outlive all leases and operations remain serialized. The
+worker's focused canonical quest test passed before its commit; exact final
+report/SQL and cross-branch build/tests remain outstanding. This assembly is
+not production-wired, and real reward, NPC/world ownership and client dispatch
+remain required. No new competing pool or registry is introduced.
