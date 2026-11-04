@@ -1365,3 +1365,11 @@ remains pending until main validation 53983 completes. Required next evidence:
 original location-2 waiting packet queue and when early 0201 is processed after
 zone assignment, plus cipher/flush/TCP ordering. Worker 03 was assigned this;
 its current adapter does not itself implement a live connection or scheduler.
+
+Coordinator inspected ps_dbAgent.exe PacketUserChar 004059f0..00405a25:
+the 0407 branch scans five retained entries at stride 0x5c, rejects when the
+entry +0x58 signed DWORD is greater than zero or entry +0x28 is nonzero, then
+posts job 7. Native Players::load currently queries `RemainTime=0` and
+CharacterSummary collapses remaining-time to bool. This does not prove the SQL
+raw value maps unchanged to that retained field; worker 01 was asked to trace
+loader conversion and negative values before altering or integrating the gate.
