@@ -1373,3 +1373,12 @@ posts job 7. Native Players::load currently queries `RemainTime=0` and
 CharacterSummary collapses remaining-time to bool. This does not prove the SQL
 raw value maps unchanged to that retained field; worker 01 was asked to trace
 loader conversion and negative values before altering or integrating the gate.
+
+Coordinator checked the live server composition: `src/main.cpp` still constructs
+roster-only WorldServer and no production `ActorScene` or
+`WorldAdmissionServices` implementation exists in src/. `ActorLoadPipeline` and
+`enter_zone_actor` therefore cannot yet be attached to live connections. Assigned
+independent 07 a bounded `vertical_scene` production owner composition after its
+existing pickup validation: real WorldChannel, ZoneUsers, party/effect/clock and
+mandatory lifecycle dependencies, with no no-op success. Actual WorldAdmission
+and executor/root wiring still required.
