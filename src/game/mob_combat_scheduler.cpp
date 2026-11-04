@@ -1,0 +1,54 @@
+#include "eternity/game/mob_combat_scheduler.hpp"
+#include "eternity/game/mob_combat_stop.hpp"
+#include <algorithm>
+#include <stdexcept>
+namespace eternity::game {
+namespace {
+// ps_game.exe g_ConstUserAttackSpeed 005424e0, indexed by GetAttackSpeedNow.
+constexpr std::uint32_t delays[]={4000,3000,2750,2500,2250,2000,1750,1500,1250,1000};
+void deadline(Actor& actor,std::uint32_t now) {
+    const auto speed=std::clamp(actor.status().skills.equipment.attack_speed,0,9);
+    actor.attack_state().resume_tick=now+delays[speed];
+}
+void failure(Actor& actor,std::uint8_t reason,MobCombatSchedulerWorld& world) {
+    net::Packet packet{2,5,reason};const auto id=actor.id();
+    for(unsigned i=0;i<4;++i)packet.push_back(static_cast<std::uint8_t>(id>>(8*i)));
+    packet.resize(17,0);world.send_self(actor,packet);
+}
+}
+bool mob_combat_scheduler(Actor& actor,MobCombatSchedulerBindings& bindings,std::uint32_t now,MobCombatSchedulerWorld& world) {
+    auto& attack=actor.attack_state();
+    if(attack.resume_tick>now)return false; // unsigned absolute comparison
+    if(attack.mode==3)return world.remainder(actor,now,MobCombatSchedulerRemainder::casting);
+    if(attack.mode!=2)return true;
+    if(world.attack_speed(actor)==255){mob_combat_stop(actor);failure(actor,10,world);return false;}
+    world.remove_mob_transform(actor);
+    if(attack.next_tick==2)return world.remainder(actor,now,MobCombatSchedulerRemainder::skill_after_transform);
+    if(attack.next_tick!=1)return true;
+    if(!bindings.weapon_present){mob_combat_stop(actor);failure(actor,7,world);return false;}
+    const auto kind=actor.status().current_target_type;
+    if(kind==1) {
+        if(actor.status().current_target==actor.id()){mob_combat_stop(actor);return false;}
+        return world.remainder(actor,now,MobCombatSchedulerRemainder::normal_user);
+    }
+    if(kind==2) {
+        auto* mob=world.enable_mob(actor,actor.status().current_target);
+        if(!mob){mob_combat_stop(actor);return false;}
+        if(!world.in_range(actor,*mob)) {
+            deadline(actor,now);mob_combat_stop(actor);failure(actor,5,world);return false;
+        }
+        const bool naming=world.is_both_mob(*mob);
+        if(naming) {
+            const auto& name=actor.appearance().identity.name;
+            const auto length=std::min(name.size(),name.find('\0'));
+            if(length>=mob->previous_attack_user.size())throw std::invalid_argument("Actor name exceeds mob attack context");
+            std::copy_n(name.begin(),length,mob->previous_attack_user.begin());mob->previous_attack_user[length]=0;
+        }
+        world.attack_mob(actor,*mob);
+        if(naming){mob->previous_attack_user[0]=0;mob->previous_attack_skill[0]=0;}
+        const auto status=mob->state_stack?(mob->state_stack->empty()?0:mob->state_stack->back()):mob->status;
+        if(status==2)mob_combat_stop(actor);
+    }
+    deadline(actor,now);world.cancel_move(actor);attack.motion=0;return true;
+}
+}
