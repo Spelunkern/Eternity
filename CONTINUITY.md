@@ -1638,3 +1638,17 @@ through idle and respawns afterward. Session 28365 is running targeted locked
 fixture uses test-owned AI services and does not solve canonical pooled mob pin,
 production scheduling/providers or live-client playability. Gameplay session
 58307 and ingress session 69947 remain running independently.
+
+Independent 03 (`ed8462d` and preceding reports) traced independent original
+world/zone/DB-agent scheduling. Zone packet processing can occur after location 3
+but before 0407 flips outgoing AES to XOR; requiring both barriers or conflating
+inbound location with cipher state changes possible original ordering. A narrow
+instruction-level location-2/3 publication gap is inferred, not observed.
+Requested 03 to split inbound dispatch from outgoing cipher and cover both orders
+with deterministic actual-admission tests. The ingress pause mechanism is not
+production-bound or proven equivalent. Independent 05 (`6ca79cf`) traced the
+original idle deadline in `CWorldThread::Update` 00407390: unsigned due check,
+next deadline `now+1000` without catchup; the separate attack cadence is 500ms.
+Its canonical MobPool retention draft is uncommitted and under review, especially
+nested callbacks and throwing deferred cleanup. No scheduler or safety claim is
+made until the real owner and exception behavior are validated.
