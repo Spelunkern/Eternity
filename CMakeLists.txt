@@ -1533,3 +1533,10 @@ if(BUILD_TESTING)
     target_link_libraries(mob-drops-actor-recover-change-bridge-unit PRIVATE eternity_game)
     add_test(NAME mob-drops-actor-recover-change-bridge-unit COMMAND mob-drops-actor-recover-change-bridge-unit)
 endif()
+
+# Worker 09: original integer assignment and embedded VariableID writeback.
+if(BUILD_TESTING)
+    add_executable(mob-ai-states-assignment-unit tests/mob_ai_states_assignment_unit.cpp)
+    target_link_libraries(mob-ai-states-assignment-unit PRIVATE eternity_game)
+    add_test(NAME mob-ai-states-assignment-unit COMMAND mob-ai-states-assignment-unit ${CMAKE_CURRENT_SOURCE_DIR}/tests/data/mob_ai_states_assignment-oracle.tsv)
+endif()
