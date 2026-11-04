@@ -23,6 +23,17 @@ void publish_obelisk_portal_change(std::span<ObeliskRuntimePortalLink> links,std
     auto& link=links[i];net::Packet db;put(db,0x207,2);put(db,link.base_id,4);put(db,static_cast<std::uint32_t>(*link.country),1);put(db,0,4);world.database(db);
     if(link.zone_present) {net::Packet p;put(p,0x2102,2);put(p,link.id,4);put(p,translated(*link.country),1);world.map_broadcast(i,p);}
 }
+void publish_obelisk_portal_database_list(std::span<const ObeliskRuntimePortalLink> links,ObeliskRuntimePortalWorld& world) {
+    net::Packet packet;put(packet,0x206,2);put(packet,0,1);unsigned count=0;
+    for(const auto& link:links) {
+        put(packet,link.base_id,4);put(packet,3,1);put(packet,0,4);
+        if(++count==100) {
+            packet[2]=static_cast<std::uint8_t>(count);world.database(packet);
+            packet.resize(3);count=0;
+        }
+    }
+    if(count) {packet[2]=static_cast<std::uint8_t>(count);world.database(packet);}
+}
 void update_obelisk_portal_links(std::span<ObeliskRuntimePortalLink> links,ObeliskRuntimePortalWorld& world) {
     if(links.size()>12) throw std::invalid_argument("Original portal neighbor flags support at most twelve links");
     std::array<bool,12> close_neighbor{};
