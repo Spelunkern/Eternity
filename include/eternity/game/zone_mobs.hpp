@@ -62,6 +62,11 @@ public:
     // Membership removal is allowed; no visited actor is read after callback.
     // Keep this zone alive; release_to_pool/destruction cannot run during visit.
     void visit_cell(CellCoordinates,const std::function<void(MobRuntime&)>&);
+    // UpdateMobIdle 00421a00 shares the global cursor with update_deaths.
+    // Callbacks may unlink any member or reenter this traversal; the caller
+    // must retain the current actor until its callback returns, including across
+    // pool release/reuse. Zone destruction and release_to_pool are forbidden.
+    void visit_global(const std::function<void(MobRuntime&)>&);
     std::int32_t cell_count() const noexcept {return geometry_.cell_count();}
     std::vector<MobRuntime*> all() const;
     std::vector<MobRuntime*> in_cell(CellCoordinates) const;

@@ -1,0 +1,13 @@
+# ps_game.exe SHA256 0fb7c9f13b5bcf186118f8bfe73ab214226b93e8aa502b8e6fded4a8312bc547; CZone::UpdateMobIdle 00421a00 with real AddMob 00416700/RemoveMob 00416790; death/respawn, map index and locks stubbed
+# op trigger target | callback trace | final membership
+none	0	0	0,1,2	0,1,2
+remove	0	0	0,1,2	1,2
+remove	1	1	0,1,2	0,2
+remove	0	1	0,2	0,2
+remove	1	0	0,1,2	1,2
+remove	2	1	0,1,2	0,2
+add	0	3	0,1,2,3	0,1,2,3
+add	2	3	0,1,2,3	0,1,2,3
+nested	0	0	0,0,1,2,0,1,2	0,1,2
+nested	1	0	0,1,0,1,2,0,1,2	0,1,2
+nested	2	0	0,1,2,0,1,2,0,1,2	0,1,2

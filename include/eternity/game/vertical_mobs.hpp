@@ -4,13 +4,10 @@
 #include "eternity/game/mob_ai_states_configured.hpp"
 
 namespace eternity::game {
-// Required live global-list traversal, under the primary zone's serialized lease.
-// It must preserve the original shared cursor across nested operations. The
-// callback may remove actors; a snapshot of ZoneMobs::all() is not equivalent.
+// Required per-subject providers; all actor storage must survive its dispatch.
 class VerticalMobsWorld {
 public:
     virtual ~VerticalMobsWorld() = default;
-    virtual void visit_mobs(ZoneMobs&,const std::function<void(MobRuntime&)>&) = 0;
     virtual MobAiConfiguredFsm& configured_fsm(MobRuntime&) = 0;
     virtual MobAiConfiguredServices& configured_services(MobRuntime&) = 0;
     virtual MobAiStateServices& stack_services(MobRuntime&) = 0;

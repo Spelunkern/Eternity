@@ -29,7 +29,7 @@ bool vertical_mobs_idle_frame(MobPrimaryZones& root,std::size_t map,std::uint32_
     lease.visit([&](RuntimeZone& zone) {
         if(!zone.mobs || !zone.linked_mobs || !zone.mob_population || !zone.map)
             throw std::logic_error("Mob frame requires the actual initialized zone owners");
-        world.visit_mobs(*zone.mobs,[&](MobRuntime& mob){ vertical_mobs_idle(mob,now,world); });
+        zone.mobs->visit_global([&](MobRuntime& mob){ vertical_mobs_idle(mob,now,world); });
         zone.mobs->update_deaths(root.mob_pool(),random,now,*zone.linked_mobs);
     });
     return true;

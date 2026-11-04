@@ -118,6 +118,15 @@ MobRuntime* ZoneMobs::find(std::uint32_t id) const noexcept {const auto at=index
 MobRuntime* ZoneMobs::find_cell(CellCoordinates c,std::uint32_t id) {const auto at=cells_.find(key(c));if(at==cells_.end()) return nullptr;auto& cell=at->second;cell.cursor=cell.members.empty()?0:cell.members.begin()->first;while(cell.cursor) {auto* mob=cell.members.at(cell.cursor);if(mob->id==id) return mob;const auto next=cell.members.upper_bound(cell.cursor);cell.cursor=next==cell.members.end()?0:next->first;}return nullptr;}
 std::vector<MobRuntime*> ZoneMobs::all() const {std::vector<MobRuntime*> out;for(const auto& [ordinal,mob]:ordered_) out.push_back(mob);return out;}
 std::vector<MobRuntime*> ZoneMobs::in_cell(CellCoordinates c) const {std::vector<MobRuntime*> out;const auto at=cells_.find(key(c));if(at!=cells_.end()) for(const auto& [ordinal,mob]:at->second.members) out.push_back(mob);return out;}
+void ZoneMobs::visit_global(const std::function<void(MobRuntime&)>& visitor) {
+    if(!visitor) throw std::invalid_argument("Missing global mob visitor");
+    death_cursor_=ordered_.empty()?0:ordered_.begin()->first;
+    while(death_cursor_) {
+        visitor(*ordered_.at(death_cursor_));
+        const auto next=death_cursor_==0?ordered_.begin():ordered_.upper_bound(death_cursor_);
+        death_cursor_=next==ordered_.end()?0:next->first;
+    }
+}
 void ZoneMobs::visit_cell(CellCoordinates c,const std::function<void(MobRuntime&)>& visitor) {
     const auto at=cells_.find(key(c));if(at==cells_.end()) return;
     auto& cell=at->second;cell.cursor=cell.members.empty()?0:cell.members.begin()->first;

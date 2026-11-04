@@ -4,7 +4,6 @@
 using namespace eternity::game;
 struct World final : VerticalMobsWorld, MobAiConfiguredServices, MobAiStateServices {
     MobAiConfiguredFsm fsm{1,1}; std::vector<int> calls;
-    void visit_mobs(ZoneMobs&,const std::function<void(MobRuntime&)>&) override { assert(false); }
     MobAiConfiguredFsm& configured_fsm(MobRuntime&) override {return fsm;}
     MobAiConfiguredServices& configured_services(MobRuntime&) override {return *this;}
     MobAiStateServices& stack_services(MobRuntime&) override {return *this;}
