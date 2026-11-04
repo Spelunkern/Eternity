@@ -1641,3 +1641,69 @@ No SQL access/contracts changed; coordinator owns final isolated SQL and complet
 integration checks. The server is not playable.
 
 Implementation commit: `495a8a4d959232d9b4d2f310a40f705498cb7ef6`.
+
+## Milestone 24 — integer assignment and embedded VariableID writeback
+
+### Evidence / behavior
+
+`ps_game.exe`, `CKFSM<CMob>::TravelCondition` `00498cf0`, kind-8
+assignment opcode 10 `00499ba0..00499d33`; Ghidra full decompile and
+instruction disassembly agree. The shared operand path `004990f0` pops the
+right value first and copies the second value into retained numeric scratch.
+Assignment keeps that second value's type, inactive numeric fields and
+VariableID, replacing only its active int/DWORD payload with the first value's
+bits. Both signed/unsigned combinations preserve all 32 bits.
+
+`00499d04..00499d10` pushes the result; `00499d19` passes the second
+operand's embedded VariableID at stack offset +170 to actual local-map
+`operator[]` `0049b7e0`; `00499d2e` calls `AI_Param::operator=` `0048fa90`.
+The write destination can therefore differ from the name used to read the
+operand. Integer writes preserve the destination's text bytes. Assignment
+contributes no comparison truth count. Later unknown numeric literals reuse
+the assigned scratch and later local reads see the updated retained map.
+
+Added explicit `MobAiIntegerAssignmentServices`, extending the previous
+arithmetic/numeric subset. Previous providers keep their stricter contracts.
+An absent writeback target is an explicit error after the result push; native
+code does not fabricate the original inserted entry's uninitialized text.
+Float assignment and compound opcodes 11..16 remain explicit errors.
+
+### Validation
+
+- 1,024 sequences / 1,792 complete original TravelCondition executions. Covers
+  all four int/DWORD pairings, edge bit patterns, one to three assignment groups,
+  literal/local sources, same-key and aliased destinations, repeated calls,
+  declared-count truncation and reuse of assigned scratch. 540 final maps differ
+  from their initial contents. Exact retained map/stack bytes, cursor/top and
+  return counts are compared with native execution.
+- Real original local-map construction, read lookup, assignment lookup and
+  destruction execute, including all 3,072 frees with poisoned released data.
+  Only allocation/free/security-cookie imports are adapted; no map/interpreter
+  result is supplied by a port. Fixtures exclude undefined operand reads.
+- Native configured entry programs mutate the actual borrowed FSM; subsequent
+  evaluation on that same FSM observes the new value and changes state. Missing
+  target tests verify result-push-before-error with no invented map insertion.
+- Original SHA256SUMS pass; regenerated oracle is byte-identical; diff check clean.
+- Build exit 0, no compiler warnings; `work/mob_ai_states_assignment-build.log`.
+- `python3 tools/dev.py test`: exit 0, 143/143 tests pass (42.76 s),
+  new assignment test 0.76 s; `work/mob_ai_states_assignment-tests.log`.
+
+### Required integration / remaining work
+
+Bind this explicit subset to the existing configured owner only where its
+supported token set is appropriate. Preserve the embedded VariableID rather
+than substituting the name hash for writeback; preserve separate destination
+text and the original push-before-write order. No canonical MobRuntime/header
+changes were needed in this block. Factory adapters must retain initialized
+variable payloads and valid embedded IDs in that same map; missing targets need
+an explicit representation for original uninitialized storage before insertion
+can be claimed equivalent.
+
+Compound updates 11..16, float arithmetic/assignment, system function invocation
+and parameter piping, nonnumeric comparisons, full factory/asset decoding and
+actual root world/Lua/scheduling/destruction remain open. Next independent block
+can recover integer compound writeback through the same actual map/stack owner.
+SQL access/contracts did not change; coordinator owns isolated SQL and complete
+integration validation. The server is not playable.
+
+Implementation commit: `73dc722dc68ece0583a51ee709f2065315551ee8`.
