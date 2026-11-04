@@ -1989,3 +1989,86 @@ SQL/contracts did not change; coordinator owns isolated SQL and full integration
 validation. The server is not playable.
 
 Implementation commit: `242e935407c73fd707ad28d58a13053af20118f0`.
+
+## Milestone 29 — original system-expression dispatch and bound CMob queries
+
+### Evidence / behavior
+
+`ps_game.exe`, `CKFSM<CMob>::TravelCondition` `00498cf0`, kind 4
+`00498f12..004990eb`. This uses the signed-key `SysFuncMap` at CKFSM +58,
+separate from the compiled state-action function registry. ParamCount comes from
+the retained definition, not the token's ParamCount. Nonpositive counts skip
+argument construction. The virtual call at `00498fc1` uses `m_pInstance` +48
+and vtable slot +4, actual CMob vtable `00538850` -> `CMob::DoFunction`
+`004917a0`. Its return is copied independently of numeric-literal scratch.
+The token ID and function metadata are reloaded after the call before output
+piping, then the result is pushed even when stack writes overflow capacity.
+Function return values themselves add no comparison truth count.
+
+Added explicit `MobAiZeroArgumentServices`, signed system-definition catalog and
+mandatory dispatcher. Positive input/output parameter counts explicitly error:
+CalculateParam and F_OUT copying are not replaced by no-ops. Missing definitions
+are not inserted with guessed metadata. Native callback boundary tests cover
+post-call token-ID/metadata reload and live stack-top reload; these are evidence-
+backed projection checks, not original reentrant world execution claims.
+
+`MobAiMobQueries` binds a specific configured owner to its actual MobRuntime,
+so borrowed state programs do not accidentally query their containing phase's
+subject. Six original no-argument query IDs execute on existing MobRuntime fields:
+
+| ID | Original behavior / evidence |
+| --- | --- |
+| 0ff3a2fd | in_battle byte +252 -> int; 00491894 |
+| 36824cb7 | current_time +cd0 -> DWORD unchanged; 00491967 |
+| 368302a7 | target_id +12c iff target_kind +128 nonzero, else 0; 004919a5 |
+| a45c668b | attacked byte +251 -> int; 00491b9a |
+| aec1b010 | attack_at_moment +253 -> int 0/1 and clear when true; 00491bea |
+| bbfc6d86 | clamp attacked_count +25c to zero if negative, return int; 00491c0e |
+
+Each known result initializes inactive numeric fields and VariableID to zero.
+Unknown function IDs require another real provider and explicitly error; no
+uninitialized original default result is fabricated. Boolean projections cover
+initialized canonical 0/1 values, not arbitrary original invalid byte residues.
+
+### Validation
+
+- 768 sequences / 1,536 complete original TravelCondition executions, with
+  2,282 observed original DoFunction calls through the unmodified original CMob
+  vtable. Observer verifies actual instance identity and empty argument vectors;
+  it supplies no results. Real SysFuncMap creation/lookup and both map destructors
+  execute; all 6,144 allocations are freed and poisoned. Only allocation/free/
+  security-cookie imports are adapted; no query/map/virtual-dispatch/VM port.
+- Six IDs, nonpositive metadata counts (0/-1/INT_MIN), deliberately unrelated
+  token ParamCount/name, zero-capacity/overflowed stacks, repeated calls,
+  numeric scratch reuse, comparisons and declared-count truncation are covered.
+  Exact retained stack bytes, cursor/top, per-round truth counts and live subject
+  fields match native. 106 final subjects change. Full original instance bytes
+  outside attack_at_moment and attacked_count remain unchanged.
+- Actual configured transition consumes attack_at_moment before entering the
+  next state, which observes the cleared flag. Missing metadata, unsupported
+  arguments/functions, mismatched bound owner and post-callback piping remain
+  explicit-error native tests. Narrower providers retain their boundaries.
+- Oracle regenerates byte-identically; original SHA256SUMS pass; diff check clean.
+- Build exit 0, no compiler warnings; `work/mob_ai_states_system-build.log`.
+- `python3 tools/dev.py test`: exit 0, 148/148 tests pass (47.92 s),
+  system test 0.39 s; `work/mob_ai_states_system-tests.log`.
+
+### Required integration / remaining work
+
+No canonical header was changed. Coordinator integration must retain each actual
+configured owner's SysFuncMap definition metadata (+58) and its actual bound
+MobRuntime instance (+48); wire the matching catalog/dispatcher for that owner.
+Do not reuse `compiled_functions` state actions as system functions or choose the
+containing phase's subject when a borrowed condition owner has another instance.
+The standalone catalog and explicit bound-owner adapter are input projections,
+not a second production mob/FSM registry or completed factory assembly.
+
+CalculateParam argument expressions, parameter-vector ownership and F_OUT local
+writeback remain open, along with other DoFunction IDs and required world
+providers, nonfinite arithmetic propagation, nonnumeric comparisons, complete
+factory/asset decoding and root world/Lua/scheduling/destruction. Next block can
+recover CalculateParam to extend beyond zero arguments. Unknown functions and
+missing providers must continue to error. SQL/contracts did not change;
+coordinator owns isolated SQL and full integration. The server is not playable.
+
+Implementation commit: `b3c480c21a352c4bd9f067244aaee015cce1dd95`.
