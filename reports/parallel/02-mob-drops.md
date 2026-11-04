@@ -1,6 +1,7 @@
 # Worker 02: mob drops
 
-Status: reconstructed loot algorithms and explicit world projections; production
+Status: reconstructed loot algorithms, catalog construction/limit initialization
+and explicit world projections; production
 world/item adapters remain required. This does not make the server playable.
 
 ## Evidence
@@ -69,8 +70,9 @@ Required canonical additions/adapters:
 - Item definition `wDex` +38 (distinct from `ConstDex`), grade membership and
   shared `wDrop` +7e, count +8c, delay +90, random delay +94, next tick +98.
   Existing quest-start, type/type-ID, real type and quality fields can project
-  into `MobLootItem`. Catalog population/reset scheduling and original
-  SequenceItemCreate configuration need the real catalog owner's adapter.
+  into `MobLootItem`. Catalog population and initial limit reset are now supplied
+  by `mob_drops_catalog`; original SequenceItemCreate configuration and runtime
+  catalog ownership still need adapters.
 - Party mode +104, leader +0c, cursor +108, type +114 and ordered members +18;
   credited/member user zone +e0, instance +164, state +5758, dead +142c,
   positions +d0/+d8, money mode +58b0 and percentage +58b4.
@@ -90,3 +92,58 @@ Required canonical additions/adapters:
 
 Implementation commit: `ad3247ba0543d475e9d722363c05dd2d2c2893aa`.
 This report is committed separately after that implementation checkpoint.
+
+
+## Milestone 2: catalog construction and initial limits
+
+New evidence: `ps_game.exe CItemDrop::Init` 004bde50 and `InitLimit` 004be3e0,
+regenerated through locked Ghidra `--process` into the assigned ignored export.
+All original binary/PDB hashes verified again.
+
+`initialize_mob_drop_catalog` builds all 1,025 grades in original type/type-ID
+scan order, with unrestricted (Server=0 and Drop=0) entries before restricted
+entries and the original unrestricted-prefix counts. It excludes table ID zero,
+invalid definition type/type-ID, grades above 1,024 and real type 27. Duplicate
+input coordinates use the last binding. The separate limit pass starts at table
+type one and ignores grade/server/real-type restrictions. Nonzero selectors reset
+count/next tick and split intervals 90% fixed / 10% random. Exact intervals are
+1,440,000, 14,400,000, 28,800,000, 43,200,000, 86,400,000 and 259,200,000 ms.
+Selectors above six access undefined original stack data; native code rejects
+those explicitly. Unlimited definitions, zero type/type-ID fields and table type zero retain
+their previous limit state.
+
+`MobDropCatalogDefinitions::load_sql` owns stable entry projections from the
+original Items procedure, reuses the recovered real-type mapping and server
+normalization, and leaves quest-start initialization to the existing quest/item
+owner. Catalog initialization does not replace unrelated crafting/sequence config.
+
+Validation:
+
+- 32 complete original catalog initializations, including actual limit loops;
+  only allocator and unrelated ItemCreate/sequence configuration calls are ports.
+  Fixtures cover stale state, grade edges, type-zero table differences, validity,
+  partition order and all seven limit selectors. Native repeated initialization,
+  duplicate coordinates and undefined selector rejection are checked separately.
+- Original execution over all 16,047 restored SQL item definitions yields 15,505
+  catalog members and hash `15810976553663983297`. The hash includes all 1,025
+  grade member orders/unrestricted counts and every projected limit state. SQL
+  includes five nonzero Drop selectors and 9,430 nonzero server flags.
+- Focused isolated SQL comparison: exit 0, exact full original catalog hash
+  matched; previous 24,723-row MobItems check also passed. Both SQL reads use
+  the existing shared SQL resource lock; no schema/data/lifecycle changes.
+  Log: `work/mob-drops-catalog-sql-final.log`.
+- `python3 tools/dev.py build`: exit 0, no warnings in either the initial
+  139-action build or final two-action incremental build.
+  Logs: `work/mob-drops-catalog-build.log`, `work/mob-drops-catalog-final-build.log`.
+- `python3 tools/dev.py test`: exit 0; all 123 native tests passed in
+  42.92 seconds, including the new original initialization comparison.
+  Log: `work/mob-drops-catalog-test.log`.
+- Python oracle `py_compile` and `git diff --check`: exit 0.
+
+Remaining: connect this owned catalog to the production loot provider; implement
+original SequenceItemCreate configuration loading/reloading. ItemCreate.ini is
+an unrelated crafting distribution and was observed as an explicit external port.
+Production allocation/grant/log/range and death-owner adapters listed above remain
+required. No shared canonical files, SQL fixtures or main checkout were changed.
+
+Milestone 2 implementation commit: `3b1e120b6e104e2d569be7d5a97a64b2f7100e77`.
