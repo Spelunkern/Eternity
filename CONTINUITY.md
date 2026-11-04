@@ -1574,3 +1574,11 @@ NpcPool release bypass. Worker acknowledged coordinator review and is moving
 retention/deferred reuse into the canonical NPC pool with direct-release tests.
 Keep `fa8a664..8ac56ed` out of integrated production until that revised owner
 and its lifecycle tests are reviewed.
+
+Main 53983 full native build passed and its focused network/combat regression
+passed 4/4 (`world-protocol`, `world-network`, `world-application`,
+`vertical-combat`) in `.local/world-serialized-tests-final.log`. Isolated SQL
+phase is live and waiting for the SQL lock; no full main unit suite has been run
+for this exact batch. Independent 08 has an uncommitted canonical NpcPool pin/
+deferred-reuse draft replacing the bypassable quest wrapper; inspect final
+source, direct-release tests and pool lifetime before accepting.
