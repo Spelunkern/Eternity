@@ -6,7 +6,9 @@
 namespace eternity::game {
 // Null-skill melee/ranged/magic branches of ps_game.exe CUser::AttackSuccess 0044d010.
 // Uses the retained actor and mob stats and the same serialized MSVCRT RNG owner.
-// Other kinds return true after the common guards without drawing.
+// Other kinds return true after the common guards without drawing. Floating
+// paths require FE_TONEAREST and masked exceptions; they reject other host
+// environments before arithmetic or a random draw.
 bool vertical_combat_normal_success(const Actor&,const MobRuntime&,unsigned kind,RandomSource&);
 // Borrow the original mob definition immunity bytes and skill hit bytes from
 // their authoritative loader. The first state byte corresponds to state 1.

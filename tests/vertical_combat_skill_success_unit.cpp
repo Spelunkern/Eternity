@@ -1,5 +1,6 @@
 #include "eternity/game/vertical_combat_success.hpp"
 #include <fstream>
+#include <cfenv>
 #include <iostream>
 #include <sstream>
 #include <stdexcept>
@@ -24,5 +25,9 @@ int main(int argc,char**argv){try{
  Scene scene;EffectStatus state;Actor actor(42,state,{}, {},scene,rules);MobRuntimeTemplate def;MobRuntime mob;mob.definition=&def;SkillDefinition effect;effect.id=1;UserSkillDefinition skill{effect,{}};std::array<std::uint8_t,6> immunity{};VerticalCombatSkillSuccessInputs inputs{skill,{},immunity,3,50};Draw random;bool fault=false;
  try{(void)vertical_combat_skill_success(actor,mob,0,inputs,random);}catch(const std::domain_error&){fault=true;}if(!fault||random.calls)throw std::runtime_error("division fault before draw");
  skill.state_type=1;bool missing=false;try{(void)vertical_combat_skill_success(actor,mob,0,inputs,random);}catch(const std::invalid_argument&){missing=true;}if(!missing||random.calls)throw std::runtime_error("missing immunity before draw");
+ skill.state_type=0;inputs.hit_type=1;inputs.hit_value=50;random.value=10;std::fenv_t env;if(std::fegetenv(&env)||std::fesetround(FE_DOWNWARD))throw std::runtime_error("cannot set fenv");
+ if(!vertical_combat_skill_success(actor,mob,0,inputs,random)||random.calls!=1)throw std::runtime_error("integer skill should not require nearest");
+ inputs.hit_type=0;bool round_rejected=false;try{(void)vertical_combat_skill_success(actor,mob,0,inputs,random);}catch(const std::logic_error&){round_rejected=true;}
+ if(std::fesetenv(&env))throw std::runtime_error("cannot restore fenv");if(!round_rejected||random.calls!=1)throw std::runtime_error("fallback rounding rejection");
  std::cout<<count<<" original skill success comparisons passed\n";
  }catch(const std::exception& e){std::cerr<<e.what()<<'\n';return 1;}}

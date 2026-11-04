@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """Original CUser::AttackSuccess normal branches with deterministic CRT draws."""
-import random,struct
+import os,random,struct
 from unicorn import UC_HOOK_CODE
 from unicorn.x86_const import *
 from original_oracle import load_game
@@ -24,6 +24,6 @@ for i in range(8192):
  ua,ue,ma,me=vals;roll=rng.randrange(32768)
  c.mem_write(u,b'\0'*0x2000);c.mem_write(m,b'\0'*0x1000);put(m+0xa8,info);put(m+0x298,unbeatable);put(m+0x124,status);word(u+0x136,ul);word(info+0x22,ml)
  put(u+0x13b8+44*kind,ua);put(u+0x13c0+44*kind,ue);put(m+0x138+28*kind,ma);put(m+0x140+28*kind,me);put(u+0x122c,dex);word(info+0x3a,mobdex)
- sp=stack+0x800;put(sp,end);put(sp+4,kind);c.reg_write(UC_X86_REG_ESP,sp);c.reg_write(UC_X86_REG_ECX,m);c.reg_write(UC_X86_REG_EDI,u);c.reg_write(UC_X86_REG_EAX,0);c.reg_write(UC_X86_REG_FPCW,0x27f);c.reg_write(UC_X86_REG_FPSW,0);c.reg_write(UC_X86_REG_FPTAG,0xffff);draws=0
+ sp=stack+0x800;put(sp,end);put(sp+4,kind);c.reg_write(UC_X86_REG_ESP,sp);c.reg_write(UC_X86_REG_ECX,m);c.reg_write(UC_X86_REG_EDI,u);c.reg_write(UC_X86_REG_EAX,0);c.reg_write(UC_X86_REG_FPCW,int(os.environ.get("VERTICAL_COMBAT_FPCW","0x27f"),0));c.reg_write(UC_X86_REG_FPSW,0);c.reg_write(UC_X86_REG_FPTAG,0xffff);draws=0
  c.emu_start(0x44d010,end,count=5000)
  print(kind,unbeatable,status,ul,ml,ua,ue,ma,me,dex,mobdex,roll,c.reg_read(UC_X86_REG_EAX)&255,draws,sep='\t')
