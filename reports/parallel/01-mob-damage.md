@@ -2327,3 +2327,87 @@ including self-send membership mutation, SP-send MP-energy/membership mutation
 and group-kind packet selection, then required-provider spending coordination.
 Root must still attach the actual learned owner/manager/definitions/actions and
 bind the existing Actor raw resource API; no global side map or no-op transport.
+
+## SendUseSPMP retained group coordination (2026-11-04)
+
+Source: ps_game.exe CUser::SendUseSPMP00481ca0, group tail00481de8..00481eb3;
+CParty::Send00445680 has EBXgroup/EAXlength/ECXpacket and source user stack
+argument (callee pops4). New user_skill_runtime_spend_group implements the tail
+AFTER actual resource writes and self050c. It borrows the existing Actor energy,
+uses required actual group/world adapters, and creates no membership/member list.
+
+The initial membership is retained and locked through its original+118 owner.
+After lock acquisition, null live membership releases/discards that captured
+lock. A replacement nonnull group does NOT replace the captured lock. Notification
+kind is read from current membership once:0=>0c01,1=>0c0a. Source actorID is
+captured once. Positive retained SP request sends tag1/currentSP; positive MP
+request then captures currentMP and rereads membership for tag2 dispatch. The
+opcode remains that of the initial live group even if SP callback moves the actor
+to a differently typed group. Unlock always applies to the captured lock, not
+current membership. Null initial membership still permits a subsequent live
+borrow, matching original's separate reads; borrow APIs must be side-effect-free.
+
+Actual lock/transport semantics remain mandatory: group adapter must retain the
+same existing Party/Raid owner and its recursive synchronization, and send must
+invoke actual member enumeration excluding the source. Retained leases protect
+group lifetime across callback departure/replacement; they must not restore old
+membership or force dispatch to the locked group. This module does NOT reimplement
+CParty::Send enumeration/allocation. Root holds Actor/scene/party transport leases
+through the synchronous frame. No default/no-op provider or second party exists.
+
+Original kind>1 leaves packet opcode uninitialized. Native rejects it explicitly;
+no guessed opcode. A null membership at MP dispatch after SP callback is likewise
+an explicit integration error rather than a null native dereference. Both failures
+release the captured lock; transport exceptions do too. These safety contracts
+are not claimed as original invalid-state execution matches. Required manager
+invariants/real serialized member ownership must prevent such invalid dispatches.
+
+Native comparison starts with Actor constructed at the already-committed resource
+boundary, then actual Actor::send_self triggers membership mutation, followed by
+the new tail. SP callback changes membership and MP via the EXISTING Actor::heal
+owner using a controlled positive amount; that is only a test mutation, NOT a
+spending implementation or production negative-healing workaround. Scene reports
+no unrelated group to that callback so this positive-heal mutation does not add
+spurious spending-group events. Main's existing replace_resources_raw remains
+the central debit binding; no Actor/shared-header changes were made.
+
+Canonical party review (read-only): PartyRegistryPorts already specifies recursive
+party locking and retained callback lifetime. Bind our lock/unlock to that SAME
+PartyRegistryParty lock via PartyRegistryLock::party. Existing
+party_runtime_membership_send.hpp recovers broadcast004455d0, not the source-
+excluding overload00445680 used here. Its existing pool/reference-count machinery
+can be reused, but worker05/root must supply the actual exclude-source overload
+on the SAME normal/raid member owner: iterate live signed count/slots under that
+lock, skip null and identity-equal source, enqueue using existing retained send
+buffer, then release its initial reference. Do not broadcast back to source or
+construct another roster. Raid's larger actual owner needs the equivalent
+existing storage adapter. This worker did not edit those owned files.
+
+Implementation commit: **f890116**. Validation:
+
+- **480 whole original SendUseSPMP traces**: both kind0/1 arrangements across
+  groups, self callback selecting absent/A/B/C membership, lock callback selecting
+  absent/A/B/C, SP callback selecting A/B/C and changing MP to12345678hex; five
+  cost pairs include zero guards, individual sends, both sends and consume-all.
+  Compare exact self/group packet bytes, selected dispatch group identities and
+  lock/unlock order. All original branches/SEH/return execute; imports, self send
+  and CParty::Send boundary are ported. Group enumeration is NOT executed here.
+- Native3 additional probes: null MP target, transport throw and undefined kind;
+  each is explicit failure and releases original captured lock. These are native
+  safety contracts, not original invalid-state equivalence claims.
+- Initial oracle tried unresolved Windows import pointers and failed at first
+  non-null group; mapped explicit enter/leave boundary stubs before regenerating
+  all480 rows. Independent regeneration byte-identical (`cmp`,exit0). Original
+  SHA256SUMS exit0; `work/user-skill-runtime-spend-group-hashes.log`.
+- Final `python3 tools/dev.py build`: exit0,no warnings;
+  `work/user-skill-runtime-spend-group-final-build.log`.
+- `python3 tools/dev.py test`: exit0,**144/144 passed,27.64s**;
+  `work/user-skill-runtime-spend-group-tests.log`. `git diff --check`: exit0.
+  SQL untouched; coordinator owns final isolated SQL integration. Original
+  playable-server objective remains open.
+
+Next proposed block: recover the user skill action implementation selected by the
+existing attack coordinator, starting CUser::SkillAttackUser00451d90, limited to
+user_skill_runtime coordination and required actual target/damage owners. Actual
+root/manager/definition/action/resource/group binding remains required; do not
+claim the pure debit plus recovered tail installs a complete production service.
