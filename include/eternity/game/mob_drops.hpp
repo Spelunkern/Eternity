@@ -128,6 +128,7 @@ public:
 class MobDropCatalog {
 public:
     std::array<std::vector<MobDropCatalogEntry*>,1025> grades;
+    std::array<std::size_t,1025> unrestricted_counts{};
     std::vector<MobDropSequence> sequences;
     const MobLootItem* select(std::uint16_t grade,RandomSource&,MobDropCatalogWorld&);
     const MobLootItem* sequence(std::uint16_t level,std::uint32_t object,RandomSource&,MobDropCatalogWorld&);
