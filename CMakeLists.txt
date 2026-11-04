@@ -1011,3 +1011,11 @@ target_sources(eternity_game PRIVATE src/game/party_runtime_registry_break.cpp)
 if(BUILD_TESTING)
     add_test(NAME party-runtime-registry-break-unit COMMAND party-runtime-registry-unit ${CMAKE_CURRENT_SOURCE_DIR}/tests/data/party-runtime-registry-break-oracle.tsv --break)
 endif()
+
+# Worker 09: actual compiled Battle body, PAI eligibility and retained FSM reset.
+target_sources(eternity_game PRIVATE src/game/mob_ai_states_battle.cpp)
+if(BUILD_TESTING)
+    add_executable(mob-ai-states-battle-unit tests/mob_ai_states_battle_unit.cpp)
+    target_link_libraries(mob-ai-states-battle-unit PRIVATE eternity_game)
+    add_test(NAME mob-ai-states-battle-unit COMMAND mob-ai-states-battle-unit ${CMAKE_CURRENT_SOURCE_DIR}/tests/data/mob_ai_states_battle-oracle.tsv)
+endif()
