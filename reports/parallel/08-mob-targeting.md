@@ -1239,3 +1239,94 @@ original fixtures, sanitizer and SQL checks were not repeated. Last validation
 remains 129/129 tests, 160 original SetTarget-to-real-FSM paths and focused
 ASAN/UBSAN passed. No main edits, SQL writes, merges, resets or pushes. Global
 server playability remains incomplete and is not inferred from these results.
+
+## Milestone 12: reconcile +142c with the existing Actor shared state
+
+Implementation commit: `5b9602c` (workers/08-mob-targeting).
+
+CORRECTION: milestone 11's assertion that Actor lacked the authoritative life
+state was incorrect. Its proposed new life_status accessor/field and the later
+life-owner dependency checkpoints are superseded. Existing
+Actor::attack_state().mode already represents original CUser+142c. No new
+Actor field/accessor, life counter, parallel state map or owner is needed.
+The host name "mode" does not imply a separate original life word.
+
+Read-only evidence audit of ps_game.exe:
+
+- Exported CUser PDB layout includes m_nStatusLife at decimal 5164 (0x142c).
+  Other exported layouts have shifted offsets; assembly is authoritative.
+  The separately named PDB m_nAttackMode must not be confused with this host
+  ActorAttackState::mode projection.
+- StatusAttackStop 00489ed0 loads +142c at 00489ed0, preserves raw 0 and 1,
+  and stores zero there at 00489ee8 for other states. Canonical Actor::stop_attack
+  performs those same operations on attack_.mode.
+- UpdateAttack 0048ca50 reads source +142c (0048ca74), tests source state 3 at
+  0048cbb6, and tests the NORMAL PVP target's SAME +142c for 1 at 0048cd05,
+  0048cd78 and 0048cf38. Current canonical scheduler and NPC/hidden-user queries
+  likewise read target.attack_state().mode==1.
+- SetTarget 0049fad0 tests user +142c at 0049fbbd; FindHelpNormal 0049ff70
+  tests it at 0049ffa7. These are the same shared life/action state, not HP.
+- Death 004586a0 tests +142c==1 at 004586cd and writes 1 at 0045871e, with
+  EDX loaded to 1 at 004586c8. Rebirth 00459ec0 admits only +142c==1 at
+  00459ed8; XOR ECX,ECX at 0045a13b supplies its zero write at 0045a156.
+
+`MobTargetingActorModeLife` concretely returns the existing signed mode without
+normalization. `MobTargetingActorUser(actor)` now delegates through that stateless
+projection; the previous explicit-provider constructor remains compatible.
+Both target() and help() read the same live Actor state on every call, including
+callback-driven changes. No extra mutable value, lock or ownership is introduced.
+The existing retained Actor/world serialization contracts remain unchanged.
+
+All actor assembly tests now use the concrete production constructor and mutate
+the actual Actor mode, rather than a synthetic separate life owner. Expanded
+original SetTarget-to-real-FSM comparison covers 400 paths: every original state
+0..5 and unknown/extreme signed values (-2147483648, -1, 99, 2147483647), five
+mob scenes, move modes, fixation and Lua gates. Identity projection preserves
+all int32 bit patterns; the test sample is not an exhaustive enumeration of
+2^32 values. Original target behavior still uses exact ==1, including existing
+mob-side exceptions; this adapter introduces no additional rejection gate.
+
+Another 138 new original execution sequences run the COMPLETE original
+StatusAttackStop followed by SetTarget on the SAME user word, with before/after
+target comparisons. Inputs include the raw boundary/known states and 128
+reproducible random signed words. Native comparison calls actual
+Actor::stop_attack, then observes both target/help projections and actual FSM
+acquisition. Dead state 1 is retained by Stop; active/unknown modes normalize
+to 0 exactly as the original. Zero HP is independently tested and not converted
+into state 1. Existing configured/help callback tests now mutate the actual mode
+and verify the next acquisition sees that state.
+
+Native lifecycle audit: Actor::damage passes this same mode into resource damage;
+shape delivery treats it as dead==1; stop_attack and stop_casting write it.
+The inspected canonical Actor sources currently expose no complete user
+Death/Rebirth implementation: clear_effects_on_death only cleans effects, and
+resource damage returns an outcome. Therefore no synthetic native Death/Rebirth
+transition is claimed. Their eventual world owners must update THIS existing
+mode to original 1/0 at the recovered sites; a second life field would diverge.
+This lifecycle assembly remains a separate root responsibility, not an accessor
+blocker on targeting.
+
+Validation:
+
+- `python3 tools/dev.py build`: exit 0, 140 actions, no warnings/errors;
+  work/mob-targeting-actor-mode-build.log.
+- `python3 tools/dev.py test`: exit 0, 129/129 passed, 41.65 seconds;
+  work/mob-targeting-actor-mode-tests.log. New comparisons include 400 target
+  paths plus 138 complete original Stop/target sequences.
+- Expanded original fixture regenerated into ignored work/ and repeated byte
+  comparison passed; work/mob-targeting-actor-mode-{oracle,repeat}.tsv.
+- Focused ASAN/UBSAN under the shared build lock: exit 0, no diagnostics;
+  400 original target paths, 138 Stop/gate sequences and live Actor/help/
+  fixed/configured/grid/CRT/clock composition passed. Log:
+  work/mob-targeting-actor-mode-sanitized.log.
+- All twelve original EXE/PDB SHA256SUMS passed; git diff --check clean.
+  No Actor/zone-user/shared FSM headers, SQL data path, main or other workers
+  changed. SQL lifecycle was untouched; unchanged SQL checks were not repeated.
+
+Production assembly now uses MobTargetingActorUser(retained_actor) directly.
+The former authoritative-life accessor/provider dependency is CLOSED. Existing
+explicit life providers must delegate to the SAME mode if retained for legacy
+call sites. Remaining work is actual root user/zone/catalog lifetime and
+serialization, real FSM Lua/update/error/clock services and eventual full player
+death/rebirth coordination. No new canonical patch is requested. Original-client
+playability is not established by this owner correction or these test counts.
