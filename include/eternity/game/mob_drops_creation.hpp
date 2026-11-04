@@ -15,7 +15,7 @@ public:
     virtual ~MobDropCreationWorld()=default;
     virtual std::uint32_t make_time()=0;
     // Shared original SUniqueIDGen::GenID value BEFORE adding server ID.
-    // Canonical ItemIds timing/wrap compatibility is a coordinator dependency;
+    // Bind the retained shared ItemIds::raw_next() with its authoritative clock;
     // do not substitute per-drop generators or add server twice.
     virtual std::uint64_t raw_unique_id()=0;
 };
