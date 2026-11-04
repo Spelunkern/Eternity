@@ -1,4 +1,4 @@
-#include "eternity/game/mob_ai_states_system.hpp"
+#include "eternity/game/mob_ai_states_arguments.hpp"
 #include "eternity/game/mob_ai_states_bindings.hpp"
 #include <algorithm>
 #include <bit>
@@ -225,5 +225,39 @@ std::int32_t interpret_mob_ai_zero_argument_calls(MobAiConfiguredFsm& owner,MobA
         return result;
     };
     return interpret_values(owner,condition,true,ComparisonMode::numeric,true,true,true,true,true,true,call);
+}
+}
+
+namespace eternity::game {
+void calculate_mob_ai_argument(MobAiConfiguredFsm& owner,MobAiConfiguredCondition& condition,MobAiParameter& output){
+    MobAiValueStack stack;stack.capacity=20;stack.slots=std::vector<MobAiParameter>(20,MobAiParameter(0));MobAiParameter numeric(0);bool known=false;
+    for(;;){
+        const auto index=std::bit_cast<std::int32_t>(condition.words[2]);
+        const auto next=increment(index);condition.words[2]=static_cast<std::uint32_t>(next);
+        if(next>std::bit_cast<std::int32_t>(condition.words[1]))return;
+        if(condition.tokens.data()==nullptr&&index==0)return;
+        if(index<0||static_cast<std::size_t>(index)>=condition.tokens.size())throw std::logic_error("Mob AI argument token cursor exceeds retained storage");
+        const auto& token=condition.tokens[static_cast<std::size_t>(index)];
+        if(token.type==5){if(stack.top>=0&&stack.top<stack.capacity)assign(output,stack.slots[static_cast<std::size_t>(stack.top)]);return;}
+        if(token.type==2){
+            if(token.number_type==1){known=true;numeric.type=1;numeric.integer=token.integer;}
+            else if(token.number_type==2){known=true;numeric.type=2;numeric.real=token.real;}
+            else if(token.number_type==3){known=true;numeric.type=3;numeric.dword=token.dword;}
+            if(!known)throw std::logic_error("Mob AI argument first untyped literal has undefined original scratch type");
+            push(stack,numeric);
+        }else if(token.type==3){
+            const auto end=std::find(token.text.begin(),token.text.end(),'\0');
+            if(end==token.text.end())throw std::logic_error("Mob AI argument local name lacks a terminator");
+            const auto key=mob_ai_name_code(std::string_view(token.text.data(),static_cast<std::size_t>(end-token.text.begin())));
+            const auto value=owner.variables.find(key);
+            if(value==owner.variables.end())throw std::logic_error("Mob AI argument requires a factory-populated local");
+            if(value->second.type==4&&std::find(value->second.text.begin(),value->second.text.end(),'\0')==value->second.text.end())throw std::logic_error("Mob AI argument local string lacks a terminator");
+            push(stack,value->second);
+        }else if(token.type==7){
+            if(std::find(token.value.begin(),token.value.end(),'\0')==token.value.end())throw std::logic_error("Mob AI argument string literal lacks a terminator");
+            MobAiParameter value(4);value.text=token.value;push(stack,value);
+        }else if(token.type==4||token.type==8)throw std::logic_error("Mob AI argument requires unrecovered nested calls or operators");
+        // Kind 6 and kinds outside the dispatch interval are ignored.
+    }
 }
 }

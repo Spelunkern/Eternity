@@ -1667,3 +1667,10 @@ if(BUILD_TESTING)
     target_link_libraries(mob-targeting-lifecycle-ordinary-unit PRIVATE eternity_game)
     add_test(NAME mob-targeting-lifecycle-ordinary-unit COMMAND mob-targeting-lifecycle-ordinary-unit ${CMAKE_CURRENT_SOURCE_DIR}/tests/data/mob-targeting-lifecycle-ordinary-oracle.tsv)
 endif()
+
+# Worker 09: actual CalculateParam value consumption and private stack lifetime.
+if(BUILD_TESTING)
+    add_executable(mob-ai-states-arguments-unit tests/mob_ai_states_arguments_unit.cpp)
+    target_link_libraries(mob-ai-states-arguments-unit PRIVATE eternity_game)
+    add_test(NAME mob-ai-states-arguments-unit COMMAND mob-ai-states-arguments-unit ${CMAKE_CURRENT_SOURCE_DIR}/tests/data/mob_ai_states_arguments-oracle.tsv)
+endif()
