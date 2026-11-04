@@ -107,23 +107,35 @@ void attach(const std::shared_ptr<Frame>& f,const std::shared_ptr<MobPrimaryZone
 }
 }
 #include "eternity/game/vertical_world.hpp"
+#include "eternity/game/vertical_mobs.hpp"
 struct LinkedFixture:LinkedMobWorld {void remove_by_id(std::uint32_t) override {throw std::logic_error("unexpected removal");} void set_portal_country(const MapPortal&,std::int32_t) override {throw std::logic_error("unexpected portal");}};
+struct IdleFixture:VerticalMobsWorld {
+    unsigned calls=0;
+    MobAiConfiguredFsm& configured_fsm(MobRuntime&) override {throw std::logic_error("unexpected configured AI");}
+    MobAiConfiguredServices& configured_services(MobRuntime&) override {throw std::logic_error("unexpected configured services");}
+    MobAiStateServices& stack_services(MobRuntime&) override {throw std::logic_error("unexpected stack services");}
+    void release_failed_stack(MobRuntime&) override {throw std::logic_error("unexpected stack release");}
+    void return_home(MobRuntime&,std::uint32_t) override {throw std::logic_error("unexpected return home");}
+    void ordinary_idle(MobRuntime&,std::uint32_t now) override {check(now==5077);++calls;}
+};
 int main(int argc,char** argv) {try {
     check(argc==2);write_maps(argv[1]);
     auto config=MapConfiguration::decode("[BASE]\nMapCount=2\n");
     auto maps=std::make_shared<ServerMaps>(ServerMaps::load(config,argv[1]));
     auto f=std::make_shared<Frame>(maps);std::shared_ptr<MobPrimaryZones> root;unsigned frames=0;
     MobPrimaryZoneTransport transport{[&](const eternity::net::Packet&){++f->stats->db;},[&](const eternity::net::Packet&){++f->stats->world;},[&](const ConfiguredMap&,ZoneMobs&,const eternity::net::Packet&){++f->stats->map;}};
-    LinkedFixture linked;
+    LinkedFixture linked;IdleFixture idle;
     VerticalWorldPorts ports{[&](MobPrimaryZones&){attach(f,root);},[&](RuntimeZone& z,std::uint32_t now){
         check(z.mobs && now==5077);std::size_t id=z.map==&maps->all()[0]?0:1;
+        if(id==0) check(f->records->records(0)[0].spawns[0].members[0]==nullptr);
+        check(vertical_mobs_idle_frame(*root,id,now,f->random,idle));
         if(id==0) check(f->records->records(0)[0].spawns[0].members[0]==nullptr);
         z.update_mob_population(root->mob_pool(),f->init,now,
             [&](std::uint32_t t){check(root->tick(id,t));},
             [&](std::uint32_t t){z.linked_mobs->update(z.map->definition,*z.mobs,root->mob_pool(),f->init,t,linked);});
         ++frames;
     },[]{return 100U;}};
-    auto world=VerticalWorld::create(maps,std::shared_ptr<ZoneServices>(f,&f->backend),std::move(f->pool),transport,ports);root=world->zones();check(world->start());root->serialized([&]{auto* mob=f->records->records(0)[0].spawns[0].members[0];check(mob && f->router->remove(0,mob->id));});world->frame(5077);check(frames==2 && f->records->records(0)[0].spawns[0].members[0]);
+    auto world=VerticalWorld::create(maps,std::shared_ptr<ZoneServices>(f,&f->backend),std::move(f->pool),transport,ports);root=world->zones();check(world->start());root->serialized([&]{auto* mob=f->records->records(0)[0].spawns[0].members[0];check(mob && f->router->remove(0,mob->id));});world->frame(5077);check(frames==2 && idle.calls>0 && f->records->records(0)[0].spawns[0].members[0]);
     auto held=root->lease(0);check(!world->shutdown());held.reset();check(world->shutdown());check(world->shutdown());
     bool rejected=false;try{world->frame(77);}catch(const std::logic_error&){rejected=true;}check(rejected);
     auto f2=std::make_shared<Frame>(maps);
