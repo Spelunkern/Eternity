@@ -533,3 +533,71 @@ unregister through the bridge without delete/reset/recycle. Shutdown must respec
 the available-chain contract and outstanding actor/callback references. The
 source of any pool-return producer remains missing evidence, not a guessed
 service. Real network, guild, actor and world adapters remain coordinator work.
+
+## Block 8: force-disband and bounded pool-return audit
+
+Recovered `ps_game.exe CParty::BreakParty` 00444fa0, a remaining registry
+unregistration path. `party_runtime_registry_break.hpp/cpp` implement it using
+the existing normal owner, full 30-slot backing and registry RemoveParty. Two
+small public wrappers expose the already recovered scene/log emitters; their
+bodies/serialization are reused, not duplicated. No canonical header changed.
+
+BreakParty locks the party, scans live count and ordered slots, skips holes and
+clears each selected user's membership before its optional 0520 scene delivery.
+It reloads the CURRENT slot after that callback for SetGameLogMain/0f02 log;
+replacing that slot can make scene and log refer to different users. It rereads
+count after each iteration and does not deduplicate repeated users. Only after
+all callbacks does Reset clear all 30 slots/indices and ordinary state, retaining
+ID/links/lock. Current-ID map removal follows Reset, still under the party lock;
+map unlock precedes party unlock. Empty or missing registry entries still return
+true. This path emits no 0b05/0b07 and performs no recursive Leave, guild cleanup,
+heap return, object free or ID increment. A callback changing ID before logging
+also changes the final removal key; the earlier published key can remain.
+
+The new `--break` oracle mode executes full unmodified BreakParty, manager/map
+operations, Reset and GetPartyType. The real original tree is used. It covers
+256 lifetimes / 2,304 state/action comparisons, including 1,792 complete original
+top-level calls; W/Q are explicitly labeled input projections. Callback cases
+shrink/grow count, replace the current slot, clear a future slot and change ID
+inside log-context delivery. Counts include negative/zero/1/2/7/15/30, masks
+include holes/empty/full, kind varies, and guild-creation state is nonzero to
+ensure no cleanup is introduced. Complete owner state, hashed callback snapshots
+and exact payloads are compared as in block 7. Original execution with nonzero
+guild state regenerates the same expected data, not an inferred result.
+
+Bounded lifetime audit: GNU objdump over the entire immutable executable .text
+found four instruction operands in manager/heap range [00547688,005476b0):
+004679fc / 00468099 (CUser::PacketParty 004676c0, CreateParty calls at
+00467a01 / 0046809e), 0051fae0 ($E6 startup) and 0051ff70 ($E7 shutdown).
+No direct absolute operand for the heap fields was found. Focused Ghidra exports
+confirm $E6 calls manager construction then atexit($E7), and $E7 calls manager
+destruction. Existing manager/normal-leave/BreakParty bodies unregister without
+returning a node to the heap; the inventory has no SSyncHeap<CParty>::Free.
+This is bounded evidence, not proof that no indirect alias/caller exists. Raw
+assembly is ignored in `work/party-runtime-registry-all-text.asm`; focused Ghidra
+outputs stay under `work/exports/05-party-state`. Do not add speculative recycling.
+
+Block 8 validation:
+
+- `python3 tools/dev.py build`: exit 0, no warnings
+  (`work/party-runtime-registry-break-final-build.log`).
+- `python3 tools/dev.py test`: exit 0; all 130 pass in 47.29 seconds
+  (`work/party-runtime-registry-break-test.log`).
+- Focused C++20 ASAN/UBSAN under shared build lock: both 64-cycle registry and
+  256-cycle BreakParty comparisons pass, exit 0, no diagnostics
+  (`work/party-runtime-registry-break-sanitized.log`).
+- Repeated new fixture generation is byte-identical; nonzero guild-state
+  execution is also byte-identical. Original EXE/PDB manifest verification and
+  `git diff --check` exit 0. Generated exports/logs/binaries stay ignored under
+  work/. No SQL/schema/lifecycle operations were added; full isolated SQL
+  integration remains coordinator-owned and was not run here.
+
+Block 8 implementation commit: `ed8ec71fe4cba5ee89f0d530305a3439cdbe771e`.
+
+Remaining production dependencies are the real object/recursive-lock backend,
+canonical Actor/connection party projection, and registry/guild/network dispatch
+adapters. The assigned constructor/create/remove/free paths and known force-
+disband path are now recovered. A concrete next scope is canonical serialized
+party-handle access followed by CUser::PacketParty 004676c0 request dispatch;
+canonical Actor/connection headers remain coordinator-owned. No gameplay
+completion is inferred from these comparisons.
