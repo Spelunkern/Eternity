@@ -1051,3 +1051,32 @@ execution owner. The required shared canonical visitor change is now delivered;
 no additional Actor/user-zone/shared skill header patch is proposed here.
 No production network/world handler assembly or playable-server completion is
 claimed by the unit tests.
+
+## Direct visitor assignment completion / production-owner dependency
+
+Reviewed the current main continuity/coordination notes and delivery
+6debf69/0017bb5. The repeated mob_targeting_zone assignment is complete in
+milestone 10: direct shared cursor, actual help/runtime/full catalog composition,
+450 original mutation comparisons, lifetime checks and production assembly
+contract. Do not duplicate the visitor, restore a packet probe or add another
+mob/skill owner.
+
+Read-only main inspection still finds no ZoneMobs::visit_cell or root
+MobTargetingZone assembly. The eighth-batch native/SQL validation source freeze
+is active; this delivery remains for coordinator integration after that freeze.
+No independent missing implementation within this completed assignment was
+identified. Actual user retention/projections, zone user_count and live FSM
+DispatchEvent adapters require owners outside this task's authorized files.
+
+Concrete next task: integrate 6debf69/0017bb5 after central validation, then
+explicitly assign the root targeting-world/user adapter against the retained
+Actor/zone-user owner and actual compiled-AI dispatcher. Reuse the existing
+MobTargetingZoneWorld/MobTargetingZoneUser interfaces and single full catalog;
+require real random/clock/user-count/FSM providers and owner serialization.
+Until that scope is assigned, keep the production ports required rather than
+implementing empty providers or taking Actor/zone-user/worker03 ownership.
+
+Documentation-only checkpoint: git diff --check clean; no unchanged native,
+sanitizer or SQL reruns. Milestone 10 remains the latest validation: 128/128 tests,
+450 original direct-visitor traces and focused ASAN/UBSAN passed. No main edits,
+SQL lifecycle writes, merges or pushes. Overall playability remains unverified.
