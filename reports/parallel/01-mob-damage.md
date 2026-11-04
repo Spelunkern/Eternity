@@ -1174,3 +1174,143 @@ owner and retained-equipment accessor, then assign concrete scheduler binding
 integration here. Current shared headers remain read-only; independent evidence
 within this binding gap is now recorded, and a fake replacement owner would
 violate scope. WAITING_FOR_ASSIGNMENT
+
+## Canonical learned-user runtime owner — 2026-11-04
+
+Implementation: **317980f**. Read current main CONTINUITY/PARALLEL_WORK and prior
+binding report/commits. Explicit expanded `user_skill_runtime` scope only; Actor
+and inventory remain worker02-exclusive/read-only. No main/other worker edits,
+reset/rebase/merge/push/SQL lifecycle actions. Existing ZoneUsers cursor/leases and
+all earlier damage/aggro/stop/scheduler milestones remain unchanged.
+
+Implemented `UserSkillRuntime`, the actual learned-user owner: signed count,
+256 nullable stable runtime slots, mutable DWORD selection, runtime instance ID,
+skill ID/level/number, attack/reset/end/previous ticks, attacker type/ID and stable
+borrowed user-definition reference. This is NOT a catalog or ID-only test view.
+`UserSkillDefinition` borrows existing SkillDefinition plus original-name storage
+from a mandatory definition provider; it stores no private lookup table or copied
+passive definitions. Runtime objects are retained handles supplied by the actual
+manager service, not independently generated IDs or a per-user competing pool.
+
+`UserSkillRuntimeWorld` binds the same Actor and reuses the recovered scheduler's
+existing requery sites. It returns the actual runtime as the target/name view,
+refreshes that view from its current definition, and captures a shared runtime
+handle before invoking mandatory actual action providers. All four user/mob and
+use/casting action overloads receive that handle, never an inferred SkillID lookup.
+Lookup callbacks can change selected slots or their definition; the next recovered
+reload observes them. Captured action handles survive synchronous callbacks.
+Cross-Actor world binding and indices outside the 256 native slots fail explicitly;
+valid forced slots ignore learned count during polling. `request_slot` separately
+implements PacketPC's signed learned-count admission check. Selection publication
+remains a live DWORD reference for the existing/request owner to set AFTER its
+actual target validation; full native PacketPC eligibility is not newly claimed.
+
+Original sources: `ps_game.exe` Ghidra/PDB complete exports, functions/disassembly/
+decompiled/types; CSkill pool bytes additionally inspected in original code.
+
+- **PacketUserDBSetInfo 0046d780**, complete 0504 branch **0046e166..0046e216**:
+  wire header is WORD opcode, DWORD account, BYTE count; each six-byte row is
+  WORD SkillID, BYTE level, BYTE slot number, WORD delay seconds. Resolve actual
+  GetSkillInfo **00402770** first, then reject ID zero. Allocation failure skips
+  the row and continues. Success changes only info, ID, level, number and reset
+  tick=`admission_tick+delay*1000` with DWORD wrap; other pooled ticks/attacker
+  fields remain stale. Write by supplied slot number and increment count per
+  successful allocation, including duplicates/sparse slots; no rollback/compaction.
+- Missing definition performs diagnostics and closes with **0x68/detail0**;
+  zero ID also closes. Original dispatcher returns handled=true even on those
+  paths. Native `UserSkillLoadResult::disconnect_requested` distinguishes that
+  semantic from loaded; root must still treat the packet as handled. Prefix
+  publications survive failure. Diagnostics and real disconnect are mandatory
+  services, not default success/no-op. Truncated/non-0504 input throws before
+  mutation; original unchecked reads are not emulated as native memory errors.
+- **CreateSkill 0040a780**, **SSyncHeap<CSkill>::Alloc 0040b180** and
+  **FreeSkill 0040a7c0**: actual shared heap is CObjectMgr+114, lock+120; shared
+  counter is manager+10. Recycled object retains ID and payload; increment the
+  shared counter only if its ID is zero. Fresh heap allocation initializes only
+  instance ID before manager assignment; stale payload is not silently cleared.
+- **ResetCharacter 0044a050** writes selection zero at 0044a108 and count zero
+  at **0044a2c3**, BEFORE its learned free loop at 0044a3ce. That loop is skipped;
+  slots remain. `reset_character()` here implements only this skill-owner portion,
+  not the rest of Actor reset. It must NOT eagerly recycle/clear learned slots.
+- Complete **~CUser 004496a0**, learned loop **00449720..0044974b**, directly
+  deletes nonnull entries below SIGNED learned count; it does not FreeSkill them.
+  Sparse entries above count and duplicate-overwritten objects are unreachable
+  allocations, not reusable pool objects. Native mandatory `strand` transfers
+  those handles to manager accounting without recycling; `destroy` handles actual
+  destructor-range objects, deferring physical destruction across captured leases.
+  This preserves observable availability while avoiding an untracked native leak.
+  Malformed accumulated counts above 256 do not reproduce original out-of-bounds
+  deletion; native storage stays bounded, without clamping the stored count.
+
+Original oracle executes WHOLE admission dispatcher, CreateSkill/FreeSkill (real
+shared free list, locks/counter/heap logic), UpdateAttack **0048ca50**, optional
+whole ResetCharacter and whole ~CUser. Only raw allocation, OS, definition lookup,
+logging, connection/crypto teardown and actual world action/effect boundaries are
+ports. Empty unrelated owner trees/list sentinels are valid inputs, not skipped
+instruction ranges. Deliberately seeded allocator payload makes preserved fields
+observable; no claim that real fresh heap bytes always equal that fixture value.
+
+**64 original complete sequences** cover reuse retaining ID/ticks, allocation
+failures, duplicate/sparse slot255, missing definition/zero ID with surviving
+prefix, WORD delay/DWORD deadline wrap, forced slot0/255 normal skill/casting
+polls, reset count/index/slot retention and exact destructor deletes. Native
+comparisons check all ten runtime payload fields per populated slot, count/index,
+ordered lookup/action/packet/delete traces, manager ID/free counts and scheduler
+final state. Additional **12 actual-owner scheduler compositions** cover user,
+mob and position skill/casting routes; selection changes in lookup, live definition
+replacement, reset during captured action, cross-Actor rejection and forced index
+failure. A retained-lifetime probe drops the external Actor handle and verifies
+UserSkillRuntime keeps the same Actor alive until owner destruction.
+
+Validation:
+
+- All original executable/PDB SHA256SUMS: exit0;
+  `work/user-skill-runtime-hashes.log`.
+- Final independent oracle regeneration byte-identical (`cmp`, exit0);
+  `work/user-skill-runtime-final-repeat.tsv`. Fixtures generated under work/ and
+  copied only after stopping the superseded queued test, before final readers.
+- Initial build rejected a test override of Actor world's final transform method;
+  corrected test to mutate selection through existing lookup callbacks. A queued
+  obsolete test was terminated before execution while expanding composed fixtures.
+- Final `python3 tools/dev.py build`: exit0, no compiler warnings,
+  `work/user-skill-runtime-verified-build.log`.
+- Final sequential `python3 tools/dev.py test`: exit0, **133/133 passed, 31.99s**,
+  `work/user-skill-runtime-verified-tests.log`. Previous zone and binding tests pass.
+- `git diff --check`: exit0. Shared locks respected. SQL unchanged; coordinator
+  owns final isolated SQL integration and whole-server validation. Not playable.
+
+Production attachment and required services:
+
+1. This variant retains `shared_ptr<Actor>` directly: bind one UserSkillRuntime
+   alongside the same connection-owned Actor; no global side map or second Actor
+   list. Constructor rejects null. A connection/world root retains the skill
+   owner and UserSkillRuntimeWorld together, and zone's aliasing retention token
+   must pin that root through each entire poll. World stores an owner reference;
+   destroy world before owner. ActorScene, definition/name sources and manager
+   services outlive owner AND all stranded/captured runtime handles. Do NOT put
+   this strong-Actor variant in an Actor-owned member, which would form a cycle.
+   No Actor.hpp change is necessary for this external retained-root attachment.
+2. Supply real UserSkillRuntimeServices at the shared object manager. Main's
+   MobAppliedSkillPool has private acquire/recycle and a different native type;
+   unsafe casts/independent IDs cannot unify it with learned-user runtime. The
+   required port must use the same allocation/free-list and global counter domain
+   as mob/applied CSkill, preserve payload on reuse, account stranding separately
+   and distinguish direct delete from recycle. No fallback allocator is provided.
+   Central common-payload/pool adaptation is required before root instantiation;
+   this milestone supplies ownership/dispatch, not a counterfeit manager backend.
+3. Definition provider returns stable UserSkillDefinition references backed by
+   the actual user definition source/name storage. Existing SkillDefinition can
+   supply effects/TypeDetail, but its loader lacks names/full active eligibility;
+   extend that canonical source centrally rather than borrowing mobAI definitions.
+   Real action ports still implement eligibility, costs, cooldown, targeting,
+   packets/world effects; pass captured runtime identity through them.
+4. Wire 0504 admission to load with the caller's captured admission tick. Route
+   reset/deletion to this owner exactly once. Actual retained weapon presence is
+   still blocked on worker02's inventory accessor and the previously reported
+   post-transform live scheduler query; no snapshot masquerades as +1d8 here.
+
+Next independent block within this scope: recover LearnSkill **004842e0** upgrade/
+append and existing runtime reuse in-place, including points, admission failures,
+publication/callback ordering, using this owner instead of constructing another
+skill container. Actual shared manager/definition/root connections remain central
+integration dependencies, not evidence of overall server completion.
