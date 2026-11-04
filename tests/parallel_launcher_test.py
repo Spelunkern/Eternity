@@ -97,6 +97,16 @@ class ParallelTests(unittest.TestCase):
                             with parallel.exclusive(directory / f'build-{index}.lock', nonblocking=True):
                                 pass
 
+    def test_desktop_path_finds_user_codex(self):
+        executable = self.root / '.local/bin/codex'
+        executable.parent.mkdir(parents=True)
+        executable.write_text('#!/bin/sh\nexit 0\n')
+        executable.chmod(0o755)
+        settings = {'model': 'gpt-6.1-sol', 'effort': 'low', 'sandbox': 'danger-full-access', 'approval': 'never'}
+        with patch('parallel.shutil.which', return_value=None), patch('parallel.Path.home', return_value=self.root):
+            command = parallel.codex_command(settings, self.root, self.root / 'report.txt')
+        self.assertEqual(command[0], str(executable))
+
 
 if __name__ == '__main__':
     unittest.main()

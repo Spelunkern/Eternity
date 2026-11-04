@@ -155,7 +155,12 @@ def prepare(root):
 
 
 def codex_command(settings, tree, report):
-    executable = shutil.which('codex')
+    executable = settings.get('codex_executable') or shutil.which('codex')
+    if not executable:
+        home = Path.home()
+        candidates = (home / '.local/bin/codex', home / '.codex/packages/standalone/current/bin/codex',
+                      home / '.cargo/bin/codex', Path('/usr/local/bin/codex'), Path('/usr/bin/codex'))
+        executable = next((str(path) for path in candidates if path.is_file() and os.access(path, os.X_OK)), None)
     if not executable:
         raise RuntimeError('Codex CLI is not on PATH')
     command = [executable, '-m', settings['model'], '-s', settings['sandbox'], '-a', settings['approval'],
@@ -182,6 +187,7 @@ def worker(root, identity):
             env['ETERNITY_SHARED_LOCK_DIR'] = manifest['lock_directory']
             report = folder / 'last-message.txt'
             command = codex_command(manifest['settings'], tree, report)
+            env['PATH'] = str(Path(command[0]).parent) + os.pathsep + env.get('PATH', os.defpath)
             print(f'Eternity {identity}: {task[1]}\n{tree}\n' + json.dumps(manifest['settings']), flush=True)
             with (folder / 'events.jsonl').open('a') as log:
                 child = subprocess.Popen(command, cwd=tree, env=env, stdin=subprocess.PIPE, stdout=subprocess.PIPE,
