@@ -1,12 +1,14 @@
 #!/usr/bin/env python3
 """Execute original party constructor/reset, manager, heap, map and recursive leave."""
 import struct
+import sys
 from original_oracle import load_game
 from unicorn import UC_HOOK_CODE
-from unicorn.x86_const import UC_X86_REG_EAX,UC_X86_REG_EBX,UC_X86_REG_ECX,UC_X86_REG_EDI,UC_X86_REG_ESI,UC_X86_REG_ESP
+from unicorn.x86_const import UC_X86_REG_EAX,UC_X86_REG_EBX,UC_X86_REG_EBP,UC_X86_REG_ECX,UC_X86_REG_EDI,UC_X86_REG_ESI,UC_X86_REG_ESP
 
 
 def main():
+    break_mode='--break' in sys.argv[1:]
     cpu,digest=load_game();base=0x30000000;cpu.mem_map(base,0x100000);cpu.mem_map(0,0x10000)
     manager=0x547688;parties=[base+0x1000+i*0x1000 for i in range(6)];users=[base+0x10000+i*0x6000 for i in range(2)]
     stack,stop=base+0xf0000,base+0xff000
@@ -73,9 +75,22 @@ def main():
         elif at==tick:event('K');machine.reg_write(UC_X86_REG_EAX,2000+context['case'])
         elif at==0x4455d0:event('P',bytes(machine.mem_read(machine.reg_read(UC_X86_REG_ECX),machine.reg_read(UC_X86_REG_EAX))))
         elif at==0x4d4d20:event('U',struct.pack('<I',user_id(machine.reg_read(UC_X86_REG_ECX)))+bytes(machine.mem_read(get(sp+4),get(sp+8))))
-        elif at==0x4208c0:event('S',bytes(machine.mem_read(get(sp+8),get(sp+12))))
+        elif at==0x4208c0:
+            event('S',bytes(machine.mem_read(get(sp+8),get(sp+12))))
+            if context.get('breaking') and not context['mutated'] and 1<=context['mutation']<=4:
+                context['mutated']=True;p=context['subject'];index=(machine.reg_read(UC_X86_REG_EBP)-p-0x18)//8
+                assert 0<=index<30
+                mode=context['mutation']
+                if mode==1:put(p+0x10,0)
+                elif mode==2:put(p+0x10,30)
+                elif mode==3:put(p+0x18+index*8,users[1-users.index(get(p+0x18+index*8))])
+                elif mode==4 and index+1<30:put(p+0x18+(index+1)*8,0)
         elif at==0x45b0d0:
             uid=user_id(machine.reg_read(UC_X86_REG_EDI));event('F',struct.pack('<I',uid));cpu.mem_write(machine.reg_read(UC_X86_REG_ESI),bytes((uid+i)&255 for i in range(74)))
+            if context.get('breaking') and not context['mutated'] and context['mutation'] in (5,6):
+                context['mutated']=True;p=context['subject'];index=(machine.reg_read(UC_X86_REG_EBP)-p-0x18)//8
+                if context['mutation']==5:put(p+8,get(p+8)+1)
+                elif index+1<30:put(p+0x18+(index+1)*8,0);put(p+0x10,get(p+0x10)-1)
         elif at==0x4d4e50:event('L',bytes(machine.mem_read(get(sp+4),get(sp+8))))
     cpu.hook_add(UC_HOOK_CODE,hook)
     def call(address,args=(),eax=0,ebx=0,ecx=0,edi=0,esi=0):
@@ -88,10 +103,11 @@ def main():
         context['events']=b'';result=action();print(command);print('R',result,state().hex(),context['events'].hex() or '-')
         return result
     print(f'# ps_game.exe SHA256 {digest}; complete CParty ctor/reset, CPartyMgr ctor/create/remove/find/dtor, SSyncHeap Alloc/Release and real std::map insert/find/erase plus real normal membership and GetPartyType. Only OS locks/atomics/clock, raw CRT allocation, log context and transport are ports. External H/Q/K/V fixture projections seed retained heap/IDs; they are not claimed Free implementations. State snapshots are complete; event snapshots use FNV-1a64.')
-    for case in range(64):
+    print('# Mode:', 'real BreakParty with callback mutation; W is explicit input projection' if break_mode else 'registry lifecycle')
+    for case in range(256 if break_mode else 64):
         cpu.mem_write(base,bytes(0xfd000));cpu.mem_write(manager,bytes(84));cpu.mem_write(0,bytes(0x10000))
-        context.update(case=case,events=b'',freed=0,nodes=0,raw=2,attempt=0,fail=case%7==0)
-        print('S',case,int(context['fail']))
+        context.update(case=case,events=b'',freed=0,nodes=0,raw=2,attempt=0,fail=False if break_mode else case%7==0,breaking=False,mutation=(case//3)%7,mutated=False)
+        print('S',case,int(context['fail']),*([context['mutation']] if break_mode else []))
         put(manager,9);put(manager+8,17);put(manager+12,19)
         for i,p in enumerate(parties):
             for off,value in ((8,(i+1)*100+case),(12,1),(16,2),(0x104,-7),(0x108,3),(0x10c,99),(0x110,9)):put(p+off,value)
@@ -102,6 +118,34 @@ def main():
             for off,value in zip((0x17c,0x1238,0x184,0x1240,0x180,0x123c,0x164),(100+i,200+i,300+i,400+i,500+i,600+i,1)):cpu.mem_write(u+off,struct.pack('<H',value))
             cpu.mem_write(u+0xd0,struct.pack('<3f',1.25+i,-2.5,3.75));head=base+0x60000+i*0x1000;put(u+0xa94,head);put(head+4,head)
         operation('I',lambda:(call(0x4473f0,(manager,)),0)[1])
+        if break_mode:
+            operation('T 1',lambda:(call(0x444c60,esi=parties[1]),0)[1])
+            created=operation('C 0 1',lambda:party_id(call(0x4474b0,(users[0],1),ebx=manager)))
+            index=created-1;p=parties[index];key=get(p+8)
+            count=(-1,0,1,2,7,15,30)[case%7]
+            mask=(0x3fffffff,0,0x15555555,0x2aaaaaaa,(case*213)&0x3fffffff)[(case//7)%5]
+            kind=case%3
+            def prepare():
+                put(p+0x10,count);put(p+0xc,0);put(p+0x104,7);put(p+0x108,9);put(p+0x10c,77);put(p+0x110,2);cpu.mem_write(p+0x114,bytes([kind,1]))
+                for j in range(30):put(p+0x14+j*8,0xbeef+j);put(p+0x18+j*8,users[j%2] if (mask>>j)&1 else 0)
+                for u,user in enumerate(users):
+                    put(user+0x173c,p if any((mask>>j)&1 and j%2==u for j in range(max(count,0))) else 0)
+                    put(user+0x175c,base+0x70000) # Break must not invoke guild cleanup
+                return 0
+            operation(f'W {index} {count} {mask} {kind}',prepare)
+            def disband():
+                context.update(breaking=True,subject=p,mutated=False)
+                result=call(0x444fa0,ecx=p)&255
+                context['breaking']=False
+                return result
+            operation(f'B {index}',disband)
+            operation(f'F {key}',lambda:party_id(call(0x447560,(key,),eax=manager)))
+            operation(f'R {index}',lambda:(call(0x447540,eax=p,ecx=manager),0)[1])
+            def unused_free():put(manager+4,parties[1]);put(manager+12,1);put(parties[1]+4,0);return 0
+            operation('Q 1 -1',unused_free)
+            operation('D',lambda:(call(0x447450,(manager,)),0)[1])
+            print('Z')
+            continue
         operation('T 0',lambda:(call(0x444c60,esi=parties[0]),0)[1])
         operation('X 1',lambda:(call(0x444ca0,ecx=parties[1]),0)[1])
         counter=(1,0xfffffffe,0xffffffff,0)[case%4];count=case%3;id0=(0,77,0xffffffff,0)[(case//3)%4];id1=(0,77,88)[(case//5)%3]

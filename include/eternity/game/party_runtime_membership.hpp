@@ -58,6 +58,9 @@ public:
 // ps_game.exe CParty::EnterNormalParty 00445fe0 / LeaveNormalParty 00446960.
 // Caller supplies valid normal membership and non-null active slots. These do
 // not implement invitations, raid conversion, manager allocation or transport.
+// Shared recovered emitters, also used by registry force-disband.
+void notify_party_membership_scene(PartyMembershipUser&,PartyMembershipWorld&);
+void log_party_membership(PartyNormalMembership&,PartyMembershipUser&,std::uint16_t opcode,PartyMembershipWorld&);
 bool enter_normal_party(PartyNormalMembership&,PartyMembershipUser&,PartyMembershipWorld&);
 bool leave_normal_party(PartyNormalMembership&,PartyMembershipUser&,PartyMembershipWorld&);
 }

@@ -55,6 +55,8 @@ void log(PartyNormalMembership& p,PartyMembershipUser& user,std::uint16_t opcode
     world.send_log(packet);
 }
 }
+void notify_party_membership_scene(PartyMembershipUser& user,PartyMembershipWorld& world) {scene(user,world);}
+void log_party_membership(PartyNormalMembership& party,PartyMembershipUser& user,std::uint16_t opcode,PartyMembershipWorld& world) {log(party,user,opcode,world);}
 bool enter_normal_party(PartyNormalMembership& p,PartyMembershipUser& user,PartyMembershipWorld& world) {
     if(p.count>=7) return false; // Original guard precedes all member reads.
     valid(p);

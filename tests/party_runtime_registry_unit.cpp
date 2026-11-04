@@ -1,4 +1,4 @@
-#include "eternity/game/party_runtime_registry.hpp"
+#include "eternity/game/party_runtime_registry_break.hpp"
 #include <fstream>
 #include <iostream>
 #include <sstream>
@@ -16,7 +16,9 @@ struct World final:PartyRegistryPorts,PartyMembershipWorld {
     std::array<unsigned,8> depths{};
     Bytes events;
     unsigned scenario{},raw=2,attempt{},freed{};
-    bool fail{};
+    bool fail{},breaking{},mutated{};
+    unsigned break_mutation{};
+    PartyRegistryParty* subject{};
     World(unsigned s,bool f):scenario(s),fail(f) {
         registry.id_counter=9;registry.allocation_attempts=17;registry.available_count=19;
         for(unsigned i=0;i<6;++i) {
@@ -64,26 +66,44 @@ struct World final:PartyRegistryPorts,PartyMembershipWorld {
     void unlock_effects(PartyMembershipUser& u) noexcept override {Bytes b;append(b,3);append(b,u.id);event(']',b);}
     void send_party(PartyNormalMembership&,const Bytes& p) override {event('P',p);}
     void send_user(PartyMembershipUser& u,const Bytes& p) override {Bytes b;append(b,u.id);b.insert(b.end(),p.begin(),p.end());event('U',b);}
-    void send_scene(PartyMembershipUser&,const Bytes& p) override {event('S',p);}
+    PartyMembershipUser*& projected_slot(PartyRegistryParty& p,std::size_t i) {return i<7?p.slots[i]:p.extra_slots[i-7];}
+    std::size_t first_slot(PartyMembershipUser& user) {for(std::size_t i=0;i<30;++i)if(projected_slot(*subject,i)==&user)return i;throw std::logic_error("Missing reentry slot");}
+    void send_scene(PartyMembershipUser& user,const Bytes& p) override {
+        event('S',p);
+        if(breaking && !mutated && break_mutation>=1 && break_mutation<=4) {
+            mutated=true;const auto i=first_slot(user);
+            if(break_mutation==1)subject->count=0;
+            else if(break_mutation==2)subject->count=30;
+            else if(break_mutation==3)projected_slot(*subject,i)=&users[&user==&users[0]?1:0];
+            else if(i+1<30)projected_slot(*subject,i+1)=nullptr;
+        }
+    }
     void unregister_party(PartyNormalMembership& p) override {unregister_registry_membership(registry,p,*this);}
     void cleanup_guild_creation(PartyMembershipUser&) override {throw std::logic_error("Unexpected guild dependency");}
-    void fill_log(PartyMembershipUser& u,std::span<std::uint8_t> p) override {Bytes b;append(b,u.id);event('F',b);for(std::size_t i=0;i<p.size();++i)p[i]=static_cast<std::uint8_t>(u.id+i);}
+    void fill_log(PartyMembershipUser& u,std::span<std::uint8_t> p) override {Bytes b;append(b,u.id);event('F',b);for(std::size_t i=0;i<p.size();++i)p[i]=static_cast<std::uint8_t>(u.id+i);if(breaking && !mutated && (break_mutation==5 || break_mutation==6)){mutated=true;const auto i=first_slot(u);if(break_mutation==5)++subject->id;else if(i+1<30){projected_slot(*subject,i+1)=nullptr;--subject->count;}}}
     void send_log(const Bytes& p) override {event('L',p);}
 };
 }
 int main(int argc,char** argv) {
     try {
-        check(argc==2);std::ifstream input(argv[1]);check(input.good());std::string line;unsigned scenarios=0,operations=0;
+        check(argc==2 || (argc==3 && std::string(argv[2])=="--break"));const bool break_mode=argc==3;std::ifstream input(argv[1]);check(input.good());std::string line;unsigned scenarios=0,operations=0;
         while(std::getline(input,line)) {
             if(line.empty() || line[0]=='#')continue;
-            std::istringstream start(line);char tag;unsigned scenario,fail;start>>tag>>scenario>>fail;check(tag=='S' && static_cast<bool>(start));World w(scenario,fail!=0);
+            std::istringstream start(line);char tag;unsigned scenario,fail;start>>tag>>scenario>>fail;check(tag=='S' && static_cast<bool>(start));World w(scenario,fail!=0);if(break_mode){start>>w.break_mutation;check(static_cast<bool>(start));}
             while(std::getline(input,line) && line!="Z") {
                 std::istringstream command(line);char op;command>>op;w.events.clear();unsigned actual=0;
                 if(op=='I')initialize_party_registry(w.registry,w);
                 else if(op=='T' || op=='X') {unsigned i;command>>i;if(op=='T')construct_registry_party(w.parties[i],w);else reset_registry_party(w.parties[i]);}
                 else if(op=='H') {
                     std::uint32_t counter,id0,id1;unsigned count;command>>counter>>count>>id0>>id1;w.registry.id_counter=counter;w.registry.available=count?&w.parties[0]:nullptr;w.registry.allocation_attempts=7;w.registry.available_count=count;w.parties[0].id=id0;w.parties[1].id=id1;w.parties[0].next=count==2?&w.parties[1]:nullptr;w.parties[1].next=nullptr;
-                } else if(op=='C') {int u;std::int32_t div;command>>u>>div;actual=w.identity(create_registry_party(w.registry,u<0?nullptr:&w.users[static_cast<unsigned>(u)],div,w,w));}
+                }
+                else if(op=='W') {
+                    unsigned i,kind;std::int32_t count;std::uint32_t mask;command>>i>>count>>mask>>kind;auto& p=w.parties[i];p.count=count;p.leader=0;p.item_division=7;p.item_cursor=9;p.experience.experience_level=77;p.sub_leader=2;p.experience.kind=static_cast<std::uint8_t>(kind);p.auto_join=true;
+                    for(unsigned j=0;j<30;++j){if(j<7)p.slot_indices[j]=0xbeef+j;else p.extra_indices[j-7]=0xbeef+j;w.projected_slot(p,j)=(mask>>j)&1?&w.users[j%2]:nullptr;}
+                    for(unsigned u=0;u<2;++u){w.users[u].party=nullptr;w.users[u].guild_creation=true;for(std::int32_t j=0;j<count;++j)if((mask>>static_cast<unsigned>(j))&1 && static_cast<unsigned>(j)%2==u)w.users[u].party=&p;}
+                }
+                else if(op=='B') {unsigned i;command>>i;w.breaking=true;w.mutated=false;w.subject=&w.parties[i];actual=break_registry_party(w.registry,w.parties[i],w,w);w.breaking=false;}
+                else if(op=='C') {int u;std::int32_t div;command>>u>>div;actual=w.identity(create_registry_party(w.registry,u<0?nullptr:&w.users[static_cast<unsigned>(u)],div,w,w));}
                 else if(op=='F') {std::uint32_t id;command>>id;actual=w.identity(find_registry_party(w.registry,id,w));}
                 else if(op=='R') {int i;command>>i;remove_registry_party(w.registry,i<0?nullptr:&w.parties[static_cast<unsigned>(i)],w);}
                 else if(op=='J' || op=='L') {unsigned i,u;command>>i>>u;actual=op=='J'?enter_normal_party(w.parties[i],w.users[u],w):leave_normal_party(w.parties[i],w.users[u],w);}
@@ -99,6 +119,6 @@ int main(int argc,char** argv) {
             }
             check(line=="Z");++scenarios;
         }
-        check(scenarios==64);std::cout<<scenarios<<" original registry lifetimes / "<<operations<<" state/action comparisons passed\n";
+        check(scenarios==(break_mode?256U:64U));std::cout<<scenarios<<" original registry lifetimes / "<<operations<<" state/action comparisons passed\n";
     } catch(const std::exception& e) {std::cerr<<e.what()<<'\n';return 1;}
 }

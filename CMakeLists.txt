@@ -1005,3 +1005,9 @@ target_sources(eternity_game PRIVATE src/game/obelisk_runtime_death.cpp)
 if(BUILD_TESTING)
     add_test(NAME obelisk-runtime-death-unit COMMAND obelisk-runtime-zone-unit ${CMAKE_CURRENT_SOURCE_DIR}/tests/data/obelisk-runtime-death-oracle.tsv death)
 endif()
+
+# Worker 05: forced registry disband with live callback ordering.
+target_sources(eternity_game PRIVATE src/game/party_runtime_registry_break.cpp)
+if(BUILD_TESTING)
+    add_test(NAME party-runtime-registry-break-unit COMMAND party-runtime-registry-unit ${CMAKE_CURRENT_SOURCE_DIR}/tests/data/party-runtime-registry-break-oracle.tsv --break)
+endif()
