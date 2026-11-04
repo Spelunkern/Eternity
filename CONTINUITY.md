@@ -1831,3 +1831,9 @@ logs `.local/composed-world-frame.log` and `.local/composed-mob-cursor.log` in
 `Eternity-world`. This combines real zone/world owners and the original cursor
 fixture but not the later MobPool retention draft, real production services,
 scheduler or an original client.
+
+Gameplay integration session 58307's focused CTest passed 9/9 on `228d086`,
+covering protocol TCP/gate, persistence, combat caller/success/skill success/
+damage, movement and inventory (`.local/gameplay-composed-tests.log`). The
+full 885-step build had already passed; isolated SQL remains queued in the same
+session. These are component tests, not real-world providers or client gameplay.
