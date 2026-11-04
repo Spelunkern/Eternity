@@ -456,3 +456,115 @@ and dedicate the existing connection while its cursor lives. Required root-world
 services and quest/drop shared UID assembly remain explicit separate dependencies.
 No duplicate cursor, extra credential owner or other worker implementation was
 introduced. Waiting for integration review/new scoped assignment.
+
+
+## Milestone 11: actual Actor retained inventory primitives for quest owners
+
+Implementation commit: `c02b69c227951a9d1961170385176b443237e863`.
+
+Read current main continuity/parallel instructions and worker06 QuestAddItem /
+worker07 QuestFindItem reports. Expanded exclusive scope authorizes actor.hpp,
+inventory.cpp and matching tests; prior storage/UID/caller commits are preserved.
+No main checkout, other owner source, SQL fixtures or lifecycle files changed.
+
+Evidence: ps_game.exe QuestFindItem 0047f790 / 0047f8e0, especially 0047f812,
+0047fc80..0047fccd and 0047feb6..0047ff0d; QuestAddItem 0047e620 / 0047e6f0;
+FreeItem 0040a590. Complete original Ghidra exports and worker reports show:
+partial count changes precede DB/client, multi-item whole-stack release retains
+old count, and raw pointer publication precedes default craft and DB delivery.
+All twelve immutable EXE/PDB hashes pass again; log
+work/mob-drops-inventory-hashes.log. Prior original fixtures were reused.
+
+New methods on EXISTING Actor / retained_inventory_ / inventory_:
+
+- inventory_slot_empty(bag,slot): both retained ownership and value-only mirror
+  rows occupy a slot; does not invent a pooled object for legacy constructor rows.
+- retained_inventory_item(bag,slot): optional borrowed GroundItem* AND its actual
+  GroundItemPool*. Returned pointer values do not refer to movable vector entries.
+- claim_inventory_item(bag,slot,item,pool): claims the already allocated detached
+  pointer. No reset, decode, allocation, stack merge or pickup side effects. Native
+  row coordinates/definition ID normalize to the retained slot. Occupied slot or
+  duplicate pointer in this Actor returns false without taking ownership.
+- set_inventory_item_count: synchronizes BYTE count in pooled object and value
+  mirror, without packets or replica mutation. Optional expected pointer rejects
+  a different current allocation.
+- sync_inventory_item: copies the authoritative payload into the value mirror
+  after post-store craft/default changes, before forwarding the DB packet. Does
+  not decode/rewrite craft tails or reverse authority from mirror to pointer.
+- release_inventory_item: direct bound-pool release and removal of both Actor
+  records. No count overwrite/reset, ItemRemove, exchange cleanup, equipment,
+  DB/client/log or pickup effects. Optional expected identity and empty-slot
+  results permit revalidation. Pool validation failure leaves Actor records intact.
+
+Ownership/serialization contract: execute under the same serialized Actor owner
+through all callbacks. Pool and definitions outlive Actor; borrow is not an owning
+lease and expires on release/reuse, even if a future allocation has the same address.
+Caller must retain Actor and relookup/revalidate after callbacks. Raw claim requires
+an exclusive live allocation from the supplied pool, not owned by another Actor/
+zone; pool membership is a caller precondition because existing pool exposes no
+membership probe. Invalid coordinates, linked/undefined allocations or broken
+mirrors fail explicitly. Capacity matches existing inventory APIs (bags0..9,
+slots0..23); quest adapters search bags1..open, never equipment or locked bags.
+Existing Actor APIs/callers and teardown remain unchanged.
+
+Exact quest adapter recipe:
+
+- 06: slot_empty -> inventory_slot_empty; create_item -> SAME pool.allocate;
+  store -> claim_inventory_item on that allocation. Keep pointer authoritative
+  across the following defaultcraft write; send_database first syncs full mirror,
+  then forwards the required actual 0701 transport. Do not call receive_item or
+  load_inventory_item. The caller retains an unclaimed allocation on failed claim.
+- 07: construct/refresh its required count projection from borrowed live items;
+  before forwarding DB, set_inventory_item_count to the projection's current
+  count. Do not blindly subtract packet count: multi-item whole-stack projection
+  deliberately retains old count until release. Forward DB then client, then
+  release_inventory_item through the borrowed bound pool. Replica changes only
+  through real packets. Do not implement release with remove_item.
+
+These methods remove the canonical interface blocker. Real quest world transports,
+Actor leases/locks, root inventory load and shared UID assembly remain mandatory;
+this block does not fabricate them or install a second inventory/pool.
+
+Validation:
+
+- Build exit0, no compiler warnings: work/mob-drops-inventory-build.log and final
+  test/SQL-mode rebuild work/mob-drops-inventory-sql-build.log. No failed build/test
+  run in this block. Full suite exit0: 135/135 passed in30.55seconds;
+  work/mob-drops-inventory-tests.log.
+- Existing original request fixtures now compose actual Actor primitives, actual
+  GroundItemPool and InventoryReplica: 512 flows,209 completions,680 direct Actor
+  releases. Full event traces, packets, final counts, deletion journal, pointer/
+  mirror/cache state, equipment and locked-bag sentinels match original.
+- Existing original QuestAddItem fixtures now compose actual raw Actor claim and
+  DB-boundary mirror sync:384 cases,152 grants. Complete CItem/craft-tail payloads,
+  lookup/allocation/claim order,0701 and0205 packets and real DB replica match.
+  Store observes empty craft; DB callback observes synchronized default craft.
+  No extra pool allocation occurs during claim, and no implicit transport occurs.
+- Guard/lifetime test covers nested serialized claim causing vector growth while
+  the borrowed pooled pointer stays stable, stale expected pointer, duplicate/
+  occupied claim, value-only rows, full payload mirror, count sync, direct release
+  without exchange cleanup, linked/invalid slot rejection, LIFO/reset and exactly
+  one teardown release. No retained pointer is used after pool reset as an owner.
+- Read-only isolated SQL under shared SQL lock, exit0:
+  work/mob-drops-inventory-sql.log. Actual synchronized Actor mirror's high-bit UID,
+  count, WORD quality and post-defaultcraft string round-trip through explicit
+  bigint/tinyint/smallint/varchar casts. This is a scalar type/bit compatibility
+  check, NOT full character persistence. No writes, DDL or lifecycle operations;
+  shared full SQL remains coordinator-owned.
+- Worker base predates canonical quest request/start-item sources. Read-only
+  tools/mob_drops_inventory_owners.py snapshots four source/header files plus two
+  original fixtures into ignored work/mob-drops-inventory-owners. Private CMake
+  uses those only when canonical headers are absent; central integration links
+  normal canonical owners. No tracked alternate quest implementation is created.
+  Snapshot manifest: work/mob-drops-inventory-owners.json; SHA256 below.
+  - `include/eternity/game/quest_requests.hpp`: `c5527089335a826292932ce5bb08eeb0f5a2e41d8d530c424b5d745a327e4aa9`
+  - `src/game/quest_requests.cpp`: `59c197bc5261f5a0935e517146a0ecd6ca73bef681391bd35b30e65abf1a8d16`
+  - `include/eternity/game/quest_start_items.hpp`: `c2c91c9490299897941af4e402dbba349502e61c236c397ecf573602a79cbdb5`
+  - `src/game/quest_start_items.cpp`: `eb4dd81f628c057322f22e1fad409d75a7a39214a88b3513fd173b3b56cf8fd1`
+  - `tests/data/quest-requests-flow-oracle.tsv`: `c33e2bb5cff41ae9ac87c4dadf0fc674e783859bab707e3763925ee0e8122b25`
+  - `tests/data/quest-start-items-oracle.tsv`: `fabb479105023441b102e607f0e0adcd42800e212e15596b92e5a7ed88de37d1`
+- Snapshot tool passes py_compile; git diff --check passes.
+
+Remaining: workers06/07 can now bind their existing required providers to these
+exact Actor primitives, with real retained scene/transport/UID owners. Coordinator
+integrates and runs shared full SQL; no global playability completion is claimed.
