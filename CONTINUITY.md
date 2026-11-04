@@ -1715,3 +1715,12 @@ identical source and test passed in the combined admission worktree, including
 for its own targeted `world-admission-unit`, full native build, and isolated
 SQL integration; all are pending for this exact main revision. The entrypoint
 still uses the roster application and does not schedule this method yet.
+
+Coordinator independently regenerated worker 03's original executable queue
+fixture with `.local/oracle-env/bin/python tools/vertical_protocol_queue_oracle.py`
+and `cmp` verified byte-identical output in `.local/coordinator-queue-oracle.tsv`
+of that worktree. Original `CUser::OnRecv` 00466d20 routes system 0002 to close
+reason 1, swallows 0003 and sends A302 to NProtect after incoming decryption.
+The current native selection-family filtering is not sufficient to reproduce
+those routes. Requested worker 03 to include the real packet-system and NProtect
+owners in the inbound split; this is pending and no fix is claimed here.
