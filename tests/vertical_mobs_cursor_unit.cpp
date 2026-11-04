@@ -9,11 +9,11 @@
 using namespace eternity::game;
 void check(bool b) {if(!b)throw std::runtime_error("Mob global traversal mismatch");}
 struct Ports final:ZoneMobServices,MobPoolServices {
-    MobDamageFixture damage;
+    MobDamageFixture damage;unsigned released=0;
     MobDamagePool& damage_pool() override {return damage.pool;}
     std::unique_ptr<MobRuntime> construct() override {return std::make_unique<MobRuntime>();}
     std::uint32_t unix_time() override {return 1;}
-    void release_compiled_ai(MobRuntime&) override {throw std::logic_error("Unexpected compiled AI");}
+    void release_compiled_ai(MobRuntime&) override {++released;}
     void release_stack_ai(MobRuntime&) override {throw std::logic_error("Unexpected stack AI");}
     void close_lua(void*) override {throw std::logic_error("Unexpected Lua");}
     std::uint32_t tick_ms() override {return 1;}
@@ -50,7 +50,7 @@ int main(int argc,char** argv) {try {
         check(join(trace)==trace_expected && join(members)==members_expected);
         for(auto* m:zone.all())zone.leave(*m);
         for(auto* m:mobs)pool.release(*m);
-        ++cases;
+        check(ports.released==4);++cases;
     }
     check(cases==11);
     // A non-current actor may be recycled and reentered while current remains
@@ -59,6 +59,6 @@ int main(int argc,char** argv) {try {
     auto* a=pool.allocate();auto* b=pool.allocate();a->position=b->position={1,0,1};check(zone.enter(*a)&&zone.enter(*b));
     std::vector<unsigned> ids;bool fired=false;
     zone.visit_global([&](MobRuntime& m){ids.push_back(m.id);if(!fired){fired=true;check(&m==a);zone.leave(*b);pool.release(*b);auto* reused=pool.allocate();check(reused==b);reused->position={1,0,1};check(zone.enter(*reused));check(pool.is_prepared(m)&&m.id==1);}});
-    check((ids==std::vector<unsigned>{1,3}));zone.leave(*a);zone.leave(*b);pool.release(*a);pool.release(*b);
+    check((ids==std::vector<unsigned>{1,3}));zone.leave(*a);zone.leave(*b);pool.release(*a);pool.release(*b);check(ports.released==3);
     std::cout<<cases<<" original cursor traces and retained pool lifetime passed\n";
 } catch(const std::exception& e){std::cerr<<e.what()<<'\n';return 1;}}
