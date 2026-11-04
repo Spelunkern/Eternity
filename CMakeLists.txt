@@ -1554,3 +1554,10 @@ if(BUILD_TESTING)
     target_link_libraries(party-runtime-raid-requests-autojoin-unit PRIVATE eternity_game)
     add_test(NAME party-runtime-raid-requests-autojoin-unit COMMAND party-runtime-raid-requests-autojoin-unit ${CMAKE_CURRENT_SOURCE_DIR}/tests/data/party-runtime-raid-requests-autojoin-oracle.tsv)
 endif()
+
+# Worker 09: original integer compound writeback and two-pop increment/decrement.
+if(BUILD_TESTING)
+    add_executable(mob-ai-states-compound-unit tests/mob_ai_states_compound_unit.cpp)
+    target_link_libraries(mob-ai-states-compound-unit PRIVATE eternity_game)
+    add_test(NAME mob-ai-states-compound-unit COMMAND mob-ai-states-compound-unit ${CMAKE_CURRENT_SOURCE_DIR}/tests/data/mob_ai_states_compound-oracle.tsv)
+endif()

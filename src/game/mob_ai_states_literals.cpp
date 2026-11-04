@@ -1,4 +1,4 @@
-#include "eternity/game/mob_ai_states_assignment.hpp"
+#include "eternity/game/mob_ai_states_compound.hpp"
 #include "eternity/game/mob_ai_states_bindings.hpp"
 #include <algorithm>
 #include <bit>
@@ -65,7 +65,7 @@ bool integer_arithmetic(MobAiParameter& result,const MobAiParameter& first,const
     return true;
 }
 }
-static std::int32_t interpret_values(MobAiConfiguredFsm& owner,MobAiConfiguredCondition& condition,bool local_reads,ComparisonMode comparisons,bool arithmetic,bool assignment=false){
+static std::int32_t interpret_values(MobAiConfiguredFsm& owner,MobAiConfiguredCondition& condition,bool local_reads,ComparisonMode comparisons,bool arithmetic,bool assignment=false,bool compound=false){
     auto& stack=owner.value_stack;
     if(stack.capacity<0||static_cast<std::size_t>(stack.capacity)>stack.slots.size())throw std::logic_error("Mob AI literal stack requires its retained capacity/storage");
     stack.top=-1;condition.words[2]=0;std::uint32_t passed=0;
@@ -97,10 +97,19 @@ static std::int32_t interpret_values(MobAiConfiguredFsm& owner,MobAiConfiguredCo
         }else if(token.type==8&&arithmetic){
             const auto first=pop(stack);const auto second=pop(stack);
             assign(numeric,second);numeric_type_known=true;
-            if(assignment&&token.opcode==10){
+            if((assignment&&token.opcode==10)||(compound&&token.opcode>=11&&token.opcode<=16)){
                 if((first.type!=1&&first.type!=3)||(second.type!=1&&second.type!=3))throw std::logic_error("Mob AI assignment requires the unrecovered noninteger matrix");
                 const auto bits=first.type==1?static_cast<std::uint32_t>(first.integer):first.dword;
-                if(second.type==1)numeric.integer=std::bit_cast<std::int32_t>(bits);else numeric.dword=bits;
+                if(token.opcode==10){
+                    if(second.type==1)numeric.integer=std::bit_cast<std::int32_t>(bits);else numeric.dword=bits;
+                }else if(token.opcode==13||token.opcode==14){
+                    const auto left=second.type==1?static_cast<std::uint32_t>(second.integer):second.dword;
+                    const auto value=token.opcode==13?left+1U:left-1U;
+                    if(second.type==1)numeric.integer=std::bit_cast<std::int32_t>(value);else numeric.dword=value;
+                }else{
+                    const auto binary=token.opcode==11?6:token.opcode==12?7:token.opcode==15?8:9;
+                    integer_arithmetic(numeric,first,second,binary);
+                }
                 push(stack,numeric);
                 const auto target=owner.variables.find(second.variable_id);
                 if(target==owner.variables.end())throw std::logic_error("Mob AI assignment requires an existing retained writeback target");
@@ -128,4 +137,8 @@ std::int32_t interpret_mob_ai_integer_arithmetic(MobAiConfiguredFsm& owner,MobAi
 
 namespace eternity::game {
 std::int32_t interpret_mob_ai_integer_assignment(MobAiConfiguredFsm& owner,MobAiConfiguredCondition& condition){return interpret_values(owner,condition,true,ComparisonMode::numeric,true,true);}
+}
+
+namespace eternity::game {
+std::int32_t interpret_mob_ai_integer_compound(MobAiConfiguredFsm& owner,MobAiConfiguredCondition& condition){return interpret_values(owner,condition,true,ComparisonMode::numeric,true,true,true);}
 }
