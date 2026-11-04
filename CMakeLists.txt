@@ -1596,3 +1596,10 @@ if(NOT EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/include/eternity/game/obelisk_runtime
         target_include_directories(mob-applied-skills-obelisk-maps-unit BEFORE PRIVATE "${MOB_APPLIED_SKILLS_OBELISK_MAPS_SNAPSHOT}/include")
     endif()
 endif()
+
+target_sources(eternity_game PRIVATE src/game/user_skill_runtime_attack.cpp)
+if(BUILD_TESTING)
+    add_executable(user-skill-runtime-attack-unit tests/user_skill_runtime_attack_unit.cpp)
+    target_link_libraries(user-skill-runtime-attack-unit PRIVATE eternity_game)
+    add_test(NAME user-skill-runtime-attack-unit COMMAND user-skill-runtime-attack-unit ${CMAKE_CURRENT_SOURCE_DIR}/tests/data/user-skill-runtime-attack-oracle.tsv)
+endif()
