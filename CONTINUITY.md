@@ -1883,3 +1883,13 @@ generation-checked primary/instance selection and deferred lifecycle tests, not
 create another registry. Its report's suggestion to wait for the outgoing cipher
 transition before zone dispatch is superseded by 03's independent-thread evidence:
 original zone entry can precede that transition. No implementation is claimed yet.
+
+Independent 06 implemented original skill damage `8511a2e`: 6144 original
+executions plus the shared-CRT success/damage trace, with focused native and
+normal regression tests passed. Coordinator independently regenerated both
+original instruction oracles and compared the 6144 fixture byte-for-byte.
+Cherry-picked into `coordinator/movement` as `a4de61c`, preserving CMake targets;
+session 22990 runs combined skill-damage and normal-damage tests. Magic damage,
+raw definition/attack-recovery live owners, hit/death services and actual Windows
+thread precision remain unresolved; this is not a production combat path.
+The desktop dashboard records this component milestone.
