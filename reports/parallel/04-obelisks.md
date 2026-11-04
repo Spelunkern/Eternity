@@ -76,7 +76,9 @@ canonical header was modified. CMake additions register only this source/test.
   These services have no default no-op implementation.
 - Production tick/reset dispatch and configuration remain unconnected: native
   `UpdateRespawnObelisk` and `ObeliskReset` bodies are available (see below), but
-  loaders and corpse deadline accounting still need reconstruction/integration.
+  loaders and the live ownership bridges still need integration. Existing
+  `account_obelisk_mob_corpse` already implements the corpse deadline rule;
+  `ZoneMobs` already supplies removal/corpse accounting (see correction below).
   Destroy/respawn do not themselves schedule the next principal respawn.
 
 This is recovered native subsystem behavior, not a playable server.
@@ -202,6 +204,80 @@ per-zone records, a mandatory millisecond clock callback, and the existing
 mandatory world services. `remove_by_id` must implement real zone unlinking,
 respawn accounting and nested obelisk destruction, not a no-op or unconditional
 pointer clear. No new canonical fields or virtual methods are needed. Further
-independent work: bind obelisk configuration/state loading and recover principal
-corpse deadlines/removal coordination; production world providers remain missing.
+independent work: bind obelisk configuration/state loading and connect existing
+native corpse/removal owners; production world provider wiring remains missing.
 This subsystem milestone is not a playable server.
+
+## Startup milestone — InitObelisk
+
+Implementation commit: `71b37a97b95b48e2f4d24e93d85e284758d26476`.
+
+Recovered `ps_game.exe` **CMap::InitObelisk 00429a60**, assembly plus locked Ghidra
+`--process` export. Native `initialize_obelisks` initializes stable, already-bound
+per-zone records in map order, selecting the principal and companions by current
+country. Missing definitions leave their counters/deadlines untouched. Principal
+current=1/deadline=0 are written before allocation, and failed allocation skips
+that principal's companion initialization. Defined companion groups set current
+exactly to count/deadline=0 before exactly count random attempts. Terrain and
+allocation failures do not roll counts back or retry; first-free membership
+insertion retains existing slots.
+
+Startup uses **raw heap 0040ab80 for both principal and companions**, followed by
+world ID assignment and time-XOR-ID seeding before template assignment/Init.
+It emits no game-log spawn packet. Later complete respawn still uses manager
+**CreateMob 0040a5e0 for the principal** and emits its spawn log. A private shared
+population helper preserves these two differences explicitly; there are no new
+virtual methods. Historical `prepare_companion` now documents that the raw-heap
+preparation boundary also applies to startup principals.
+
+`obelisk_runtime_initialize_oracle.py` reuses the observed-port scheduler harness
+with real original InitObelisk followed by three real scheduler ticks. 768
+scenarios retain two obelisks and their companion groups; controlled EnterMob
+callbacks decrement companion current in one fifth of scenarios to drive later
+replenishment. This is explicit live input, not a reconstructed kill/zone service.
+The trace checks ID/seed preparation ordering, initialization/entry, counters,
+deadlines, coordinates, membership identities, absence of startup logs, failed
+allocation, missing definitions and unsigned time boundaries. It contains 622
+startup principals, 886 startup companions, 1,508 prepared IDs and 258 later
+companion replenishments across 2,304 retained ticks.
+
+Validation:
+
+- `python3 tools/dev.py build`: exit 0, no compiler warnings
+  (`work/obelisk-initialize-build.log`).
+- `python3 tools/dev.py test`: exit 0, **123/123 tests passed**, 33.81 seconds
+  (`work/obelisk-initialize-tests.log`). Includes the new 768 startup scenarios /
+  2,304 retained ticks and all prior destroy/respawn/scheduler/reset comparisons.
+- Original startup fixture generation/regeneration/`cmp`: exit 0, outputs
+  `work/obelisk-runtime-initialize-oracle.tsv` and
+  `work/obelisk-runtime-initialize-repeat.tsv` match byte-for-byte.
+- Shared oracle regression: exit 0; `work/obelisk-runtime-timers-regression.tsv`
+  remains byte-identical to the tracked original scheduler fixture.
+- Locked focused Ghidra export: exit 0 (`work/obelisk-initialize-ghidra.log`).
+  Final `sha256sum -c SHA256SUMS`: exit 0 for all original EXE/PDB pairs
+  (`work/obelisk-initialize-final-hashes.log`). `git diff --check`: clean.
+
+No SQL changes; final isolated SQL integration remains coordinator-owned.
+
+Integration correction: the existing canonical `account_obelisk_mob_corpse`
+(`src/game/mobs.cpp`, original UpdateMobDeath **00421bdd**) already implements
+`next < now || next == UINT32_MAX` followed by `now + respawn_time` without count
+changes. `ZoneMobs::update_deaths` already calls it, and
+`ZoneMobs::remove_by_id` already implements forced removal/accounting with required
+`MobRemovalOwners` callbacks. Earlier report statements that these bodies needed
+reconstruction were too broad: the missing work is their binding to this obelisk
+projection and real map/pool/transport owners. Do not duplicate those bodies.
+
+A faithful raw-allocation bridge needs a canonical pool interface decision:
+`MobPool::allocate()` currently combines heap allocation, ID assignment and RNG
+seeding. This runtime deliberately exposes raw allocation then preparation, as
+seen at **00429acf–00429b05** (startup principal) and
+**0042a96b–0042a99d** (respawn companion). Suggested canonical split:
+`MobPool::allocate_raw()` plus `prepare_allocated(MobRuntime&)`, with existing
+`allocate()` retaining manager CreateMob semantics by composing both. A provider
+must not increment/reseed twice or substitute a default no-op preparation.
+No shared pool/header changes were made here.
+
+Next independent work: obelisk configuration/state loading and stable per-zone
+respawn/source binding. Production startup/tick/reset dispatch and world ports
+remain unconnected; this milestone does not make the server playable.
