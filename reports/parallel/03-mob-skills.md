@@ -1,6 +1,7 @@
 # Worker 03: mob applied skill ownership
 
-The native list/pool owner, manager IDs and expiration coordinator are recovered.
+The native list/pool owner, manager IDs, expiration and non-damage effect
+removal are recovered.
 Production world/skill-effect integration is still required; the server is not
 playable. Canonical headers and other owners' files remain untouched.
 
@@ -15,7 +16,8 @@ complete read-only exports: `/home/franco/Projects/Eternity/work/reverse/ps_game
 | --- | --- |
 | `CMob::ClearApplySkill` **004a0990** | Head-to-tail log-before-unlink; return records to shared LIFO skill heap. No effect reversal, final periodic damage or client removal packet. |
 | `CMob::ChkEndTimeSkill` **004a12f0** | Unsigned `end_tick <= now`; log, unlink, `RemApplySkill`, recycle, advance live shared cursor. |
-| `CMob::RemApplySkill` **004a0da0** | Required effect-removal body; can invoke `Death`, recursively clearing the remaining list. Not implemented by this coordinator. |
+| `CMob::RemApplySkill` **004a0da0** | Non-damage branches implemented. Damage types 0x3d/0x3f still require an explicit provider; they can invoke Death and recursively clear the remaining list. |
+| `CMob::SetSkillAbility` **004a1420** | Immediate wrapping additions to base/attack fields; individual attack rebuild or speed callback. Disable counters have no callback. |
 | `SSyncHeap<CSkill>::Alloc` **0040b180** | Pop free head first; allocate only if empty; count attempts even on failure. Fresh instance ID is zeroed; other payload retained. |
 | `CSkill::CSkill` **0040a0c0** | Initialize instance ID (+8) only. |
 | `SSyncList<CSkill>::AddBack` **00486200** | Ordered admission and count increment. |
@@ -63,8 +65,37 @@ Required coordinator changes:
    canonical `reset_mob_attack` is also used by Init and is only a stat helper;
    adding unconditional clear there would incorrectly change Init behavior.
 5. Actual admission must initialize definition, ID/level, attacker, ticks and
-   effect state. `AddApplySkill`, periodic application (`ChkKeepSkill`), real
-   `RemApplySkill` effects and production combat/world wiring remain missing.
+   effect state. `AddApplySkill`, periodic application (`ChkKeepSkill`), damage
+   removal branches and production combat/world wiring remain missing.
+6. Bind removal to `remove_mob_applied_skill_effects(mob, skill, definition,
+   original_base_attribute, services)`. It mutates existing MobRuntime fields;
+   no new canonical field is needed. `base_attribute` explicitly projects the
+   immutable mob template's byAttrib (+0x40), not its modified runtime attribute.
+   `SkillDefinition::detail` and abilities project stSkillInfo +0x32/+0x7c.
+   Supply actual attack rebuild, speed delivery and final-damage providers.
+
+## Non-damage effect behavior
+
+`mob_applied_skills_effects.*` implements the complete SetSkillAbility dispatch:
+wisdom/dexterity/luck, movement/attack speed, all three attack-add categories and
+attack-disable counters. Values use x86-compatible 32-bit wrapping addition.
+Native `AttackAdd` fields map original offsets +0/+4/+8/+12 to
+accuracy/attack/evasion/defense; types 0x1a..0x1c target defense (+12), and
+0x1d..0x1f target evasion (+8). Unknown types are original no-ops.
+
+RemApplySkill types 0x3e/0x43 apply all three unsigned ability values positively,
+in order, with an immediate callback after each recognized mutation. Original
+AddApplySkillDebuff **004a0ca0** negates them at application; removal does not.
+Zero values still trigger recognized-type callbacks. Definition slots are read
+live, so a callback's later-slot change affects the next application. Types
+0x40/0x41/0x42 decrement stun/stop/sleep without flooring and send speed; 0x44
+restores the base attribute; 0x48 clears vision-fix ID only. Unknown details and
+0x45..0x47 retain their original no-op behavior. No effect handler recycles the
+record itself; the expiration/list owner does that after the effect call.
+
+Damage types 0x3d/0x3f dispatch to the mandatory `finish_damage_skill` service.
+Their periodic final damage, death/name handling and packet bodies remain
+unimplemented; dispatch tests do not claim those bodies execute natively.
 
 ## Milestones
 
@@ -73,43 +104,43 @@ Required coordinator changes:
 | `0b9643aeb251eb2c2c23bb02da438bb6b2f748fa` | List ownership, clear and destruction | 64 scenarios / 956 original operations; 120/120 tests, 33.37 s. |
 | `7ac2fe02a3f33f1d4a9949b20d2b25cbdc6f57fb` | Shared manager skill instance IDs | 64 scenarios / 1,088 original operations; 512 concurrent creations plus 512 reused; 121/121 tests, 30.59 s. |
 | `8053594202a19aece9476e0926898319704e719d` | Expiration coordination and live cursor | 128 original scenarios / 1,600 operations; 122/122 tests, 41.03 s. |
+| `79f0cc8e36ff6261bb28c78d06fbfb0f44174e8e` | Non-damage effect removal and ability dispatch | 1,282 original cases plus native expiration/attack composition; 123/123 tests, 29.79 s. |
 
 ## Current block validation
 
 - `sha256sum -c SHA256SUMS`: exit 0; all 12 original EXE/PDB files match.
-  Log: `work/mob-applied-skills-expiration-hashes.log`.
-- Locked Ghidra `--process --output work/exports/03-mob-skills`, with JDK 21 and
-  Ghidra 12.1.4: exit 0. Focused expiration/removal/clear export.
-  Log: `work/mob-applied-skills-expiration-export.log`.
-- New oracle generation with `.local/oracle-env/bin/python`: exit 0; 128 scenarios,
-  832 admissions, 512 expiration passes and 256 clears. A second generation
-  matches the fixture byte-for-byte. Generated under `work/` and copied before
-  any test reads the target fixture.
-- The oracle executes real expiration, list, pool and recursive clear operations.
-  `RemApplySkill` is explicitly an observed required port, not recovered effects:
-  modes preserve/modify payload, change a later record's deadline, clear the list,
-  and clear/reappend a recycled record. It checks logging arguments and linked
-  state before unlink, plus effect-call state after unlink and before recycle.
-  Snapshots compare both owners, heap order/count/attempts, complete ten-word
-  payloads and ordered log/removal events. Ticks include equality, zero,
-  signed-boundary values, maximum and wrapped next deadlines; comparison is
-  absolute unsigned, not elapsed-time subtraction.
+  Log: `work/mob-applied-skills-effects-hashes.log`.
+- Locked Ghidra process export: exit 0, JDK 21 / Ghidra 12.1.4 and the required
+  `work/exports/03-mob-skills` output; RemApplySkill, SetSkillAbility and
+  AddApplySkillDebuff. Log: `work/mob-applied-skills-effects-export.log`.
+- New original oracle: exit 0, 770 direct ability cases and 512 non-damage removal
+  cases. Repeat output matches `tests/data/mob-applied-skills-effects-oracle.tsv`
+  byte-for-byte. Generated under `work/` before copying, with no fixture reader.
+- The oracle executes original mutation/dispatch instructions. SetAttack and
+  SendSpeed are observed required ports, not simulated original bodies. Snapshot
+  comparisons include all projected fields, HP/status/target canaries, definition
+  slots and exact callback order/state. Mutating ports change wisdom and a later
+  ability slot, testing live reads and lack of callback batching. Damage-removal
+  branches are excluded from this original fixture.
 - `python3 tools/dev.py build`: exit 0, no compiler warnings.
-  Log: `work/mob-applied-skills-expiration-build.log`.
-- First full native test run failed at the new fixture (121/122 passed): Unicorn
-  had reused a translated callback block after external code replacement. Fixed
-  the oracle to invalidate that cache and assert actual callback `AddBack`
-  execution. Regenerated deterministically; native implementation was unchanged.
-  Initial failure log: `work/mob-applied-skills-expiration-test.log`.
-- Corrected fixture `python3 tools/dev.py test`: exit 0, **122/122 passed**,
-  41.03 seconds; expiration, creation and original ownership suites all pass.
-  Log: `work/mob-applied-skills-expiration-test-fixed.log`.
-- New oracle `py_compile` and staged whitespace check: exit 0.
+  Log: `work/mob-applied-skills-effects-build.log`.
+- `python3 tools/dev.py test`: exit 0, **123/123 passed**, 29.79 seconds.
+  All four applied-skill suites pass. New native composition expires three real
+  owned records, applies state removal and calls the actual native attack rebuild,
+  checking the complete log/removal/speed/rebuild trace and final attack value.
+  Two additional dispatch checks require the outstanding damage provider to run.
+  Log: `work/mob-applied-skills-effects-test.log`.
+- New oracle `py_compile` and whitespace checks: exit 0.
+
+Historical validation note: the expiration milestone's first fixture failed from
+Unicorn's translated-code cache; that oracle was corrected with invalidation and
+actual AddBack assertions. Its corrected complete run passed 122/122 (41.03 s),
+recorded in `work/mob-applied-skills-expiration-test-fixed.log`.
 
 SQL contracts are unaffected; no SQL access or sanitizer run was performed for
 this block. The coordinator owns complete isolated SQL integration.
 
-Next independent block proposal: reconstruct actual `RemApplySkill` effect
-reversal in this prefix using an explicit mob-state projection, starting with
-state counters/speed, attribute restoration and vision-fix removal, then periodic
-final damage and client delivery through required providers.
+Next independent block proposal: reconstruct RemApplySkill's remaining damage
+coordination (0x3d/0x3f), preserving final periodic calculation, previous-attacker
+name lifetime, death and the exact result packet through required combat/world
+providers. Do not duplicate the combat or logging owners' underlying bodies.
