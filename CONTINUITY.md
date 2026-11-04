@@ -1837,3 +1837,15 @@ covering protocol TCP/gate, persistence, combat caller/success/skill success/
 damage, movement and inventory (`.local/gameplay-composed-tests.log`). The
 full 885-step build had already passed; isolated SQL remains queued in the same
 session. These are component tests, not real-world providers or client gameplay.
+
+Main session 7699 completed exit 0: targeted world-admission test, full build and
+isolated SQL suite passed for `25d85e2` (`.local/main-zone-wait-{target,build,sql}.log`).
+After that source-frozen validation, coordinator cherry-picked entry delivery,
+location-3 gate/TCP tests, single-snapshot persistence and SQL reload fixture
+as `d766401..5e85db5`. These are the corresponding components from the
+validated ingress branch; its optional pause/resume socket API was deliberately
+not imported because its scheduling/cipher semantics remain under review. Main
+session 39827 now runs full build, full native CTest suite and isolated SQL for
+this exact combined revision; all results are pending. The application remains
+roster-only and actual production world services and original-client play remain
+unfinished.
