@@ -1242,3 +1242,10 @@ its protocol/cipher state at the original transition before that packet arrives.
 Coordinator requested exact transition and crypto evidence plus a TCP test from
 03. The fixture and adapter remain uncommitted/unvalidated; do not infer entry
 works from this gate alone. Session 99411 remains live waiting on build locks.
+
+Original ps_game.exe disassembly shows successful PacketUserDBChar writes
+CUser+5756=1 at 0046d6f5, immediately before flush 0046d6fc; the same flag is
+CUser::LeaveCharSelect 00466c80. Incoming traffic retains AES per existing crypto
+research. Sent evidence to independent 03 for exact socket/cipher transition,
+ordering relative to previous entry sends, world location 3 and 0201, and TCP
+regression. This evidence does not yet establish a working world entry.
