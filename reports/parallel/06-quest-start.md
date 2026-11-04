@@ -11,7 +11,8 @@ Read-only Ghidra exports: `/home/franco/Projects/Eternity/work/reverse/ps_game.e
 
 - `CUser::QuestEnableStart` **0047f080**: enabled byte `+1cc`, inclusive level
   bounds `+102/+104`, country selector `+106`, job flags `+10a`, grow `+107`.
-  Country selectors 3 and 4 mean user countries 3 and 2 respectively. Unknown
+  The definition byCountry selectors 3/4 compare user families 3/2 respectively;
+  the original user operand +12e is family, not faction (+12d). Unknown
   selectors bypass country checks. Grow 2 rejects only requirement 3; grow >=3
   bypasses grow checks. Sex, party and party-job fields are not checked.
 - `CUser::QuestFindFinishSuccess` **0047e520**: any nonzero successful entry
@@ -50,7 +51,7 @@ not successful gameplay services.
 
 Canonical integration changes needed:
 
-- Project user level (`+136`), country (`+12e`), grow (`+12f`), job (`+134`), last
+- Project user level (`+136`), family (`+12e`), grow (`+12f`), job (`+134`), last
   use deadline (`+57d0`) and item (`+57d4`), plus finished ID/success entries.
 - Supply positional quest records and live NPC runtime handle/type/ID.
 - Connect `QuestStartWorld::add` through Block 3 and the canonical owner. Evidence
@@ -572,3 +573,103 @@ Concrete next block within this prefix: a QuestStartWorld bridge delegating
 active/finished lookup to actual QuestRuntime and add/give to these concrete
 adapters. NPC lookup, requirement consumption and full start-log context/delivery
 remain mandatory real root ports; do not duplicate worker 07 or fabricate a world.
+
+## Block 8: concrete QuestStartWorld and live admission/log evidence
+
+`quest_start_items_actor_world.hpp/cpp` implements the remaining QuestStartWorld
+bridge over the SAME retained Actor, QuestRuntime, definition owners, item/quest
+pools and live ItemIds from Block 7. It invokes the existing request coordinator,
+uses actual active lookup / finished ownership, delegates add/give to those
+concrete adapters, and serializes the actual start-log packet before client send.
+No second quest catalog/list, inventory, pool, UID generator or private user state
+is created. Positional row lookup precedes a one-record coordinator view; allocation
+keeps the original row, never the embedded definition ID.
+
+NPC callbacks can change user state or finish a prerequisite. Admission fields
+and a non-owning value view of actual finished quests are refreshed AFTER that
+callback. GetTickCount's returned tick is compared against the live post-callback
+last-use deadline; the pre-clock item-ID/admission checks are not repeated.
+Per-request frames retain log value snapshots and preserve nested-call state
+without restoring the canonical owner's shared active cursor. Common log strings
+are copied before the NPC-context callback; no log state is reread after client
+send. All required NPC, requirement, calendar, log-context and transport services
+are pure mandatory ports, not success/no-op fallback implementations.
+
+### Important corrected field identity
+
+Ghidra evidence proves **CUser+12e is FAMILY**, not faction country. Country is
+**+12d**. `CUser::EnterDead` **004584d0** copies +12d to typed CDead.m_byCountry
+and +12e to CDead.m_byFamily. PDB stUserInfo independently has country/family at
++5/+6 relative to the user's +128 record. `QuestEnableStart` **0047f080** compares
++12e at **0047f0c6..0047f119**, despite definition field name `byCountry`.
+
+The old `QuestStartUser.country` projection is therefore a legacy MISNOMER for
+family. Its raw-byte fixtures/algorithm were correct, but the initial report
+named that user operand incorrectly; that text is corrected above. The new bridge
+reads actual `Actor.appearance().identity.family`, grow and job plus actual
+`Actor.status().level`. Differential original/native cases deliberately give
+faction and family DIFFERENT values and cover family selectors 0..5, grow modes
+and six one-hot job flags. A faction-based adapter would fail both rejection and
+admission cases. No old shared header was edited.
+
+Minimal canonical cleanup requested: rename/document QuestStartUser.country as
+family (+12e), preserving layout/algorithm; direct user projections must bind
+family, not faction. Do not rename definition byCountry or change SQL contracts.
+Focused locked Ghidra --process exports for QuestEnableStart/EnterDead and the
+use/previous checks are under ignored `work/exports/06-quest-start/ps_game.exe`.
+
+### Complete original request to real retained grants
+
+`quest_start_items_actor_world_oracle.py` executes original ps_game.exe request
+**0047f220**, real QuestFind/Finish/FinishSuccess **0047e4b0/0047e5b0/0047e520**,
+EnableStart **0047f080**, checks **0047f390..0047f570**, actual QuestAdd
+**0047e010**, SetGameLogMain **0045b0d0**, QuestStart **0047ea70**, start-item loop
+**0047eb70**, BOTH actual QuestAddItem bodies **0047e620/0047e6f0**, real item
+lookup and inline UID instructions. Only external world/requirements, raw
+allocation, clocks/locks and transports are ports. Log storage is initialized
+before executing the real common-header body; original packed log clock is a
+controlled clock response. Default craft initializes every DB item packet byte.
+No byte masking or recorded native UID responses are used.
+
+224 original cases yield 79 starts and 159 retained Actor grants. Cases include
+NPC-driven level rejection, actual newly finished prerequisites, newly active
+duplicate rejection, missing NPC, failed consumption/allocation, invalid rows and
+unknown start types, post-clock deadline extension and last-ID change, tick wrap,
+pre-client log snapshot with later NPC/user mutation, and aliasing user-lease
+release in the NPC callback. Native uses real Actor/QuestRuntime/pools/replicas;
+the SAME clock drives actual QuestAdd and the SAME shared live ItemIds through
+the grant adapter, so full DB/client/log bytes/order and final owned state match.
+
+Validation: final `python3 tools/dev.py build`: exit 0, no warnings
+(`work/quest-start-items-actor-world-build-family.log`). Final
+`python3 tools/dev.py test`: exit 0; **128/128** tests in **45.64 s**
+(`work/quest-start-items-actor-world-test-family.log`). New suite matches
+**224** complete original flows / **79** starts / **159** actual Actor grants.
+Earlier complete-flow run also passed (42.19 s), but only the final result
+includes the family/faction differential audit. Original repeat, all EXE/PDB
+hashes, Python compilation and `git diff --check` pass. No SQL code/schema/lifecycle changes;
+full isolated SQL/central integration remain coordinator-owned.
+
+### Root binding / remaining work
+
+- Bind find_start_npc to the real retained NPC/zone owner. Resolve current NPC
+  log type/name at capture; do not substitute a stale identity snapshot.
+- Bind require_start_item to worker 07's actual
+  QuestRequestsActorInventory::find_item (or QuestRequestsActorWorld::find_item),
+  retaining its Actor/pool identity and serialized callback restrictions. This
+  module does not duplicate consumption/completion/reward bodies.
+- Supply real start_log_context / send_start_log and DB/client transports with
+  packet/connection retention. All same Actor/user aliasing leases stay live.
+- Bind QuestStartItemsActorUseState references to the actual last-item-use owner
+  (+57d4 item, +57d0 deadline) retained by the aliasing Actor user lease. Actor does
+  not yet expose this bookkeeping in the inspected canonical header; do not
+  create a zero-default shadow, dangling stack snapshot or permissive deadline.
+  An authoritative item-use owner/accessor or an explicitly assigned bookkeeping
+  recovery is still needed to wire type-4 starts into the root.
+
+The bridge is ready for these root services, not a running/playable server. Next
+task proposal: assign actual item-use bookkeeping/owner binding, or root dispatch
+wiring with real NPC, worker-07 inventory and log/session services after the frozen
+canonical batch. Further disconnected owner replacements are not useful.
+
+Block 8 implementation commit: `73edfa41bde5fad35a6418930f3a44d9db5ecdbf`.
