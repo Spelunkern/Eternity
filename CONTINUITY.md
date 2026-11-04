@@ -1255,3 +1255,9 @@ PacketProcessing gate vectors (60 cases) and byte-compared them successfully;
 the native gate/actor admission composition and TCP cipher transition remain
 unvalidated. These inputs are currently uncommitted in worker 03 and are not a
 claim that original client world entry works.
+
+Coordinator regenerated independent 04's 4096 stUserMoveChk::Update original
+fixture cases and byte-compared successfully. The fixture executes original
+Update/Reset and CRT sqrt with patched deterministic clock boundary; this
+verifies reproducibility only. The native movement implementation is still
+uncommitted and awaiting compilation/tests. Main validation 99411 remains live.
