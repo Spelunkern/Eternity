@@ -1,3 +1,4 @@
+#include "mob_damage_fixture.hpp"
 #include "eternity/game/linked_mobs.hpp"
 #include <algorithm>
 #include <iostream>
@@ -5,6 +6,8 @@
 using namespace eternity::game;
 void check(bool value) {if(!value) throw std::runtime_error("Zone corpse cleanup invariant failed");}
 struct Services final:ZoneMobServices,MobPoolServices,RandomSource {
+    MobDamageFixture damage_fixture;MobDamagePool& damage_pool() override {return damage_fixture.pool;}
+
     ZoneMobs* zone=nullptr;bool cleanup=false;std::vector<std::uint32_t> sent,released;
     std::unique_ptr<MobRuntime> construct() override {return std::make_unique<MobRuntime>();}
     std::uint32_t unix_time() override {return 1;}

@@ -6,7 +6,7 @@ namespace eternity::game {
 MobRuntime* MobPool::allocate() {
     MobRuntime* mob=nullptr;
     if(!available_.empty()) {mob=available_.back();available_.pop_back();}
-    else {auto object=services_.construct();++construction_attempts_;if(!object) return nullptr;mob=object.get();objects_.push_back(std::move(object));}
+    else {auto object=services_.construct();++construction_attempts_;if(!object) return nullptr;object->damage=std::make_unique<MobDamageLedger>(services_.damage_pool());mob=object.get();objects_.push_back(std::move(object));}
     mob->id=++counter_;mob->drop_random.seed(services_.unix_time()^mob->id);return mob;
 }
 void MobPool::release(MobRuntime& mob) {

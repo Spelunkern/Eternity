@@ -1,0 +1,10 @@
+# ps_game.exe SHA256 0fb7c9f13b5bcf186118f8bfe73ab214226b93e8aa502b8e6fded4a8312bc547; Add 004b8dd0, Reset 004b8d10, destructor 004b8cf0 and real list Release 004b9480. Allocator/delete and locks ports; actual loop beyond Ghidra noreturn annotation executes.
+# initial_records reset_first allocated_attempts free_count deleted_count next_owner_record_id
+0	0	1	0	0	0
+0	1	1	0	0	0
+1	0	2	0	1	1
+1	1	1	0	0	0
+3	0	4	0	3	3
+3	1	3	2	0	2
+16	0	17	0	16	16
+16	1	16	15	0	15

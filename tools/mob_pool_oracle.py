@@ -52,15 +52,20 @@ def main():
             out+=bytes(cpu.mem_read(at+0x5c,4))+bytes(cpu.mem_read(at+0x124,8))+bytes(cpu.mem_read(at+0x50,12))
             out+=bytes(cpu.mem_read(at+0x44,4))+bytes(cpu.mem_read(at+0x40,4))+bytes(cpu.mem_read(at+0x284,4))+bytes(cpu.mem_read(at+0x290,4))+bytes(cpu.mem_read(at+0x27c,4))
             out+=bytes(cpu.mem_read(at+0x2bc,20))+bytes(cpu.mem_read(at+0xc7c,8))
+            damage=at+0x1f0;head=get(damage+4);node=get(head+4);out+=bytes(cpu.mem_read(damage,1))+struct.pack('<I',get(damage+0x24))
+            while node!=head:
+                out+=bytes(cpu.mem_read(node+8,1))+bytes(cpu.mem_read(node+12,16));node=get(node+4)
         return out
-    print(f'# ps_game.exe SHA256 {digest}; CreateMob 0040a5e0, FreeMob 0040a630, Alloc 0040ab80, CMob constructor 0048fd50, ReleaseLuaFSM 004b5260, actual empty FSM cleanup and SRandom seeding. Ports: allocator failure, locks, time, interlocked increment, Lua close. Configured retained fields are seeded explicitly.')
-    print('# B scenario counter; A fail time expected; C index config expected; F index expected. Expected: returned object index BYTE (255 none), event length DWORD/events, counter/construction/free/objects DWORDs, free-list order, per-object retained state/random projection.')
+    print(f'# ps_game.exe SHA256 {digest}; CreateMob 0040a5e0, FreeMob 0040a630, Alloc 0040ab80, CMob constructor 0048fd50, ReleaseLuaFSM 004b5260, actual empty FSM cleanup, SRandom seeding and embedded damage Add/Reset. Ports: allocator failure, locks, time, interlocked increment, Lua close. Configured retained fields are seeded explicitly.')
+    print('# B scenario counter; A fail time expected; C index config expected; F index expected; G index adds damage, H index resets damage. Expected: returned object index BYTE (255 none), event length DWORD/events, counter/construction/free/objects DWORDs, free-list order, per-object retained state/random and embedded damage projections.')
     for scenario in range(128):
-        cpu.mem_write(manager,bytes(0x1000));cpu.mem_write(heap,bytes(0x40000));counter=(0,0xfffffffe,0xffffffff,scenario*31)[scenario%4];put(manager+8,counter)
+        cpu.mem_write(manager,bytes(0x1000));cpu.mem_write(heap,bytes(0x40000));counter=(0,0xfffffffe,0xffffffff,scenario*31)[scenario%4];put(manager+8,counter);put(0x3ed353c,0,0,0)
         context.update(heap=heap,objects=[],events=b'',time=0,times=0,attempts=0,fail=False)
         print('B',scenario,counter,sep='\t')
         active=[]
         operations=[('A',1),('A',0),('A',0),('C',0),('C',1),('F',0),('F',1),('A',1),('A',0),('A',int(scenario%2==0)),('C',0),('F',0),('A',1),('F',1),('F',0)]
+        operations[3:3]=[('G',0),('G',1)]
+        operations += [('H',0),('H',1)]
         for step,op in enumerate(operations):
             context['events']=b'';result=255;args=list(op)
             if op[0]=='A':
@@ -69,6 +74,10 @@ def main():
                     # Untouched constructor bytes are deliberately known allocator
                     # fill, rather than assumptions about uninitialized source fields.
                     active.append(result)
+            elif op[0] in ('G','H'):
+                damage=context['objects'][op[1]]+0x1f0;put(stack+0x8000,stop,111,0x7fffffff,100,7);cpu.reg_write(UC_X86_REG_ESP,stack+0x8000);cpu.reg_write(UC_X86_REG_ESI,damage);cpu.reg_write(UC_X86_REG_EBX,1)
+                cpu.emu_start(0x4b8dd0 if op[0]=='G' else 0x4b8d10,stop,count=100000)
+                if cpu.reg_read(UC_X86_REG_EIP)!=stop:raise RuntimeError('Embedded mob damage operation did not return')
             elif op[0]=='C':
                 index=op[1];at=context['objects'][index];config=(scenario+step)%8;args.append(config)
                 put(at+0x124,0x12340000+config,0x87650000+config);cpu.mem_write(at+0x50,struct.pack('<3f',config+0.25,-3.5,config+1.75))

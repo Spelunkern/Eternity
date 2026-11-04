@@ -1,3 +1,4 @@
+#include "mob_damage_fixture.hpp"
 #include "eternity/game/experience_award.hpp"
 #include "eternity/game/mob_experience.hpp"
 #include "eternity/storage/sql_server.hpp"
@@ -23,6 +24,8 @@ void require(bool condition, const char* message) {
 void verify_mob_population(const eternity::game::MobRuntimeTemplates& definitions) {
     using namespace eternity::game;
     struct Services final:MobPoolServices,ZoneMobServices {
+    MobDamageFixture damage_fixture;MobDamagePool& damage_pool() override {return damage_fixture.pool;}
+
         unsigned int views=0,releases=0,removals=0;
         std::unique_ptr<MobRuntime> construct() override {auto mob=std::make_unique<MobRuntime>();mob->drop_random=ServerRandom(unix_time());return mob;}
         std::uint32_t unix_time() override {return 1700000000;}
@@ -39,11 +42,17 @@ void verify_mob_population(const eternity::game::MobRuntimeTemplates& definition
     MobInitPorts ports{random,[&]{return services.tick_ms();},[](MobRuntime&,std::uint8_t)->bool {throw std::runtime_error("Unexpected compiled AI creation in SQL spawn fixture");},[](MobRuntime&) {throw std::runtime_error("Unexpected Lua creation in SQL spawn fixture");}};
     unsigned int linked=0;require(population.initialize(zone,pool,ports,[&]{++linked;require(zone.size()==2,"Linked groups initialized before regular SQL mobs");return false;}),"Linked-group failure changed original regular spawn result");
     require(linked==1 && services.views==2 && serial==102 && population.areas()[0].spawns[0].current==2 && population.areas()[0].spawns[1].current==0,"SQL population counts/bindings changed");
-    const auto first_population=zone.all();
+    const auto first_population=zone.all();auto* retained_damage=first_population[0]->damage.get();
+    require(retained_damage && retained_damage->fair_combat && retained_damage->records().empty(),"SQL mob constructor did not bind an empty fair damage owner");
+    retained_damage->fair_combat=false;retained_damage->add(1,777,100,500,7);
+
     runtime.instance_portals.fill({55,1});runtime.release_mob_population(pool);
     require(zone.size()==0 && pool.available()==2 && services.releases==2 && runtime.instance_portals[0].id==0 && runtime.instance_portals[9].country==0,"SQL bulk mob release/portal reset changed");
     for(auto* mob:first_population) require(mob->zone==&zone && mob->cell.has_value() && mob->respawn==&population.areas()[0].spawns[0],"SQL bulk release cleared retained source bindings");
     require(population.initialize(zone,pool,ports,[&]{++linked;return false;}) && linked==2 && services.views==4 && zone.find(103)==first_population[1] && zone.find(104)==first_population[0],"SQL population did not reuse released mobs in original LIFO order");
+    MobDamageRecord credit;require(zone.find(104)->damage.get()==retained_damage && !retained_damage->fair_combat && retained_damage->maximum_damage(credit) && credit.id==777 && credit.damage==100 && credit.party==7 && zone.find(103)->damage->records().empty(),"SQL mob recycling/Init changed damage ownership or retained credit");
+    retained_damage->reset();require(retained_damage->fair_combat && retained_damage->records().empty() && services.damage_fixture.pool.available().size()==1,"SQL explicit damage reset did not return the shared record");
+
     for(auto* mob:zone.all()) {
         require(mob->definition==definitions.find(1) && mob->respawn==&population.areas()[0].spawns[0] && mob->hp==2765 && mob->sp==874 && mob->mp==1578 && mob->dexterity==60 && mob->wisdom==40 && mob->status==0 && mob->next_new_target==4984 && mob->position.x==-0.25F && mob->position.y==7 && mob->respawn_position.z==0.75F && mob->drop_random.seed()==(1700000000U^mob->id),"Restored SQL mob did not survive allocation, initialization and zone entry");
         require(zone.leave(*mob),"Cannot detach SQL fixture mob");pool.release(*mob);

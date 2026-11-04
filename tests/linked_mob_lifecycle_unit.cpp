@@ -1,3 +1,4 @@
+#include "mob_damage_fixture.hpp"
 #include "eternity/game/zones.hpp"
 #include <algorithm>
 #include <bit>
@@ -10,6 +11,8 @@ void require(bool value,const char* message) {if(!value) throw std::runtime_erro
 void number(Bytes& b,std::uint32_t v,unsigned int n=4) {for(unsigned int i=0;i<n;++i) b.push_back(static_cast<std::uint8_t>(v>>(8*i)));}
 Bytes unhex(const std::string& text) {Bytes b;for(std::size_t i=0;i<text.size();i+=2) b.push_back(static_cast<std::uint8_t>(std::stoul(text.substr(i,2),nullptr,16)));return b;}
 struct Services final:MobPoolServices,ZoneMobServices,RandomSource,LinkedMobWorld {
+    MobDamageFixture damage_fixture;MobDamagePool& damage_pool() override {return damage_fixture.pool;}
+
     Bytes events;std::vector<MobRuntime*> objects;std::uint32_t* counter=nullptr;ZoneMobs* zone=nullptr;
     RuntimeZone* runtime=nullptr;LinkedMobPopulation* population=nullptr;MapPortal portal;std::array<MobRuntime,3> dummies;
     unsigned int fail=0,attempts=0;std::uint32_t time=0,tick=0,ticks=0;bool constructing=false,ai_ok=false;

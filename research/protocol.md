@@ -2890,3 +2890,22 @@ actor test advances persisted/live attributes, observes the updated level during
 DB delivery, rebuilds attack, announces maxima, recovers resources and verifies
 damage reset. Scene/party/guild/game-log ownership and production world dispatch
 still require their complete runtime providers.
+
+
+Pool-created MobRuntime objects now bind a unique MobDamageLedger to the required
+shared damage heap supplied by MobPoolServices. Source CMob constructor
+(`ps_game.exe`, `0048fd50`) embeds this owner at 01f0 with fair combat enabled;
+CMob::Init (`00490040`) and FreeMob (`0040a630`) retain its records and flags.
+The extended 128-pool/2,432-operation original fixture compares that embedded
+state across Add, recycling, reuse and explicit Reset. SQL population tests also
+retain credit through bulk release, reused initialization and explicit reset,
+checking that credit does not migrate to another object's ledger.
+
+Damage destruction differs from Reset: `CDamageMob::~CDamageMob` (`004b8cf0`)
+calls actual `SSyncList<stDamageMob>::Release` (`004b9480`) to delete active
+records, without returning them to the shared heap. Native ledger destruction
+now discards active records rather than recycling them. Eight original lifecycle
+scenarios execute Add/Reset/destruction and subsequent allocation to distinguish
+both paths, with allocator/delete/lock boundaries ported. Raw instructions after
+the Ghidra noreturn annotation confirm the source deletion loop, and execution
+checks the entire loop. Mob death reward ownership still remains to be wired.

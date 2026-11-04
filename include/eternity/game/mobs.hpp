@@ -2,6 +2,7 @@
 #include "eternity/game/stats.hpp"
 #include "eternity/game/pathfinding.hpp"
 #include "eternity/game/random.hpp"
+#include "eternity/game/mob_damage.hpp"
 #include <functional>
 
 namespace eternity::game {
@@ -48,6 +49,9 @@ struct MobRuntime {
     std::int32_t lua_ai=0,only_lua_attack=0,hold_position=0,move_mode=0;
     std::uint32_t combat_timeout=0,retarget_time=0,lua_attacked_count=0,lua_order_time=0,function_type=0,current_time=0;
     UserPosition move_target;
+    // Pool allocation binds this per-mob owner to the shared damage heap.
+    // Init and recycling deliberately retain its records.
+    std::unique_ptr<MobDamageLedger> damage;
     ServerRandom drop_random;void* lua_state=nullptr;
 private:
     friend class ZoneMobs;friend class MobPool;

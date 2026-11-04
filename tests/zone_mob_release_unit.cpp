@@ -1,3 +1,4 @@
+#include "mob_damage_fixture.hpp"
 #include "eternity/game/zones.hpp"
 #include <algorithm>
 #include <bit>
@@ -11,6 +12,8 @@ void require(bool v,const char* message) {if(!v) throw std::runtime_error(messag
 void number(Bytes& b,std::uint32_t v,unsigned int n=4) {for(unsigned int i=0;i<n;++i) b.push_back(static_cast<std::uint8_t>(v>>(8*i)));}
 Bytes unhex(const std::string& text) {Bytes b;for(std::size_t i=0;i<text.size();i+=2) b.push_back(static_cast<std::uint8_t>(std::stoul(text.substr(i,2),nullptr,16)));return b;}
 struct Services final:MobPoolServices,ZoneMobServices {
+    MobDamageFixture damage_fixture;MobDamagePool& damage_pool() override {return damage_fixture.pool;}
+
     std::array<RuntimeZone,2>* zones=nullptr;std::vector<MobRuntime*> objects,free;Bytes events;bool fail=false,constructing=false;std::uint32_t time=0;int cells=0;
     unsigned int id(const MobRuntime* m) const {if(!m) return 255;const auto at=std::find(objects.begin(),objects.end(),m);require(at!=objects.end(),"Unknown release object");return static_cast<unsigned int>(at-objects.begin());}
     unsigned int zid(const ZoneMobs* zone) const {if(!zone) return 255;for(unsigned int i=0;i<2;++i) if((*zones)[i].mobs.get()==zone) return i;throw std::runtime_error("Unknown raw zone binding");}

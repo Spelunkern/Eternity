@@ -8,6 +8,7 @@ public:
     virtual ~MobPoolServices()=default;
     virtual std::unique_ptr<MobRuntime> construct()=0;
     virtual std::uint32_t unix_time()=0;
+    virtual MobDamagePool& damage_pool()=0;
     virtual void release_compiled_ai(MobRuntime&)=0;
     virtual void release_stack_ai(MobRuntime&)=0;
     virtual void close_lua(void*)=0;

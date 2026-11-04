@@ -37,7 +37,12 @@ MobDamageRecord* MobDamagePool::allocate() {
     auto* result=record.get();objects_.push_back(std::move(record));return result;
 }
 void MobDamagePool::release(MobDamageRecord* record) {free_.push_back(record);}
-MobDamageLedger::~MobDamageLedger() {reset();}
+void MobDamagePool::discard(MobDamageRecord* record) {
+    const auto found=std::find_if(objects_.begin(),objects_.end(),[&](const auto& owned){return owned.get()==record;});
+    if(found==objects_.end()) throw std::invalid_argument("Damage record lacks heap ownership");
+    found->reset();
+}
+MobDamageLedger::~MobDamageLedger() {for(auto* record:records_) pool_.discard(record);}
 void MobDamageLedger::reset() {for(auto* record:records_) pool_.release(record);records_.clear();fair_combat=true;}
 void MobDamageLedger::add(std::int32_t type,std::uint32_t id,std::int32_t damage,std::int32_t aggro,std::uint32_t party) {
     const auto add_wrapped=[](std::int32_t a,std::int32_t b){return std::bit_cast<std::int32_t>(static_cast<std::uint32_t>(a)+static_cast<std::uint32_t>(b));};

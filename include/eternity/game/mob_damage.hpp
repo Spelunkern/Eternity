@@ -27,7 +27,7 @@ public:
     std::span<MobDamageRecord* const> available() const noexcept {return free_;}
 private:
     friend class MobDamageLedger;
-    MobDamageRecord* allocate();void release(MobDamageRecord*);
+    MobDamageRecord* allocate();void release(MobDamageRecord*);void discard(MobDamageRecord*);
     MobDamagePoolServices& services_;std::uint32_t attempts_=0;
     std::vector<std::unique_ptr<MobDamageRecord>> objects_;std::vector<MobDamageRecord*> free_;
 };
