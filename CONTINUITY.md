@@ -529,3 +529,39 @@ Session 36178 exited 0: native build, 159/159 tests (44.21 seconds), full isolat
 Reviewed/queued worker 01 43249dfc (4f6037a/e3f5db3) StatusAttackStop delegating existing Actor: 1,024 reported original comparisons, 124 tests. No extra packets, retained target ID preserved; actual combat/Death dispatch remains required. Reviewed/queued worker 07 a3bc79ca (7669d2c/4eabd0a) UpdateQuest: 512 reported original cycles/609 expirations, 124 tests. Live definition maximum-time guard and shared cursor preserved; actual QuestEnd failure and scheduler remain required. Neither is included in the completed 159-test batch.
 
 Next priority: canonical owner interface changes and production adapters, rather than accumulating additional disconnected projections. Server remains unplayable; objective open.
+
+## Reviewed integration queue: worker 03 c2e257d2
+
+Reviewed e51bed4/19d8371 complete TimeDamage arithmetic/default CRT precision: 12,544 reported original cases and 125 worker tests including real periodic-removal composition. Preserve signed wrapped negative results and only signed upper cap 30000; no unsigned/saturating normalization. Exact snapshot/commits queued. Skill definition fields and scheduler/combat wiring remain required. Prior batch is published cab0570; no validation pipeline active. Next coordinator step remains canonical unaccounted QuestRuntime insertion and production adapters before freezing another batch. Worker 03 proposes ChkKeepSkill next, within existing applied-skill scope.
+
+## Reviewed integration queue: worker 08 3737d30c
+
+Reviewed 4ab7f85/981e195 positional targeting catalog: distinct stable mob-skill storage, country/chase range and three attack bindings, raw enabled and nullable skill distinctions. Reported 256 complete original loads, 2,048 skill slots/1,024 definitions and 125 worker tests. Exact commits/snapshot queued. Restored SQL distribution comparison remains pending; catalog owner must outlive mob templates/runtime and callbacks. Do not substitute user SkillDefinition map or snapshot live cooldown permanently. Original one-past lookup remains unsupported safely. No central pipeline active; prioritize canonical owner interfaces and integrate pending batch with restored SQL comparison before production resolver publication.
+
+## Reviewed integration queue: worker 02 c3ad7a3c
+
+Reviewed b2f12a9/6fc9192 zone/item/money range gates and unordered NaN acceptance correction. Reported 2,048 original spatial comparisons, 1,024 real-range delivery traces, 127 worker tests and read-only SQL craft regression. Exact snapshot/commits queued. MobLootUser.map means stable live zone identity, not numeric map ID; do not truncate pointers. Money gate intentionally lacks credited-state/mob-zone checks; item range differs from zone-only gate. Actual inventory/grants/logging/world routing remain open. Latest central validated publication cab0570 (159 tests/full SQL); no new central pipeline active.
+
+## Reviewed integration queue: worker 06 e35dd12c
+
+Reviewed 5d9e55c/54418ec both QuestAddItem overloads reusing native pool/init/craft/DB/client serializers. Reported 384 original cases/152 grants and 124 worker tests. Exact commits/snapshot queued. Actor requires raw already-allocated retained-item claim and mirror sync before DB callback; receive_item/load_inventory_item would add wrong effects/allocation. Important shared UID discrepancy: current ItemIds uses 64-bit deadline/zero reset/overflow throw; original uses DWORD wrap/global baseline/low-16 counter. Reconcile shared owner rather than create quest-only IDs. Make-time precedes separately observed UID calendar refresh. Worker continues three-start-grant composition. Latest published central validation remains cab0570; no new pipeline active.
+
+## Fourth batch integrated, canonical QuestAdd admission interface added
+
+Reviewed b60fa26/64046e1 WhileMove (1,536 reported original comparisons, 125 worker tests); integrated pending queue through f9e169c. All fixed stack state update bodies recovered; actual world/Lua polling remains unconnected. Added canonical QuestRuntime::add_active_unaccounted in e24398d; existing add_active retains accounting via this primitive. Existing ownership suite now checks append without accounting and duplicate claim rejection. This unblocks real QuestAdd adapters without double increments.
+
+NEW SOURCE FREEZE at e24398d555e6dea27bb1c9a53967b0a29f9724b8: pipeline build/test/full isolated SQL logs .local/fourth-batch-{build,tests,sql}.log. Do not cherry-pick or modify canonical sources during validation; review handoffs into pending queue. Restored targeting binding SQL comparison remains an additional required check before production resolver activation. Latest published validated batch remains cab0570. No playable-server claim.
+
+## Reviewed integration queue: worker 05 83922fcd
+
+Reviewed a06d652/47ac40f CParty::Send framing, size classes, shared atomic references and live recipient traversal. Reported 1,024 send/512 complete membership comparisons, 126 worker tests and focused ASAN/UBSAN. Exact snapshot/commits queued during freeze. Real pools/connections/worker completion must retain one reference per send and free only at zero; socket projection is not a native descriptor default. Current pipeline session 40893 uses .local/fourth-batch-* logs, observed at build action 19/219; tests/SQL pending. No canonical source changes during validation.
+
+## Reviewed integration queue: worker 08 9858eb38
+
+Reviewed 96af8bc/9a0bdd4 read-only SQL/original/native targeting comparison runner, serialized SQL lock and ignored numeric snapshots. Reported exact 355 skills/2,746 nonzero definitions/8,238 attack positions, including 20 present-but-disabled pointers. Central reproduction after integration remains required. First worker suite failed login session closure assertion; clean full rerun passed 125/125. Suspected close-before-session-release race is an inference, not proven; investigate actual net owner ordering, do not mask failed run. Exact snapshot/commits queued during freeze. Current batch build and 174/174 tests passed (45.48 seconds); session 40893 full SQL pending/running, no final exit claimed.
+
+## Fourth batch passed — 174 tests and complete isolated SQL
+
+Session 40893 exited 0: build, 174/174 tests (45.48 seconds), complete isolated SQL including character save and final disposable guild catalog checks. Validated source e24398d includes unaccounted QuestRuntime insertion and ownership assertions. Logs .local/fourth-batch-{build,tests,sql}.log. Source freeze released; publish before further edits. Queue marks validated entries separately from newer pending handoffs. Restored targeting binding comparison tooling 96af8bc remains pending integration and central reproduction.
+
+Reviewed worker 08 documentation checkpoint 8f3faf1 (96829c23); queued exact snapshot without new test claims. Explicitly assigned ReLoadConstMobSkill 004c50c0/ReLoadConstMob 004c20c0 under mob_targeting_reload, stable in-place pointers and partial-failure publication. Next canonical work: actual owner adapters and shared inventory/visitor/UID interfaces. Server objective open, production gameplay incomplete.
