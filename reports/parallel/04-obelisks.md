@@ -477,3 +477,72 @@ Validation:
 SQL remains unchanged and final isolated integration remains coordinator-owned. Configuration/source binding, actual OS
 calendar adapter, transport/KC/portal services and production dispatch remain
 open. The server is not playable.
+
+## Live forced-removal adapter — real zone, obelisk and pool owners
+
+Implementation commit: `df1a39c46e446b31193dc6072fa8944ba7c9108a`.
+
+`ObeliskRuntimeZoneRemoval` implements the existing canonical `MobRemovalOwners`
+interface and calls actual `ZoneMobs::remove_by_id(id,pool,*this)`. It connects
+forced removal to recovered **CZone::MobRemoveByID 0041e910** / nested
+**CMap::ObeliskDestroy 0042a410** without reimplementing zone indexing, cells,
+respawn accounting, or recycling:
+
+- Principal callbacks read the live base country, pass reset=true and the
+  original index to native Destroy. This is the forced-removal contract at
+  **0041e9c3–0041e9f4**, not combat kill-credit ownership. Negative/above-count
+  indices preserve the source guard; the unsafe one-past index is explicitly
+  rejected instead of dereferencing missing backing storage.
+- Companion callbacks resolve a stable map-owned spawn source and call the real
+  first-match removal method (**stMapObeliskMob::RemoveMob 0041d700**). Unknown
+  sources fail explicitly; valid bindings must not move during callbacks.
+- Linked-group callbacks delegate to a required separate `MobRemovalOwners`.
+  No default no-op owner or swallowed regular-gameplay branch is provided.
+- Global/cell unlink, disappearance publication, full-count deadline update and
+  decrement remain in ZoneMobs. Object recycling remains in MobPool, exactly
+  once, after the obelisk/companion callback returns.
+
+The original oracle now runs actual FindMob/global-tree removal/cell unlink,
+MobRemoveByID, nested Destroy/Reset/RemoveMob, **FreeMob 0040a630**, and pooled
+**CreateMob 0040a5e0** plus actual RNG seeding. Initial three actors are explicit
+configured inputs; original constructors/Init are not claimed for that setup.
+Only heap, locks, clocks/atomic, compiled-AI cleanup, transports and portal
+publication are observed ports. Native comparisons use actual ZoneMobs, MobPool,
+MobDamagePool and the new adapter, not the earlier removal-port projection.
+
+256 retained sequences compare 1,536 operations, 768 actual recycling callbacks,
+and 512 pooled reuses. Cases include direct forced removal and map reset, holes,
+duplicate/stale companion slots, reversed group order, already-absent IDs,
+zero/wrapping IDs and tick deadlines, full/non-full/negative counters, country
+changes, suppression flags, and LIFO object identity/ID/RNG reseeding. Duplicate
+slots do not cause double recycling; unlisted actors remain live until explicitly
+removed. The trace also compares all disappearance/log/change/DB packets, registry
+size and reset flags at cleanup, and respawn/member/pool state after every step.
+
+Validation:
+
+- `python3 tools/dev.py build`: exit 0, no compiler warnings
+  (`work/obelisk-zone-build.log`).
+- `python3 tools/dev.py test`: exit 0, **127/127 tests passed**, 30.64 seconds
+  (`work/obelisk-zone-tests.log`), including all eight obelisk suites.
+- Original generation/regeneration/`cmp`: exit 0;
+  `work/obelisk-runtime-zone-oracle.tsv` and `work/obelisk-runtime-zone-repeat.tsv`
+  match the tracked fixture byte-for-byte.
+- Locked focused Ghidra export: exit 0 (`work/obelisk-zone-ghidra.log`).
+- Final `sha256sum -c SHA256SUMS`: exit 0 for every original EXE/PDB
+  (`work/obelisk-zone-final-hashes.log`). `git diff --check`: clean.
+
+Integration: construct this bridge over the primary normal map's stable records,
+its actual ZoneMobs/MobPool, existing ObeliskRuntimeWorld and linked owners. The
+world's mandatory `remove_by_id` should delegate to the bridge. Do not decrement
+counts, clear all sources, or recycle again in that world callback. Reset can
+then use the native function directly and retain its temporary suppression flag
+through real nested zone removals. Combat Death must retain its separate country
+and flag semantics instead of being routed through forced removal.
+
+No canonical header/interface change is required for this removal bridge. The
+raw allocation/preparation split remains a separate startup/respawn dependency;
+this bridge does not need it. Configuration/source binding and production world
+assembly/transports/calendar/KC/portal providers remain open. SQL is unchanged;
+final isolated SQL integration remains coordinator-owned. This is an actual owner
+adapter and verified composition, not a playable-server claim.
