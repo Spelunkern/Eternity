@@ -920,3 +920,32 @@ access dependency itself is now implemented in the existing owner; no shared
 header patch or const_cast is needed for that interface. Do not continue using
 an out-of-date minimal projection adapter for the full catalog. No production
 world services or playable-server completion are claimed.
+
+## Full catalog assignment completion / adapter dependency
+
+Reviewed current main continuity/coordination notes and commits
+36eab1d/849a0fc. The repeated expanded assignment is complete: full stable
+per-slot compatible views, names/keep/abilities/periodic words, mutable allocated
+record access, normalized complete retention, live reload alias composition,
+original full-load comparison and restored read-only SQL comparison are all
+delivered in milestone 9. No additional decoder or second map is needed.
+
+Read-only canonical inspection still finds the earlier small binding catalog,
+without compatible/from_definition/mutable_skill_record/publish_skill_record.
+Main is in seventh-batch source validation freeze; this worker has not changed
+main or other workers. The exact remaining worker03 adapter contract is already
+specified above and cannot be wired by editing worker03's owned sources here.
+
+Concrete next task: coordinator integrates the exact milestone 9 snapshot after
+validation, then assigns worker03 to retain catalog.skill_definition(slot) and
+resolve its name/periodic data through from_definition, preserving the SAME
+catalog lifetime. For this worker, authorize the production root catalog loader/
+resolver composition once that owner interface exists, or explicitly assign a
+new independent subsystem. Do not use an ID-only user-skill fallback or copy
+compatible definitions per applied node while this handoff waits.
+
+Documentation-only checkpoint: git diff --check clean. No native/sanitizer/SQL
+reruns with unchanged code; milestone 9 records the last 127-test/full-record/
+restored-SQL results. No main edits, SQL lifecycle writes, merges or pushes.
+Waiting for integration/interface resolution or a new scoped task; the server
+is still not playable.
