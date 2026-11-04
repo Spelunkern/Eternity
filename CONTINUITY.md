@@ -755,3 +755,31 @@ Session8405 exited0: build,210/210tests58.30s, full isolatedSQL including update
 Reviewed/queued0e4ce8b/218bf38 evidence-only160 native catalog/death/reentry compositions(131tests,original fixture unchanged) and2858c23 doc-only completion. EXCLUSIVE expanded ownership assigned03: mobs.hpp/cpp and mob_pool.hpp/cpp plus tests, actual applied skill catalog/sharedpool/counter lifetime binding, preserve Init/no unconditional reset-helper clear, exactly-once destruction with service lifetime. Coordinator/other workers avoid those files until delivery. Existing exclusive scopes:01zone_users,08zone_mobs,02sql_server. No other source owners assigned.
 
 User progress estimate10–13percent is rough,not test-derived; server still unplayable. Actual rootworld/Actorinventory/Lua/network composition remains open.
+
+## Reviewed integration queue: worker04 42c735fd
+
+Reviewed46416f8/fe4733f stable parsed obelisk materialization/respawn/member source/KC accounting:64reported original cases,132tests. Exact snapshot/commits queued. Filecountry/template order normalization, consumed IDs before position validation, shared marking before guard, zero-group respawn and radius int-float-double truncation retained. Parser not reconstructed here. mark_obelisk must update original shared definition+7c, not noop/copied template; mobs.hpp remains03exclusive, consider full retained catalog raw record setter via existing API instead of collision. Retain configuration/source backing through all runtime callbacks. Last validated publication9e35b9c(210tests/fullSQL/fullcatalog); no pipeline active.
+
+## Reviewed integration queue: worker09 1cde717c
+
+Reviewedf436d67/276a0d1 MoveRandom/Run actual map/math/status via named registry,2048reported original paths(512actualCRT),134tests. Exact snapshot/commits queued. Preserve shared MicrosoftRandom executor stream,not per-mobServerRandom; normal_step+60 live source,walk/run zone-gate difference and no extra scheduling. mobs.hpp remains03exclusive, no canonical collision. Actual RNG/worldmovement/debug/SetFSM/interpreter remain open. Last validated publication9e35b9c; integrating next reviewed batch.
+
+## Ninth reviewed batch locally integrated —source freeze
+
+Integrated pending milestones through a33b64a11dd3b4f5d6492fb5bae8cdfb75956c17, including direct ZoneMobs visitor/target adapter, actual catalog skill composition, random/runaway handlers and stable obelisk config. All CMake conflicts retained both blocks.
+
+NEW SOURCE FREEZE: build/test/fullisolatedSQL/fullnormalizedbindings compare in .local/ninth-batch-{build,tests,sql,bindings-sql}.log. No canonical sources/CMake edits/cherry-picks while active; review handoffs into pending queue. Publish only after checks pass. Last validated source9e35b9c. Exclusive branch reservations unchanged03mobs/mob_pool,01zone_users,08zone_mobs,02sql_server. Rootinventory/Lua/world construction remains incomplete; objective open.
+
+## Reviewed worker08 b33b343e — Actor/FSM targeting adapter
+
+Reviewed9d9111f/598067c actual Actor country/no_mob_targeting/admin projection, actual usercount/sharedCRT/clock/fixed dispatch. Reported160original paths/129tests/ASAN. Exact snapshot/commits queued during freeze. Remaining lifeport needs reconciliation: worker01 mapped original+142c to existing Actor.attack_state.mode in stop/PvP; assigned08 evidence audit/concrete delegation if confirmed before inventing another field. Existing world execution/retention/Lua/update/error services remain required. Current session45156 build completed270actions,tests/SQL/fullbindings pending. No canonical source edits during pipeline; Actor/zone_users remain read-only for08.
+
+## Reviewed worker08 1d899198 — prior checkpoint superseded
+
+Reviewed/queuedba9d25b doc-only prior Actor adapter checkpoint, no new execution claims. Its assignment33f41e3f predates the current +142c/attack_state.mode evidence audit. Retain newer task, do not add disconnected life value/accessor or repeat old adapter tests. Existing field mapping must be resolved against original writes/target gates. Central217/217tests passed57.50s; session45156 fullSQL/fullcatalog running/pending,source freeze remains active. Latest published9e35b9c.
+
+## Ninth batch validated —217tests/fullSQL/fullcatalog
+
+Session45156 exited0:build,217/217tests57.50s,complete isolatedSQL incl character/guild disposable checks,full restored binding comparison. Sourcea33b64a; logs .local/ninth-batch-{build,tests,sql,bindings-sql}.log. Freeze released; publish verified batch. Pending new handoffs not covered.
+
+Reviewed/queued3c576f5/08c4f17 ordinary obelisk parser:45reported original parser cases+64binder compositions,134tests. Partial writes,case/numeric/textmode/EOF duplicate-last-zone semantics retained; fixedcapacity overflow rejected. Portal/linked parsing and production config/definition flag remain open. Exact snapshot retained. mobs/mob_pool03,zone_users01,zone_mobs08,sql_server02 exclusive branches unchanged. Objective remains open; no playableclaim.
