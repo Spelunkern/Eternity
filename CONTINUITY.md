@@ -1357,3 +1357,11 @@ and executed the exact test under the shared lock. Main session 53983 continues
 with the full native build, focused network/combat regression and isolated SQL;
 those remaining phases have not passed yet. This TCP test does not establish
 original-client world entry or complete correctness of production admission.
+
+Independent 03 delivery `9473a9b`, `0c8ff0d`, `66762c1`, `669e675` now reports
+successful native build, 305/305 tests and isolated SQL retry. Coordinator
+verified logs and previously reproduced original gate fixture; root integration
+remains pending until main validation 53983 completes. Required next evidence:
+original location-2 waiting packet queue and when early 0201 is processed after
+zone assignment, plus cipher/flush/TCP ordering. Worker 03 was assigned this;
+its current adapter does not itself implement a live connection or scheduler.
