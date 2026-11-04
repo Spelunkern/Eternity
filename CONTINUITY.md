@@ -1959,3 +1959,13 @@ ownership review; do not assert native fail-close equivalence without evidence.
 Requested worker 02 to extend its scheduler instruction fixture to currently
 suppressed passes and wait-zone promotion after its retained instance work.
 Both are pending independent assignments, not completed runtime behavior.
+
+Independent 06 delivered magic normal and skill mob damage `eb4fbe4`, with
+8,192 + 6,144 original executions, independent arithmetic audit, a shared CRT
+RNG trace and four focused native tests passed. Coordinator independently
+regenerated both fixtures byte-for-byte and ran the original shared-RNG trace.
+Cherry-picked to combined `coordinator/protocol` as `9ea85f8`, with session 49110
+running magic normal/skill and both physical regressions. Results pending.
+The implementation is bounded to tested 53-bit FP; actual original Windows
+thread control word, real selected-hit/effect/death pipeline and live sources
+remain unproven. Desktop dashboard updated for this component milestone.
