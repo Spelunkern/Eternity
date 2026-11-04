@@ -1689,3 +1689,15 @@ Log: `/home/franco/Projects/Eternity-admission/.local/admission-zone-wait-test.l
 This is one component test, not a TCP admission, production scheduler or client
 playability test. Gameplay 228d086 full build completed 885/885; its focused
 combined tests and isolated SQL remain queued/running in session 58307.
+
+Independent 08 `48acc25` confirms the canonical NpcPool implementation and test
+files match `e08e97e`. Focused `vertical-quests-unit` passed, as did a subsequent
+304-test full native suite. Isolated SQL completed, but may have used binaries
+from the previous build because its job started before the rebuild finished; do
+not represent it as exact-commit SQL validation. The composed coordinator quest
+branch still requires its own validation and live reward/world binding.
+Independent 03's original executable queue oracle additionally confirms the
+1000-frame threshold is a count snapshot checked by `CUser::UpdatePackets`,
+not an enqueue cap; system packets and snapshot batch behavior have explicit
+fixtures. The current eight-frame native policy remains a known compatibility
+limit, not a reconstruction of that threshold.
