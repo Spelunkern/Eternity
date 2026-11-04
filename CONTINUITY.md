@@ -659,3 +659,53 @@ Sixth pipeline34814 FAILED isolated creation-network integration: Timed out read
 Build and194/194 tests passed54.82s for sourceb19f469. Initial session34814 SQL failed login-packet timeout; failed disposable catalog verified absent. Complete retry session57061 exited0: full isolated SQL including final guild disposable checks AND restored targeting binding comparison. Logs .local/sixth-batch-sql-retry.log/.local/sixth-batch-bindings-sql.log; original failure retained .local/sixth-batch-sql.log. Bindings355 skills/2746 definitions/1871 links(20disabled) matched original. Freeze released; publish this verified batch, retain failure history.
 
 Reviewed/queued7ecf7f3/821f7f1 evidence-only damage/reentrant replacement:256 reported original flows/128 tests after fixing initial previous-name test setup. Production code unchanged; detached selected node survives damage/death/view before outer admission. Exact snapshot/commits queued and NOT covered by completed batch. Worker03 continues selective vision-fix cleanup in existing scope. Canonical inventory/visitor/Lua adapters remain open; worker02 exclusively owns ItemIds correction on its branch. Objective not complete.
+
+## Reviewed integration queue: worker09 21e11433
+
+Reviewed11dd712/c254a09 retained compiled function registry/name binding: signed-byte wrapped hash, exact case-sensitive last match, unknown clears, retained subject and global recursive binding lock. Reported384 original sequences/130 tests. Exact snapshot/commits queued. Preserve programs/transitions/current/start; subject/services must outlive retained callbacks and execution must remain serialized separately. FullSetFSM/interpreter/asset/system-functions and six real compiled services remain open. Latest validated publication3e9e1a4(194tests/fullSQLretry/bindings); no pipeline active.
+
+## Reviewed integration queue: worker01 20dc784b
+
+Reviewedbf51740/fc89ef8 attack polling now directly uses canonical effect attack_speed, removing external query. Reported2048 original getter pairs/1024 frames,129 worker tests. Blocked getter includes four signed nonzero blockers; deadline continues raw clamped speed and later blockers do not rerun initial gate. Existing fixtures retained except obsolete external-query observations. Exact snapshot/commits queued. Worker continues actual Actor cancel_shape_on_attack/cancel_move composition within scheduler scope. Same-zone visitor/activeCSkill/world/range/transport remain required. Last central publication3e9e1a4; no pipeline active.
+
+## Reviewed integration queue: worker02 dc1ccaa1
+
+Reviewed5f94027/c2879e3 existing shared ItemIds correction: constructor local stamp, DWORD absolute deadline/baseline/counter wrap, raw_next/next same recursive owner and server added once. Snapshot API retained but sampling outside lock cannot reproduce original contention cadence; live injected clock preferred. Reported73213 original IDs,130 tests,64 read-only SQL bigint conversions. Exact snapshot/commits queued. Existing warning in mob_drops_creation header describes pre-fix state; update after integration. All producers must retain same generator, not a server-zero duplicate. Linux BOOTTIME/localtime is platform choice, not exact Windows timing claim. Latest central publication3e9e1a4; no pipeline active.
+
+## Seventh reviewed batch integrated — shared UID validation freeze
+
+Integrated pending queue throughb916c7f and updated drop UID provider comment to require retained shared ItemIds::raw_next with authoritative clock. Frozen source 5e8d1cb00f9e2fefc4d4903237d09d058291b195. No canonical source/CMake changes or cherry-picks while build/test/fullSQL/restored bindings pipeline runs; logs .local/seventh-batch-{build,tests,sql,bindings-sql}.log. Review incoming handoffs into pending queue. Publish only after checks pass. UID algorithm correction does not mean all item producers are wired to one live owner; that production assembly remains required. Latest published validated source3e9e1a4. Actor retained inventory/world visitors/Lua adapters remain open.
+
+## Reviewed integration queue: worker04 31265b6d
+
+Reviewed9fd122f/438aed3 combat-death ownership bridge: validate owning zone, raw country lookup, Destroy resetfalse and companion removal. Reported256 original sequences/2048operations,128 tests after correcting original fixture global-node payload; initial127/128 failure not counted as pass. Exact snapshot/commits queued during source freeze. Canonical Death alone owns sentinel deadline/count decrement; principal stays registered until corpse cleanup. Forced removal resettrue remains separate. Actual production death-world reward/quest/skill/KC/transport assembly and configuration/pool/calendar dependencies remain open. Central session56420 .local/seventh-batch-* build running254actions; no source changes during pipeline.
+
+## Worker02 checkpointf043f845 — CharacterCommands owner migration
+
+Reviewed/queued783f9ba documentation-only checkpoint, no new tests. Its main snapshot predates local integration: UID correction is already in frozen5e8d1cb. Explicit expanded exclusive ownership assigned to worker02 for character_commands.hpp/cpp and corresponding tests, migrating live shared ItemIds next() while preserving separately observed make-time/UID order. No src/main.cpp/Actor/inventory ownership; no competing generator or invented quest/drop world. Coordinator/other workers must avoid these files until delivery. Existing ItemIds ownership remains worker02. Current session56420 build observed42/254; source freeze active, tests/SQL/bindings pending.
+
+## Reviewed worker05 cfafee42 and PacketParty assignment
+
+Revieweded8ec71/f3aa2f2 BreakParty with live slots/count/ID and existing scene/log emitters:256 reported cycles,130 tests,ASAN/UBSAN. Exact snapshot/commits queued during freeze. Reset then unregister under party lock; no leave/guild/heap recycle. Bounded audit found no direct heap-return producer, not proof of no aliases. Assigned PacketParty004676c0 normal request coordination under party_runtime_requests, reusing retained registry/membership; shared Actor/connection remain coordinator-owned. Current build completed254actions; session56420 tests/fullSQL/bindings pending. No canonical source edits while active.
+
+## Reviewed integration queue: worker09 6b28c2bf
+
+Reviewed60b7108/f6fb947 onBattle/PAI_Attack with real configured reset/local/state-entry composition. Reported1536 original paths/131 tests. Exact snapshot/commits queued during freeze. Retained current_time/deadline, live target country/life/immunity/admin gates, distinct vision removal paths and no immediate replacement attack retained. Country binds stable canonical catalog; world lookup/AttackAI/target/vision providers remain required. Central200-test suite observed177 passing; session56420 fullSQL/bindings pending. Source freeze remains active.
+
+## Reviewed worker08 8e2d703c — full stable skill owner; worker03 adapter assigned
+
+Reviewed36eab1d/849a0fc full normalized catalog records, embedded stable SkillDefinition/name/periodic views, reverse identity and mutable slot/publish APIs. Reported127 tests,ASAN/UBSAN and full793156-byte restoredSQL/original match(all356skill/2747mob slots). Exact snapshot/commits queued during freeze. No const_cast/replacement arrays; serialize raw reload and publish views under quiescence. Assigned worker03 mob_applied_skills_catalog composition against this actual owner, no second catalog/temporary conversions; old branch may test ignored read-only snapshot, central build uses normal owner. Central build/200tests passed62.37s; session56420 SQL/bindings running, final pass not claimed.
+
+## Worker08 checkpoint89e93191 — exclusive canonical mob visitor
+
+Reviewed/queued6731ac2 documentation-only full catalog checkpoint; worker03 catalog composition already assigned. Expanded exclusive scope assigned08: zone_mobs.hpp/cpp and corresponding tests on worker branch, actual synchronous shared Cell cursor visitor and targeting help adapter under mob_targeting_zone. Coordinator/others avoid these paths until delivery. Preserve original nested find/remove/append shared cursor and no post-callback actor dereference; no second list/snapshot/packet probe in production. Existing zone serialization/lifetime contract must stay explicit. No Actor/user-zone/worker03 edits. Main source freeze session56420 remains active,200tests passed,SQL/bindings running.
+
+## Reviewed integration queue: worker03 20b9fe23
+
+Reviewed2037bb0/b2e1273 RemApplySkillVisionFix actual list/pool cleanup: zero ID no-op, clear nonzero ID once before lock, live detail48/log gate and ordered recycle, no target/status/speed/effect reversal. Reported512 scenarios/3072operations,129tests. Exact snapshot/commits queued during freeze. This older milestone proposal does not supersede newly assigned mob_applied_skills_catalog composition against actual full owner; keep that assignment priority. Production loss-of-target call sites remain required. Central200tests passed; session56420 SQL/bindings still running through recovery checks. No canonical code changes.
+
+## Seventh batch validated —200 tests/fullSQL/bindings
+
+Session56420 exited0: native build,200/200tests62.37s, complete isolatedSQL(final guild disposable catalog included), restored targeting binding match355skills/2746definitions/1871links(20disabled). Source5e8d1cb includes corrected shared ItemIds algorithm. Logs .local/seventh-batch-{build,tests,sql,bindings-sql}.log. Freeze released; publish verified batch. Queue distinguishes validated entries from newer pending deliveries. Actual callers still need retained live generator wiring; worker02 owns CharacterCommands migration on branch.
+
+Reviewed/queueda8ee553/90e3b8b portal ownership/publication and two-pass neighbor closure:1024 reported original cases/129tests after correcting native side*4 reference indexing; initial128/129 failure preserved. At most12links, exact DB/map/world packet ordering and live callback reads. Production stable config/transports still required; pending next Death-to-portal composition remains worker scope. This delivery is not covered by completed200-test batch. Objective remains open, real world/Lua/inventory/visitor assembly incomplete.
