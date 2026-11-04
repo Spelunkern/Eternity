@@ -699,3 +699,82 @@ Member.pending_request (+1744) is separate from the inviter DWORD. The dispatche
 requires validated decoded packet sizes; malformed/truncated shapes and the
 remaining expiry scheduler are not claimed as recovered here. Normal ExpelUser,
 full raid dispatch and production adapters remain substantive next work.
+
+## Block 10 — actual request expulsion owner
+
+Recovered `ps_game.exe CParty::ExpelUser 00447120..004473b4` from the
+complete Ghidra disassembly/decompilation inventory. The decompiler confuses
+party/user registers: assembly establishes ECX=user and stack argument=party.
+`party_runtime_requests_expel` now supplies the real default
+PartyRequestWorld::expel_user, replacing the previously required opaque body.
+It uses the existing authoritative PartyRegistryParty/PartyMembershipUser,
+normal Leave owner, unregister provider and shared scene/log serializers.
+No Actor, connection, other worker or main checkout source changed.
+
+Recovered ordering:
+
+- Lock party, search live count by pointer identity; missing member unlocks and
+  returns false without packets or state changes.
+- Capture target UID, clear target.member.party, broadcast six-byte 0b06 while
+  the removed user is still in the active slots, then compact pointer slots and
+  decrement count. Tail pointers and all indices remain untouched.
+- Zero count unregisters through the existing map owner. One remaining member
+  invokes real LeaveNormalParty, or the mandatory LeaveRaidParty provider when
+  kind==1, while the outer recursive party lock remains held.
+- Guild creation uses the same required cleanup boundary as normal Leave;
+  refresh experience, unlock, emit departed user's 0520 scene notification,
+  then fill/send 0f02 log with the live party ID.
+
+ExpelUser does NOT adjust leader or item_cursor and does NOT emit 0b07 itself,
+including self-expulsion. Recursive Leave can change those values or emit its
+own packets. The native owner preserves this difference instead of treating
+expulsion as voluntary Leave. Unregister must not recycle/free the party or
+user: the outer call still uses both after recursive removal and map erasure.
+The normal registry allocation/publication and send owners are unchanged.
+Retain_member is a lifetime acquisition port, not an original gameplay call:
+it must return the exact selected live record without observable callbacks or
+membership changes. It pins the selected remaining user across nested Leave.
+
+The request oracle no longer patches ExpelUser. Its original instructions,
+normal recursive Leave, GetPartyType, experience refresh and actual manager
+map operations all execute. Expanded fixtures include original whole requests
+and consecutive direct original ExpelUser calls on the same objects, including
+absent/repeated targets, self-expulsion, count-one unregister, count-two recursive
+removal, populated/full parties and nonzero cursor/indices. The prior literal
+nested invitation accept and subsequent leave sequences remain present. Raid
+Leave is explicitly a required observed provider, not simulated success or a
+normal-party substitution. Guild cleanup remains a required provider; this
+matrix does not claim a recovered nonempty guild-creation implementation.
+
+Validation (final results recorded below):
+
+- Original matrix: 2,048 scenarios; 2,094 whole PacketParty calls, 2,048 whole
+  direct ExpelUser calls, plus 46 literal nested PacketParty accept executions.
+  Direct return values: 245 true, 1,803 false. Traces contain 622 original 0b06
+  broadcasts and 538 original 0b05 broadcasts across the complete composition.
+  State snapshots at every port, final state, return byte, packet bytes and
+  balanced recursive locks are compared, not just operation counts.
+- Repeated original generation matches all execution rows byte for byte;
+  fixture command header was clarified to document direct E calls.
+- Initial focused launch raced the queued rebuild and used the earlier parser,
+  reporting `Invalid request fixture/owner state`. It is not counted as a pass;
+  after rebuild, the full extended comparison passed.
+- Final locked build: exit 0 (`work/party-runtime-requests-expel-verified-build.log`).
+- Focused ASAN/UBSAN C++20 build and the complete 2,048-case comparison:
+  exit 0, no diagnostics (`work/party-runtime-requests-expel-verified-sanitized.log`).
+- Original EXE/PDB manifest, exact final fixture `cmp`, and `git diff --check`:
+  exit 0 (`work/party-runtime-requests-expel-final-hashes.log`).
+- Final locked native tests: 131/131 passed, 38.90 seconds, exit 0
+  (`work/party-runtime-requests-expel-verified-test.log`). Earlier complete pass:
+  131/131, 34.64 seconds. No SQL operations were performed.
+
+Production integration still requires the retained Actor binding documented in
+Block 9, live recursive lock/lookup/transport/log/pool adapters, complete raid
+request/entry/leave providers and guild cleanup. No new canonical data field is
+needed by expulsion: use the SAME live member.party and registry-party handle.
+Remaining independent scope includes original raid requests and invitation
+expiry scheduling evidence; regular raid gameplay is not declared implemented.
+SQL integration/lifecycle remains coordinator-owned and was not run for this
+memory/protocol block. These comparisons do not establish a playable server.
+
+Block 10 implementation commit: `709df36b18f1933e8ccb881d6ccf904571ec15ac`.
