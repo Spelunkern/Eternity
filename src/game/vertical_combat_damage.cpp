@@ -27,7 +27,8 @@ bool close(ZoneUsers& zone,const Actor& actor,const MobRuntime& mob){
     return distance<=3.0f;
 }
 }
-bool vertical_combat_normal_damage(Actor& actor,MobRuntime& mob,unsigned kind,RandomSource& random,ZoneUsers& zone,VerticalCombatRangedPassive& passive,std::span<const float,81> elements,std::array<std::int32_t,3>& damage){
+namespace {
+bool weapon_damage(Actor& actor,MobRuntime& mob,unsigned kind,RandomSource& random,ZoneUsers& zone,VerticalCombatRangedPassive& passive,std::span<const float,81> elements,std::array<std::int32_t,3>& damage,const VerticalCombatSkillDamageInputs* skill){
     if(kind>1)throw std::invalid_argument("Normal AttackDamage supports melee and ranged only");
     if(!mob.definition)throw std::invalid_argument("AttackDamage requires retained mob definition");
     vertical_combat_require_float_environment();
@@ -35,15 +36,18 @@ bool vertical_combat_normal_damage(Actor& actor,MobRuntime& mob,unsigned kind,Ra
     // Distance2 consumes float coordinates. FTZ/DAZ would alter denormals.
     if(_mm_getcsr() & 0x8040u)throw std::logic_error("AttackDamage requires SSE denormal handling");
 #endif
-    damage.fill(0);
+    if(!skill)damage.fill(0);
     const auto& status=actor.status();const auto& equipment=status.skills.equipment;
     const auto player_level=std::int32_t(status.level),mob_level=std::int32_t(mob.definition->level);
     const auto level_raw=store(mul(div(add(mul(f32(mob_level-player_level-1),100.0),f32(mob_level)),100.0),10.0));
     const double level=std::clamp(level_raw,1.0f,95.0f);
-    float attack=store(f32(status.calculated_attack[kind].attack));
+    const auto raw_attack=std::bit_cast<std::int32_t>(std::uint32_t(status.calculated_attack[kind].attack)+std::uint32_t(damage[0]));
+    float attack=store(f32(raw_attack));
     if(equipment.variance>0)attack=store(add(attack,f32(random.next()%equipment.variance)));
     if(kind==1 && passive.ranged_penalty_suppression(actor)==0 && close(zone,actor,mob))attack=store(mul(attack,double(0.7f)));
-    const auto attack_attr=std::bit_cast<std::int32_t>(equipment.attack_attribute),defense_attr=mob.attribute;
+    const auto override_attr=skill?skill->skill.effect.attribute:0;
+    const auto attack_attr=override_attr?std::int32_t(override_attr):std::bit_cast<std::int32_t>(equipment.attack_attribute);
+    const auto defense_attr=(skill && skill->skill.effect.detail==24)?0:mob.attribute;
     float element=1.0f;
     if(attack_attr<9 && defense_attr<9){
         if(attack_attr<0||defense_attr<0)throw std::out_of_range("AttackDamage negative element index");
@@ -66,9 +70,54 @@ bool vertical_combat_normal_damage(Actor& actor,MobRuntime& mob,unsigned kind,Ra
         if(kind==1 && passive.ranged_penalty_suppression(actor)==0 && close(zone,actor,mob))value=store(mul(value,double(0.7f)));
     }
     damage[0]=integer(value);
-    if(damage[0]>30000)damage[0]=30000;
+    if(skill && skill->mode==2){
+        for(std::size_t i=0;i<3;++i)if(skill->values[i])damage[i]=std::bit_cast<std::int32_t>(std::uint32_t(damage[i])*std::uint32_t(skill->values[i]));
+    }
+    for(auto& value:damage)if(value>30000)value=30000;
     if(damage[0]<11)damage[0]=random.next()%10+1;
     return success;
+}
+} // namespace
+bool vertical_combat_normal_damage(Actor& actor,MobRuntime& mob,unsigned kind,RandomSource& random,ZoneUsers& zone,VerticalCombatRangedPassive& passive,std::span<const float,81> elements,std::array<std::int32_t,3>& damage){
+    return weapon_damage(actor,mob,kind,random,zone,passive,elements,damage,nullptr);
+}
+bool vertical_combat_skill_damage(Actor& actor,MobRuntime& mob,unsigned kind,RandomSource& random,ZoneUsers& zone,VerticalCombatRangedPassive& passive,std::span<const float,81> elements,const VerticalCombatSkillDamageInputs& input,std::array<std::int32_t,3>& damage){
+    const auto mode=input.mode;
+    if(mode==0){for(std::size_t i=0;i<3;++i)damage[i]=input.values[i];return false;}
+    if(mode==3){
+        if((input.values[0]||input.values[1]||input.values[2])&&input.attack_recovery.size()!=3)throw std::invalid_argument("Skill damage requires live attack recovery owner");
+        damage.fill(0);constexpr std::size_t recovery_index[]={0,2,1};
+        for(std::size_t i=0;i<3;++i)if(input.values[i]){
+            const auto product=std::bit_cast<std::int32_t>(std::uint32_t(input.attack_recovery[recovery_index[i]])*std::uint32_t(input.values[i]));
+            damage[i]=std::max(product,1);
+        }
+        for(auto& value:damage)if(value>30000)value=30000;
+        return false;
+    }
+    if(mode==4||mode==5){
+        if(mode==4 && !mob.definition && (input.values[0]||input.values[1]||input.values[2]))throw std::invalid_argument("Skill damage requires retained mob definition");
+        if(input.values[0]||input.values[1]||input.values[2]){
+            vertical_combat_require_float_environment();
+#if defined(__x86_64__) || defined(__i386__)
+            if(_mm_getcsr() & 0x8040u)throw std::logic_error("Skill damage requires SSE denormal handling");
+#endif
+        }
+        damage.fill(0);
+        for(std::size_t i=0;i<3;++i)if(input.values[i]){
+            const std::uint32_t source=mode==4?(i==0?mob.definition->hp:i==1?mob.definition->mp:mob.definition->sp):(i==0?mob.hp:i==1?mob.mp:mob.sp);
+            const float stored=store(static_cast<double>(source));
+            // _ftol2 0051c424 converts via a signed 64-bit intermediate;
+            // AttackDamage consumes its low EAX DWORD, not a 32-bit FISTP.
+            const auto product=std::trunc(mul(div(f32(input.values[i]),100.0),stored));
+            const auto converted=std::bit_cast<std::int32_t>(static_cast<std::uint32_t>(static_cast<std::int64_t>(product)));
+            damage[i]=std::max(converted,1);
+        }
+        for(auto& value:damage)if(value>30000)value=30000;
+        return false;
+    }
+    if(kind>1)throw std::invalid_argument("Skill weapon damage supports melee and ranged only");
+    if(mode==1)for(std::size_t i=0;i<3;++i)damage[i]=input.values[i];else damage.fill(0);
+    return weapon_damage(actor,mob,kind,random,zone,passive,elements,damage,&input);
 }
 bool VerticalCombatNormalDamageWorld::attack_damage(Actor& actor,MobRuntime& mob,unsigned kind,std::array<std::int32_t,3>& damage){return vertical_combat_normal_damage(actor,mob,kind,random_,zone_,passive_,elements_,damage);}
 }
