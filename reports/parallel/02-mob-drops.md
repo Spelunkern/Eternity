@@ -438,3 +438,21 @@ connection owner assembly; production death/world/quest/drop services still need
 real providers and the same retained ItemIds. Streaming mid-row publication is
 implemented and verified here; uncontrolled network loss/timing equivalence and
 original undefined NULL buffers are not claimed. No gameplay completion claim.
+
+## Streaming continuation checkpoint
+
+Re-read current main continuity/parallel instructions and reviewed bc0b0b8/6cb4b94.
+The repeated streaming assignment is complete in milestone 10. Read-only main
+snapshot f0bafb5 does not yet expose TypedSqlCursor or bind the streaming reload.
+No additional independent behavior was identified within this four-column cursor/
+MobItemsR2 assignment. Existing validation remains applicable; no new build, SQL
+execution or original fixture regeneration is claimed. Documentation diff check
+passes and only this report changed.
+
+Next concrete proposal: coordinator integrates bc0b0b8 and runs shared full SQL
+compatibility checks, then assigns production MobItems definition/connection lease
+assembly. Use the retained stable MobDropDefinitions, serialize reload/read access,
+and dedicate the existing connection while its cursor lives. Required root-world
+services and quest/drop shared UID assembly remain explicit separate dependencies.
+No duplicate cursor, extra credential owner or other worker implementation was
+introduced. Waiting for integration review/new scoped assignment.
