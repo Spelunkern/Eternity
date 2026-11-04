@@ -21,6 +21,7 @@ read-only evidence: `/home/franco/Projects/Eternity/work/reverse/ps_game.exe`.
 | `ChkKeepSkill` **004a10d0** | Live periodic traversal; previous tick committed before combat; post-unlock sleep removal. |
 | `ChkEndTimeSkill` **004a12f0** | Unsigned end<=now, log/unlink, effect reversal, then recycle. |
 | `SetSkillAbility` **004a1420** | Wrapping stat changes and immediate recognized rebuild/speed callbacks. |
+| `RemApplySkillVisionFix` **004a1580** | Zero-ID early return; clear vision before locking, log/unlink/recycle every detail-0x48 node without effect reversal. |
 | `RemApplySkillSleep` **004a16c0** | All sleep nodes recycled without individual reversal, counter forced zero, one speed send while locked. |
 | `RemovedSkill` **004a1930** | Action-6 log with current skill name/level, before replacement unlink. |
 | `TimeDamage` **004a3be0** | Complete native arithmetic, including binary32 resource rounding and low-DWORD conversions. |
@@ -141,45 +142,55 @@ contract with actual owner operations and stable retained storage.
 | `5c91dc31a5049e461848dee7e8fe78b953815651` | Admission, refresh, replacement and debuff application | 64 original scenarios / 1,536 operations; 127/127 tests, 31.19 s. |
 | `7ecf7f3a3ced7ec5c19b032c81d21fd1fd7367d1` | Damage/reentrant replacement composition evidence | 256 complete original flows; 128/128 tests, 32.24 s. |
 
+| `2037bb01f581144fad24bd8a4d178181e2645b01` | Selective vision cleanup on live owner and shared pool | 512 original scenarios / 3,072 operations; 129/129 tests, 42.70 s. |
+
+## Vision cleanup milestone
+
+`MobAppliedSkills::remove_vision_fix(MobRuntime&)` now operates directly on the
+retained list and shared pool. A zero vision ID leaves even matching nodes alone.
+A nonzero ID is cleared before locking; all detail-0x48 nodes are visited in live
+list order regardless of attacker, effect, deadline, HP or status. Each matching
+node is logged under the current Lua/respawn gate before unlink and LIFO recycle.
+There is no effect reversal, speed delivery or target/status/resource mutation.
+The original does not clear the vision ID again after a callback restores it.
+
+The oracle executes original Alloc/AddBack/Clear and the complete selective
+cleanup body with two owners sharing one retained pool. Required allocation,
+lock and logging boundaries are observed, not reconstructed world providers.
+Explicit first-log mutation restores vision, toggles Lua and changes a later
+live definition to type 0x48; it is a test callback contract, not a claim about
+original SendLogBothMob behavior. Subsequent operations include another cleanup,
+forced vision restoration and raw reuse into the other owner. Full ten-word
+payloads, definitions, core fields, allocation attempts and all active/free
+orders are compared. No canonical field changes are needed for this method. The targeting/world adapter
+must call this owner method when releasing a fixed vision target; production call
+site wiring remains outside this worker scope.
+
 ## Current validation
 
-- All 12 original EXE/PDB hashes pass `sha256sum -c SHA256SUMS`, exit 0.
-  Log: `work/mob-applied-skills-replacement-hashes.log`.
-- Locked Ghidra process export passed for AddApplySkill, RemApplySkill and Clear;
-  required output/JDK21/Ghidra12.1.4 were used.
-  Log: `work/mob-applied-skills-replacement-export.log`.
-- Oracle generation passed 256 complete flows, with periodic/scalar old effects,
-  both combat outcomes, 64 reentrant admissions, metadata/zone/log-flag mutation,
-  all four status-stack modes, naming gates and three original node positions.
-  Actual admission, removal, TimeDamage/CRT, clear, manager and list/pool code
-  execute. Underlying combat/Death/view/log/speed bodies remain observed ports.
-- Snapshots/events compare full node/definition identity, stat/control/name
-  payloads, phase-specific arguments, exact old 0607 packet, tick/deadline order,
-  counter/attempts and free/active order. Original/native assertions require the
-  selected node to remain detached and unavailable through damage/death/view;
-  final identity/instance ID and outer-tail admission are checked explicitly.
-- Source allocator asserts no replacement/reentrant fresh allocation; native
-  factory rejects construction after seeding. Wrapped zero-ID free reuse occurs
-  only for other objects. Static callback trampolines avoid code-cache ambiguity.
-- Repeat output matches fixture byte-for-byte. Generated under work/ and copied
-  before any native fixture reader. Oracle py_compile/whitespace checks passed.
-- Native build passed. First native suite had 127/128 passing: the new test
-  omitted the original fixture's initial previous-name buffers. Corrected only
-  native test initialization; original output and production code unchanged.
-  Initial failure: `work/mob-applied-skills-replacement-test.log`.
-  `python3 tools/dev.py build`: corrected build exit 0, no compiler warnings.
-  `python3 tools/dev.py test`: corrected full run exit 0, **128/128 passed**,
-  32.24 seconds, all nine applied-skill suites included. New suite passes 256
-  original/native compositions; no production change was needed.
-  Final logs: `work/mob-applied-skills-replacement-build-fixed.log`,
-  `work/mob-applied-skills-replacement-test-fixed.log`.
-  Initial logs: `work/mob-applied-skills-replacement-{build,test}.log`.
+- Original EXE/PDB SHA256 verification passed (12 files), exit 0:
+  `work/mob-applied-skills-vision-hashes.log`.
+- Serialized Ghidra process export for RemApplySkillVisionFix passed using the
+  required JDK/Ghidra and worker output directory:
+  `work/mob-applied-skills-vision-export.log`.
+- 512 original scenarios / 3,072 operations generated twice identically; fixture
+  copied from work/ before native tests. Initial oracle assertion wrongly checked
+  the vision-clear precondition during ordinary AddBack locking; limited it to
+  the selective-cleanup call, then regenerated both complete successful outputs.
+- `python3 tools/dev.py build`: exit 0, no compiler warnings.
+  `python3 tools/dev.py test`: exit 0, **129/129 passed**, 42.70 seconds; the new suite compares
+  all 512 scenarios / 3,072 operations through actual native owners.
+  Logs: `work/mob-applied-skills-vision-build.log` and
+  `work/mob-applied-skills-vision-test.log`. Oracle py_compile and git whitespace
+  checks passed.
 
-No SQL access or sanitizer run for this evidence block. Complete isolated SQL and
-canonical owner/catalog/transport adapters remain coordinator dependencies.
-Historical expiration oracle cache failure was corrected before its successful
-122/122 rerun; that initial failed fixture is not counted as a pass.
+No SQL access in this block. Complete isolated SQL and production owner/catalog/
+transport assembly remain coordinator dependencies; these tests do not establish
+playability. Worker08 owns the full catalog extension. Existing required log and
+pool services must be bound to live production owners; there is no no-op default.
+Historical replacement test initialization and expiration oracle cache failures
+were corrected before their previously documented successful full reruns.
 
-Next independent proposal: recover RemApplySkillVisionFix **004a1580** selective
-cleanup directly on this same list owner, providing a real vision-target loss
-cleanup boundary for the targeting/world adapter without new state projections.
+Next independent proposal: inspect `CMob::RemStateSkill` **004a5a30** and
+`CMob::CancleApplySkillDebuff` **004a5d90** for a selective cancellation boundary
+on the same owner; recover evidence before choosing implementation.
