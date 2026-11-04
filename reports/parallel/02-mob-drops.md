@@ -850,3 +850,21 @@ required raw-store implementation with these real owner calls. Preserve existing
 life/recovery order and actual serialized subject/zone lifetime. Root world,
 corpse/admission/transport services still need assembly; no gameplay completion
 is inferred from native comparisons or test counts.
+
+## Actor Rebirth continuation checkpoint
+
+Re-read current main continuity/parallel instructions and reviewed a7d46ab/cca5d9e.
+The repeated raw-resource/presentation ownership assignment is implemented and
+validated in milestone14. Read-only main408826d does not yet expose those Actor
+methods; fifteenth retry validation is still active. No new implementation or
+test execution is claimed; documentation diff check passes.
+
+Next concrete proposal: integrate a7d46ab, let worker08/root bind its three required
+ports to these actual owner calls, then explicitly assign the remaining pure
+SendRecoverChange00482230 notification API (Actor/ActorResources scope if needed).
+That provider must emit original current-energy/party packets without mutation,
+clamp, heal or damage reset; Actor::recover remains an invalid substitute. Real
+corpse/admission/transport/subject leases remain separate root dependencies. No
+further independent raw-store/presentation change was identified inside the
+current assignment, and no worker08 or main source was edited. Awaiting review
+or another scoped task rather than repeating completed validation.
