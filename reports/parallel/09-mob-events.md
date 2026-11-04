@@ -261,3 +261,72 @@ contract/access changed; coordinator retains final SQL integration/lifecycle.
 The server is still not playable.
 
 Implementation commit: `c20b2e639f4efd5a5cf6f009a65e1287f00f4924`.
+
+## Milestone 5 — WhileReturnHome with real native path owners
+
+Evidence: ps_game.exe `CMob::WhileReturnHome` 004b5c40, Ghidra process export
+under `work/exports/09-mob-events/ps_game.exe`. All original hashes verified again.
+Implemented tick gating, arrival/reset, collision/path selection, blocked-home
+recovery, trail consumption, full/partial steps, deadlines and cursor advancement.
+Uses actual MapDefinition collision/line checks, AStarPath and ChaseTrail, plus
+real MobDamageLedger reset; those bodies are not default services or stubs.
+
+Arrival (distance strictly less than 10) calls ResetAttack, clears path/found,
+clears trail, resets damage, then emits event 2. It happens before stop/sleep/stun
+checks. Blocked destinations distinguish no line progress (replace respawn with
+current position) from progress (retain respawn); neither branch resets damage
+or attack. A* failure also adopts current position as respawn and returns to idle
+without clearing damage. A retained trail is popped into AStar::SetPath.
+Existing path cursors bypass collision checks for the home destination.
+
+Movement preserves integer-coordinate subtraction, float normalization and
+remaining distance minus size+1, definition step plus speed table, and live
+chase interval reads after MoveMob. Short steps target the complete path tile,
+write x/z on successful movement, advance even on failure and use the original
+signed FISTP deadline (including 0x80000000 on invalid conversion). Partial
+steps rely on MoveMob's position update and use tick+live interval.
+
+### Validation
+
+- `python3 tools/dev.py build`: exit 0, no compiler warnings;
+  `work/mob_ai_states_return-build.log`.
+- `python3 tools/dev.py test`: exit 0, all 124 tests pass (38.62 s), including
+  `mob-ai-states-return-unit` (0.69 s) and previous worker suites;
+  `work/mob_ai_states_return-tests.log`.
+- Oracle regenerated twice, byte-identical; all ten instrumented original
+  branches executed, including blocked destination without line progress and
+  failed A*. Original hashes match; `git diff --check` clean.
+- No SQL access/contracts added; isolated SQL checks remain coordinator work.
+
+Original oracle executes full WhileReturnHome,
+actual map/line/A*/trail/vector/CRT bodies. Allocation, Windows lock/TLS, clock,
+ResetAttack, damage reset, event dispatch and MoveMob are observed boundaries.
+1,536 cases cover 610 movement calls, 184 arrivals, blocked goals, failed searches,
+retained cursors/trails, stop/sleep/stun, negative/zero movement limits, wrapping
+and signed-overflow deadlines, movement failure and callback changes to home,
+position, step, size, deadline and chase interval. Native tests use actual pooled
+damage release and ResetAttack, compare exact float bits, complete path/cursor/
+trail state and provider sequence, and separately compose event 2 with real FSM.
+
+### Dependencies / limits
+
+Required `MobAiReturnServices` providers are actual tick, ResetAttack, stack
+dispatch and zone MoveMob. Required definition projection is byte chase_step
++68, byte size +3f and DWORD chase_time +64. Note +68 is byChaseStep, the same definition byte
+used as the movement gate in WhileIdle (there named move_speed in its explicit
+projection; bind that presence check to chase_step). No canonical header/loader was edited.
+MapDefinition, MobRuntime path/trail and damage owners must remain serialized and
+valid across callbacks. Bind this update in state 3; event 2 pops back to idle.
+
+An explicit host error rejects line probes with out-of-map endpoints: original
+EnableLine leaves previous-tile output scratch unwritten in that case, and
+WhileReturnHome subsequently compares that uninitialized stack storage. No
+specific stack residue or invented deterministic recovery is claimed here.
+Production world-coordinate validity or a recovered caller scratch contract is
+required before that invalid-world path can be supported faithfully.
+
+WhileMove 004b5790 is the next independent state body. Lua lifecycle and separate
+CAIFactory CKFSM remain missing. No SQL access/contracts changed; shared SQL
+validation/lifecycle remains coordinator work. The server remains unplayable.
+
+Implementation commit: `8eccb5d2b915c1eba677512b9bc96d9801e1bbdf`.
