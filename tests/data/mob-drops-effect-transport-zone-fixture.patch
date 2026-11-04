@@ -1,0 +1,14 @@
+diff --git a/tests/zone_users_unit.cpp b/tests/zone_users_unit.cpp
+--- a/tests/zone_users_unit.cpp
++++ b/tests/zone_users_unit.cpp
+@@ -12,7 +12,9 @@
+ using namespace eternity;using namespace eternity::game;
+ namespace {
+ void require(bool value,const std::string& message) {if(!value) throw std::runtime_error(message);}
+-struct Scene final:ActorScene {
++struct Scene final:ActorScene,ActorEffectDatabase {
++    std::vector<net::Packet> effect_database_packets;
++    void send_effect_database(const net::Packet& packet) noexcept override {effect_database_packets.push_back(packet);}
+     std::uint32_t id=0;ZoneUsers* zone=nullptr;std::vector<std::uint32_t>* reveals=nullptr;std::function<void()> on_reveal;
+     void send_self(const net::Packet& packet) noexcept override {
+         if(packet.size()==6 && packet[0]==0x0e && packet[1]==5) {reveals->push_back(id);if(on_reveal) on_reveal();}

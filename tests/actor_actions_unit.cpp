@@ -34,7 +34,9 @@ State snapshot(const Actor& actor) {
     put(status.action_block_b);put(status.fixed_form);put(status.casting);put(status.shape_template);
     require(index==result.size(),"Action result mapping changed");return result;
 }
-struct Scene final:ActorScene {
+struct Scene final:ActorScene ,public ActorEffectDatabase {
+    std::vector<net::Packet> effect_database_packets;
+    void send_effect_database(const net::Packet& packet) noexcept override {effect_database_packets.push_back(packet);}
     std::vector<std::string>& events;std::uint32_t tick;
     Scene(std::vector<std::string>& trace,std::uint32_t value):events(trace),tick(value) {}
     void send_self(const net::Packet& packet) noexcept override {events.push_back("S"+hex(packet));}

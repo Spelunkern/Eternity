@@ -8,7 +8,9 @@ using namespace eternity;using namespace eternity::game;
 namespace {
 void require(bool value,const std::string& message) {if(!value) throw std::runtime_error(message);}
 std::uint32_t get(const net::Packet& packet,std::size_t offset) {std::uint32_t value=0;for(unsigned int i=0;i<4;++i) value|=static_cast<std::uint32_t>(packet.at(offset+i))<<(8*i);return value;}
-struct Scene final:ActorScene,EffectObserver {
+struct Scene final:ActorScene,EffectObserver,ActorEffectDatabase {
+    std::vector<net::Packet> effect_database_packets;
+    void send_effect_database(const net::Packet& packet) noexcept override {effect_database_packets.push_back(packet);}
     std::vector<std::string> events;std::optional<bool> party;unsigned int scenario=0;
     void record(char route,const net::Packet& packet) {
         static constexpr char digits[]="0123456789abcdef";std::string result(1,route);

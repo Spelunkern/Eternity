@@ -8,6 +8,7 @@
 #include "eternity/game/duel.hpp"
 #include "eternity/game/item_exchange.hpp"
 #include "eternity/game/zone_lifecycle.hpp"
+#include "eternity/game/mob_drops_effect_transport.hpp"
 
 namespace eternity::game {
 class MoneyWorld;
@@ -64,6 +65,14 @@ class Actor final:public EffectRemovalWorld,public EffectActivationObserver,priv
 public:
     Actor(std::uint32_t id,EffectStatus status,PlayerResources current,std::vector<PersistedEffect> replica,ActorScene& scene,
         ActorEquipmentRules equipment,std::vector<PlayerItem> inventory = {});
+    // Explicit DB binding, or compose ActorScene with ActorEffectDatabase for
+    // the source-compatible constructor (also used by ActorLoadPipeline).
+    // An unbound inert actor may be inspected/shut down; effect-removal execution
+    // requires the transport. Observer callbacks are noexcept and fail fast if
+    // called unbound, rather than silently losing immediate DB requests.
+    Actor(std::uint32_t id,EffectStatus status,PlayerResources current,std::vector<PersistedEffect> replica,ActorScene& scene,
+        ActorEquipmentRules equipment,ActorEffectDatabase& database,std::vector<PlayerItem> inventory = {});
+    bool effect_database_bound() const noexcept {return effect_database_!=nullptr;}
     ~Actor(); // Bound scene and pools owning retained inventory must outlive this actor.
     EffectStatus& status() noexcept {return status_;}
     const EffectStatus& status() const noexcept {return status_;}
@@ -176,6 +185,7 @@ public:
     std::optional<bool> party_kind() const noexcept override;
     void send_party(const net::Packet&) noexcept override;
 private:
+    void require_effect_database() const;
     void prepare_equipment_removal(std::uint16_t slot,InventoryRemovalWorld&);
     InventoryReceipt admit_item(GroundItem&,InventoryWorld&,GroundItemPool&,bool pickup);
     std::uint32_t credit_money(std::uint32_t amount,std::uint8_t type_id,std::uint8_t count,MoneyWorld&);
@@ -195,6 +205,7 @@ private:
     std::int32_t defense_wear_cursor_=0;
     UserRelations relations_;
     ActorScene& scene_;
+    ActorEffectDatabase* effect_database_=nullptr; // Required before effect removal; borrowed lifetime.
     ActorResources resources_;
     DamageLedger damage_;
     EffectCycle effects_;

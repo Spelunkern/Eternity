@@ -8,7 +8,9 @@
 using namespace eternity;using namespace eternity::game;
 namespace {
 void require(bool value,const std::string& message) {if(!value) throw std::runtime_error(message);}
-struct World final:EffectWorld,EffectObserver,ActorScene {
+struct World final:EffectWorld,EffectObserver,ActorScene ,public ActorEffectDatabase {
+    std::vector<net::Packet> effect_database_packets;
+    void send_effect_database(const net::Packet& packet) noexcept override {effect_database_packets.push_back(packet);}
     Actor* actor=nullptr;std::vector<std::string> events;
     void state(char kind) {
         const auto& status=actor->status();events.push_back(std::string(1,kind)+std::to_string(status.action_block_a)+","+std::to_string(status.movement_block)+","+

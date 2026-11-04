@@ -9,7 +9,13 @@ void append(net::Packet& packet,std::uint32_t value,unsigned int bytes) {for(uns
 }
 Actor::Actor(std::uint32_t id,EffectStatus status,PlayerResources current,std::vector<PersistedEffect> replica,ActorScene& scene,
     ActorEquipmentRules equipment,std::vector<PlayerItem> inventory)
-    :id_(id),status_(std::move(status)),scene_(scene),resources_(id,current,*this),effects_(id),replica_(std::move(replica)),equipment_(equipment),inventory_(std::move(inventory)) {for(const auto& item:inventory_) if(item.bag==0 && item.slot<13) equipment_database_quality_[item.slot]=item.quality;}
+    :id_(id),status_(std::move(status)),scene_(scene),effect_database_(dynamic_cast<ActorEffectDatabase*>(&scene)),resources_(id,current,*this),effects_(id),replica_(std::move(replica)),equipment_(equipment),inventory_(std::move(inventory)) {for(const auto& item:inventory_) if(item.bag==0 && item.slot<13) equipment_database_quality_[item.slot]=item.quality;}
+Actor::Actor(std::uint32_t id,EffectStatus status,PlayerResources current,std::vector<PersistedEffect> replica,ActorScene& scene,
+    ActorEquipmentRules equipment,ActorEffectDatabase& database,std::vector<PlayerItem> inventory)
+    :Actor(id,std::move(status),current,std::move(replica),scene,equipment,std::move(inventory)) {effect_database_=&database;}
+void Actor::require_effect_database() const {
+    if(!effect_database_ && effects_.size()!=0) throw std::logic_error("Actor effect removal requires a DB-agent transport binding");
+}
 Actor::~Actor() {effects_.release_all(*this);for(auto& held:retained_inventory_) held.pool->release(*held.item);}
 void Actor::gain_experience(PlayerCore& player,const StatusRules& rules,const Experience& curve,std::uint32_t source,std::int32_t amount,ExperienceAwardOptions options,ExperienceAwardPorts& destination) {
     if(player.character.id!=id_ || player.character.level!=status_.level) throw std::invalid_argument("Experience award requires the bound actor state");
@@ -29,6 +35,7 @@ void Actor::wear_defense() {
     if(result.attack_changed) recalculate_attack(status_);
 }
 void Actor::remove_equipment_modifiers(std::uint8_t slot,const PlayerItem& item,EquipmentRemovalDiagnostics& diagnostics) {
+    require_effect_database();
     struct Operations final:EquipmentRemovalWorld {
         Actor& actor;EquipmentRemovalDiagnostics& diagnostics;
         Operations(Actor& owner,EquipmentRemovalDiagnostics& sink):actor(owner),diagnostics(sink) {}
@@ -45,11 +52,13 @@ void Actor::remove_equipment_modifiers(std::uint8_t slot,const PlayerItem& item,
 }
 bool Actor::check_hp_ability(const SkillDefinitions& definitions) {return effects_.activate_hp(status_,resources_.current(),definitions,*this,*this);}
 void Actor::clear_effects_on_death(const std::int32_t& death_penalty) {
+    require_effect_database();
     EffectEquipment equipped;
     for(const auto& item:inventory_) if(item.bag==0) {if(item.slot==5) equipped.weapon=&item;else if(item.slot==1) equipped.armor=&item;}
     effects_.clear_on_death(death_penalty,status_,equipped,equipment_.items,*this,*this);
 }
 void Actor::clear_duel_debuffs() {
+    require_effect_database();
     EffectEquipment equipped;
     for(const auto& item:inventory_) if(item.bag==0) {if(item.slot==5) equipped.weapon=&item;else if(item.slot==1) equipped.armor=&item;}
     effects_.clear_duel_debuffs(status_,equipped,equipment_.items,*this,*this);
@@ -127,9 +136,9 @@ void Actor::stop_attack(EffectStatus& status) {
 void Actor::stop_target_mob(EffectStatus&,std::uint32_t id) {scene_.stop_target_mob(id);}
 void Actor::taunt(EffectStatus&,std::uint16_t aggro,float range) {scene_.taunt(aggro,range);}
 void Actor::detect_hidden(EffectStatus&,const SkillDefinition& skill) {if(auto* zone=scene_.user_zone()) zone->detect_hidden(id_,skill.apply_range);}
-bool Actor::reveal() {return effects_.remove_hide(status_,*this,*this);}
-bool Actor::cancel_shape_on_attack() {return effects_.cancel_shape_on_attack(status_,*this,*this);}
-void Actor::remove_sleep() {effects_.remove_sleep(status_,*this,*this);}
+bool Actor::reveal() {require_effect_database();return effects_.remove_hide(status_,*this,*this);}
+bool Actor::cancel_shape_on_attack() {require_effect_database();return effects_.cancel_shape_on_attack(status_,*this,*this);}
+void Actor::remove_sleep() {require_effect_database();effects_.remove_sleep(status_,*this,*this);}
 void Actor::rebuild_attack(EffectStatus& status,bool equipment) {
     if(equipment) rebuild_equipment_attack(status.skills.equipment,inventory_,equipment_.items,equipment_.enchant);
     else rebuild_transformed_attack(status.skills.equipment,equipment_.mobs.find(status.shape_template));
@@ -145,6 +154,7 @@ void Actor::user_shape_changed(EffectStatus&) {
     }
 }
 void Actor::replace_attack_elements(EffectStatus& status,std::uint8_t attribute) {
+    require_effect_database();
     EffectEquipment equipped;
     for(const auto& item:inventory_) if(item.bag==0) {
         if(item.slot==5) equipped.weapon=&item;
@@ -162,7 +172,14 @@ void Actor::finish_periodic_damage(EffectStatus& status,const SkillDefinition& s
 std::optional<std::uint32_t> Actor::allocate_id() noexcept {return scene_.allocate_effect_id();}
 void Actor::release_id(std::uint32_t id) noexcept {scene_.release_effect_id(id);}
 std::uint32_t Actor::tick_ms() const noexcept {return scene_.tick_ms();}
-void Actor::erase_persisted(const PersistedEffect& effect) noexcept {replica_.erase(effect.skill_id,effect.level);}
+void Actor::erase_persisted(const PersistedEffect& effect) noexcept {
+    // Every current EffectCycle erase site is an original immediate 0902 site,
+    // including restoration cleanup; shutdown release_all never calls this hook.
+    // Check before changing the replica; a missing required service is not success.
+    if(!effect_database_) std::terminate();
+    replica_.erase(effect.skill_id,effect.level);
+    effect_database_->send_effect_database(effect_database_removed_packet(account_id_,effect.skill_id,effect.level));
+}
 void Actor::persist_applied(const PersistedEffect& effect) noexcept {replica_.apply(effect);}
 void Actor::send_self(const net::Packet& packet) noexcept {scene_.send_self(packet);}
 std::optional<bool> Actor::party_kind() const noexcept {return scene_.party_kind();}

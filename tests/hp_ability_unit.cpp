@@ -51,7 +51,9 @@ struct Harness final:EffectWorld,EffectActivationObserver {
     void user_shape_changed(EffectStatus&) override {unexpected();}
     void replace_attack_elements(EffectStatus&,std::uint8_t) override {unexpected();}
 };
-struct Scene final:ActorScene {
+struct Scene final:ActorScene ,public ActorEffectDatabase {
+    std::vector<net::Packet> effect_database_packets;
+    void send_effect_database(const net::Packet& packet) noexcept override {effect_database_packets.push_back(packet);}
     std::uint32_t tick=180000;std::vector<std::string> events;
     void send_self(const net::Packet& data) noexcept override {events.push_back(packet('S',data));}
     void send_nearby(const net::Packet& data) override {events.push_back(packet('V',data));}
