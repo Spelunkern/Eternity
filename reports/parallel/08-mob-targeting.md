@@ -620,3 +620,131 @@ were not repeated with unchanged code/data. Previous exact validation and the
 initial login-network failure remain recorded in milestone 7. No main changes,
 SQL lifecycle actions, merges or pushes. Waiting for a concrete owner-interface
 resolution or a new scoped assignment; server playability remains incomplete.
+
+## Milestone 8: authorized live reload recovery
+
+New exclusive prefix: mob_targeting_reload. Recovered COMPLETE original
+`CGameData::ReLoadConstMob` 004c20c0 and `ReLoadConstMobSkill` 004c50c0 in
+ps_game.exe, including real GetMobSkillInfo 004027e0. Focused Ghidra --process
+export succeeded under the shared lock in work/exports/08-mob-targeting.
+No shared headers, previous binding implementation or world owners changed.
+
+### Publication and failure behavior
+
+Added a native reload coordinator over mutable owner-provided record views.
+Profile failure returns without logging/connecting. Connect failure logs only.
+Allocation failure after connect logs WITHOUT FreeDB/Disconnect/Release (the
+original lifecycle, not an added RAII cleanup). Query or GetData failure logs
+BEFORE FreeDB -> Disconnect -> Release. Successful fetching performs that same
+cleanup BEFORE checking row count and publishing. Zero/multiple rows log and
+fail after cleanup. A complete first row followed by a failed second row does
+not publish the first row. Only SQL_SUCCESS=0 is accepted for Query/GetData;
+SQL_SUCCESS_WITH_INFO must not be accepted by a SQL_SUCCEEDED-style adapter.
+Fetch statuses other than SQL_NO_DATA=100 enter GetData, including errors.
+
+The staging record is zeroed ONCE before fetching, not per row. NULL leaves its
+destination unchanged; multiple-row decoding can retain previous staged data
+although the final count gate rejects publication. Normalization matches the
+startup loader, including raw byOK, skill-effect acceptance, normal range clamp,
+country/chase fields and timer/attribute derivations. Exactly one successful row
+publishes by RETURNED ROW ID, not the requested R2 ID. Fixtures request ID 7 but
+return row ID 1, checking the actual query text and destination separately.
+
+Publication is an ordered field patch in the original 268-byte mob / 160-byte
+skill layouts, not memcpy or object replacement. Unchanged fields do not increment
+the caller's DWORD change counter; changed fields increment it with wraparound.
+ID and name are never copied. Padding is retained; mob loot tail is untouched.
+Skill level +2 is unconditionally set to 100, WITHOUT a counter increment even
+when it changes. Skill bItemLink +156 is patched from its zeroed staging DWORD.
+Mob's repeated byType comparison produces no second write/increment after the
+first. Source evidence: mob publication 004c2a1b onward, skill publication
+004c5c26 onward; row gates 004c2250 / 004c5bb3. The instrumentation trace reserves
+its storage before the first field write, preventing trace allocation from
+introducing an allocation failure midway through in-place publication.
+
+Own SQL failures occur before publication: this is NOT the startup loader's
+per-row partial catalog publication. Nevertheless there is no rollback of changes
+made by required pool/log callbacks to live owners. Fixtures mutate an owner byte
+and the change counter during Release; subsequent comparisons/increments read
+the new values, and a failed zero-row reload retains those external changes.
+No extra callbacks are introduced between original field writes.
+
+### Owner integration and positional contract
+
+The module owns NO world or definition catalog. Required profile/parse/pool/SQL/
+logging services expose the original lifecycle, and target(kind,row_id) returns
+a stable mutable record from the EXISTING game-data owner after cleanup. Query
+uses usp_Read_Mobs_R2 requestedID (69 columns) or usp_Read_MobSkills_R2 requestedID
+(82 columns); no MaxID query or array reallocation occurs during reload. Exact
+column destination/length/C-type triples are recorded in the fixture footer.
+The mob quest scalar retains the original length=1/C_LONG binding convention;
+its actual typed destination is four bytes immediately before the row buffer.
+Other positions are the milestone 6 startup contract. Procedures and numeric
+conversion belong to the actual SQL owner, not an empty provider.
+
+Original pointers are opaque stable tokens in the wire-layout view; they must
+not be truncated native addresses. A required resolver maps them to existing
+MobTargetingBindingSkill objects. New projection adapters update the EXISTING
+mutable MobTargetingBindingSkill / MobTargetingBindingDefinition structs, retaining
+ID, object address, raw enabled byte and non-owning skill identity. A native alias
+check verifies an already-published definition observes a changed cooldown via
+the SAME skill pointer. Skill reload never rebinds/filter-clears existing mob
+links merely because the skill's effect changed; only a subsequent mob reload
+re-evaluates skill acceptance. No MobRuntime Init/reset is called by reload;
+existing attack deadlines remain runtime-owned.
+
+Minimal canonical additions: serialized mutable allocated-slot accessors to the
+persistent data owner (distinct from public nonzero-ID/admission find helpers),
+plus retained complete normalized record views for full-field change counting.
+The startup catalog currently exposes const lookups only: do NOT const_cast a
+possibly genuinely const published owner. Supply mutable references through its
+actual owner API and invoke the typed adapters under owner quiescence. The raw
+views must reflect current canonical values, not zero-filled reconstructed
+snapshots. Do not replace arrays/catalogs or relocate skill slots. The owner,
+skills, definitions, caller counter and all published references must outlive
+reload; retain them through pool cleanup and projection publication. Readers
+must be paused/serialized across decode, cleanup and ordered patching: no
+thread-safety or atomic whole-record publication is claimed by the original.
+Returned row IDs must be within allocated storage; out-of-allocation writes and
+the GetMobSkillInfo one-past boundary remain unsupported undefined inputs.
+
+### Original execution / checks
+
+New oracle runs 432 complete original reloads (120 successful, 312 failed),
+recording all SQL column reads, cleanup/log order, final complete record bytes,
+change counters and 7,492 field writes with exact offset/width/order. Coverage:
+profile/connect/allocation/query/fetch/GetData failures, first/middle/last column,
+zero/two rows, failure after a complete row, NULLs, unchanged reload, effect/type
+validation, raw enabled bytes, derived fields, exact R2 query arguments, cleanup
+mutations, counter wrap, padding/name/ID retention and forced skill level.
+The native coordinator matches all traces and has no default providers.
+
+OS profile/connection parser/pool/SQL/log/cookie are explicit oracle ports;
+GetMobSkillInfo and both reload bodies execute real original instructions. No
+original database connection, pool shutdown or actual SQL reload was performed.
+The new tests use owned input projections and existing binding structs; they do
+not claim production mutable accessors or world scheduling are integrated.
+Startup/SQL distribution fixtures were not regenerated for this block.
+
+Implementation commit: `87abafd` (workers/08-mob-targeting).
+
+- Locked focused Ghidra --process export: exit 0;
+  `work/mob-targeting-reload-ghidra.log`.
+- `python3 tools/dev.py build`: final exit 0, no warnings;
+  `work/mob-targeting-reload-final-build.log`.
+- `python3 tools/dev.py test`: final exit 0; all 126 tests passed (45.28 s).
+  New reload unit: pass, 0.07 s; `work/mob-targeting-reload-final-tests.log`.
+- Focused ASAN/UBSAN compile and 432-case comparison under the shared build lock:
+  exit 0, no sanitizer diagnostics; `work/mob-targeting-reload-sanitized.log`.
+- Original reload fixture regenerated identically under
+  `work/mob-targeting-reload-repeat.tsv`; byte comparison exit 0.
+- All twelve original EXE/PDB SHA256SUMS pass; git diff --check clean.
+  Generated exports, logs and executable remain ignored; no credentials tracked.
+
+Remaining production dependency: canonical mutable stable allocated-slot access,
+full normalized record storage/counter synchronization and actual R2 SQL/pool/log
+providers. Apply typed projection adapters only to the actually published owner
+record after success; do not publish a failed staged row. Earlier world visitor,
+actor lifetime and FSM wiring remain required. No actual SQL lifecycle operation
+or repeat of the completed restored startup SQL check was performed. The native
+reload coordinator and tests do not imply a playable server.
