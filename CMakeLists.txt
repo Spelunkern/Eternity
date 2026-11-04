@@ -1285,3 +1285,11 @@ if(BUILD_TESTING)
     target_link_libraries(obelisk-runtime-user-list-unit PRIVATE eternity_game)
     add_test(NAME obelisk-runtime-user-list-unit COMMAND obelisk-runtime-user-list-unit ${CMAKE_CURRENT_SOURCE_DIR}/tests/data/obelisk-runtime-user-list-oracle.tsv)
 endif()
+
+# Worker 09: retained VM stack and original literal-only TravelCondition subset.
+target_sources(eternity_game PRIVATE src/game/mob_ai_states_literals.cpp)
+if(BUILD_TESTING)
+    add_executable(mob-ai-states-literals-unit tests/mob_ai_states_literals_unit.cpp)
+    target_link_libraries(mob-ai-states-literals-unit PRIVATE eternity_game)
+    add_test(NAME mob-ai-states-literals-unit COMMAND mob-ai-states-literals-unit ${CMAKE_CURRENT_SOURCE_DIR}/tests/data/mob_ai_states_literals-oracle.tsv)
+endif()

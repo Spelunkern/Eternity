@@ -1,0 +1,46 @@
+#include "eternity/game/mob_ai_states_literals.hpp"
+#include <algorithm>
+#include <bit>
+#include <limits>
+#include <stdexcept>
+namespace eternity::game {
+namespace {
+std::int32_t increment(std::int32_t value){return std::bit_cast<std::int32_t>(static_cast<std::uint32_t>(value)+1U);}
+void assign(MobAiParameter& target,const MobAiParameter& source){
+    target.type=source.type;target.integer=source.integer;target.real=source.real;target.dword=source.dword;target.variable_id=source.variable_id;
+    if(source.type==4){const auto end=std::find(source.text.begin(),source.text.end(),'\0');if(end==source.text.end())throw std::logic_error("Mob AI string literal has no retained terminator");std::copy(source.text.begin(),end+1,target.text.begin());}
+}
+void push(MobAiValueStack& stack,const MobAiParameter& value){
+    stack.top=increment(stack.top);
+    if(stack.top<0)throw std::logic_error("Mob AI literal stack index wrapped outside retained storage");
+    if(stack.top<stack.capacity)assign(stack.slots[static_cast<std::size_t>(stack.top)],value);
+}
+}
+std::int32_t interpret_mob_ai_literals(MobAiConfiguredFsm& owner,MobAiConfiguredCondition& condition){
+    auto& stack=owner.value_stack;
+    if(stack.capacity<0||static_cast<std::size_t>(stack.capacity)>stack.slots.size())throw std::logic_error("Mob AI literal stack requires its retained capacity/storage");
+    stack.top=-1;condition.words[2]=0;
+    MobAiParameter numeric(0);bool numeric_type_known=false; // Original scratch type is undefined until a typed literal.
+    for(;;){
+        const auto index=std::bit_cast<std::int32_t>(condition.words[2]);
+        const auto next=increment(index);condition.words[2]=static_cast<std::uint32_t>(next);
+        if(next>std::bit_cast<std::int32_t>(condition.words[1]))return 0;
+        if(condition.tokens.data()==nullptr&&index==0)return 0;
+        if(index<0||static_cast<std::size_t>(index)>=condition.tokens.size())throw std::logic_error("Mob AI declared token count exceeds retained token storage");
+        const auto& token=condition.tokens[static_cast<std::size_t>(index)];
+        if(token.type==2){
+            if(token.number_type==1){numeric_type_known=true;numeric.type=1;numeric.integer=token.integer;}
+            else if(token.number_type==2){numeric_type_known=true;numeric.type=2;numeric.real=token.real;}
+            else if(token.number_type==3){numeric_type_known=true;numeric.type=3;numeric.dword=token.dword;}
+            if(!numeric_type_known)throw std::logic_error("Mob AI untyped first literal has undefined original scratch type");
+            push(stack,numeric);
+        }else if(token.type==7){
+            if(std::find(token.value.begin(),token.value.end(),'\0')==token.value.end())throw std::logic_error("Mob AI string literal has no retained terminator");
+            MobAiParameter string(4);string.text=token.value;push(stack,string);
+        }else if(token.type==3||token.type==4||token.type==8||token.type==9){
+            throw std::logic_error("Mob AI token requires the unrecovered full TravelCondition provider");
+        }
+        // Kinds outside the dispatch range and original cases 5/6 are ignored.
+    }
+}
+}

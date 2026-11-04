@@ -2,6 +2,7 @@
 #include "eternity/game/mobs.hpp"
 #include "eternity/game/mob_ai_states_parameters.hpp"
 #include "eternity/game/mob_ai_states_tokens.hpp"
+#include "eternity/game/mob_ai_states_values.hpp"
 #include <array>
 #include <bit>
 #include <functional>
@@ -47,6 +48,7 @@ struct MobAiConfiguredFsm {
     MobAiConfiguredFsm(std::uint32_t current_code,std::uint32_t start_code):current(current_code),start(start_code){}
     std::uint32_t current,start;
     MobAiVariables variables;
+    MobAiValueStack value_stack;
     // CMob retained CFunctionPointerList (+114): ConnectToFSM appends each call.
     std::vector<std::pair<std::string,MobAiConfiguredAction>> compiled_functions;
     std::map<std::uint32_t,MobAiConfiguredState,MobAiSignedCodeLess> states;
