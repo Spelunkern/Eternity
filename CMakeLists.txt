@@ -510,3 +510,11 @@ if(BUILD_TESTING)
     target_link_libraries(obelisk-runtime-unit PRIVATE eternity_game)
     add_test(NAME obelisk-runtime-unit COMMAND obelisk-runtime-unit ${CMAKE_CURRENT_SOURCE_DIR}/tests/data/obelisk-runtime-oracle.tsv)
 endif()
+
+# Worker 08: explicit mob targeting/FSM projection.
+target_sources(eternity_game PRIVATE src/game/mob_targeting.cpp)
+if(BUILD_TESTING)
+    add_executable(mob-targeting-unit tests/mob_targeting_unit.cpp)
+    target_link_libraries(mob-targeting-unit PRIVATE eternity_game)
+    add_test(NAME mob-targeting-unit COMMAND mob-targeting-unit ${CMAKE_CURRENT_SOURCE_DIR}/tests/data/mob-targeting-oracle.tsv)
+endif()
