@@ -1681,3 +1681,11 @@ worker's focused canonical quest test passed before its commit; exact final
 report/SQL and cross-branch build/tests remain outstanding. This assembly is
 not production-wired, and real reward, NPC/world ownership and client dispatch
 remain required. No new competing pool or registry is introduced.
+
+Admission integration session 11319 exited 0: locked targeted build and
+`world-admission-unit` passed on `69c389d`, including the existing 1024 original
+admission sequences and the new world-wait/zone-wait/current-removal scenario.
+Log: `/home/franco/Projects/Eternity-admission/.local/admission-zone-wait-test.log`.
+This is one component test, not a TCP admission, production scheduler or client
+playability test. Gameplay 228d086 full build completed 885/885; its focused
+combined tests and isolated SQL remain queued/running in session 58307.
