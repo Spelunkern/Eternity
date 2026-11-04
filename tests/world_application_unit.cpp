@@ -51,7 +51,7 @@ public:
                 std::lock_guard lock(state->mutex);state->pause_confirmed=true;state->changed.notify_all();
             });
             channel.send({9,1,static_cast<std::uint8_t>(sequence)});
-            channel.enter_world();channel.send({1,2,static_cast<std::uint8_t>(sequence)});
+            channel.set_admission_dispatch(true);channel.enter_world();channel.send({1,2,static_cast<std::uint8_t>(sequence)});
         } else if(packet.at(2)==2) {
             channel.send({1,2,static_cast<std::uint8_t>(sequence)});
             channel.enter_character_selection();channel.send({9,1,static_cast<std::uint8_t>(sequence)});

@@ -21,7 +21,7 @@ struct EntryApplication final:net::WorldApplication {
         if(p==net::Packet{4,1}) {
             {std::unique_lock lock(shared->mutex);shared->blocked=true;shared->cv.notify_all();shared->cv.wait(lock,[&]{return shared->release;});}
             check(session.wait(),"wait failed");update_vertical_admission(admission);check(user.location==3,"zone wait missing");
-            channel.send({4,1,0});channel.enter_world();channel.send({0x77,0x77});
+            channel.send({4,1,0});channel.set_admission_dispatch(true);channel.enter_world();channel.send({0x77,0x77});
         } else if(p==net::Packet{1,2}) {
             check(session.receive(p)==VerticalEntryRequest::entered,"entry failed");
             {std::lock_guard lock(shared->mutex);++shared->entered;}channel.send({0x78,0x77});

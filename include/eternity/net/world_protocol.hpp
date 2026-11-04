@@ -23,6 +23,10 @@ public:
     WorldProtocol& operator=(const WorldProtocol&) = delete;
     WorldEvent receive(Packet payload, std::uint64_t now_ms);
     Packet outgoing(Packet payload);
+    // True at admission location 3 and retained through location 4; false at selection.
+    // Projection of the admission owner, independent of the outgoing cipher.
+    // True forwards all payloads; the application must apply the real location gate.
+    void set_admission_dispatch(bool enabled);
     void enter_world();
     void enter_character_selection();
     void close() noexcept;
@@ -37,6 +41,7 @@ private:
     std::optional<session::LoginSession> owner_;
     std::unique_ptr<WorldCipher> cipher_;
     State state_ = State::connecting;
+    bool admission_dispatch_ = false;
     unsigned int undefined_packets_ = 0;
 };
 }

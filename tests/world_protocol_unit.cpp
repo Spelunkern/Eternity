@@ -30,6 +30,7 @@ int main() {
         require(!world.receive(unrelated,1003).application,"Chat dispatched before character selection");
         net::Packet choose{4,1,0,0,0,0};const auto choose_plain=choose;outgoing.crypt(choose);
         require(world.receive(choose,1004).application==choose_plain,"Selection payload not decrypted after ignored packet");
+        world.set_admission_dispatch(true);
         world.enter_world();
         net::Packet response{1,2,3,4};auto expected=response;xor_key->crypt(expected);
         require(world.outgoing(response)==expected,"World response did not switch to XOR");

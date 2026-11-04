@@ -21,6 +21,10 @@ using DispatchCharacter = std::function<game::CharacterReply(const session::Logi
 // ports retained after disconnect become inert. Payloads are plaintext.
 struct WorldChannel {
     std::function<void(Packet)> send;
+    // Posted after location 3 is published, before input resumes; retain through location 4.
+    // Disable on return to selection. This does not change outgoing encryption;
+    // the application remains responsible for location-specific packet dispatch.
+    std::function<void(bool)> set_admission_dispatch;
     std::function<void()> enter_world;
     std::function<void()> enter_character_selection;
     // Completion runs on the socket executor after the pause is applied. The

@@ -120,6 +120,12 @@ struct WorldServer::Impl::Connection : std::enable_shared_from_this<Connection> 
                 catch(...) {self->close();}
             });
         };
+        result.set_admission_dispatch=[weak,executor](bool enabled) {
+            asio::post(executor,[weak,enabled] {
+                const auto self=weak.lock();if(!self || self->closed) return;
+                try {self->protocol->set_admission_dispatch(enabled);} catch(...) {self->close();}
+            });
+        };
         result.enter_world=[weak,executor] {
             asio::post(executor,[weak] {
                 const auto self=weak.lock();if(!self || self->closed) return;

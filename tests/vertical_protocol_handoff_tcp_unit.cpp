@@ -28,12 +28,14 @@ struct HandoffApp final:net::WorldApplication {
             channel.pause_input([s=state](bool ok){std::lock_guard lock(s->mutex);s->pause=ok;s->cv.notify_all();});
             state->wait([&]{return state->pause;});check(session.wait(),"real wait failed");state->release(state->waiting);
             state->wait([&]{return state->first;});
-            if(state->mode_first){channel.enter_world();channel.send({0x77,0x77,1});}
-            else {update_vertical_admission(world);check(user.location==3,"zone publication failed");state->release(state->location);channel.send({0x77,0x77,0});}
-            state->wait([&]{return state->second;});
-            if(state->mode_first){update_vertical_admission(world);check(user.location==3,"zone publication failed");state->release(state->location);}
-            else channel.enter_world();
-            pos.position.x=state->bad_position?81.0F:40.0F;channel.send({0x78,0x77,1});channel.resume_input();
+            if(state->mode_first){
+                channel.enter_world();channel.send({0x77,0x77,1});state->wait([&]{return state->second;});
+                update_vertical_admission(world);check(user.location==3,"zone publication failed");state->release(state->location);
+                channel.set_admission_dispatch(true);pos.position.x=state->bad_position?81.0F:40.0F;channel.send({0x78,0x77,1});channel.resume_input();
+            } else {
+                update_vertical_admission(world);check(user.location==3,"zone publication failed");state->release(state->location);
+                channel.set_admission_dispatch(true);pos.position.x=state->bad_position?81.0F:40.0F;channel.send({0x77,0x77,0});channel.resume_input();
+            }
         } else if(p==net::Packet{1,2}) {
             const auto result=session.receive(p);{std::lock_guard lock(state->mutex);++state->entries;state->failed=result==VerticalEntryRequest::rejected;check(result!=VerticalEntryRequest::unhandled,"gate ignored");if(state->failed)check(user.location==3 && world.zone_waiting_count(zone)==1,"failed entry lost queue");state->cv.notify_all();}
             if(result==VerticalEntryRequest::entered)channel.send({0x79,0x77});else channel.disconnect();
@@ -54,10 +56,12 @@ void run(bool mode_first,bool fail,bool overflow,bool abort=false){
     if(overflow){for(int i=0;i<8;++i)send({9,1,55});peer.closed();state->release(state->first);state->release(state->second);state->wait([&]{return state->closed;});check(state->entries==0,"overflow entered world");return;}
     send({9,1,55});
     state->release(state->first);auto first=peer.packet();if(mode_first)xor_key.crypt(first);else incoming.crypt(first);check(first==net::Packet({0x77,0x77,static_cast<std::uint8_t>(mode_first)}),"first barrier or outbound cipher differs");
-    {std::lock_guard lock(state->mutex);check(state->entries==0,"entry ran before both barriers");if(!mode_first)check(state->location,"zone-first barrier missing");}
-    state->release(state->second);auto second=peer.packet();xor_key.crypt(second);check(second==net::Packet({0x78,0x77,1}),"final barrier or XOR differs");
+    {std::lock_guard lock(state->mutex);if(mode_first)check(state->entries==0,"entry ran before zone publication");else check(state->location,"zone-first barrier missing");}
+    if(mode_first) {state->release(state->second);auto second=peer.packet();xor_key.crypt(second);check(second==net::Packet({0x78,0x77,1}),"zone-ready XOR marker differs");}
     if(fail){peer.closed();state->wait([&]{return state->closed;});check(state->failed && state->entries==1,"failed admission did not close or ran twice");return;}
-    auto entered=peer.packet();xor_key.crypt(entered);check(entered==net::Packet({0x79,0x77}),"real actor did not enter");auto continuity=peer.packet();xor_key.crypt(continuity);check(continuity==net::Packet({0x7a,0x77}),"inbound AES stream lost continuity");
+    auto entered=peer.packet();if(mode_first)xor_key.crypt(entered);else incoming.crypt(entered);check(entered==net::Packet({0x79,0x77}),"real actor did not enter in current cipher mode");
+    auto continuity=peer.packet();if(mode_first)xor_key.crypt(continuity);else incoming.crypt(continuity);check(continuity==net::Packet({0x7a,0x77}),"inbound AES stream lost continuity");
+    if(!mode_first){state->channel.enter_world();state->channel.send({0x78,0x77,1});auto switched=peer.packet();xor_key.crypt(switched);check(switched==net::Packet({0x78,0x77,1}),"outbound XOR transition differs");}
     {std::lock_guard lock(state->mutex);check(state->entries==1 && state->location,"entry did not run once after zone update");}asio::error_code ignored;peer.socket.close(ignored);
 }
 int main(){try{run(false,false,false);run(true,false,false);run(false,true,false);run(false,false,true);run(false,false,false,true);std::cout<<"Two barrier orders, real zone admission/failure, AES continuity, eight-frame overflow and disconnect passed\n";return 0;}catch(const std::exception& e){std::cerr<<e.what()<<'\n';return 1;}}

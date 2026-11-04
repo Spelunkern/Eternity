@@ -46,8 +46,8 @@ WorldEvent WorldProtocol::receive(Packet payload, std::uint64_t now_ms) {
         } catch(...) { close(); throw; }
         return event;
     }
-    // Character selection only dispatches the 0x01 family in the original state machine.
-    if(state_==State::character_selection && (opcode&0xff00)!=0x0100) return event;
+    // The admission owner publishes location independently of outbound cipher mode.
+    if(!admission_dispatch_ && (opcode&0xff00)!=0x0100) return event;
     event.application=std::move(payload);
     return event;
 }
@@ -58,12 +58,16 @@ Packet WorldProtocol::outgoing(Packet payload) {
     cipher_->encrypt(payload);
     return payload;
 }
+void WorldProtocol::set_admission_dispatch(bool enabled) {
+    if(state_!=State::character_selection && state_!=State::world) throw std::logic_error("Admission routing requires a connected world session");
+    admission_dispatch_=enabled;
+}
 void WorldProtocol::enter_world() {
     if(state_!=State::character_selection) throw std::logic_error("World entry requires character selection");
     cipher_->enter_world(); state_=State::world;
 }
 void WorldProtocol::enter_character_selection() {
     if(state_!=State::world) throw std::logic_error("Character selection requires a connected world session");
-    cipher_->enter_character_selection();state_=State::character_selection;
+    cipher_->enter_character_selection();admission_dispatch_=false;state_=State::character_selection;
 }
 }
