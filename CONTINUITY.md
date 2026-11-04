@@ -913,3 +913,33 @@ Revieweda48542a/00fdd9a actualsameboundMobPool/rawprepare/initialize_mob/ZoneMob
 ## Thirteenth batch validated
 
 Session60360 exited0. Sourcef59ccd59241c8a19a42afae080e6aace2e23d59e passed build,243/243 native tests (63.72s),complete isolated SQL,full restored binding catalog and real stream SQL. Logs: .local/thirteenth-batch-{build,tests,sql,bindings-sql,stream-sql}.log. Sourcefreeze released. New world sequencing and Actor/obelisk adapters remain reviewed in queue and are not covered by this validation. Server reconstruction objective remains open.
+
+## Fourteenth batch source freeze
+
+Integrated reviewed world DB sequencing, concrete pool/zone obelisk adapter, actual Actor quest adapter and documentation checkpoint2244a0a. CMake nesting audited. Source ff9f04445567d7f78cbb054c712614a99ed8a087 frozen during build, native tests, isolated SQL, full binding catalog and stream SQL. Logs .local/fourteenth-batch-{build,tests,sql,bindings-sql,stream-sql}.log. Latest published validated d5310bf; new batch not yet validated.
+
+## Reviewed worker09 efb92f22 — retained local VM reads
+
+Reviewed da753b2/9c9afc8: explicit local-value provider shares actual configured variable map and retained stack, TokenStr signed-char hash, original scalar/string-tail assignments. Reported1920 original executions,6144 tree frees,139/139 worker tests; no central verification yet. Missing typed locals explicitly error without invented insertion; functions/operators/full factory remain open. Exact commits queued during fourteenth source freeze. Worker continues active interpreter scope.
+
+## Reviewed worker01/02 snapshots 72db4b97 /79df4841
+
+Queued979e1a2/d33f9a9 learned snapshot: original sparse physical slots/retained scratch and signed cooldown,192 comparisons/135 worker tests. Reviewed c964d62/5546d0b immediate0902 Actor binding and actual existing SkillReplica delivery,512packets/2304traces. Not suite-passed:136/137,zone-users fixture lacks required transport. Held queue status reviewed-awaiting-fixture-fix. Explicit narrow ownership exception assigned02 to apply prepared zone fixture recording provider and rerun full suite; preserve failed evidence. No production no-op binding. Fourteenth source freeze remains active; no canonical source changes.
+
+## Reviewed worker05 90e6cc64 — regular raid membership
+
+Reviewed ba4f407/1c14552 actual EnterRaidParty/LeaveRaidParty on SAME30slot registry, original wire indices/holes/inactive tails/recursive leave, raid-aware send/type/request adapters. Reported256original sequences,84nested calls,512send comparisons,133/133tests and ASAN/UBSAN. Exact commits queued while fourteenth freeze active. Actual retained Actor/registry root, guild cleanup, transport/log/scene and raid creation/conversion/remaining opcodes still open. Fourteenth build passed290actions; native246test suite running.
+
+## Reviewed worker06 d258c12c — actual quest grant/admission adapters
+
+Reviewed05b9c62/c10c68a: SAME retained Actor/item pool/catalog/live ItemIds, rawclaim before craft and mirror sync before DB, QuestRuntime add_active_unaccounted with once-only live counters. Per-call frames and retained leases; real clock/calendar/DB/client required. Reported384items/253starts/306additional grants,127/127tests after initial fixture observation failure corrected. Queued during fourteenth freeze. NPC/requirement consumption/log/root bridge incomplete; worker continues concrete QuestStartWorld binding. Central246/246tests passed69.65s;SQL/catalog/stream pending.
+
+## Worker02 fixture dependency resolved
+
+Reviewed4a1ebd6/1293d5e exact authorized recording transport migration only in tests/zone_users_unit.cpp. Worker build and137/137tests42.82s pass; initial136/137failed log preserved. Immediate0902 queue entry released from fixture hold; implementation+fixture pending central integration after active fourteenth SQL validation. Real root DB/cache/lifetime still required.
+
+Reviewed6200faa doc-only previousfixture checkpoint; no new implementation/tests. Newer Actor Rebirth assignment remains active (worker02 running); do not overwrite it with obsolete WAITING status. Fourteenth246tests/fullSQL/catalog passed so far, streamSQL/final pipeline exit pending.
+
+## Fourteenth batch validated; raid transport evidence reviewed
+
+Session12060 exited0: build,246/246tests69.65s,complete isolated SQL,full restored binding catalog and real stream SQL all passed. Sourceff9f04445567d7f78cbb054c712614a99ed8a087; .local/fourteenth-batch-{build,tests,sql,bindings-sql,stream-sql}.log. Freeze released; newer queued deliveries not covered. Reviewed5fc2198/d38c171 raid original pooled-send composition evidence:64sequences/2650deliveries/41poolfailures,134tests+ASAN/UBSAN reported, no production membership changes. Exact commits queued. Assigned05 actual raid creation/conversion/remaining opcodes rather than repeated membership fixtures. Objective remains open.
