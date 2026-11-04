@@ -1226,3 +1226,11 @@ vectors: 8192 normal and 4096 skill cases match. This verifies fixture
 reproducibility, not the native implementation or completeness beyond fixture
 coverage. Requested explicit x87/native floating-environment and zero-divisor
 review before integration; delivery remains unvalidated on main.
+
+02-world full build completed, but its test source includes another unit with
+`main` renamed, producing `control reaches end of non-void function` for the
+renamed function. Coordinator notified worker 02 to remove the undefined
+behavior and revalidate. Its frame ordering remains under review. Worker 05
+received a bounded assignment to recover the actual ZoneMobs shared-cursor
+iteration with canonical owner/lifetime semantics; no integration claim yet.
+Central validation session 99411 remains live and waiting for a build lock.
