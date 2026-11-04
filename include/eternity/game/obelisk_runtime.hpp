@@ -20,6 +20,7 @@ struct ObeliskRuntimeSpawn {
 struct ObeliskRuntime {
     std::int32_t country=2,last_destroy_country=2,base_country=2;
     std::uint32_t change_time=0,base_id=0,id=0; // id is stMapObelisk::dwID, distinct from base_id.
+    std::uint32_t reset_time=0; // Original dwResetTime +000c: remaining ownership milliseconds.
     UserPosition center;
     std::array<const MobRuntimeTemplate*,3> definitions{};
     MobRespawn respawn;
@@ -63,7 +64,7 @@ void destroy_obelisk(ObeliskRuntimeMap&,ObeliskRuntime&,std::size_t index,
                      const std::array<std::int32_t,2>& kill_count_add,ObeliskRuntimeWorld&);
 void respawn_obelisk(ObeliskRuntimeMap&,ObeliskRuntime&,ObeliskRuntimeWorld&);
 // CMap::InitObelisk 00429a60. Raw heap allocation/ID preparation for principal
-// and companions, no spawn log. Records must already be bound to the zone copy.
+// and companions, no spawn log. Normal map records bind to their primary zone.
 void initialize_obelisks(ObeliskRuntimeMap&,std::span<ObeliskRuntime>,ObeliskRuntimeWorld&);
 // CMap::UpdateRespawnObelisk 00429da0. Unsigned deadline <= now; one attempt
 // per eligible companion group per invocation. Calls complete respawn only for
