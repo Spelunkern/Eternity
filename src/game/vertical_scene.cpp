@@ -8,12 +8,12 @@ VerticalScene::VerticalScene(net::WorldChannel channel,ZoneUsers& zone,PartyMemb
     if(!channel_.send) throw std::invalid_argument("Scene requires the real connection send channel");
 }
 void VerticalScene::bind(Actor& a) {
-    if(actor_ || a.id()!=user_.id || zone_.find_actor(a.id())) throw std::invalid_argument("Invalid scene Actor binding");
+    if(actor_ || a.id()!=user_.id || a.status().in_zone || zone_.find_actor(a.id())) throw std::invalid_argument("Invalid scene Actor binding");
     actor_=&a;
 }
 void VerticalScene::unbind() {
     if(!actor_) throw std::logic_error("Scene is not bound");
-    if(zone_.find_actor(actor_->id())==actor_) throw std::logic_error("Detach Actor from zone before scene unbind");
+    if(actor_->status().in_zone || zone_.find_actor(actor_->id())==actor_) throw std::logic_error("Detach Actor from zone before scene unbind");
     actor_=nullptr;
 }
 Actor& VerticalScene::actor() const {if(!actor_) throw std::logic_error("Scene has no retained Actor");return *actor_;}
@@ -21,6 +21,7 @@ void VerticalScene::send_self(const net::Packet& p) noexcept {channel_.send(p);}
 ZoneUsers* VerticalScene::user_zone() {
     auto& a=actor();auto* member=zone_.find_actor(a.id());
     if(member && member!=&a) throw std::logic_error("Zone Actor identity changed");
+    if(!member && a.status().in_zone) throw std::logic_error("Actor is attached to another zone");
     return member?&zone_:nullptr;
 }
 void VerticalScene::send_nearby(const net::Packet& p) {if(auto* z=user_zone()) services_.nearby(*z,actor(),p);}
@@ -39,7 +40,7 @@ void VerticalScene::send_party(const net::Packet& packet) noexcept {
     party_world_.lock(*p);
     if(user_.party==p) {
         for(std::int32_t i=0;i<p->count;++i) {
-            if(i>=30 || (p->experience.kind==0 && i>=7) || p->experience.kind>1) std::terminate();
+            if(i>=30) std::terminate();
             auto* member=i<7?p->slots[static_cast<std::size_t>(i)]:p->extra_slots[static_cast<std::size_t>(i-7)];
             if(member && member!=&user_ && member->send_socket!=-1) {
                 buffer->references.fetch_add(1,std::memory_order_seq_cst);party_world_.enqueue_send(*member,*buffer);

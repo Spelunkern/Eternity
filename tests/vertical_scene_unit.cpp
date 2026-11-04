@@ -8,10 +8,10 @@ using namespace eternity;using namespace eternity::game;
 namespace {
 void check(bool value,const char* why) {if(!value) throw std::runtime_error(why);}
 struct PartyWorld final:PartyMembershipSendWorld {
-    PartyMembershipSendBuffer buffer;std::vector<std::uint32_t> sent;bool active=false;unsigned locks=0,frees=0;
+    PartyMembershipSendBuffer buffer;std::vector<std::uint32_t> sent;bool active=false;unsigned locks=0,frees=0;std::function<void()> on_enqueue;
     PartyMembershipSendBuffer* allocate_send_buffer(std::uint16_t) override {check(!active,"Duplicate buffer allocation");active=true;return &buffer;}
     void free_send_buffer(PartyMembershipSendBuffer& b) override {check(&b==&buffer && b.references==0,"Wrong buffer release");active=false;++frees;}
-    void enqueue_send(PartyMembershipUser& u,PartyMembershipSendBuffer& b) override {check(locks && &b==&buffer,"Missing party lock/buffer");sent.push_back(u.id);release_party_membership_buffer(b,*this);}
+    void enqueue_send(PartyMembershipUser& u,PartyMembershipSendBuffer& b) override {check(locks && &b==&buffer,"Missing party lock/buffer");sent.push_back(u.id);if(on_enqueue) {auto callback=std::move(on_enqueue);callback();}release_party_membership_buffer(b,*this);}
     void lock(PartyNormalMembership&) override {++locks;}
     void unlock(PartyNormalMembership&) noexcept override {--locks;}
     std::uint32_t tick() override {throw std::logic_error("Unexpected tick");}
@@ -65,12 +65,12 @@ int main() {try {
     VerticalScene scene(channel,zone,user,party_world,services);const ItemDefinitions definitions;const EnchantValues enchant;const MobAttackTemplates mobs;
     Actor actor(42,{}, {},{},scene,{definitions,enchant,mobs});scene.bind(actor);
     scene.send_self({5,2,1});check(outgoing==std::vector<net::Packet>{{5,2,1}},"Wrong channel send");
-    check(!scene.user_zone(),"Unattached actor has zone");scene.send_nearby({1,2});check(services.calls.empty(),"Detached view was sent");
+    check(!scene.user_zone(),"Unattached actor has zone");actor.status().in_zone=true;bool foreign=false;try {scene.user_zone();} catch(const std::logic_error&) {foreign=true;}actor.status().in_zone=false;check(foreign,"Foreign zone binding silently accepted");scene.send_nearby({1,2});check(services.calls.empty(),"Detached view was sent");
     check(zone.attach_at_position(actor,{20,0,20}),"Cannot attach actor");scene.send_nearby({1,2});scene.send_cell_view({3,4});check(scene.user_zone()==&zone && services.calls==std::vector<std::string>{"near","cell"},"Zone views not routed");
     bool threw=false;try {scene.unbind();} catch(const std::logic_error&) {threw=true;}check(threw,"Attached unbind accepted");
     PartyRegistryParty party;PartyMembershipUser a,b,c;a.id=43;b.id=44;c.id=45;a.send_socket=1;b.send_socket=-1;c.send_socket=2;user.send_socket=3;user.party=&party;party.slots[0]=&user;party.slots[1]=&a;party.slots[2]=&b;party.extra_slots[0]=&c;party.count=3;services.group=&party;
     check(scene.party_kind()==false,"Normal kind lost");scene.send_party({1,2,3});check(party_world.sent==std::vector<std::uint32_t>{43} && party_world.frees==1 && !party_world.active,"Normal party source exclusion or buffer ownership failed");
-    party.experience.kind=1;party.count=8;check(scene.party_kind()==true,"Raid kind lost");scene.send_party({9,8});check(party_world.sent==std::vector<std::uint32_t>({43,43,45}) && party_world.frees==2,"Raid extended slots or sender exclusion failed");
+    party.experience.kind=1;party.count=8;check(scene.party_kind()==true,"Raid kind lost");party_world.on_enqueue=[&]{party.experience.kind=0;};scene.send_party({9,8});check(party_world.sent==std::vector<std::uint32_t>({43,43,45}) && party_world.frees==2,"Raid extended slots or sender exclusion failed");
     scene.reset_damage();scene.stop_target_mob(44);scene.taunt(5,60);check(scene.allocate_effect_id()==19 && scene.tick_ms()==101,"Effect ID or clock delegation failed");scene.release_effect_id(19);check(services.freed==19 && scene.user_shape_social().guild_name=="guild","Effect release or social owner failed");
     EffectStatus status;SkillDefinition skill;EffectSource source;scene.finish_periodic_damage(status,skill,source,7);check(services.calls==std::vector<std::string>({"near","cell","reset","stop","taunt","damage"}),"Scene required service dispatch failed");
     check(zone.detach(actor.id()),"Cannot detach actor");scene.unbind();network_channel();std::cout<<"Scene channel, actual zone membership, normal/raid party buffer ownership and required services passed\n";
