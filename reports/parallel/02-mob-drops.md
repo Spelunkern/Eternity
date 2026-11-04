@@ -937,3 +937,26 @@ actual group recipient traversal/locks and zone/admission/transport lifetime
 remain root services. No worker08 implementation or main/frozen source edited.
 This pure packet API has no SQL calls; no SQL lifecycle/integration writes were
 performed. Native comparisons do not establish playable-server completion.
+
+## RecoverChange continuation checkpoint
+
+Re-read current main CONTINUITY.md/PARALLEL_WORK.md and reviewed implementation
+ba1bd05/report a49d54c. The repeated SendRecoverChange assignment is completed in
+milestone15; there is no further independent notification behavior to implement
+inside this scope. No new runtime change or test execution is claimed here.
+Historical validation remains 768 original traces, eight actual Rebirth bridge
+compositions and 141/141 tests in41.73s; documentation diff check passes.
+
+Dependency: coordinator must integrate ba1bd05/a49d54c and worker08/root must bind
+its required send_recover_change port to Actor::send_recover_change with actual
+Scene/party transports and serialized subject/group lifetime. Do not substitute
+recover/heal or introduce a second resource owner. Canonical sixteenth-batch
+sources remain untouched during the coordinator's freeze.
+
+Concrete next-task proposal, requiring an explicit new assignment: recover and
+expose the missing same-owner damage-ledger reset required by worker08's NPC
+death bridge (c2811ca/7105169, reviewed in current continuity). Audit original
+reset ordering and add a minimal Actor adapter plus original/native callback
+ordering comparisons; do not implement worker08 lifecycle or root world assembly
+in this worker. Until integration or a new scoped task, avoid repeating completed
+fixtures/tests or editing other workers' owners.
