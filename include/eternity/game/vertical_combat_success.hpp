@@ -4,6 +4,8 @@
 #include "eternity/game/user_skill_runtime.hpp"
 #include <span>
 namespace eternity::game {
+// Reject unsupported floating environments before original floating operations.
+void vertical_combat_require_float_environment();
 // Null-skill melee/ranged/magic branches of ps_game.exe CUser::AttackSuccess 0044d010.
 // Uses the retained actor and mob stats and the same serialized MSVCRT RNG owner.
 // Other kinds return true after the common guards without drawing. Floating
