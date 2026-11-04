@@ -74,6 +74,7 @@ public:
     void clear(const MobAppliedSkillLogProjection&);
     void keep(std::uint32_t now,MobRuntime&,MobAppliedSkillDamageServices&,MobAppliedSkillEffectServices&);
     void remove_sleep(MobRuntime&,MobAppliedSkillEffectServices&);
+    void remove_vision_fix(MobRuntime&);
     void apply(MobRuntime&,const MobAppliedSkillApplication&,std::uint8_t base_attribute,
                std::atomic<std::uint32_t>& shared_counter,MobAppliedSkillApplicationServices&,
                MobAppliedSkillEffectServices&);
