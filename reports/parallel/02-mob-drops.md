@@ -693,3 +693,39 @@ and run the prepared patch only with that owner's authorization. Root must selec
 actual DB queue or cohosted receiver on the same cache/save lock and retain runtime
 ID services; immediate packet construction/cache delivery is implemented, full
 root network/world assembly and global playability are not claimed.
+
+## Milestone 13: authorized ZoneUsers effect-transport fixture migration
+
+Fixture-only implementation commit:
+`4a1ebd6b976f8c1a329c96f1b737c6e8ca618d00`.
+
+Read current continuity/parallel instructions and reviewed c964d62/5546d0b.
+Coordinator explicitly authorized the narrow tests/zone_users_unit.cpp exception.
+Applied exactly the prepared recording-provider patch: fixture Scene implements
+ActorEffectDatabase and captures emitted packet bytes. Actor binds this explicit
+capability during construction. No production no-op, zone_users implementation,
+other worker01 source or main/frozen source was changed. No runtime contract fix
+was needed. This commit must follow the immediate effect-transport implementation
+c964d62; it does not replace that implementation or its mandatory root bindings.
+
+Validation:
+
+- `python3 tools/dev.py build`: exit0; only the fixture recompiled/linked, no
+  warnings. Log work/mob-drops-effect-fixture-build.log.
+- `python3 tools/dev.py test`: exit0, **137/137 passed in42.82seconds**, including
+  zone-users-unit and both immediate effect transport comparisons. Log
+  work/mob-drops-effect-fixture-tests.log. No failed test remains in this worker
+  suite at this source; no duplicate full-suite run performed after this pass.
+- Initial milestone12 failure remains unchanged at
+  work/mob-drops-effect-transport-tests.log:136/137,ctest8/dev1,40.61seconds.
+  SHA256 `187329daa20579be18109daa62caf0ba48f7cc8811f57dc210f682a3011d0321`.
+  It is preserved as a failed run, not retroactively counted as passed. The
+  historical milestone12 validation section above describes that initial state;
+  its fixture-authorization dependency is resolved by this explicit assignment.
+- git diff --check passes. No binary, SQL, schema, credential or lifecycle edits;
+  this fixture-only block did not repeat unrelated SQL/original execution checks.
+
+Remaining: coordinator integrates the implementation plus fixture commit, runs
+shared complete checks and supplies actual production DB queue/cohosted cache,
+shared save mutex, Actor lifetime and runtime ID services. A recording test
+transport establishes no root-world assembly or global gameplay completion.
