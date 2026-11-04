@@ -1912,3 +1912,12 @@ worktree; session 11481 now runs split protocol, real-admission TCP handoff and
 world-protocol focused tests on `dfb22e7`. Results remain pending. These tests
 still do not establish live original-client gameplay or the original queue
 threshold/scheduling semantics.
+
+Gameplay integration session 58307 finished exit 0 on clean `228d086`: full
+885-step build, focused 9/9 CTests, and isolated SQL including character
+mutation/save/reload and disposable guild cleanup. Logs
+`Eternity-gameplay/.local/gameplay-composed-{build,tests,sql}.log`. This combines
+the entry/persistence branch with normal combat, movement check and pickup; it
+still uses test owners and is not a live world. Main session 39827 remains in
+its full unit/SQL validation; main source should stay frozen until that ends.
+The desktop dashboard state records this validated component milestone.
