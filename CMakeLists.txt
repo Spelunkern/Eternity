@@ -813,3 +813,11 @@ if(BUILD_TESTING)
     target_link_libraries(quest-start-items-unit PRIVATE eternity_game)
     add_test(NAME quest-start-items-unit COMMAND quest-start-items-unit ${CMAKE_CURRENT_SOURCE_DIR}/tests/data/quest-start-items-oracle.tsv)
 endif()
+
+# Worker 09: complete WhileMove state and completion semantics.
+target_sources(eternity_game PRIVATE src/game/mob_ai_states_move.cpp)
+if(BUILD_TESTING)
+    add_executable(mob-ai-states-move-unit tests/mob_ai_states_move_unit.cpp)
+    target_link_libraries(mob-ai-states-move-unit PRIVATE eternity_game)
+    add_test(NAME mob-ai-states-move-unit COMMAND mob-ai-states-move-unit ${CMAKE_CURRENT_SOURCE_DIR}/tests/data/mob_ai_states_move-oracle.tsv)
+endif()
