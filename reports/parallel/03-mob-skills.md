@@ -145,6 +145,8 @@ contract with actual owner operations and stable retained storage.
 
 | `bbaac402578986a9d1cdeb4907cf733f4c0e1aa4` | Actual stable catalog / retained applied-owner integration | 12,544 original damage rows, 256 ability cycles, 256 actual R2 cycles; 130/130 tests, 44.43 s. |
 
+| `0e4ce8b39d47ca3f2a00085f7b1d84532b19a3fd` | Catalog recursive Death/Clear/nested admission evidence | 160 native compositions; original replacement fixture regenerated identically; 131/131 tests, 35.70 s. |
+
 ## Vision cleanup milestone
 
 `MobAppliedSkills::remove_vision_fix(MobRuntime&)` now operates directly on the
@@ -294,3 +296,61 @@ route scheduler/admission into it. Preserve the explicit world quiescence contra
 when wiring the existing SQL R2 publisher. Coordinator owns this production root
 assembly and complete isolated SQL validation. No additional canonical header
 changes are required by this adapter.
+
+## Catalog recursive lifecycle evidence milestone
+
+The completed catalog adapter is now exercised with 160 additional native
+compositions: actual keep (periodic only), expiry and replacement, periodic and
+scalar-HP final damage, both combat outcomes, optional synchronous admission from
+Death, all Lua/respawn-name and zone-send gates. Two actual bridge owners share
+one real pool, catalog and global atomic ID counter. The other owner's node must
+remain active and unavailable throughout all callbacks. Construction after the
+three seeded nodes is rejected, so recursion must use retained pool objects.
+
+Callbacks assert detach/free state at combat, Death and view delivery. Expiry and
+replacement retain the selected node outside the pool through every callback;
+Death clears the remaining real list, and recursive admission reuses its filler
+node. Replacement subsequently admits its original selected node/instance ID.
+Keep's selected node remains linked at combat; recursive Clear can recycle it,
+and the nested admission can reuse that exact object. The test therefore checks
+the packet's live post-callback skill identity instead of assuming a detached
+node in all three paths. This is native ownership composition evidence, not a
+new full original-process comparison of that particular nested keep sequence.
+
+The scalar port checks captured pre-combat HP even after the callback changes
+current HP. Periodic damage checks the pure calculator result and mutates the
+returned triple; exact packet words must reflect that mutation. All packet
+headers, old node level, radius/priority, optional delivery, previous-name
+cleanup, callback ordering, final active/free identity, original instance IDs,
+no extra constructions and shared counter are checked. Published definition and
+keep-time views come from the actual existing catalog. No adapter/production
+logic change was needed; required world ports remain mandatory.
+
+Source basis remains ps_game.exe AddApplySkill **004a0aa0**, RemApplySkill
+**004a0da0**, ChkKeepSkill **004a10d0**, ChkEndTimeSkill **004a12f0**,
+ClearApplySkill **004a0990** and TimeDamage **004a3be0**. Original full replacement
+execution (256 flows, including existing reentrant callbacks) was regenerated
+and matches the retained fixture byte-for-byte:
+`work/mob-applied-skills-catalog-lifecycle-original.tsv`. This does not substitute
+for actual combat/world/SQL providers or original execution of every new native
+composition. The prior original and native fixtures remain unchanged.
+
+Implementation/evidence commit: `0e4ce8b39d47ca3f2a00085f7b1d84532b19a3fd`.
+
+- `python3 tools/dev.py build`: exit 0; final build log has no warnings:
+  `work/mob-applied-skills-catalog-lifecycle-build-final.log`.
+- `python3 tools/dev.py test`: exit 0, **131/131 passed**, 35.70 seconds.
+  New 160-case composition suite passed in 0.01 seconds. No failed native runs.
+  Log: `work/mob-applied-skills-catalog-lifecycle-test.log`.
+- Original 256-flow regeneration/byte comparison and git diff --check passed.
+
+All twelve original EXE/PDB hashes
+passed (`work/mob-applied-skills-catalog-lifecycle-hashes.log`). The ignored
+read-only worker08 snapshot and normal-catalog central build arrangement from
+the previous milestone are unchanged. No SQL access or sanitizer run in this
+block. Main's eighth-batch validation freeze was respected.
+
+Remaining production dependencies are unchanged: world root construction, shared
+catalog/pool/counter identity, synchronous subject lifetime through Death/view,
+external reload quiescence and real combat/log/transport providers. Complete SQL
+validation belongs to the coordinator. No canonical interface edits are needed.
