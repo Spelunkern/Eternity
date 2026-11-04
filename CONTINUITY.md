@@ -2004,3 +2004,11 @@ currently fails closed because no early connection-owned NProtect service exists
 unlike original absent-object behavior; 0003 reply owner is not wired, 1000-frame
 snapshot threshold and actual CCSAuth2 ownership remain open. These changes are
 not on main or in the already-running coordinator/entry branch. Dashboard updated.
+
+Independent 01's latest uncommitted follow-up changes CharacterSummary to retain
+raw unsigned-byte rename and signed DWORD remaining time rather than only bool
+projections, while preserving the original boolean wire flags. This supersedes
+any assumption that the temporary bool-only coordinator/entry branch is the final
+representation; its new original fixture and SQL/unit tests must complete and be
+reviewed before incorporation. Current entry session 69040 is testing the prior
+`6e57801` source; its result will not validate this newer draft.
