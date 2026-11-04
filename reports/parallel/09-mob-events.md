@@ -58,3 +58,80 @@ shared SQL integration belongs to the coordinator. No SQL lifecycle operations
 were performed. Live Lua/FSM integration and playable gameplay remain incomplete.
 
 Implementation commit: `ee5e0fa9a5f2b24f386ded21be1b50c034aee4cf`.
+
+## Milestone 2 — compiled mob stack FSM (`mob_ai_states`)
+
+New Ghidra export via the serialized `tools/reverse.py --process` wrapper:
+`work/exports/09-mob-events/ps_game.exe/{decompiled.c,disassembly.txt}`.
+Original hashes verified again (all twelve EXE/PDB files match).
+
+Recovered `CMob::InitLuaFSM` 004b4c20 registers five states: idle 0
+(`WhileIdle` 004b52c0), combat 1 (`WhileCombat` 004b55c0), death 2
+(`WhileDeath` 004b5780), return home 3 (`WhileReturnHome` 004b5c40), and
+move 4 (`WhileMove` 004b5790). All enter/leave callbacks are null. The exact
+23 transition registrations are compared against original execution, including
+push, pop and replace, with the actual event callbacks from milestone 1.
+
+Implemented stack ownership using the existing `MobRuntime::state_stack`
+projection, original initial-state selection (`SetInitialState` 00493150),
+event dispatch (`DispatchEvent` 004929b0 / `STATE::OnDispatch` 004938c0),
+and polling (`Poll` 004a8350). Initial selection clears the stack without leave
+callbacks. Event callbacks run before the stack operation; callback changes to
+the live stack remain visible. Empty dispatch/pop and depth greater than five
+report the recovered diagnostic and reset to idle. Missing transitions report
+an error without changing state. Invalid initial -1 retains the stack; an
+unregistered state clears/releases it. Host invalid projections fail explicitly.
+
+Death is a replace transition from states 0, 1, 3, 4 on event 3; lower stack
+frames remain. Death has no outgoing transitions. Original `WhileDeath` is a
+single RET, so polling the corpse succeeds without invoking world services.
+There is no implicit reward call on entering/polling this state.
+
+The actual reward connection is external: `CMob::Damage` 00490cf0 sets status
+2 (00490d46) and dispatches event 3 (00490d59). `CUser::AttackMob` 0044ce10
+calls `CMob::Death` 004910f0 only after Damage returns a kill. Native integration
+composes the real existing death reward coordinator after the stack transition,
+verifies reward delivery while the current state is 2, real ledger reset, and
+that repeated death-state polls do not repeat rewards. Worker 01 owns combat
+Damage; no duplicate combat implementation was added here.
+
+### Validation
+
+- `python3 tools/dev.py build`: exit 0, no compiler warnings;
+  `work/mob_ai_states-build.log`.
+- `python3 tools/dev.py test`: exit 0; all 121 tests pass (39.97 s), including
+  `mob-ai-states-unit` (0.02 s) and the prior event suite;
+  `work/mob_ai_states-tests.log`.
+- Oracle regenerated twice under ignored work and compared byte-for-byte equal
+  before validation. All original EXE/PDB hashes match. `git diff --check` clean.
+- SQL integration was not run in this worker: this block has no SQL contracts,
+  and the coordinator owns final isolated SQL integration/lifecycle.
+
+The original-execution oracle
+runs complete InitLuaFSM registration, dispatch, STATE::OnDispatch, initial
+selection, polling and event handler instructions. It adapts only container
+storage, diagnostics, Lua allocation/call and tick boundaries. State update
+routines other than death are observed ports, not claimed as reconstructed.
+Cases: 480 dispatch/poll comparisons, five state/23 transition registrations,
+seven initial-state paths and two standalone empty/death polls. The Lua boundary
+also mutates the stack to exercise post-callback operation ordering.
+
+### Remaining work and integration
+
+- Supply real WhileIdle/WhileCombat/WhileReturnHome/WhileMove implementations
+  through required `MobAiStateServices::update`; these are the next independent
+  state behavior block. Diagnostics are also required, never default no-ops.
+- Production InitLuaFSM still needs Lua VM creation, libraries, registration,
+  initialization of its retained fields, and release ownership. This milestone
+  recovers the compiled stack table/operations, not Lua VM execution.
+- `CAIFactory::SetFSM` 004a9130 and `CMob::ConnectToFSM` 00491db0 build a separate
+  configurable CKFSM, not the stack table implemented here. Its text definitions,
+  expression transitions and lifecycle remain missing.
+- No canonical header changes are needed for this block. The coordinator should
+  bind the existing optional state_stack to the lifetime of the stack FSM owner,
+  route worker 01's dispatch-death event through `dispatch_mob_ai_event(mob,3,0,services)`,
+  and retain the existing external `mob_death` call and corpse scheduler.
+- No SQL access/contracts changed. SQL lifecycle and final shared integration
+  remain coordinator work. The server remains unplayable.
+
+Implementation commit: `1c85307e090d95c8064605fa78f0a70f97151752`.
