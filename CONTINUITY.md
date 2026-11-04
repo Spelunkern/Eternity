@@ -1192,3 +1192,11 @@ calculation, world dispatch or full combat. Main validation pipeline is waiting
 for the shared build slot, logs `.local/independent-combat-{build,test,sql}.log`.
 Worker 06 received a bounded AttackSuccess follow-up; preserve required actual
 providers and review independently before integrating.
+
+Observed 05-mobs cancelled its locked build while Docker container a6096c7fe556
+continued compiling after the wrapper exited, leaving work outside the lock.
+Stopped that exact orphan; partial worker build remains unvalidated. Main
+`tools/dev.py` now gives build/test containers unique names and stops them on
+interruption before releasing the lock (0c4fb6e); mock verifies cleanup and CTest
+argument preservation. Existing independent checkouts still have the old wrapper;
+avoid cancelling their builds and verify no orphan containers on interruption.
