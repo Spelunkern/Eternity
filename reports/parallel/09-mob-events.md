@@ -1918,3 +1918,74 @@ actual execution. SQL/contracts did not change; coordinator owns isolated SQL
 and full integration validation. The server is not playable.
 
 Implementation commit: `50da97b2a99f167afc4837461c038adb64be082f`.
+
+## Milestone 28 — finite floating compound updates on the retained variable map
+
+### Evidence / behavior
+
+`ps_game.exe`, `CKFSM<CMob>::TravelCondition` `00498cf0`, compound
+opcodes 11..16 `00499d38..0049a835`; full Ghidra decompile and original
+instructions. Add/subtract/multiply/divide assignments perform the recovered
+float32 integer coercions and x87 53-bit arithmetic before retaining the second
+operand's type and converting the active payload. Float destinations store
+float32; int/DWORD destinations use signed truncating FISTP, including masked
+indefinite bits 80000000 for invalid conversions.
+
+Float increment `0049a1f4..0049a24f` and decrement `0049a364..0049a3bf`
+operate on the second operand with constant float32 1.0 at `0053a40c`.
+Both still pop the first operand, whose numeric value is ignored. Int/DWORD
+increment/decrement retain integer wrapping even if the discarded first operand
+is float. Result metadata comes from the second operand; result push precedes
+lookup/write through its embedded VariableID. Alias destinations can differ from
+the source name. Integer writes retain destination text bytes.
+
+Added explicit `MobAiFiniteCompoundServices`, extending finite arithmetic and
+full numeric assignment with compound updates for finite float inputs. Existing
+narrower providers retain their error boundaries. Nonfinite arithmetic/compound
+operands remain errors; this includes generated nonfinite results fed into a
+later update. Masked exceptional results from finite inputs can still be written
+and retained. Missing targets and undefined operands remain explicit errors.
+Floating status flags and unmasked exception delivery are not claimed equivalent.
+
+### Validation
+
+- 3,456 original sequences / 5,466 full TravelCondition executions; all six
+  opcodes and all nine numeric type pairs, extrema/high-bit integers, float32
+  boundaries, fractions, subnormals, signed zero, masked overflow/division and
+  conversion results, alias targets, unknown-literal scratch reuse and truncated
+  declared counts. Exact retained stack/map bytes, cursor/top and counts match.
+  1,748 final maps change. Repeated updates cover integer operations and float
+  increment/decrement; other float updates use one group/call so generated
+  nonfinite values never become later arithmetic inputs in admitted fixtures.
+- Real original map construction/read/writeback/destruction execute, with all
+  10,368 allocations freed and poisoned. Only allocation/free/security cookie
+  imports are adapted; no map/arithmetic/interpreter result port. Original x87
+  control word 027f is restored after every call.
+- Actual configured entry add-assign changes float 5.25 to 6.75 in the borrowed
+  owner; later evaluation sees the mutation and changes state. Unary underflow
+  explicitly verifies that a single operand is insufficient. Previous providers
+  remain in the suite.
+- Regenerated oracle is byte-identical; original SHA256SUMS pass; diff check clean.
+- Build exit 0, no compiler warnings;
+  `work/mob_ai_states_finite_compound-build.log`.
+
+- `python3 tools/dev.py test`: exit 0, 147/147 tests pass (38.95 s),
+  finite compound test 2.01 s; `work/mob_ai_states_finite_compound-tests.log`.
+
+### Required integration / remaining work
+
+Preserve the single configured owner, both unary operand pops, float32 coercion
+before 53-bit arithmetic, result metadata and push-before-write through the
+embedded VariableID. No canonical header or MobRuntime change was needed.
+Factory-created typed map entries and valid writeback IDs remain required;
+original missing-target insertion with indeterminate text is not fabricated.
+
+Nonfinite operand propagation, system function dispatch/parameter piping,
+nonnumeric comparisons, complete factory/asset decoding and actual root world/
+Lua/scheduling/destruction remain open. A next independent block can prioritize
+original system function dispatch from TravelCondition to connect expression
+programs to recovered handlers, retaining explicit required world providers.
+SQL/contracts did not change; coordinator owns isolated SQL and full integration
+validation. The server is not playable.
+
+Implementation commit: `242e935407c73fd707ad28d58a13053af20118f0`.
