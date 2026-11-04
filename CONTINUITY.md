@@ -1464,3 +1464,11 @@ not original-equivalence claims. Independent 02 committed frame delegation
 `3fad53f`, but its report currently describes the prior population-first code;
 coordinator requested updated report and exact-revision validation, plus real
 single-lease idle/death/respawn composition. Neither delivery is merged.
+
+Independent 05's uncommitted `ZoneMobs::visit_global` draft replaces the prior
+`VerticalMobsWorld::visit_mobs` boundary with direct iteration. Coordinator
+flagged that a primary-zone lease retains the zone but not a pooled mob identity;
+callbacks can release/reuse that mob. Requested a concrete same-object retention
+guard or evidence that the existing pool defers reuse, plus reentrant release/
+reuse tests. A comment requiring retention alone is insufficient. Do not merge
+the cursor draft before this is resolved.
