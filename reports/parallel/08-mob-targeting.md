@@ -1358,3 +1358,151 @@ original fixtures, ASAN/UBSAN and SQL checks were not rerun. Latest validation
 remains 129/129 tests, 400 original target paths and 138 original Stop/target
 sequences, plus focused sanitizer success. No main changes, SQL lifecycle,
 merges, resets or pushes. Original-client playability remains unverified.
+
+## Milestone 13: complete Rebirth coordination and lifecycle owner audit
+
+Implementation commit: `e80704a` (workers/08-mob-targeting).
+This block closes COMPLETE CUser::Rebirth 00459ec0..0045a172 in ps_game.exe.
+Death 004586a0 (2348 bytes) and DeathByNPC 00458fe0 were inspected, but their
+reward/party/PvP coordination is NOT implemented or claimed complete here.
+The next independent lifecycle block remains that Death coordination.
+
+Recovered Rebirth behavior:
+
+- Only initial shared +142c==1 admits the call. Optional restoration copies
+  all three DWORD maximum resources +17c/+180/+184 directly to current
+  +1238/+123c/+1240 BEFORE corpse lookup; no heal, clamp, party event or reset.
+- FindDeadWorld 004176c0 -> LeaveDead 00417820. Ignore LeaveDead's return;
+  never reuse/dereference that corpse after callback. Compare the requested
+  signed map with the LIVE current WORD +164 after LeaveDead returns.
+- Same map: MoveUser 00416260 receives current instance WORD +166 and requested
+  XYZ. Only its true return produces cell-view 0551, 0304 game log, and
+  SendRecoverChange 00482230, in that order. No zone skips the view only.
+- Cross map: original signed map-count and computed pointer guard; then self
+  0551, recover-change, ZoneLeaveUserMove 0040d0c0, self 020b with LIVE
+  post-transfer map/position, then 0304 log. Transfer is void; no fabricated
+  success result. The first 0551 contains pre-transfer position/experience.
+- On ANY normally returning admitted path, including no corpse, missing map
+  and MoveUser false: clear presentation byte +1434; clamp signed recovery
+  +1274 to at least 1; publish shared +142c=0 LAST. A failed move is not a
+  successful move, even though original life state still becomes zero.
+- 0551 is 23 bytes: DWORD user, BYTE kind, DWORD experience (+13c), XYZ floats.
+  020b is 20 bytes: DWORD user, WORD map, XYZ. Kind truncates to one byte.
+  No additional target/attack/casting/effect cleanup occurs in this routine.
+
+Owned core uses an explicit live input projection, not another user owner.
+Action callbacks may mutate it/reenter; no busy flag, rollback or stale private
+life copy suppresses original reentry. Actor bridge publishes to existing
+attack_state.mode/recovery and reads actual resources/equipment maxima; it
+reprojects after every action. Game log preparation uses actual existing
+write_game_log_main 0045b0d0 and the required authoritative subject/calendar.
+
+New ownership discrepancy: original Rebirth clears +1434 (0045a148), and
+EnterZone/shape code currently treats ActorAttackState::motion as presentation;
+worker01 scheduler separately maps that SAME host member to +1448 attack motion.
+These are DISTINCT original bytes. This delivery does not collapse them:
+required presentation_motion getter/setter ports describe +1434; the Actor test
+keeps attack motion sentinel 0xa5 unchanged. Its +1434 value is explicitly a
+fixture projection until the canonical owner separates/exposes it, not a second
+production motion field. Actor/ZoneUsers headers remain read-only and untouched.
+
+Precise remaining canonical owner APIs:
+
+- Silent exact current-resource replacement, e.g.
+  ActorResources::replace_raw(PlayerResources) noexcept writing current_, and
+  an Actor forwarding accessor/method owned by its maintainer. No clamp,
+  recovery packets, skill triggers, reset_damage or duplicate resource cache.
+  Public heal/recover/finish_loading_resources cannot implement original raw
+  restore. Required replace_resources port must publish exact actual values or
+  fail explicitly; a no-op/clamping implementation is detected and rejected.
+- Resolve presentation +1434 versus attack +1448 at Actor owner: expose the
+  actual presentation byte, potentially reusing retained ZoneLifecycleState
+  storage, and update Actor::enter_zone_lifecycle / send_shape_self presentation writers/
+  readers consistently. Scheduler motion must remain the separate +1448 byte.
+  Do NOT point this lifecycle setter at scheduler attack motion. Getter and
+  silent setter must be authoritative; bridge publishes presentation before
+  recovery/life, matching the original tail. No new +142c field/accessor needed.
+
+Production root contract: retain Actor/PlayerCore, resource, corpse, actual zone
+and admission owners through complete calls and synchronous reentry on their
+existing serialized executor. Acquire a genuine session/Actor owner lease
+through callbacks; never manufacture a non-owning shared_ptr lease. Subject
+map/position/instance queries must remain available after source-grid detachment
+(from retained PlayerCore/admission state), and are pure;
+raw setters are silent, exact and non-reentrant. Other action ports may reenter.
+Use real FindDeadWorld/LeaveDead and actual same-map MoveUser/cross-map world
+admission transfer providers; this module creates no corpse list, user registry,
+map catalog, world owner, clock or transport. +1434 and raw resource access remain
+required ports rather than fake success. Missing setter test throws before
+FindDead, retaining already-published state and without running the tail.
+
+Required recover-change port is pure SendRecoverChange (0505 plus party energy),
+NOT Actor::recover (which mutates/clamps resources and sends different events).
+Self delivery delegates actual Actor::send_self; cell view/log sends require
+actual root transports; log uses existing common
+header writer. Rebirth has no direct SQL call: admission providers retain their
+real DB/manager sequencing; no speculative DB write was introduced. map_present
+must preserve the original signed count/computed-pointer guard. Original negative
+map input can reach transfer: explicit projection cases retain that behavior;
+actual providers must handle/reject unsupported retained-map addressing explicitly
+rather than index native storage unsafely or silently invent admission success.
+
+Original-execution fixture executes all 693 bytes of Rebirth, with only corpse,
+move/transfer, transports, recover-change, SetGameLogMain and cookie ports. 1552
+complete cases cover raw states, absent corpse, full/raw restoration, same/cross/
+invalid/negative map requests, move failure, zone absence and mutations at all
+action boundaries. Sixteen execute an ACTUAL nested original Rebirth from the
+FindDead port; nested no-corpse path publishes life=0, yet the admitted outer call
+continues its own corpse/movement/log path. Compare complete ordered packets,
+pre-callback state snapshots and final resources/location/shared state.
+
+Actual native composition uses existing Actor resource Heal from a world callback,
+existing ZoneUsers movement, existing common game-log formatter and retained
+EffectCycle nodes. Target/casting/attack deadlines/effects stay retained as the
+original Rebirth requires. Missing exact restoration provider fails explicitly.
+Native injected provider exceptions preserve partial publication and skip the
+tail; this C++ contract is not claimed as verified Windows SEH equivalence.
+
+Death audit for next block: dead==1 early guard; +145c penalty derived from raw
++58bc/+58b0; life=1, DWORD +1430=0 and ALL current resources zero before exchange/
+shop/vehicle cleanup and CDamage::GetMax. Distinct max-user/max-mob and fallback
+attacker paths lead to PvP/party/raid reward/drop/log handling. Common tail calls
+PvPChkLeaveByDeath 0047b530, actual ClearApplySkillByDeath 00488000, CDamage::Reset
+004b8aa0, EnterDead 004584d0, clears +581c, sets +1454=tick+200000 and +1458=0,
+then SendDeath 00458470 and live party/raid notification under original lock.
+No opaque successful death/reward callback substitutes for these missing branches.
+Existing Actor::clear_effects_on_death and DamageLedger were inspected read-only;
+actual death entry must compose them after reward resolution at the recovered
+positions, not clear effects in Rebirth or add another life owner. Actor currently
+exposes damage_ledger() const only: future Death needs a mutable/reset accessor
+to that SAME ledger, without accidentally adding Scene reset/transport effects.
+Existing WorldAdmission exposes entry/wait operations, not ZoneLeaveUserMove;
+its actual leave/transfer coordination remains required behind the world port.
+
+Validation:
+
+- Native build: tools/dev.py build exit 0; verified source build 141 actions,
+  then corrected test setup build 2 actions; no warnings/errors. Logs:
+  work/mob-targeting-lifecycle-{verified,corrected}-build.log.
+- Initial full run: 129/130 passed, 38.20 seconds; new suite reached the Actor
+  composition after all 1552 original comparisons, then failed "Actor already
+  belongs to a zone". The fixture incorrectly set in_zone before actual grid
+  attachment. Removed that test-only write and let ZoneUsers own admission.
+  Initial ASAN run reached the same fixture error, not a sanitizer diagnostic.
+  Preserved work/mob-targeting-lifecycle-{tests,sanitized}.log; neither is counted
+  as a passing run.
+- Corrected tools/dev.py test: exit 0, 130/130 passed, 36.94 seconds;
+  work/mob-targeting-lifecycle-corrected-tests.log. New lifecycle suite: 0.03 s.
+- Focused ASAN/UBSAN compile/run under the shared build lock: exit 0, no
+  diagnostics; all 1552 original cases, actual Actor/resource/grid/log/effect
+  retention, missing-resource and native failure checks passed. Instrumented
+  new lifecycle core/bridge/test and existing common game-log writer;
+  work/mob-targeting-lifecycle-corrected-sanitized.log.
+- Original fixture regenerated into ignored work/, repeated byte cmp exit 0;
+  work/mob-targeting-lifecycle-{oracle,repeat}.tsv. No original binary changed.
+- All twelve original EXE/PDB SHA256SUMS passed; git diff --check clean. No
+  Actor/zone-user/other owner sources changed. No SQL lifecycle/data writes;
+  unchanged SQL checks were not repeated, full central integration remains
+  coordinator-owned.
+
+No original-client playability or full player lifecycle completion is claimed.
