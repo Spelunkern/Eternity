@@ -300,3 +300,88 @@ outside this prefix. Proposed next coordinator assignment: recover
 CUser::StatusAttackStop 00489ed0 under a newly assigned combat-action prefix,
 then bridge the existing user-hit stop/death ports once the canonical actor owner
 interface is supplied. No new scope is taken in this milestone.
+
+## Assigned extension: CUser::StatusAttackStop / canonical Actor
+
+Implementation/evidence commit: `4f6037a`
+(`Validate original attack stop through Actor and user hit death boundary`).
+
+Recovered the complete ps_game.exe CUser::StatusAttackStop **00489ed0–00489f0c**
+from Ghidra disassembly and original execution. This function contains no CALL,
+transport operation, allocator, lookup, target-release operation or world
+callback. Do not invent a packet or a stop-target notification for this boundary.
+
+For mode +142c equal to 0 or 1, **all fields are retained**, even negative +1274,
+nonzero target type and stale ticks. For every other mode (including negative
+values), original writes occur in this order:
+
+1. +142c = 0 (attack mode).
+2. +1528 = 0 (current target type).
+3. +143c = 0 (previous attack tick).
+4. +1440 = 0 (next attack tick).
+5. +1274 = 1 only when the original signed value was < 1.
+
+The signed comparison at 00489ee1 precedes these stores; its flags are consumed
+at 00489f00. There is no callback between comparison and writes. The target ID
+at **+152c is retained**, as are other action/casting/target-history fields.
+CUser::GetTargetMob 0044c0f0 corroborates the pair: it checks +1528 at 0044c0fd
+and reads +152c for lookup at 0044c10f. Clearing classification is not ownership
+release, and retained ID alone must not be treated as an active target.
+
+Read canonical Actor and actor_actions headers/source during the coordinator
+freeze. `Actor::stop_attack(EffectStatus&)` already implements these exact rules.
+New `mob_combat_stop(Actor&)` delegates to that existing owner rather than
+introducing another attack-state implementation. No canonical source/header or
+previous combat module was edited. No new Actor fields are needed:
+
+| Original field | Existing canonical field |
+| --- | --- |
+| +142c | `actor.attack_state().mode` |
+| +1274 | `actor.attack_state().recovery` |
+| +143c/+1440 | `previous_tick` / `next_tick` |
+| +1528 | `actor.status().current_target_type` |
+| +152c, retained | `actor.status().current_target` |
+
+`tools/mob_combat_stop_oracle.py` executes 512 complete standalone calls without
+any function-body ports. It observes every memory write and rejects changes
+outside the five recovered fields in an otherwise canary-filled 8-KiB user.
+An instruction observer rejects any escape into external code. Another 512
+original CUser::AttackMob slices (0044cf04–0044cf61) execute actual DamageParty,
+Damage and **actual StatusAttackStop**, with required Add/status/clock/retarget/
+Death ports observed. There are 174 conditional Death calls; each sees the
+completed stop state. The native comparison composes the previous user-hit
+coordinator with the real Actor stop and compares final state and ordered credit/
+retarget/Death events. Standalone and composed cases cover 0/1 modes, negative
+and signed-boundary modes/recovery, retained IDs, and wide tick values. Native
+Actor scene operations are counted and must remain zero. Existing target-history,
+motion and resume fields are also checked for preservation.
+
+Validation:
+
+- All original executable/PDB SHA256SUMS verified, exit 0.
+- 1,024 fixtures generated under work/, then copied while no reader was active.
+  Independent regeneration is byte-identical (`cmp`, exit 0).
+- `python3 tools/dev.py build`: exit 0, no compiler warnings;
+  `work/mob-combat-stop-build.log`.
+- `python3 tools/dev.py test`: exit 0, **124/124 passed**, 33.73 seconds,
+  including all 1,024 new Actor/stop/caller comparisons and previous milestones;
+  `work/mob-combat-stop-test.log`.
+- `git diff --check`: exit 0. SQL contracts unchanged; no SQL commands run.
+  Final isolated SQL integration remains assigned to the coordinator.
+
+Minimal production adapter: the existing MobCombatAttackServices::stop_attack
+implementation binds the same serialized live Actor as the attacker and calls
+`mob_combat_stop(actor)`. Do not replace it with `scene.stop_target_mob`, clear the
+retained ID, cancel casting/movement, or emit a packet. Actor, its required scene
+and the hit's user/mob/ledger projections must remain valid through the caller's
+subsequent Death invocation; do not destroy/recycle the actor on this local stop.
+Actor execution and callbacks remain serialized by its existing owner. Actual
+Death and other combat world operations remain mandatory external providers,
+not no-op implementations supplied by this module.
+
+Assignment boundary: StatusAttackStop and its real Actor/caller composition are
+verified. Production connection/actor lookup and world Death/targeting dispatch
+remain outside this prefix. Proposed next assignment: recover the user attack
+scheduler's guarded invocation of AttackMob/StatusAttackStop, or supply the
+canonical combat-owner API so the stop/death boundary can be connected. The
+server remains non-playable.
