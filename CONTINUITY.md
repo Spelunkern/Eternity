@@ -1764,3 +1764,13 @@ completed quest build into this distinct worktree; result is pending. This stage
 requires earlier real StatusStand, life/distance/speed gates and later original
 movement, visibility, correction and cancellation effects. It is not a complete
 packet handler or production route. All Actor mutation must be serialized.
+
+Independent 01 now has an uncommitted retained-roster gate draft preceding
+`Players::load`; coordinator requested verification of the original signed
+rename field (+0x58 > 0), remaining-time field (+0x28 != 0), slot order and
+empty-slot residues because the existing CharacterSummary projections use
+booleans. Do not integrate as original-equivalent if negative/raw values are
+lost. Worker 04 was informed that coordinator already applied its proposed
+mutable Actor accessor in `a4e413a`; its next priority is actual 0501 gates,
+movement/correction continuation and synchronized visibility, not a duplicate
+accessor. The mobility test on coordinator/movement remains pending.
