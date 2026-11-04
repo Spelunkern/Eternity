@@ -58,13 +58,14 @@ lifecycle action was performed. The server remains unplayable.
 
 ## Integration dependencies / canonical changes needed
 
-No shared canonical files changed. Map projection to `MobRuntime` fields:
+No shared canonical files changed. The runtime bridge now maps `MobRuntime` fields:
 `state_stack.has_value()` -> fsm_enabled; top stack status (zero when empty) ->
 scene_status; status, move_mode, vision_fixed_user, target_kind/target_id,
 combat_timeout, next_move, attack_times and definition->ai directly.
-Copy projection changes back before any provider callback and reflect provider
-mutations before resuming. Alternatively integrate the coordinator into the
-production owner directly with the same tested ordering.
+The bridge writes changes before every help/random/tick/dispatch callback and
+reloads live fields and definition bindings afterward. It never replaces the
+scene stack. Call the MobRuntime overloads using an explicit
+`MobTargetingRuntimeServices` implementation.
 
 Canonical definition bindings still need three original `stMobAttackInfo`
 entries: enabled byte at definition +82 +20*i, optional skill pointer at
@@ -81,3 +82,54 @@ transitions or a default no-op. User projection needs ID (+dc) and life status
 
 Implementation commit: `8a1d046` (workers/08-mob-targeting).
 This report is committed separately after validation.
+
+
+## Milestone 2: live MobRuntime integration
+
+Added `mob_targeting_runtime.hpp/cpp`: overloads for the real `MobRuntime` owner,
+using existing canonical fields without shared-header changes. Inactive, empty
+active, and populated active scene stacks map to the original GetStatus rules.
+Help and dispatch providers receive the live object after preceding writes;
+random/tick callbacks also observe current timers and may update live bindings.
+Reloading after each callback retains changed target IDs, status, movement,
+fixed vision, attack timers and provider-owned scene-stack transitions. Original
+SetTarget continues to dispatch event 1 with the target ID after help. Exceptions
+propagate with preceding live writes retained; the bridge never commits an old
+snapshot during unwinding.
+
+`MobTargetingRuntimeServices::bindings` is required and supplies the AI byte and
+three live enabled/skill-present/cooldown bindings. It must be a read-only
+snapshot resolver, not an inferred damage mapping. Production help, shared
+random/tick and scene dispatch are still required implementations. No world
+provider has been defaulted to a no-op. Original instruction evidence remains
+SetTarget 0049fad0 / SetTargetEx 004b65e0 / GetStatus 0041d760 in ps_game.exe.
+
+New `mob-targeting-runtime-unit` compares all 4,096 original-execution cases
+through real MobRuntime objects, independently of the projection-only test.
+Additional integration cases cover empty FSM stacks, help replacing the scene
+stack, changed cooldown after random, mutations of earlier/later timers during
+random/tick, current target delivery to dispatch, dispatch replacing the stack,
+and exception propagation after target/timeout writes. Those additional callback
+mutation assertions are native integration checks; they do not claim execution
+of the missing original world/scene handler bodies.
+
+Milestone implementation commit: `dec69cb` (workers/08-mob-targeting).
+
+Validation:
+
+- `python3 tools/dev.py build`: exit 0, no warnings in
+  `work/mob-targeting-runtime-build.log`.
+- `python3 tools/dev.py test`: exit 0, all 121 native tests pass (34.71 s).
+  New `mob-targeting-runtime-unit`: pass, 0.03 s. Log:
+  `work/mob-targeting-runtime-test.log`.
+- Regenerated original fixture under `work/mob-targeting-runtime-evidence.tsv`;
+  byte-identical to tracked oracle. All twelve original EXE/PDB hashes verified.
+- `git diff --check`: clean. SQL integration remains coordinator-owned;
+  this block has no SQL changes or calls.
+
+Remaining integration: coordinator can now call the MobRuntime overloads directly;
+no separate projection adapter is needed. Required production bindings must still
+come from the canonical mob/skill definitions described above, and production
+help/FSM providers and combat call sites must be connected. The native bridge
+preserves provider scene transitions but does not implement scene handler bodies.
+No global gameplay completion is claimed.
