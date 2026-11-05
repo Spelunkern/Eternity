@@ -28,15 +28,16 @@ QUALIFIED = re.compile(r"\b([A-Za-z_]\w*)::(~?[A-Za-z_]\w*)")
 IDENTIFIER = re.compile(r"\b[A-Za-z_]\w{5,}\b")
 NOT_DONE = re.compile(r"\b(missing|unimplemented|not implemented|not reconstructed|unrecovered|remains?|pending|still)\b", re.I)
 CONTEXT_LINES = 2
-STATUS_ORDER = ("enlazado", "con_oraculo", "sin_oraculo", "parcial", "referencia", "nada")
+STATUS_ORDER = ("linked", "oracle", "untested", "partial", "mentioned", "none")
 STATUS_LABEL = {
-    "enlazado": "En código enlazado al ejecutable",
-    "con_oraculo": "Código con prueba u oráculo",
-    "sin_oraculo": "Código sin prueba",
-    "parcial": "Solo un tramo interno",
-    "referencia": "Solo mencionada",
-    "nada": "Sin rastro",
+    "linked": "In code linked into the executable",
+    "oracle": "Code with a test or oracle",
+    "untested": "Code without a test",
+    "partial": "Internal range only",
+    "mentioned": "Mentioned only",
+    "none": "No trace",
 }
+README_START, README_END = "<!-- progress:start -->", "<!-- progress:end -->"
 
 
 def read_msf(path):
@@ -247,17 +248,17 @@ def classify(functions, evidence, service):
         inner = interior.get(item["address"], {})
         code, tested = direct.get("code"), direct.get("test") or inner.get("test")
         if direct.get("wired"):
-            status, witness = "enlazado", direct["wired"]
+            status, witness = "linked", direct["wired"]
         elif code and tested:
-            status, witness = "con_oraculo", code
+            status, witness = "oracle", code
         elif code:
-            status, witness = "sin_oraculo", code
+            status, witness = "untested", code
         elif inner.get("code"):
-            status, witness = "parcial", inner["code"]
+            status, witness = "partial", inner["code"]
         elif tested or direct.get("mention") or inner.get("mention"):
-            status, witness = "referencia", tested or direct.get("mention") or inner.get("mention")
+            status, witness = "mentioned", tested or direct.get("mention") or inner.get("mention")
         else:
-            status, witness = "nada", ""
+            status, witness = "none", ""
         results.append({**item, "status": status, "witness": witness})
     return results
 
@@ -273,7 +274,7 @@ def tally(items):
 
 def covered(items):
     """Functions with code evidence, whole or partial."""
-    return [item for item in items if item["status"] in ("enlazado", "con_oraculo", "sin_oraculo", "parcial")]
+    return [item for item in items if item["status"] in ("linked", "oracle", "untested", "partial")]
 
 
 def bar(fraction, width=12):
@@ -282,35 +283,16 @@ def bar(fraction, width=12):
 
 
 def percent(part, whole):
-    return f"{100 * part / whole:.1f} %" if whole else "—"
+    return f"{100 * part / whole:.1f}%" if whole else "—"
 
 
 def size_text(value):
-    return f"{value / 1024:,.0f} KB".replace(",", ".")
+    return f"{value / 1024:,.0f} KB"
 
 
-def report(maps, refs, canonical, today):
-    game = [item for item in maps["ps_game"] if item["scope"] == "game"]
-    lines = [
-        "# Progreso de Eternity", "",
-        f"Generado el {today} con `python3 tools/coverage.py` sobre `{canonical}`. No editar a mano.", "",
-        "**El servidor no es jugable todavía.** Estas cifras dicen de qué funciones originales hay código "
-        "que las cita, no que el comportamiento sea idéntico. El objetivo se cumple recién cuando un cliente "
-        "EP4 original conecta y juega.", "",
-        "## Cómo leer los estados", "",
-        "| Estado | Significa |", "|---|---|",
-        "| En código enlazado al ejecutable | Citada en archivos que `src/main.cpp` incluye. No implica que se ejecute durante el juego: hoy seleccionar un personaje todavía no entra al mundo |",
-        "| Código con prueba u oráculo | Citada en `src`/`include` y en pruebas o herramientas |",
-        "| Código sin prueba | Citada solo en `src`/`include` |",
-        "| Solo un tramo interno | El código cita direcciones dentro de la función, no la función entera |",
-        "| Solo mencionada | Aparece en pruebas, herramientas o como pendiente, sin código |",
-        "| Sin rastro | No hay ninguna cita en código, pruebas ni herramientas |", "",
-        "## Binarios originales", "",
-        "Solo código propio del proyecto: sin CRT ni bibliotecas comunes (`pscommon`, `snet`). Los bytes de una función "
-        "citada cuentan enteros aunque esté incompleta, así que el porcentaje es un techo.", "",
-        "| Binario | Funciones | Con código | % funciones | Bytes | Con código | % bytes | Avance por bytes |",
-        "|---|---:|---:|---:|---:|---:|---:|---|",
-    ]
+def binary_table(maps):
+    lines = ["| Binary | Functions | With code | % functions | Bytes | With code | % bytes | Progress by bytes |",
+             "|---|---:|---:|---:|---:|---:|---:|---|"]
     for service in SERVICES:
         items = [item for item in maps[service] if item["scope"] == "game"]
         done = covered(items)
@@ -318,20 +300,45 @@ def report(maps, refs, canonical, today):
         fraction = part / total if total else 0
         lines.append(f"| `{service}` | {len(items)} | {len(done)} | {percent(len(done), len(items))} | "
                      f"{size_text(total)} | {size_text(part)} | {percent(part, total)} | `{bar(fraction)}` |")
+    return lines
+
+
+NOT_PLAYABLE = ("**The server is not playable yet.** These figures show which original functions are cited by code, "
+                "not that behavior is identical, and a function's bytes count in full even when incomplete, so the "
+                "percentages are ceilings. The goal is met only when an original EP4 client connects and plays.")
+SCOPE = "Project code only: excludes the CRT and shared libraries (`pscommon`, `snet`)."
+
+
+def report(maps, refs, canonical, today):
+    game = [item for item in maps["ps_game"] if item["scope"] == "game"]
+    lines = [
+        "# Eternity progress", "",
+        f"Generated on {today} by `python3 tools/coverage.py` from `{canonical}`. Do not edit by hand.", "",
+        NOT_PLAYABLE, "",
+        "## Reading the statuses", "",
+        "| Status | Meaning |", "|---|---|",
+        "| In code linked into the executable | Cited by files `src/main.cpp` includes. This does not mean it runs during play: selecting a character does not enter the world yet |",
+        "| Code with a test or oracle | Cited in `src`/`include` and in tests or tools |",
+        "| Code without a test | Cited only in `src`/`include` |",
+        "| Internal range only | Code cites addresses inside the function, not the function itself |",
+        "| Mentioned only | Appears in tests, tools or as pending, with no code |",
+        "| No trace | No citation in code, tests or tools |", "",
+        "## Original binaries", "", SCOPE, "", *binary_table(maps),
+    ]
     counts, weights = tally(game)
     total = sum(weights.values())
-    lines += ["", "## `ps_game` por estado", "", "| Estado | Funciones | Bytes | % bytes |", "|---|---:|---:|---:|"]
+    lines += ["", "## `ps_game` by status", "", "| Status | Functions | Bytes | % bytes |", "|---|---:|---:|---:|"]
     for status in STATUS_ORDER:
         lines.append(f"| {STATUS_LABEL[status]} | {counts[status]} | {size_text(weights[status])} | "
                      f"{percent(weights[status], total)} |")
-    lines += ["", "## `ps_game` por rama", "",
-              "Una función cuenta si la rama tiene código que la cite, entera o en parte.", "",
-              "| Rama | Funciones con código | % bytes |", "|---|---:|---:|"]
+    lines += ["", "## `ps_game` by branch", "",
+              "A function counts when the branch has code citing it, whole or in part.", "",
+              "| Branch | Functions with code | % bytes |", "|---|---:|---:|"]
     for ref, items in refs:
         done = covered([i for i in items if i["scope"] == "game"])
         lines.append(f"| `{ref}` | {len(done)} | {percent(sum(i['size'] for i in done), total)} |")
-    lines += ["", "## `ps_game` por archivo original", "",
-              "| Archivo | Funciones | Con código | Bytes | % bytes | Avance |", "|---|---:|---:|---:|---:|---|"]
+    lines += ["", "## `ps_game` by original source file", "",
+              "| File | Functions | With code | Bytes | % bytes | Progress |", "|---|---:|---:|---:|---:|---|"]
     groups = collections.defaultdict(list)
     for item in game:
         groups[item["object"]].append(item)
@@ -341,15 +348,27 @@ def report(maps, refs, canonical, today):
         lines.append(f"| `{name}` | {len(items)} | {len(done)} | {size_text(whole)} | {percent(part, whole)} | "
                      f"`{bar(part / whole if whole else 0)}` |")
     handlers = [item for item in game if re.fullmatch(r"CUser::Packet\w*", plain_name(item["name"]))]
-    lines += ["", "## Handlers de paquetes de `CUser`", "", "| Handler | Dirección | Tamaño | Estado |", "|---|---|---:|---|"]
+    lines += ["", "## `CUser` packet handlers", "", "| Handler | Address | Size | Status |", "|---|---|---:|---|"]
     for item in sorted(handlers, key=lambda i: (STATUS_ORDER.index(i["status"]), -i["size"])):
         lines.append(f"| `{plain_name(item['name'])}` | `{item['address']:08x}` | {item['size']} | {STATUS_LABEL[item['status']]} |")
-    pending = sorted((i for i in game if i["status"] in ("nada", "referencia")), key=lambda i: -i["size"])[:40]
-    lines += ["", "## Funciones pendientes más grandes de `ps_game`", "", "| Función | Dirección | Tamaño | Archivo |", "|---|---|---:|---|"]
+    pending = sorted((i for i in game if i["status"] in ("none", "mentioned")), key=lambda i: -i["size"])[:40]
+    lines += ["", "## Largest pending `ps_game` functions", "", "| Function | Address | Size | File |", "|---|---|---:|---|"]
     for item in pending:
         lines.append(f"| `{plain_name(item['name'])}` | `{item['address']:08x}` | {item['size']} | `{item['object']}` |")
-    lines += ["", "El detalle función por función está en `research/coverage/<binario>.tsv`.", ""]
+    lines += ["", "Function-by-function detail is in `research/coverage/<binary>.tsv`.", ""]
     return "\n".join(lines)
+
+
+def update_readme(maps, canonical, today):
+    """Keep a generated summary at the very top of the README."""
+    path = ROOT / "README.md"
+    text = path.read_text(encoding="utf8")
+    if README_START not in text or README_END not in text:
+        raise ValueError("README.md lacks its progress markers")
+    summary = [README_START, "## Progress", "", NOT_PLAYABLE, "", SCOPE, "", *binary_table(maps), "",
+               f"Full map: [PROGRESS.md](PROGRESS.md). Generated on {today} from `{canonical}`.", README_END]
+    head, tail = text.split(README_START, 1)[0], text.split(README_END, 1)[1]
+    path.write_text(head + "\n".join(summary) + tail, encoding="utf8")
 
 
 def run():
@@ -377,7 +396,7 @@ def run():
         union.add(files, set())
         rows.append((ref, classify(inventory["ps_game"], single, "ps_game")))
     if compared:
-        rows.append(("todas las ramas comparadas", classify(inventory["ps_game"], union, "ps_game")))
+        rows.append(("all compared branches", classify(inventory["ps_game"], union, "ps_game")))
     output = ROOT / "research" / "coverage"
     output.mkdir(parents=True, exist_ok=True)
     for service, items in maps.items():
@@ -387,10 +406,12 @@ def run():
                 stream.write(f"{item['address']:08x}\t{item['size']}\t{item['name']}\t{item['object']}\t"
                              f"{item['scope']}\t{item['status']}\t{item['witness']}\n")
     label = git("rev-parse", "--abbrev-ref", args.ref).decode().strip()
-    text = report(maps, rows, label if label != "HEAD" else args.ref, datetime.date.today().isoformat())
-    (ROOT / "PROGRESO.md").write_text(text, encoding="utf8")
+    name = label if label != "HEAD" else args.ref
+    today = datetime.date.today().isoformat()
+    (ROOT / "PROGRESS.md").write_text(report(maps, rows, name, today), encoding="utf8")
+    update_readme(maps, name, today)
     if args.copy:
-        shutil.copyfile(ROOT / "PROGRESO.md", args.copy)
+        shutil.copyfile(ROOT / "PROGRESS.md", args.copy)
 
 
 if __name__ == "__main__":

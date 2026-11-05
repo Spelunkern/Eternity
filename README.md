@@ -1,5 +1,24 @@
 # Eternity
 
+<!-- progress:start -->
+## Progress
+
+**The server is not playable yet.** These figures show which original functions are cited by code, not that behavior is identical, and a function's bytes count in full even when incomplete, so the percentages are ceilings. The goal is met only when an original EP4 client connects and plays.
+
+Project code only: excludes the CRT and shared libraries (`pscommon`, `snet`).
+
+| Binary | Functions | With code | % functions | Bytes | With code | % bytes | Progress by bytes |
+|---|---:|---:|---:|---:|---:|---:|---|
+| `ps_game` | 2559 | 675 | 26.4% | 646 KB | 341 KB | 52.8% | `██████░░░░░░` |
+| `ps_dbAgent` | 644 | 43 | 6.7% | 129 KB | 34 KB | 26.7% | `███░░░░░░░░░` |
+| `ps_login` | 218 | 6 | 2.8% | 18 KB | 3 KB | 13.8% | `██░░░░░░░░░░` |
+| `ps_session` | 299 | 1 | 0.3% | 34 KB | 1 KB | 3.4% | `░░░░░░░░░░░░` |
+| `ps_gameLog` | 143 | 0 | 0.0% | 21 KB | 0 KB | 0.0% | `░░░░░░░░░░░░` |
+| `ps_userLog` | 132 | 0 | 0.0% | 7 KB | 0 KB | 0.0% | `░░░░░░░░░░░░` |
+
+Full map: [PROGRESS.md](PROGRESS.md). Generated on 2026-11-05 from `coordinator/foundation`.
+<!-- progress:end -->
+
 Native Linux reconstruction of the Shaiya EP4.5 server in C++20, using SQL Server.
 Complete means an original EP4 client can connect and play with original server behavior.
 SQLite migration is deferred. Gameplay is not implemented yet.
@@ -25,8 +44,6 @@ selection still does not enter the world. Live world integration, complete AI,
 combat and gameplay remain unfinished; the server is not playable. Client work
 is deferred. The active MD5 login path requires a missing original procedure;
 the available legacy SQL path is tested.
-
-Function-by-function progress against the original PDBs: [PROGRESO.md](PROGRESO.md).
 
 Verify original files with `sha256sum -c SHA256SUMS`.
 
