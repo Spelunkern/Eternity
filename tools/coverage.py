@@ -26,13 +26,15 @@ ADDRESS = re.compile(r"(?<![0-9A-Za-z_])(?:0x)?(00[4-9a-fA-F][0-9a-fA-F]{5})(?![
 QUALIFIED = re.compile(r"\b([A-Za-z_]\w*)::(~?[A-Za-z_]\w*)")
 IDENTIFIER = re.compile(r"\b[A-Za-z_]\w{5,}\b")
 NOT_DONE = re.compile(r"\b(missing|unimplemented|not implemented|not reconstructed|unrecovered|remains?|pending|still)\b", re.I)
+PORT = re.compile(r"\bvirtual\b.*=\s*0\s*;")
 CONTEXT_LINES = 2
-STATUS_ORDER = ("linked", "oracle", "untested", "partial", "mentioned", "none")
+STATUS_ORDER = ("linked", "oracle", "untested", "partial", "port", "mentioned", "none")
 STATUS_LABEL = {
     "linked": "In code linked into the executable",
     "oracle": "Code with a test or oracle",
     "untested": "Code without a test",
     "partial": "Internal range only",
+    "port": "Required port only",
     "mentioned": "Mentioned only",
     "none": "No trace",
 }
@@ -205,6 +207,8 @@ class Evidence:
                 if active == "game":
                     continue
                 effective = "mention" if NOT_DONE.search(line) else kind
+                if effective == "code" and PORT.search(line):
+                    effective = "port"
                 if effective == "docs":
                     continue
                 for value in ADDRESS.findall(line):
@@ -254,6 +258,8 @@ def classify(functions, evidence, service):
             status, witness = "untested", code
         elif inner.get("code"):
             status, witness = "partial", inner["code"]
+        elif direct.get("port") or inner.get("port"):
+            status, witness = "port", direct.get("port") or inner.get("port")
         elif tested or direct.get("mention") or inner.get("mention"):
             status, witness = "mentioned", tested or direct.get("mention") or inner.get("mention")
         else:
@@ -320,6 +326,7 @@ def report(maps, canonical, today):
         "| Code with a test or oracle | Cited in `src`/`include` and in tests or tools |",
         "| Code without a test | Cited only in `src`/`include` |",
         "| Internal range only | Code cites addresses inside the function, not the function itself |",
+        "| Required port only | Declared as a service other code requires; not reconstructed. Not counted as code |",
         "| Mentioned only | Appears in tests, tools or as pending, with no code |",
         "| No trace | No citation in code, tests or tools |", "",
         "## Original binaries", "", SCOPE, "", *binary_table(maps),
@@ -344,7 +351,7 @@ def report(maps, canonical, today):
     lines += ["", "## `CUser` packet handlers", "", "| Handler | Address | Size | Status |", "|---|---|---:|---|"]
     for item in sorted(handlers, key=lambda i: (STATUS_ORDER.index(i["status"]), -i["size"])):
         lines.append(f"| `{plain_name(item['name'])}` | `{item['address']:08x}` | {item['size']} | {STATUS_LABEL[item['status']]} |")
-    pending = sorted((i for i in game if i["status"] in ("none", "mentioned")), key=lambda i: -i["size"])[:40]
+    pending = sorted((i for i in game if i["status"] in ("none", "mentioned", "port")), key=lambda i: -i["size"])[:40]
     lines += ["", "## Largest pending `ps_game` functions", "", "| Function | Address | Size | File |", "|---|---|---:|---|"]
     for item in pending:
         lines.append(f"| `{plain_name(item['name'])}` | `{item['address']:08x}` | {item['size']} | `{item['object']}` |")

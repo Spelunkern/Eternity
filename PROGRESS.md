@@ -12,6 +12,7 @@ Generated on 2026-11-05 by `python3 tools/coverage.py` from `main`. Do not edit 
 | Code with a test or oracle | Cited in `src`/`include` and in tests or tools |
 | Code without a test | Cited only in `src`/`include` |
 | Internal range only | Code cites addresses inside the function, not the function itself |
+| Required port only | Declared as a service other code requires; not reconstructed. Not counted as code |
 | Mentioned only | Appears in tests, tools or as pending, with no code |
 | No trace | No citation in code, tests or tools |
 
@@ -21,7 +22,7 @@ Project code only: excludes the CRT and shared libraries (`pscommon`, `snet`).
 
 | Binary | Functions | With code | % functions | Bytes | With code | % bytes | Progress by bytes |
 |---|---:|---:|---:|---:|---:|---:|---|
-| `ps_game` | 2559 | 680 | 26.6% | 646 KB | 343 KB | 53.1% | `██████░░░░░░` |
+| `ps_game` | 2559 | 668 | 26.1% | 646 KB | 335 KB | 52.0% | `██████░░░░░░` |
 | `ps_dbAgent` | 644 | 44 | 6.8% | 129 KB | 35 KB | 26.8% | `███░░░░░░░░░` |
 | `ps_login` | 218 | 6 | 2.8% | 18 KB | 3 KB | 13.8% | `██░░░░░░░░░░` |
 | `ps_session` | 299 | 1 | 0.3% | 34 KB | 1 KB | 3.4% | `░░░░░░░░░░░░` |
@@ -33,9 +34,10 @@ Project code only: excludes the CRT and shared libraries (`pscommon`, `snet`).
 | Status | Functions | Bytes | % bytes |
 |---|---:|---:|---:|
 | In code linked into the executable | 265 | 144 KB | 22.3% |
-| Code with a test or oracle | 281 | 155 KB | 24.0% |
-| Code without a test | 106 | 29 KB | 4.5% |
+| Code with a test or oracle | 277 | 154 KB | 23.8% |
+| Code without a test | 98 | 23 KB | 3.6% |
 | Internal range only | 28 | 15 KB | 2.3% |
+| Required port only | 12 | 7 KB | 1.1% |
 | Mentioned only | 169 | 42 KB | 6.6% |
 | No trace | 1710 | 261 KB | 40.4% |
 
@@ -48,13 +50,13 @@ Project code only: excludes the CRT and shared libraries (`pscommon`, `snet`).
 | `Mob.obj` | 102 | 26 | 30 KB | 76.1% | `█████████░░░` |
 | `MarketMgr.obj` | 109 | 1 | 24 KB | 0.1% | `░░░░░░░░░░░░` |
 | `UserItemRepairGem.obj` | 25 | 1 | 22 KB | 1.4% | `░░░░░░░░░░░░` |
-| `UserPacket.obj` | 31 | 13 | 20 KB | 92.4% | `███████████░` |
+| `UserPacket.obj` | 31 | 12 | 20 KB | 92.2% | `███████████░` |
 | `UserItem.obj` | 37 | 13 | 17 KB | 51.1% | `██████░░░░░░` |
 | `Map.obj` | 39 | 7 | 15 KB | 75.4% | `█████████░░░` |
 | `UserPacketExtAdminCmd.obj` | 13 | 0 | 15 KB | 0.0% | `░░░░░░░░░░░░` |
 | `World.obj` | 114 | 23 | 13 KB | 42.4% | `█████░░░░░░░` |
-| `Zone.obj` | 92 | 31 | 12 KB | 54.0% | `██████░░░░░░` |
-| `UserDeath.obj` | 26 | 14 | 12 KB | 70.8% | `████████░░░░` |
+| `Zone.obj` | 92 | 30 | 12 KB | 53.4% | `██████░░░░░░` |
+| `UserDeath.obj` | 26 | 11 | 12 KB | 53.8% | `██████░░░░░░` |
 | `MobLuaFSM.obj` | 35 | 13 | 11 KB | 51.8% | `██████░░░░░░` |
 | `PartyMgr.obj` | 65 | 34 | 11 KB | 78.1% | `█████████░░░` |
 | `UserPacketDBAgent.obj` | 24 | 8 | 10 KB | 74.6% | `█████████░░░` |
@@ -65,19 +67,19 @@ Project code only: excludes the CRT and shared libraries (`pscommon`, `snet`).
 | `User.obj` | 60 | 16 | 10 KB | 80.1% | `██████████░░` |
 | `UserAttackSkill.obj` | 15 | 7 | 9 KB | 70.4% | `████████░░░░` |
 | `UserState.obj` | 25 | 14 | 9 KB | 73.5% | `█████████░░░` |
-| `ServerApp.obj` | 52 | 5 | 9 KB | 20.6% | `██░░░░░░░░░░` |
+| `ServerApp.obj` | 52 | 4 | 9 KB | 19.6% | `██░░░░░░░░░░` |
 | `MobAttackSkill.obj` | 17 | 6 | 8 KB | 15.4% | `██░░░░░░░░░░` |
 | `ZoneUpdate.obj` | 32 | 17 | 7 KB | 85.5% | `██████████░░` |
 | `Cell.obj` | 68 | 10 | 7 KB | 45.4% | `█████░░░░░░░` |
 | `UserSkillApply.obj` | 11 | 10 | 7 KB | 99.4% | `████████████` |
-| `UserAttackSkillUser.obj` | 18 | 5 | 7 KB | 53.0% | `██████░░░░░░` |
+| `UserAttackSkillUser.obj` | 18 | 3 | 7 KB | 10.4% | `█░░░░░░░░░░░` |
 | `UserUpdate.obj` | 15 | 6 | 7 KB | 43.7% | `█████░░░░░░░` |
 | `UserItemUse.obj` | 6 | 1 | 7 KB | 9.1% | `█░░░░░░░░░░░` |
 | `UserSkillApplyRem.obj` | 13 | 5 | 7 KB | 34.2% | `████░░░░░░░░` |
 | `ZoneMobGen.obj` | 28 | 5 | 7 KB | 13.8% | `██░░░░░░░░░░` |
 | `UserSkillApplyChk.obj` | 9 | 6 | 7 KB | 54.4% | `███████░░░░░` |
 | `UserPacketExtAdmin.obj` | 9 | 0 | 6 KB | 0.0% | `░░░░░░░░░░░░` |
-| `UserPvP.obj` | 13 | 8 | 6 KB | 71.5% | `█████████░░░` |
+| `UserPvP.obj` | 13 | 7 | 6 KB | 55.9% | `███████░░░░░` |
 | `UserSend.obj` | 27 | 20 | 6 KB | 80.5% | `██████████░░` |
 | `Server.obj` | 52 | 3 | 6 KB | 12.4% | `█░░░░░░░░░░░` |
 | `UserPvPPacket.obj` | 6 | 2 | 6 KB | 7.3% | `█░░░░░░░░░░░` |
@@ -90,7 +92,7 @@ Project code only: excludes the CRT and shared libraries (`pscommon`, `snet`).
 | `AStar.obj` | 61 | 2 | 5 KB | 38.0% | `█████░░░░░░░` |
 | `UserPacketMyShop.obj` | 17 | 3 | 5 KB | 7.7% | `█░░░░░░░░░░░` |
 | `UserAttackMob.obj` | 8 | 5 | 5 KB | 96.8% | `████████████` |
-| `UserAttackUser.obj` | 6 | 2 | 5 KB | 39.1% | `█████░░░░░░░` |
+| `UserAttackUser.obj` | 6 | 1 | 5 KB | 25.2% | `███░░░░░░░░░` |
 | `MobPath.obj` | 15 | 3 | 4 KB | 84.4% | `██████████░░` |
 | `UserQuest.obj` | 16 | 11 | 4 KB | 80.7% | `██████████░░` |
 | `MapObelisk.obj` | 12 | 7 | 4 KB | 94.5% | `███████████░` |
@@ -126,7 +128,7 @@ Project code only: excludes the CRT and shared libraries (`pscommon`, `snet`).
 | `MapInit.obj` | 8 | 3 | 2 KB | 91.1% | `███████████░` |
 | `DefineQuest.obj` | 1 | 1 | 2 KB | 100.0% | `████████████` |
 | `UserAttackSkillBuffHeal.obj` | 3 | 2 | 2 KB | 69.8% | `████████░░░░` |
-| `UserAttackItemOption.obj` | 7 | 4 | 2 KB | 63.9% | `████████░░░░` |
+| `UserAttackItemOption.obj` | 7 | 3 | 2 KB | 36.8% | `████░░░░░░░░` |
 | `UserQuestKill.obj` | 6 | 3 | 2 KB | 94.9% | `███████████░` |
 | `LuaMob.obj` | 26 | 0 | 2 KB | 0.0% | `░░░░░░░░░░░░` |
 | `GuildMgrPvP.obj` | 6 | 4 | 1 KB | 68.6% | `████████░░░░` |
@@ -138,7 +140,7 @@ Project code only: excludes the CRT and shared libraries (`pscommon`, `snet`).
 | `ServerWorldThread.obj` | 6 | 2 | 1 KB | 78.8% | `█████████░░░` |
 | `UserSkillPassive.obj` | 5 | 3 | 1 KB | 54.4% | `███████░░░░░` |
 | `MapPath.obj` | 3 | 2 | 1 KB | 95.6% | `███████████░` |
-| `UserBilling.obj` | 9 | 2 | 1 KB | 6.7% | `█░░░░░░░░░░░` |
+| `UserBilling.obj` | 9 | 1 | 1 KB | 4.0% | `░░░░░░░░░░░░` |
 | `ZoneMapUpdate.obj` | 5 | 3 | 1 KB | 82.7% | `██████████░░` |
 | `UserPacketChar.obj` | 3 | 3 | 1 KB | 100.0% | `████████████` |
 | `MobFSMAttack.obj` | 4 | 1 | 1 KB | 11.8% | `█░░░░░░░░░░░` |
@@ -242,10 +244,10 @@ Project code only: excludes the CRT and shared libraries (`pscommon`, `snet`).
 | `CMarketMgr::Tender` | `0043c4c0` | 1827 | `MarketMgr.obj` |
 | `CUser::LevelChange` | `0048b0e0` | 1688 | `UserState.obj` |
 | `CMob::DoFunction` | `004917a0` | 1547 | `Mob.obj` |
+| `CUser::SkillAttackRangeSelect` | `00452560` | 1516 | `UserAttackSkillUser.obj` |
+| `CUser::SkillAttackRange` | `00451f80` | 1496 | `UserAttackSkillUser.obj` |
 | `CUser::ChkProtect` | `00486830` | 1478 | `UserSkillApplyChk.obj` |
 | `CUser::ExchangePvP` | `0047caf0` | 1448 | `UserPvPPacket.obj` |
 | `CUser::ItemBankToBag` | `0045bf30` | 1443 | `UserItem.obj` |
-| `CUser::SkillAttackRangeSelect` | `00450f70` | 1432 | `UserAttackSkillMob.obj` |
-| `CUser::PacketPVPGuild` | `0047da70` | 1426 | `UserPvPPacket.obj` |
 
 Function-by-function detail is in `research/coverage/<binary>.tsv`.
