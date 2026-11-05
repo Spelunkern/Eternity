@@ -18,6 +18,7 @@
 #include "eternity/game/world_db_agent_save_driver.hpp"
 #include "eternity/game/world_db_agent_disconnect.hpp"
 #include "eternity/game/world_db_agent_users.hpp"
+#include "eternity/game/world_db_agent_lifecycle.hpp"
 #include "eternity/game/world_kill_count_entry.hpp"
 #include "eternity/game/world_kill_count_composition.hpp"
 #include "eternity/game/world_retained_kill_count_zone.hpp"
@@ -96,6 +97,7 @@ struct AgentSaveDriverFixture {
     std::vector<unsigned>& events;bool fail=false;
     WorldDbAgentSaveResult periodic(std::uint32_t now){events.push_back(2);if(fail)throw std::runtime_error("DB save driver fixture");check_tick(now);WorldDbAgentSaveResult result;result.due=true;result.saved={true,false,true};return result;}
     static void check_tick(std::uint32_t now){if(now!=1000)throw std::runtime_error("Wrong DB save tick");}
+    WorldDbAgentSaveResult save_all(){events.push_back(4);WorldDbAgentSaveResult result;result.due=true;result.saved={true,true,true};return result;}
 };
 struct AgentDisconnectFixture {
     std::vector<unsigned>& events;
@@ -731,6 +733,17 @@ int main(int argc,char** argv) {try {
         asio::post(strand,[&]{canceled->start();canceled->stop();});io.run();check(events.empty() && !error);
         io.restart();world->fail=true;auto failed=Driver::create(strand,world,[]{return 1000U;},[&](auto){},[&](const auto&){},[&](auto failure){error=failure;});
         asio::post(strand,[&]{failed->start();});io.run();check(bool(error));
+    }
+    {
+        struct Connection {unsigned id;};Connection connection{1};asio::io_context io;auto strand=asio::make_strand(io);
+        std::vector<unsigned> events;std::vector<std::uint32_t> jobs;UserLifecycleState active{7,2,100,false};
+        auto user=std::make_shared<AgentUserFixture>(AgentUserFixture{active,jobs});auto world=std::make_shared<AgentSaveDriverFixture>(AgentSaveDriverFixture{events});
+        using Lifecycle=WorldDbAgentLifecycle<Connection,AgentUserFixture,AgentSaveDriverFixture>;std::shared_ptr<Lifecycle> owner;std::exception_ptr failure;
+        owner=Lifecycle::create(strand,world,[]{return 1000U;},[&](const auto& result){check(result.due && !result.success());owner->stop_periodic();},[&](auto error){failure=error;});
+        asio::post(strand,[&]{owner->users().retain(7,connection,user,active,[&](auto job){jobs.push_back(job);},[]{throw std::logic_error("Unexpected retirement");});owner->start();});
+        io.run();check(!failure && (jobs==std::vector<std::uint32_t>{8}) && (events==std::vector<unsigned>{2}));
+        io.restart();asio::post(strand,[&]{check(owner->removed_game_connection(connection).success());check(owner->users().size()==1);});io.run();
+        check((jobs==std::vector<std::uint32_t>{8,22}) && (events==std::vector<unsigned>{2,4}));
     }
     {
         auto services=std::make_shared<KillTimerServicesFixture>();services->state[0]={100,1};services->state[1]={0,100};
