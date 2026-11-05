@@ -1,3 +1,7 @@
+#include "eternity/game/social_party_invitation_timeout.hpp"
+#include <tuple>
+#include "eternity/game/guild_invitation_join.hpp"
+#include "eternity/game/guild_client_invitation_request.hpp"
 #include "eternity/game/guild_client_invitation_reply.hpp"
 #include "eternity/game/vertical_social_session.hpp"
 #include "eternity/game/guild_client_house.hpp"
@@ -37,7 +41,7 @@ struct Scene final:ActorScene {
  std::vector<net::Packet> sent; void send_self(const net::Packet& p) noexcept override{sent.push_back(p);} void send_nearby(const net::Packet&) override{} void send_cell_view(const net::Packet&) override{}
  std::optional<bool> party_kind() const noexcept override{return {};} void send_party(const net::Packet&) noexcept override{} void reset_damage() override{}
  std::optional<std::uint32_t> allocate_effect_id() noexcept override{return {};} void release_effect_id(std::uint32_t) noexcept override{}
- std::uint32_t tick_ms() const noexcept override{return 1;} void stop_target_mob(std::uint32_t) override{} void taunt(std::uint16_t,float) override{}
+ mutable std::function<void()> on_tick;std::uint32_t tick_value=1; std::uint32_t tick_ms() const noexcept override{if(on_tick)on_tick();return tick_value;} void stop_target_mob(std::uint32_t) override{} void taunt(std::uint16_t,float) override{}
  ZoneUsers* user_zone() override{return nullptr;} UserShapeSocial user_shape_social() override{return {};}
  void finish_periodic_damage(EffectStatus&,const SkillDefinition&,const EffectSource&,std::uint32_t) override{}
 };
@@ -209,20 +213,49 @@ static void party_find_cases() {
  bool missing=false;try{VerticalSocialClientPorts absent;(void)vertical_social_client(social,net::Packet{12,0x22},absent);}catch(const std::invalid_argument&){missing=true;}check(missing,"missing party-find service accepted");
 }
 void invitation_reply_cases(Actor& actor,Actor& peer,Scene& scene) {
- struct Services final:GuildInvitationReplyServices {
-  Actor* peer=nullptr;bool lease=true,eligible=true;std::function<void()> hook;
+ struct Services final:GuildInvitationReplyServices,GuildInvitationRequestServices {
+  Actor* peer=nullptr;bool lease=true,eligible=true,blocked=false,join_result=false;std::function<void()> join_hook;std::function<void()> hook;
   Actor* find_in_zone(Actor&,std::uint32_t) override {if(hook)hook();return peer;}
   std::shared_ptr<void> retain(Actor&) override {return lease?std::make_shared<int>(1):nullptr;}
   bool can_invite(Actor&) override {return eligible;}
+  bool join(Actor&,Actor&) override {if(join_hook)join_hook();return join_result;}
+  bool target_blocked(Actor&) override {return blocked;}
  } services;
+ GuildUser inviter;std::vector<net::Packet> replies;auto send=[&](net::Packet p){replies.push_back(std::move(p));};
+ inviter.rank=3;check(guild_client_invitation_request(inviter,actor,net::Packet{5,13,102,0,0,0},nullptr,send)==EntryCatalogUpdate::applied && replies.back()==net::Packet({6,13,0,102,0,0,0}),"invitation rank guard differed");
+ inviter.rank=2;check(guild_client_invitation_request(inviter,actor,net::Packet{5,13,102,0,0,0},&services,send)==EntryCatalogUpdate::applied && replies.size()==2,"missing invitation target not rejected");
+ services.peer=&actor;check(guild_client_invitation_request(inviter,actor,net::Packet{5,13,101,0,0,0},&services,send)==EntryCatalogUpdate::applied && replies.back()==net::Packet({6,13,0,101,0,0,0}),"self invitation not rejected");
+ services.peer=&peer;const auto old_country=peer.appearance().identity.country;peer.appearance().identity.country=actor.appearance().identity.country^1;
+ check(guild_client_invitation_request(inviter,actor,net::Packet{5,13,102,0,0,0},&services,send)==EntryCatalogUpdate::applied && replies.size()==4,"cross-country invitation not rejected");
+ peer.appearance().identity.country=actor.appearance().identity.country;services.blocked=true;
+ check(guild_client_invitation_request(inviter,actor,net::Packet{5,13,102,0,0,0},&services,send)==EntryCatalogUpdate::applied && replies.size()==5,"blocked invitation target not rejected");services.blocked=false;
+ check(guild_client_invitation_request(inviter,actor,net::Packet{5,13,102,0,0,0},&services,send)==EntryCatalogUpdate::unsupported && replies.size()==5,"eligible invitation consumed");peer.appearance().identity.country=old_country;services.peer=nullptr;
+ ZoneLeaveRequestState sent_state;scene.tick_value=0xfffffff0u;bool saw_pending=false;
+ scene.on_tick=[&]{saw_pending=sent_state.request_1754==actor.id() && sent_state.deadline_5838==0;sent_state.request_1754=77;};
+ guild_client_invitation_request_send(actor,peer,sent_state,{0xa5,0x5a});
+ check(saw_pending && sent_state.request_1754==77 && sent_state.deadline_5838==0x7520 && scene.sent.back()==net::Packet({0xa5,0x5a,101,0,0,0}),"successful guild invitation timing or scratch differed");
+ scene.on_tick={};scene.tick_value=1;
+ PartyRequestState party_timeout;
+ for(auto [id,deadline,now,expired]:std::array<std::tuple<std::uint32_t,std::uint32_t,std::uint32_t,bool>,7>{{{0,10,20,false},{3,0,20,false},{3,10,9,false},{3,10,10,true},{3,10,11,true},{3,0xfffffff0u,2,false},{3,1,0xffffffffu,true}}}) {
+  party_timeout.inviter_id=id;party_timeout.invitation_deadline=deadline;
+  check(social_party_invitation_timeout(party_timeout,now)==expired && party_timeout.inviter_id==(expired?0:id) && party_timeout.invitation_deadline==(expired?0:deadline),"party invitation timeout differed");
+ }
+ ZoneLeaveRequestState timeout;
+ for(auto [id,deadline,now,expired]:std::array<std::tuple<std::uint32_t,std::uint32_t,std::uint32_t,bool>,7>{{{0,10,20,false},{3,0,20,false},{3,10,9,false},{3,10,10,true},{3,10,11,true},{3,0xfffffff0u,2,false},{3,1,0xffffffffu,true}}}) {
+  timeout.request_1754=id;timeout.deadline_5838=deadline;
+  check(zone_guild_invitation_timeout(timeout,now)==expired && timeout.request_1754==(expired?0:id) && timeout.deadline_5838==(expired?0:deadline),"guild invitation timeout differed");
+ }
  ZoneLeaveRequestState state;state.deadline_5838=55;
  check(guild_client_invitation_reply(actor,state,net::Packet{6,13,0},nullptr)==EntryCatalogUpdate::applied && state.deadline_5838==55,"empty invitation changed deadline");
  state.request_1754=102;check(guild_client_invitation_reply(actor,state,net::Packet{6,13,0},nullptr)==EntryCatalogUpdate::unsupported && state.request_1754==102,"missing invitation service accepted");
  check(guild_client_invitation_reply(actor,state,net::Packet{6,13,1},&services)==EntryCatalogUpdate::applied && !state.request_1754 && !state.deadline_5838,"missing inviter not cleared");
  state.request_1754=102;state.deadline_5838=55;services.peer=&peer;const auto before=scene.sent.size();
  check(guild_client_invitation_reply(actor,state,net::Packet{6,13,1},&services)==EntryCatalogUpdate::unsupported && state.request_1754==102 && state.deadline_5838==55 && scene.sent.size()==before,"acceptance was consumed");
+ services.join_result=true;services.join_hook=[&]{state.request_1754=88;};
+ check(guild_client_invitation_reply(actor,state,net::Packet{6,13,1},&services)==EntryCatalogUpdate::applied && !state.request_1754 && !state.deadline_5838 && scene.sent.back()==net::Packet({6,13,1,88,0,0,0}),"accepted invitation join reply differed");
+ services.join_result=false;services.join_hook={};state.request_1754=102;state.deadline_5838=55;
  services.eligible=false;
- check(guild_client_invitation_reply(actor,state,net::Packet{6,13,1},&services)==EntryCatalogUpdate::applied && !state.request_1754 && !state.deadline_5838 && scene.sent.size()==before,"invalid inviter acceptance differed");
+ const auto after_join=scene.sent.size();check(guild_client_invitation_reply(actor,state,net::Packet{6,13,1},&services)==EntryCatalogUpdate::applied && !state.request_1754 && !state.deadline_5838 && scene.sent.size()==after_join,"invalid inviter acceptance differed");
  services.eligible=true;state.request_1754=102;state.deadline_5838=55;
  services.hook=[&]{state.request_1754=99;state.deadline_5838=66;};
  check(guild_client_invitation_reply(actor,state,net::Packet{6,13,2},&services)==EntryCatalogUpdate::applied && !state.request_1754 && !state.deadline_5838 && scene.sent.back()==net::Packet({6,13,0,99,0,0,0}),"decline packet or reentrant state differed");
@@ -230,10 +263,36 @@ void invitation_reply_cases(Actor& actor,Actor& peer,Scene& scene) {
  try{(void)guild_client_invitation_reply(actor,state,net::Packet{6,13,0},&services);}catch(const std::logic_error&){threw=true;}
  check(threw && state.request_1754==102 && state.deadline_5838==55,"unretained peer consumed invitation");
 }
+void invitation_join_cases(Actor& actor,Actor& inviter,Scene& scene) {
+ GuildUser user;user.character_id=actor.id();user.request_id=99;std::vector<std::string> events;std::vector<net::Packet> clients,db;
+ GuildCatalogPorts cp;cp.allocate_guild=[] {return true;};cp.allocate_member=[&] {events.push_back("allocate_member");return true;};
+ cp.transport.allocate=[&](const net::Packet&){events.push_back("allocate_notice");return true;};cp.transport.release=[&]{events.push_back("release_notice");};cp.transport.send=[&](GuildUser&,net::Packet packet){events.push_back("notice");clients.push_back(std::move(packet));};
+ GuildCatalog catalog(cp);net::Packet load(138,0);load[0]=2;load[1]=11;load[2]=1;load[3]=77;std::copy_n("GuildName",9,load.begin()+7);check(catalog.apply(load)==EntryCatalogUpdate::applied,"invitation join guild load failed");auto& guild=*catalog.find(77);
+ actor.appearance().identity.name="Applicant";actor.appearance().identity.job=3;actor.status().level=41;
+ GuildApplicationAcceptPorts ports;ports.send_db=[&](net::Packet p){check(user.guild==&guild.membership && user.rank==9 && guild.membership.online.contains(actor.id()),"join mutation not committed before DB");events.push_back("db");db.push_back(std::move(p));actor.appearance().identity.name="Changed";};
+ ports.send_user=[&](GuildUser&,net::Packet p){events.push_back("client");clients.push_back(std::move(p));};ports.send_bank=[&](GuildUser&,const LoadedGuild&){events.push_back("bank");};ports.game_log=[&](const GuildMember&,GuildUser*,const LoadedGuild&){events.push_back("log");};ports.tick=[&]{events.push_back("tick");return 123;};ports.set_join_deadline=[&](GuildUser& u,std::uint32_t t){events.push_back("deadline");u.join_deadline=t;};
+ struct ReplyServices final:GuildInvitationReplyServices {
+  Actor& inviter;std::function<void()> do_join;ReplyServices(Actor& p,std::function<void()> f):inviter(p),do_join(std::move(f)){}
+  Actor* find_in_zone(Actor&,std::uint32_t) override{return &inviter;}
+  std::shared_ptr<void> retain(Actor&) override{return std::make_shared<int>(1);}
+  bool can_invite(Actor&) override{return true;}
+  bool join(Actor&,Actor&) override{do_join();return true;}
+ } reply(inviter,[&]{guild_invitation_join(user,actor,guild,catalog,ports);});
+ ZoneLeaveRequestState pending;pending.request_1754=inviter.id();pending.deadline_5838=50;
+ check(guild_client_invitation_reply(actor,pending,net::Packet{6,13,1},&reply)==EntryCatalogUpdate::applied && !pending.request_1754 && !pending.deadline_5838 && scene.sent.back()==net::Packet({6,13,1,102,0,0,0}),"joined invitation reply differed");
+ check(user.guild_id==77 && user.rank==9 && user.request_id==99 && user.join_deadline==0xf73147b && db==std::vector<net::Packet>{{7,11,77,0,0,0,101,0,0,0,9}},"invitation join state or DB differed");
+ check(events.front()=="allocate_member" && events[1]=="db" && events[2]=="client" && events[events.size()-4]=="log" && events[events.size()-3]=="bank" && events[events.size()-2]=="tick" && events.back()=="deadline","invitation join ordering differed");
+ check(clients.size()>1 && clients[1].size()==32 && std::string(clients[1].begin()+11,clients[1].begin()+20)=="Applicant","reentrant actor rename altered captured member notice");
+ check(!clients.empty() && clients.front().size()==33 && clients.front()[0]==8 && clients.front()[1]==13 && clients.front()[2]==1,"invitation join client packet differed");
+ const auto before_failed_send=clients.size();ports.send_db=[](net::Packet){throw std::runtime_error("DB unavailable");};user.rank=2;bool db_failed=false;
+ try{guild_invitation_join(user,actor,guild,catalog,ports);}catch(const std::runtime_error&){db_failed=true;}
+ check(db_failed && user.rank==9 && user.guild==&guild.membership && clients.size()==before_failed_send,"guild join DB failure ordering differed");
+ bool rejected=false;try{GuildApplicationAcceptPorts missing;guild_invitation_join(user,actor,guild,catalog,missing);}catch(const std::invalid_argument&){rejected=true;}check(rejected,"invitation join accepted absent services");
+}
 int main(){try {
  party_find_cases();
  ItemDefinitions items;EnchantValues enchant;MobAttackTemplates mobs;Scene scene;InventoryReplicaPool pool;Db db;std::recursive_mutex mutex;
- LoadedActor loaded_a;loaded_a.actor=std::make_unique<Actor>(101,EffectStatus{},PlayerResources{},std::vector<PersistedEffect>{},scene,ActorEquipmentRules{items,enchant,mobs});Actor& a=*loaded_a.actor;Actor b(102,{}, {},{},scene,{items,enchant,mobs});a.account_id()=71;b.account_id()=72;invitation_reply_cases(a,b,scene);house_cases(a);application_create_cases(a);leave_member_cases(a);expel_offline_cases(a);expel_online_cases(a,b);a.money()=0;
+ LoadedActor loaded_a;loaded_a.actor=std::make_unique<Actor>(101,EffectStatus{},PlayerResources{},std::vector<PersistedEffect>{},scene,ActorEquipmentRules{items,enchant,mobs});Actor& a=*loaded_a.actor;Actor b(102,{}, {},{},scene,{items,enchant,mobs});a.account_id()=71;b.account_id()=72;invitation_reply_cases(a,b,scene);invitation_join_cases(a,b,scene);house_cases(a);application_create_cases(a);leave_member_cases(a);expel_offline_cases(a);expel_online_cases(a,b);a.money()=0;
  GuildUser cooldown;cooldown.join_deadline=99;guild_restore_rejoin_deadline(cooldown,a,0);check(cooldown.join_deadline==0,"zero guild rejoin did not clear deadline");guild_restore_rejoin_deadline(cooldown,a,72);check(cooldown.join_deadline==259200001u,"guild rejoin hours deadline differs");guild_restore_rejoin_deadline(cooldown,a,-1);check(cooldown.join_deadline==1u-3600000u,"negative guild rejoin wrap differs");
  GuildUser request_guard;std::vector<net::Packet> guard_packets;const net::Packet application{7,13,77,0,0,0};auto guard_send=[&](GuildUser& actual,net::Packet packet){check(&actual==&request_guard,"guild guard owner differs");guard_packets.push_back(std::move(packet));};
  request_guard.join_deadline=2;check(guild_client_application_deadline(request_guard,a,application,guard_send)==EntryCatalogUpdate::applied && guard_packets==std::vector<net::Packet>{{7,13,2}} && request_guard.join_deadline==2,"guild application deadline rejection differs");bool guard_missing=false;try{guild_client_application_deadline(request_guard,a,application,{});}catch(const std::invalid_argument&){guard_missing=true;}check(guard_missing && guard_packets.size()==1,"guild guard accepted missing transport");check(guild_client_application_deadline(request_guard,a,net::Packet{7,13},{})==EntryCatalogUpdate::rejected,"short guild application accepted");request_guard.join_deadline=1;check(guild_client_application_deadline(request_guard,a,application,guard_send)==EntryCatalogUpdate::unsupported && guard_packets.size()==1,"expired guild deadline blocked application");request_guard.join_deadline=0;check(guild_client_application_deadline(request_guard,a,application,{})==EntryCatalogUpdate::unsupported,"zero guild deadline blocked application");

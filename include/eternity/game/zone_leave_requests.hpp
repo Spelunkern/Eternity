@@ -9,6 +9,12 @@ struct ZoneLeaveRequestState {
     std::uint32_t request_1754=0,deadline_5838=0;
     std::uint32_t request_5478=0,deadline_583c=0;
 };
+// CUser::UpdateTimeover 0048e3be..0048e3e0: unsigned absolute tick,
+// and a zero deadline or missing requester leaves both stored fields intact.
+inline bool zone_guild_invitation_timeout(ZoneLeaveRequestState& state,std::uint32_t tick) noexcept {
+    if(!state.deadline_5838 || tick<state.deadline_5838 || !state.request_1754)return false;
+    state.request_1754=state.deadline_5838=0;return true;
+}
 class ZoneLeaveRequestServices {
 public:
     virtual ~ZoneLeaveRequestServices()=default;

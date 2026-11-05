@@ -30,6 +30,8 @@
 #include "eternity/game/guild_client_donation_empty.hpp"
 #include "eternity/game/guild_client_decline.hpp"
 #include "eternity/game/guild_client_invitation_reply.hpp"
+#include "eternity/game/guild_invitation_join.hpp"
+#include "eternity/game/guild_client_invitation_request.hpp"
 #include "eternity/game/guild_client_application_deadline.hpp"
 #include "eternity/game/world_lifecycle.hpp"
 #include "eternity/game/guild_client_application_gate.hpp"
@@ -329,14 +331,54 @@ private:
         std::function<bool(const Binding&)> social_bound;bool social_ready=false;std::unique_ptr<VerticalWorldSessionSocial> social;std::shared_ptr<Preparation> preparation;std::shared_ptr<Teardown> teardown;std::function<void()> construction_cancel;bool attached=false,constructing=false,preparing=false,invalid_preparation=false,guild_released=false,guild_releasing=false,social_release_required=false,social_released=false,social_releasing=false;};
     bool dispatch_owned(VerticalWorldSession& session,const net::Packet& packet) {
         if(guild_client_ignored(packet))return true;
+        if(packet.size()>=2 && packet[0]==5 && packet[1]==0x0d) {
+            if(!session.world_user())throw std::logic_error("Missing guild invitation actor");
+            auto& actor=session.world_user()->actor;
+            struct ZoneServices final:GuildInvitationRequestServices {
+                Actor& subject;ZoneUsers& users;VerticalWorldSession::Registry& registry;
+                std::function<ZoneGuildCreationServices&(VerticalWorldSession&)>& creation;
+                std::shared_ptr<VerticalWorldSession> retained;
+                ZoneServices(Actor& a,ZoneUsers& u,VerticalWorldSession::Registry& r,decltype(creation) c):subject(a),users(u),registry(r),creation(c){}
+                Actor* find_in_zone(Actor& a,std::uint32_t id) override {
+                    if(&a!=&subject)throw std::logic_error("Guild invitation lost subject");return users.find_actor(id);
+                }
+                std::shared_ptr<void> retain(Actor& peer) override {
+                    auto owner=registry.retain_actor(peer);
+                    if(!owner || !owner->world_user() || &owner->world_user()->actor!=&peer)throw std::logic_error("Guild invitation lost target owner");
+                    retained=owner;return owner;
+                }
+                bool target_blocked(Actor& peer) override {
+                    if(!retained || !retained->world_user() || &retained->world_user()->actor!=&peer)
+                        throw std::logic_error("Guild invitation lost retained target");
+                    auto& user=retained->guild_user();
+                    if(user.guild)return true;
+                    if(creation && creation(*retained).current(peer))return true;
+                    return retained->zone_requests().request_1754 || user.request_id;
+                }
+            };
+            const auto send=[&session](net::Packet response) {
+                if(!session.channel().send)throw std::logic_error("Missing guild invitation client transport");
+                session.channel().send(std::move(response));
+            };
+            EntryCatalogUpdate result;
+            if(session.guild_user().rank>2 || packet.size()<6)result=guild_client_invitation_request(session.guild_user(),actor,packet,nullptr,send);
+            else {
+                auto* zone=session.admission().zone;if(!zone || !zone->users)throw std::logic_error("Missing guild invitation zone");
+                ZoneServices services(actor,*zone->users,registry_,ports_.guild_creation);
+                result=guild_client_invitation_request(session.guild_user(),actor,packet,&services,send);
+            }
+            if(result==EntryCatalogUpdate::unsupported)return false;
+            if(result!=EntryCatalogUpdate::applied)throw std::runtime_error("Guild invitation packet rejected");return true;
+        }
         if(packet.size()>=2 && packet[0]==6 && packet[1]==0x0d) {
             if(!session.world_user())throw std::logic_error("Missing guild invitation actor");
             auto& actor=session.world_user()->actor;
             auto& state=session.zone_requests();
             struct ZoneServices final:GuildInvitationReplyServices {
                 Actor& subject;ZoneUsers& users;VerticalWorldSession::Registry& registry;
+                VerticalWorldSession& session;Ports& ports;
                 std::shared_ptr<VerticalWorldSession> retained;
-                ZoneServices(Actor& a,ZoneUsers& u,VerticalWorldSession::Registry& r):subject(a),users(u),registry(r){}
+                ZoneServices(Actor& a,ZoneUsers& u,VerticalWorldSession::Registry& r,VerticalWorldSession& s,Ports& p):subject(a),users(u),registry(r),session(s),ports(p){}
                 Actor* find_in_zone(Actor& a,std::uint32_t id) override {
                     if(&a!=&subject)throw std::logic_error("Guild invitation lost subject");
                     return users.find_actor(id);
@@ -352,13 +394,42 @@ private:
                         throw std::logic_error("Guild invitation lost retained peer");
                     const auto& user=retained->guild_user();return user.guild && user.rank<=2;
                 }
+                bool join(Actor& target,Actor& peer) override {
+                    if(&target!=&subject || !retained || !retained->world_user() || &retained->world_user()->actor!=&peer)
+                        throw std::logic_error("Guild join lost retained owners");
+                    if(!ports.guilds || !ports.guild_db || !ports.guild_money)return false;
+                    auto* guild=ports.guilds->find_membership(retained->guild_user().guild);
+                    if(!guild)throw std::logic_error("Guild inviter has foreign membership");
+                    if(!guild->bank || !session.channel().send)return false;
+                    auto owner=session.shared_from_this();
+                    auto resolve=[owner](GuildUser& user)->std::shared_ptr<Actor> {
+                        if(&user!=&owner->guild_user() || !owner->world_user())throw std::logic_error("Guild join lost actor");
+                        return std::shared_ptr<Actor>(owner,&owner->world_user()->actor);
+                    };
+                    GuildApplicationAcceptPorts service;
+                    service.send_user=[owner](GuildUser& user,net::Packet p) {
+                        if(&user!=&owner->guild_user() || !owner->channel().send)throw std::logic_error("Guild join lost client");
+                        owner->channel().send(std::move(p));
+                    };
+                    service.send_db=ports.guild_db;
+                    service.send_bank=[send=service.send_user](GuildUser& user,const LoadedGuild& guild) {
+                        if(!guild.bank)throw std::logic_error("Guild join lost bank");
+                        for(auto& p:guild.bank->client_packets())send(user,std::move(p));
+                    };
+                    service.game_log=guild_application_log_service(ports.guild_money(session),resolve);
+                    service.tick=[owner] {if(!owner->world_user())throw std::logic_error("Guild join lost clock");return owner->world_user()->actor.tick_ms();};
+                    service.set_join_deadline=[owner](GuildUser& user,std::uint32_t deadline) {
+                        if(&user!=&owner->guild_user())throw std::logic_error("Guild join lost deadline owner");user.join_deadline=deadline;
+                    };
+                    guild_invitation_join(owner->guild_user(),target,*guild,*ports.guilds,service);return true;
+                }
             };
             EntryCatalogUpdate result;
             if(!state.request_1754 || packet.size()<3)result=guild_client_invitation_reply(actor,state,packet,nullptr);
             else {
                 auto* zone=session.admission().zone;
                 if(!zone || !zone->users)throw std::logic_error("Missing guild invitation zone");
-                ZoneServices services(actor,*zone->users,registry_);
+                ZoneServices services(actor,*zone->users,registry_,session,ports_);
                 result=guild_client_invitation_reply(actor,state,packet,&services);
             }
             if(result==EntryCatalogUpdate::unsupported)return false;

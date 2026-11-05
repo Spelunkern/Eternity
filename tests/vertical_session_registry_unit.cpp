@@ -1,3 +1,4 @@
+#include "eternity/game/vertical_social_timeover.hpp"
 #include "eternity/game/vertical_world_session_zone_services.hpp"
 #include "eternity/game/vertical_world_session_sql_preparation_provider.hpp"
 #include "eternity/game/vertical_world_session_owner.hpp"

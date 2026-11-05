@@ -8,6 +8,8 @@ class GuildInvitationReplyServices:public ZoneLeaveRequestServices {
 public:
     // Inspect the retained inviter's actual live guild and signed rank.
     virtual bool can_invite(Actor&)=0;
+    // Returns false only when the real join dependencies are unavailable.
+    virtual bool join(Actor&,Actor&)=0;
 };
 // ps_game.exe CUser::PacketGuild 00476d21..00476df7. The accepted-invitation
 // branch requires the retained guild join owner and remains with the caller.
@@ -21,7 +23,12 @@ inline EntryCatalogUpdate guild_client_invitation_reply(Actor& actor,ZoneLeaveRe
         auto lease=services->retain(*peer);
         if(!lease)throw std::logic_error("Cannot retain guild invitation peer");
         if(packet[2]==1) {
-            if(services->can_invite(*peer))return EntryCatalogUpdate::unsupported;
+            if(services->can_invite(*peer)) {
+                if(!services->join(actor,*peer))return EntryCatalogUpdate::unsupported;
+                net::Packet response{6,0x0d,1};
+                for(unsigned i=0;i<4;++i)response.push_back(static_cast<std::uint8_t>(state.request_1754>>(8*i)));
+                peer->send_self(response);
+            }
             state.request_1754=state.deadline_5838=0;
             return EntryCatalogUpdate::applied;
         }

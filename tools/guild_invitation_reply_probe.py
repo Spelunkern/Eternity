@@ -46,3 +46,16 @@ for rank in (0,1,2,0xffffffff):
  cpu.emu_start(0x476d21,0x476d72,count=100000)
  assert cpu.reg_read(UC_X86_REG_EIP)==0x476d72 and events==[('find',43)] and get(user+0x1754)==43
 print('4 original signed rank boundary cases reached guild join')
+# Verify successful join is followed by the inviter notice using current state.
+cpu.mem_write(0x42e7a0,b'\xc2\x04\x00')
+def join_hook(m,a,size,ctx):
+ events.append(('join',m.reg_read(UC_X86_REG_ECX),get(m.reg_read(UC_X86_REG_ESP)+4)))
+ put(user+0x1754,88)
+cpu.hook_add(UC_HOOK_CODE,join_hook,begin=0x42e7a0,end=0x42e7a0)
+events.clear();found=True
+for a in (stack,user,peer,packet):cpu.mem_write(a,bytes(0x10000))
+put(user+0x1754,43);put(user+0x5838,123);put(peer+0x1758,0x33000000);put(peer+0x174c,2)
+cpu.mem_write(packet+2,b'\x01');cpu.reg_write(UC_X86_REG_EBP,user);cpu.reg_write(UC_X86_REG_EBX,packet);cpu.reg_write(UC_X86_REG_ESP,stack+0xf000)
+cpu.emu_start(0x476d21,0x47768c,count=100000)
+assert events==[('find',43),('join',user,0x33000000),('send',peer,struct.pack('<HBI',0xd06,1,88))] and get(user+0x1754)==get(user+0x5838)==0,events
+print('original accepted reply join/notice ordering passed')

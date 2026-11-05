@@ -86,7 +86,12 @@ public:
         Context c(*this);catalog_.send_packets([&](std::uint32_t id){return c.catalog(id);},
             [&](net::Packet p){session_.channel().send(std::move(p));});
     }
-    bool update_timeout(std::uint32_t tick) {Context c(*this);return social_friend_timeout(friend_,tick);}
+    bool update_timeout(std::uint32_t tick) {
+        Context c(*this);
+        const bool guild=zone_guild_invitation_timeout(requests_,tick);
+        const bool friend_request=social_friend_timeout(friend_,tick);
+        return guild || friend_request;
+    }
     WorldLifecyclePorts bind_world_release(WorldLifecyclePorts ports) {
         if(!ports.step)throw std::invalid_argument("Missing world lifecycle step service");
         auto lease=services_.social_for(session_);if(lease.get()!=this)throw std::logic_error("World release lost its social owner");
