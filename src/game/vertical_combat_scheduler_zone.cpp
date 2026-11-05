@@ -401,6 +401,9 @@ std::shared_ptr<PartyRegistryParty> VerticalCombatRebirthRegistryPartyServices::
  if(find_registry_party(registry_,party.id,ports_)!=registered)return {};
  return {std::move(retained),registered};
 }
+VerticalCombatRebirthMovementServices::VerticalCombatRebirthMovementServices(Actor& actor,ZoneEntryState& entry,PartyMembershipUser& member,PartyMembershipSendWorld& world,PartyRegistry& registry,PartyRegistryPorts& ports,VerticalCombatPartyLease& lease,VerticalMovePacketServices& movement):VerticalCombatRebirthRegistryPartyServices(actor,entry,member,world,registry,ports,lease),actor_(actor),movement_(movement){}
+std::uint32_t VerticalCombatRebirthMovementServices::rebirth_move_tick(){return movement_.tick_ms();}
+void VerticalCombatRebirthMovementServices::close_rebirth_move(Actor& actor,std::uint32_t reason){if(&actor!=&actor_)throw std::invalid_argument("Rebirth close bound to another actor");movement_.close(actor,reason);}
 void VerticalCombatRebirthMoveGameServices::move_by_game(Actor& actor){
  if(&actor!=&actor_ || admission_.character_id!=actor.id())throw std::invalid_argument("MoveByGame bound to another actor");
  const auto tick=rebirth_move_tick();auto& check=actor.movement_check();

@@ -19,6 +19,7 @@
 #include "eternity/game/party_runtime_registry.hpp"
 #include "eternity/game/vertical_session_registry.hpp"
 #include "eternity/game/vertical_combat_spend_party.hpp"
+#include "eternity/game/vertical_move_packet.hpp"
 #include "eternity/game/random.hpp"
 #include <utility>
 namespace eternity::game {
@@ -398,6 +399,16 @@ public:
  std::shared_ptr<PartyRegistryParty> retain_rebirth_move_party(PartyNormalMembership&) final;
 private:
  PartyRegistry& registry_;PartyRegistryPorts& ports_;VerticalCombatPartyLease& lease_;
+};
+// Use the same live clock and connection close owner as PacketPC movement.
+// Movement services and actor remain retained and serialized across callbacks.
+class VerticalCombatRebirthMovementServices:public VerticalCombatRebirthRegistryPartyServices {
+public:
+ VerticalCombatRebirthMovementServices(Actor&,ZoneEntryState&,PartyMembershipUser&,PartyMembershipSendWorld&,PartyRegistry&,PartyRegistryPorts&,VerticalCombatPartyLease&,VerticalMovePacketServices&);
+ std::uint32_t rebirth_move_tick() final;
+ void close_rebirth_move(Actor&,std::uint32_t) final;
+private:
+ Actor& actor_;VerticalMovePacketServices& movement_;
 };
 bool vertical_combat_rebirth_move_local(Actor&,RuntimeZone&,ZoneEntryState&,std::uint32_t,UserPosition,UserViewActorTransport&,VerticalCombatRebirthLocalServices&);
 // Joins CZone::MoveUser's retained vehicle prefix to the actual local move.
