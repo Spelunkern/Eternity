@@ -66,6 +66,8 @@ private:
             if(&resources_->connection()!=&owner_->party_user())throw std::logic_error("Zone transfer lost its canonical connection");
         if constexpr(requires(Session& session){session.dispatch_failed();})
             if(owner_->dispatch_failed())throw std::logic_error("Zone transfer session dispatch has failed");
+        if constexpr(requires(Session& session){session.failed();})
+            if(owner_->failed())throw std::logic_error("Zone transfer session has failed");
     }
     bool entry_matches(RuntimeZone& zone) {
         const auto& entry=owner_->zone_entry();const auto cell=zone.users->cell(id_);const auto position=zone.users->position(id_);

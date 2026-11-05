@@ -58,6 +58,15 @@ int main(int argc,char** argv) {
         require(combined.world_enter(first) && first.location==4 && combined.zone_waiting_count(s.zone)==0,"Transfer did not complete real world entry");
         bool still_attached=false;try {combined.wait_after_zone_leave(first);}catch(const std::logic_error&) {still_attached=true;}
         require(still_attached && first.location==4 && first.zone==&s.zone,"Transfer accepted user before zone leave");
+        Services observed_services;WorldAdmission observed(observed_services);observed_services.world=&observed;unsigned entered=0;bool reject_entry=false;
+        observed.install_zone_entry_observer([&](WorldAdmissionUser& user,RuntimeZone& zone){require(user.location==4 && user.zone==&zone,"Observer ran before destination publication");++entered;if(reject_entry)throw std::runtime_error("observer failure");});
+        bool duplicate_observer=false;try{observed.install_zone_entry_observer([](WorldAdmissionUser&,RuntimeZone&){});}catch(const std::logic_error&){duplicate_observer=true;}require(duplicate_observer,"Duplicate zone entry observer accepted");
+        WorldAdmissionUser observer_first,observer_second;observer_first.user_id=1;observer_second.user_id=2;
+        observed.track_selection(observer_first);observed.track_selection(observer_second);require(observed.wait(observer_first) && observed.wait(observer_second),"Observer users did not wait");observed.update_packets();
+        observed_services.success=false;require(!observed.world_enter(observer_first) && entered==0 && observed.zone_waiting_count(observed_services.zone)==2,"Failed entry invoked observer");
+        observed_services.success=true;require(observed.client_enter(observer_first) && entered==1,"Successful client entry omitted observer");reject_entry=true;bool observer_threw=false;
+        try{(void)observed.world_enter(observer_second);}catch(const std::runtime_error&){observer_threw=true;}
+        require(observer_threw && entered==2 && observer_second.location==4 && observer_second.zone==&observed_services.zone && observed.zone_waiting_count(observed_services.zone)==0,"Observer failure lost admitted state");
         std::cout<<cases<<" original world admission sequences / "<<steps<<" list/wait/client/world entry operations passed\n";
     }catch(const std::exception& error) {std::cerr<<error.what()<<'\n';return 1;}
 }

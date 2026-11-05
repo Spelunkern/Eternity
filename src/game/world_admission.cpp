@@ -31,16 +31,21 @@ struct WorldAdmission::Impl {
     WorldAdmissionServices& services;
     WorldAdmissionUser::List connected,selection,waiting;
     std::map<const RuntimeZone*,std::unique_ptr<WorldAdmissionUser::List>> zone_wait;
+    std::function<void(WorldAdmissionUser&,RuntimeZone&)> entry_observer;
     explicit Impl(WorldAdmissionServices& owner):services(owner) {}
     WorldAdmissionUser::List& list(RuntimeZone& zone) {auto& value=zone_wait[&zone];if(!value) value=std::make_unique<WorldAdmissionUser::List>();return *value;}
     bool enter(WorldAdmissionUser& user,RuntimeZone& zone) {
         auto& queue=list(zone);queue.remove(user);
-        if(services.enter_zone(user,zone)) {user.zone=&zone;user.location=4;return true;}
+        if(services.enter_zone(user,zone)) {user.zone=&zone;user.location=4;if(entry_observer)entry_observer(user,zone);return true;}
         queue.add(user);return false;
     }
 };
 WorldAdmission::WorldAdmission(WorldAdmissionServices& services):impl_(std::make_unique<Impl>(services)) {}
 WorldAdmission::~WorldAdmission()=default;
+void WorldAdmission::install_zone_entry_observer(std::function<void(WorldAdmissionUser&,RuntimeZone&)> observer) {
+    if(!observer || impl_->entry_observer || !empty())throw std::logic_error("Zone entry observer must be installed once before admission");
+    impl_->entry_observer=std::move(observer);
+}
 void WorldAdmission::track_connected(WorldAdmissionUser& user) {if(user.location!=0) throw std::invalid_argument("Connected world user must have location 0");impl_->connected.add(user);}
 void WorldAdmission::track_selection(WorldAdmissionUser& user) {if(user.location!=1) throw std::invalid_argument("Selecting world user must have location 1");impl_->selection.add(user);}
 void WorldAdmission::untrack(WorldAdmissionUser& user) {if(user.list_) user.list_->remove(user);}

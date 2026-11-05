@@ -49,6 +49,11 @@ public:
     // CWorld::ZoneLeaveUserMoveLocal 0040d1d0 after successful source leave.
     // The caller has already updated map/position and notified the party.
     void wait_after_zone_leave(WorldAdmissionUser&);
+    // Install once before sessions are published. Called after successful zone
+    // membership and location 4, before the caller can dispatch more packets.
+    // Caller retains user/zone through the callback; it must not reenter this
+    // admission operation. A throw leaves the user admitted for real cleanup.
+    void install_zone_entry_observer(std::function<void(WorldAdmissionUser&,RuntimeZone&)>);
     void update_packets();
     // CWorld::UpdateNetSend 0040c1b0: connected users, then selection users.
     void visit_global_users(const std::function<std::shared_ptr<void>(WorldAdmissionUser&)>& retain,

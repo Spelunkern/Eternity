@@ -86,6 +86,10 @@ public:
         // Must stop other producers, complete real world/zone removal, and
         // fence unrelated DB and account-only transport before calling done.
         std::function<void(VerticalWorldSession&,std::optional<std::uint32_t>,std::function<void()>)> disconnect;
+        // Optional outer fence; the supplied continuation runs the entire real
+        // runtime disconnect including save, social and guild teardown.
+        using DisconnectService=std::function<void(VerticalWorldSession&,std::optional<std::uint32_t>,std::function<void()>)>;
+        std::function<void(VerticalWorldSession&,std::optional<std::uint32_t>,std::function<void()>,DisconnectService)> disconnect_fence;
     };
     VerticalWorldSessionRuntime(VerticalWorldSession::Strand strand,VerticalWorldSession::Registry& registry,
         std::size_t max_packets,std::size_t max_bytes,Ports ports)
@@ -295,6 +299,15 @@ public:
     void invalidate_gameplay(VerticalWorldSession& session) {require_strand();auto context=find(session);if(context->attached)packets_.invalidate_gameplay(session);}
     std::shared_ptr<Binding> save_binding(VerticalWorldSession& session) {require_strand();auto context=find(session);return context->preparation?context->preparation->binding():std::shared_ptr<Binding>{};}
     void disconnect(VerticalWorldSession& session,std::optional<std::uint32_t> reason,std::function<void()> done) override {
+        require_strand();if(!done)throw std::invalid_argument("Missing session disconnect completion");
+        if(ports_.disconnect_fence) {
+            ports_.disconnect_fence(session,reason,std::move(done),[this](VerticalWorldSession& owner,std::optional<std::uint32_t> why,std::function<void()> complete){disconnect_unfenced(owner,why,std::move(complete));});
+            return;
+        }
+        disconnect_unfenced(session,reason,std::move(done));
+    }
+private:
+    void disconnect_unfenced(VerticalWorldSession& session,std::optional<std::uint32_t> reason,std::function<void()> done) {
         require_strand();if(!done)throw std::invalid_argument("Missing session disconnect completion");auto owner=session.shared_from_this();auto context=find_optional(session);
         if(context && context->invalid_preparation)throw std::logic_error("Cannot disconnect with an unowned started preparation");
         auto ticket=std::make_shared<Disconnect>();ticket->owner=owner;
@@ -310,7 +323,6 @@ public:
             context->teardown->start([this,owner,context,ticket,done=std::move(done)]() mutable {finish(owner,context,ticket,std::move(done));});
         });
     }
-private:
     struct Disconnect {std::shared_ptr<VerticalWorldSession> owner;bool completing=false;};
     struct Context {std::weak_ptr<VerticalWorldSession> owner;std::shared_ptr<void> social_world;std::type_index social_type{typeid(void)};
         std::function<EntryCatalogUpdate(const net::Packet&)> social_receive;std::function<EntryDeliveryPorts(EntryDeliveryPorts)> social_entry;

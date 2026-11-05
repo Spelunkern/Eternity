@@ -6,6 +6,7 @@
 #include "eternity/game/vertical_world_session_zone_services.hpp"
 #include "eternity/game/vertical_quests_world_session.hpp"
 #include "eternity/game/zone_logout_update.hpp"
+#include "eternity/game/vertical_move_transfer_entry.hpp"
 #include <mutex>
 
 namespace eternity::game {
@@ -32,6 +33,20 @@ public:
     ~VerticalWorldSessionOwner() {if(registry_.size()!=0 || !gate_->stop_if_idle())std::terminate();try{runtime_.assert_shutdown_ready();}catch(...){std::terminate();}}
     VerticalWorldSession::Registry& registry() {require_running();return registry_;}
     Runtime& runtime() {require_running();return runtime_;}
+    // Install before sessions are accepted; both location-4 and waiting-user
+    // disconnects pass through this retained transfer fence.
+    void install_transfer_directory() {
+        require_active();if(transfer_directory_ || registry_.size())throw std::logic_error("Transfer directory must be installed before sessions");
+        auto directory=VerticalMoveTransferDirectory::create(strand_,registry_);
+        world_.install_zone_entry_observer([this](WorldAdmissionUser& user,RuntimeZone& zone){
+            if(!transfer_directory_)throw std::logic_error("Zone entry observer lost transfer directory");
+            vertical_move_transfer_zone_entered(registry_,*transfer_directory_,user,zone);
+        });
+        transfer_directory_=std::move(directory);
+    }
+    VerticalMoveTransferDirectory& transfers() {
+        require_running();if(!transfer_directory_)throw std::logic_error("Transfer directory is not installed");return *transfer_directory_;
+    }
     // Aliases share the owner control block, so the root cannot outlive the
     // registry or the exact admission queue used by socket-facing sessions.
     struct RootBindings {
@@ -129,6 +144,7 @@ public:
     void shutdown() {
         require_running();if(registry_.size() || world_.connected_count() || world_.selection_count() || world_.waiting_count())
             throw std::logic_error("World session owner still has live sessions");
+        if(transfer_directory_ && transfer_directory_->size())throw std::logic_error("World session owner still has retained transfers");
         runtime_.assert_shutdown_ready();
         if((zone_disconnect_ && zone_disconnect_->pending()) || !zone_services_.empty())throw std::logic_error("World session owner still has zone disconnects");
         if(!gate_->stop_if_idle())throw std::logic_error("World session owner still has retained applications or routers");
@@ -151,12 +167,16 @@ private:
                 return preparation(strand,database,registry,std::move(session));
             };
         }
-        if(!ports.disconnect)throw std::invalid_argument("Missing session disconnect service");
+        if(!ports.disconnect || ports.disconnect_fence)throw std::invalid_argument("Missing disconnect service or duplicate outer fence");
         auto other_disconnect=std::move(ports.disconnect);
         ports.disconnect=[owner,other_disconnect=std::move(other_disconnect)](VerticalWorldSession& session,std::optional<std::uint32_t> reason,std::function<void()> done) mutable {
             if(!owner->zone_disconnect_ || session.admission().location!=4){other_disconnect(session,reason,std::move(done));return;}
             auto retained=session.shared_from_this();
             owner->zone_disconnect_->begin(session,[owner,retained,reason,done=std::move(done)]() mutable {owner->zone_completion_(*retained,reason,std::move(done));});
+        };
+        ports.disconnect_fence=[owner](VerticalWorldSession& session,std::optional<std::uint32_t> reason,std::function<void()> done,VerticalMoveTransferDirectory::Disconnect actual) {
+            if(owner->transfer_directory_)owner->transfer_directory_->disconnect(session,reason,std::move(done),std::move(actual));
+            else actual(session,reason,std::move(done));
         };
         owner->runtime_world_users_=&users;ports.world_users=&users;return ports;
     }
@@ -230,7 +250,7 @@ private:
     };
     VerticalWorldSession::Strand strand_;asio::any_io_executor database_;VerticalWorldSession::Registry registry_;
     WorldUsers* runtime_world_users_=nullptr;
-    Runtime runtime_;VerticalWorldSessionAdmissionServices admission_;WorldAdmission world_;std::map<std::uint32_t,std::unique_ptr<ZoneServices>> zone_services_;ZoneCompletion zone_completion_;std::unique_ptr<VerticalWorldZoneDisconnect> zone_disconnect_;std::shared_ptr<Gate> gate_=std::make_shared<Gate>();bool shutdown_=false;
+    Runtime runtime_;VerticalWorldSessionAdmissionServices admission_;WorldAdmission world_;std::map<std::uint32_t,std::unique_ptr<ZoneServices>> zone_services_;ZoneCompletion zone_completion_;std::unique_ptr<VerticalWorldZoneDisconnect> zone_disconnect_;std::shared_ptr<VerticalMoveTransferDirectory> transfer_directory_;std::shared_ptr<Gate> gate_=std::make_shared<Gate>();bool shutdown_=false;
 };
 using VerticalWorldSessionSqlOwner=VerticalWorldSessionOwner<VerticalWorldSessionSqlSave>;
 }

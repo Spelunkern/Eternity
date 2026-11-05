@@ -4,16 +4,23 @@ from pathlib import Path
 import os
 import shutil
 import subprocess
+import time
 import uuid
 from parallel_lock import resource_lock
 
 root = Path(__file__).resolve().parents[1]
 coordinator = Path('/home/franco/Projects/Eternity-foundation')
 real_zones = os.environ.get('ETERNITY_MOVEMENT_REAL_ZONES') == '1'
-disconnect_probe = os.environ.get('ETERNITY_MOVEMENT_DISCONNECT') == '1'
+auto_probe = os.environ.get('ETERNITY_MOVEMENT_AUTO_ENTRY') == '1'
+auto_failure_probe = os.environ.get('ETERNITY_MOVEMENT_AUTO_FAILURE') == '1'
+if auto_failure_probe and not auto_probe: raise RuntimeError('automatic failure probe requires automatic entry')
+disconnect_probe = os.environ.get('ETERNITY_MOVEMENT_DISCONNECT') == '1' or auto_probe
+reentrant_probe = os.environ.get('ETERNITY_MOVEMENT_REENTRANT') == '1'
+if reentrant_probe and not disconnect_probe: raise RuntimeError('reentrant probe requires disconnect mode')
 if disconnect_probe and not real_zones: raise RuntimeError('disconnect probe requires real zone authority')
-out = root / ('.local/movement-zone-transfer-disconnect' if disconnect_probe else '.local/movement-zone-transfer-authority' if real_zones else '.local/movement-zone-transfer')
-base = '/src/.local/movement-zone-transfer-disconnect' if disconnect_probe else '/src/.local/movement-zone-transfer-authority' if real_zones else '/src/.local/movement-zone-transfer'
+suffix = 'movement-zone-transfer-auto-failure' if auto_failure_probe else 'movement-zone-transfer-auto' if auto_probe else 'movement-zone-transfer-reentrant' if reentrant_probe else 'movement-zone-transfer-disconnect' if disconnect_probe else 'movement-zone-transfer-authority' if real_zones else 'movement-zone-transfer'
+out = root / '.local' / suffix
+base = '/src/.local/' + suffix
 
 pool = r'''
 struct TransferProbePool final:PartyMembershipSendWorld {
@@ -143,7 +150,7 @@ with resource_lock(root, 'build', 2):
         authority_fixture = (coordinator / 'tests/mob_primary_zones_unit.cpp').read_text()
         start = authority_fixture.index('namespace {') + len('namespace {')
         end = authority_fixture.index('\n}\nint main(', start)
-        source = source.replace('using namespace quest_actor_test;', '#include "eternity/game/mob_applied_skills_runtime.hpp"\n#include <source_location>\n#include <fstream>\nnamespace authority_fixture {using namespace eternity::game;'+authority_fixture[start:end]+'\n}\nusing namespace quest_actor_test;', 1)
+        source = source.replace('using namespace quest_actor_test;', '#include "eternity/game/mob_applied_skills_runtime.hpp"\n#include "eternity/game/vertical_move_transfer_entry.hpp"\n#include <source_location>\n#include <fstream>\nnamespace authority_fixture {using namespace eternity::game;'+authority_fixture[start:end]+'\n}\nusing namespace quest_actor_test;', 1)
         old = 'MapGeometry pickup_geometry(81);RuntimeZone world_zone;world_zone.users=std::make_unique<ZoneUsers>(1,1,0);world_zone.npcs=std::make_unique<ZoneNpcs>(pickup_geometry,npc_services);'
         if source.count(old)!=1:raise RuntimeError('source zone fixture changed')
         source = source.replace(old, '''MapGeometry pickup_geometry(81);authority_fixture::write_maps("'''+base+'''/maps");
@@ -190,10 +197,16 @@ with resource_lock(root, 'build', 2):
         first = source.find(begin);last = source.find(end, first)
     source = source[:first] + transfer_body + source[last+len(end):]
     if disconnect_probe:
-        source = source.replace('std::unique_ptr<SocialCatalog> catalog;bool unbound=false;', 'std::unique_ptr<SocialCatalog> catalog;std::function<void(VerticalWorldSession&)> disconnect_hook;bool unbound=false;', 1)
+        source = source.replace('std::unique_ptr<SocialCatalog> catalog;bool unbound=false;', 'std::unique_ptr<SocialCatalog> catalog;std::function<void(VerticalWorldSession&,std::function<void()>)> disconnect_hook;bool unbound=false;', 1)
         old_disconnect='void disconnect(VerticalWorldSession&,std::optional<std::uint32_t>,std::function<void()> done) override {done();}'
-        if source.count(old_disconnect)!=1:raise RuntimeError('successful session disconnect fixture changed')
-        source=source.replace(old_disconnect, 'void disconnect(VerticalWorldSession& owner,std::optional<std::uint32_t>,std::function<void()> done) override {if(disconnect_hook)disconnect_hook(owner);done();}',1)
+        updated_disconnect='void disconnect(VerticalWorldSession& owner,std::optional<std::uint32_t>,std::function<void()> done) override {if(on_disconnect)on_disconnect(owner);done();}'
+        if source.count(old_disconnect)==1:
+            replacement='void disconnect(VerticalWorldSession& owner,std::optional<std::uint32_t>,std::function<void()> done) override {if(disconnect_hook)disconnect_hook(owner,std::move(done));else done();}'
+            source=source.replace(old_disconnect,replacement,1)
+        elif source.count(updated_disconnect)==1:
+            replacement='void disconnect(VerticalWorldSession& owner,std::optional<std::uint32_t>,std::function<void()> done) override {if(disconnect_hook)disconnect_hook(owner,[this,&owner,done=std::move(done)]() mutable {if(on_disconnect)on_disconnect(owner);done();});else {if(on_disconnect)on_disconnect(owner);done();}}'
+            source=source.replace(updated_disconnect,replacement,1)
+        else: raise RuntimeError('successful session disconnect fixture changed')
         old_interaction='PlayerCore success_player;VerticalNpcInteraction success_interaction;'
         if source.count(old_interaction)!=1:raise RuntimeError('successful interaction fixture changed')
         source=source.replace(old_interaction,'PlayerCore success_player;ZoneLeaveShopState success_shop;std::shared_ptr<VerticalMoveSessionResources> success_movement;',1)
@@ -211,31 +224,88 @@ with resource_lock(root, 'build', 2):
                 check(quests->packets().receive(net::Packet{4,14,102,0,0,0})==VerticalQuestNpcPacketResult::handled && success_movement->npc().npc==destination_npc && destination_npc->users_using==1,"disconnect fixture did not acquire NPC");
                 NpcLeaveServices leave(actor->actor,success_movement->npc(),*destination_npc,0);
                 VerticalWorldSessionPacketRouter router(strand,world_registry,8,128,[](VerticalWorldSession&,RuntimeZone&)->std::shared_ptr<VerticalWorldSessionGameplay>{throw std::logic_error("unexpected gameplay");});router.attach(success_session);
+                unsigned disconnects=0;std::function<void()> disconnect_complete;
                 auto ports=vertical_move_world_transfer_ports(world_registry,router,admission,
                     [&](VerticalWorldSession&,RuntimeZone&){ZoneActorLeaveServices value;
                         value.user_leave_lifecycle=[&](Actor&){quests->packets().leave_interactions(success_shop,leave);};
                         value.send_view=[](CellCoordinates,const net::Packet&){};return value;},
                     [&](VerticalWorldSession& selected,RuntimeZone& target){selected.admission().map=static_cast<std::uint16_t>(target.map->settings.id);});
                 auto lease=VerticalMoveZoneLeases::create(movement_authority,destination_zone,destination_zone,movement_frame);std::weak_ptr<VerticalMoveZoneLeases> weak_lease=lease;
-                auto pending=std::make_unique<VerticalMoveRetainedWorldTransfer>(world_registry,success_session,lease,destination_zone,destination_zone,success_movement,std::move(ports));lease.reset();pending->begin();
+                auto directory=VerticalMoveTransferDirectory::create(strand,world_registry);
+                success_services.disconnect_hook=[&](VerticalWorldSession& selected,std::function<void()> done){directory->disconnect(selected,{},std::move(done),[&](VerticalWorldSession& current,std::optional<std::uint32_t>,std::function<void()> finish){check(&current==success_session.get() && current.closing() && admission.waiting_count()==1 && !weak_lease.expired(),"disconnect lost transfer wait ownership");router.stop(current);++disconnects;disconnect_complete=std::move(finish);});};
+                auto pending=std::make_unique<VerticalMoveRetainedWorldTransfer>(world_registry,success_session,lease,destination_zone,destination_zone,success_movement,std::move(ports));lease.reset();directory->begin(success_session,std::move(pending));
                 check(success_session->admission().location==2 && admission.waiting_count()==1 && !destination_zone.users->find_actor(actor->actor.id()) && !success_movement->npc().npc && destination_npc->users_using==0 && router.gameplay_suspended(*success_session),"disconnect transfer was not in fenced wait");
-                check(router.try_enqueue(*success_session,net::Packet{8,9,255,255}),"disconnect fixture did not enqueue pending gameplay");unsigned disconnects=0;
-                success_services.disconnect_hook=[&](VerticalWorldSession& selected){check(&selected==success_session.get() && selected.closing() && admission.waiting_count()==1 && !weak_lease.expired(),"disconnect lost transfer wait ownership");router.stop(selected);++disconnects;};
-                success_session->close();check(disconnects==1 && success_session->closing() && world_registry.size()==0 && admission.waiting_count()==0 && success_services.unbound && !weak_lease.expired(),"disconnect did not drain retained world wait");
-                bool rejected=false;try{pending->complete();}catch(const std::logic_error&){rejected=true;}check(rejected && !weak_lease.expired(),"closed transfer resumed gameplay");
-                pending.reset();check(weak_lease.expired(),"closed transfer did not release its lease");quests.reset();success_services.disconnect_hook={};
+                check(router.try_enqueue(*success_session,net::Packet{8,9,255,255}),"disconnect fixture did not enqueue pending gameplay");
+                success_session->close();check(disconnects==1 && success_session->closing() && world_registry.size()==1 && admission.waiting_count()==1 && !success_services.unbound && !weak_lease.expired() && directory->contains(*success_session),"disconnect did not retain pending cleanup");
+                bool rejected=false;try{directory->complete(*success_session);}catch(const std::logic_error&){rejected=true;}check(rejected && !weak_lease.expired(),"closed transfer resumed gameplay");
+                disconnect_complete();check(world_registry.size()==0 && admission.waiting_count()==0 && success_services.unbound && weak_lease.expired() && directory->size()==0,"completed disconnect did not release transfer");bool duplicate_disconnect=false;try{disconnect_complete();}catch(const std::logic_error&){duplicate_disconnect=true;}check(duplicate_disconnect,"duplicate disconnect completion was accepted");disconnect_complete={};quests.reset();success_services.disconnect_hook={};
 '''
+        if auto_probe:
+            close_test=r'''
+                admission.untrack(success_session->admission());auto* actor=success_session->world_user();check(actor,"automatic transfer lost world actor");
+                destination_zone.users->attach(actor->actor,0,0,{});success_session->admission().location=4;success_session->admission().zone=&destination_zone;
+                auto& entry=success_session->zone_entry();entry.character_id=actor->actor.id();entry.map=static_cast<std::uint16_t>(destination_zone.map->settings.id);entry.cell={0,0};entry.position={};entry.bound=true;
+                vertical_world_quests_rebind_zone(*success_session,world_zone,destination_zone,world_registry);auto quests=success_session->quests_lease();check(bool(quests),"automatic transfer lost quests");
+                check(quests->packets().receive(net::Packet{4,14,102,0,0,0})==VerticalQuestNpcPacketResult::handled && success_movement->npc().npc==destination_npc,"automatic transfer did not acquire NPC");
+                NpcLeaveServices leave(actor->actor,success_movement->npc(),*destination_npc,0);
+                VerticalWorldSessionPacketRouter router(strand,world_registry,8,128,[](VerticalWorldSession&,RuntimeZone&)->std::shared_ptr<VerticalWorldSessionGameplay>{throw std::logic_error("unexpected gameplay");},[&](VerticalWorldSession& selected,const net::Packet& packet){return quest_dispatch(selected,packet);});router.attach(success_session);
+                auto directory=VerticalMoveTransferDirectory::create(strand,world_registry);unsigned observed=0;
+                admission.install_zone_entry_observer([&](WorldAdmissionUser& user,RuntimeZone& target){check(&user==&success_session->admission() && &target==&destination_zone && user.location==4,"automatic entry lost identity");++observed;vertical_move_transfer_zone_entered(world_registry,*directory,user,target);});
+                auto ports=vertical_move_world_transfer_ports(world_registry,router,admission,
+                    [&](VerticalWorldSession&,RuntimeZone&){ZoneActorLeaveServices value;value.user_leave_lifecycle=[&](Actor&){quests->packets().leave_interactions(success_shop,leave);};value.send_view=[](CellCoordinates,const net::Packet&){};return value;},
+                    [&](VerticalWorldSession& selected,RuntimeZone& target){selected.admission().map=static_cast<std::uint16_t>(target.map->settings.id);});
+                auto lease=VerticalMoveZoneLeases::create(movement_authority,destination_zone,destination_zone,movement_frame);std::weak_ptr<VerticalMoveZoneLeases> weak_lease=lease;
+                auto pending=std::make_unique<VerticalMoveRetainedWorldTransfer>(world_registry,success_session,lease,destination_zone,destination_zone,success_movement,std::move(ports));lease.reset();directory->begin(success_session,std::move(pending));
+                check(router.try_enqueue(*success_session,net::Packet{8,9,255,255}) && router.gameplay_suspended(*success_session) && !weak_lease.expired(),"automatic transfer did not retain queued gameplay");
+                admission_services.transfer_select=[&](WorldAdmissionUser& user){check(&user==&success_session->admission(),"wrong automatic selection");return &destination_zone;};
+                admission_services.transfer_enter=[&](WorldAdmissionUser& user,RuntimeZone& target){check(&user==&success_session->admission() && &target==&destination_zone,"wrong automatic entry");target.users->attach(actor->actor,0,0,{});entry.map=static_cast<std::uint16_t>(target.map->settings.id);entry.cell={0,0};entry.position={};entry.bound=true;return true;};
+                admission.update_packets();check(success_session->admission().location==3 && admission.zone_waiting_count(destination_zone)==1,"automatic transfer missed zone wait");
+                check(admission.world_enter(success_session->admission()) && observed==1 && directory->size()==0 && weak_lease.expired() && !router.gameplay_suspended(*success_session) && quests->quests().owns_npc_zone(*destination_zone.npcs),"automatic admission did not complete retained transfer");
+                router.update(*success_session);check(router.pending(*success_session)==0,"automatic completion did not release queued gameplay");
+                admission_services.transfer_select={};admission_services.transfer_enter={};router.stop(*success_session);check(destination_zone.users->detach(actor->actor.id()),"automatic fixture actor detach failed");success_session->admission().zone=nullptr;success_session->admission().location=1;quests.reset();success_session->close();check(world_registry.size()==0 && admission.waiting_count()==0 && success_services.unbound,"automatic session close did not drain");
+'''
+        if auto_failure_probe:
+            anchor='                auto lease=VerticalMoveZoneLeases::create(movement_authority,destination_zone,destination_zone,movement_frame);'
+            if close_test.count(anchor)!=1:raise RuntimeError('automatic failure ports anchor changed')
+            close_test=close_test.replace(anchor,'                ports.rebind_quests=[](VerticalWorldSession&,RuntimeZone&,RuntimeZone&){throw std::runtime_error("fixture rebind failure");};\n'+anchor,1)
+            start=close_test.index('                check(admission.world_enter(success_session->admission())')
+            close_test=close_test[:start]+r'''                const auto prior_disconnects=dispatch_disconnects;bool failed=false;try{(void)admission.world_enter(success_session->admission());}catch(const std::runtime_error&){failed=true;}
+                check(failed && observed==1 && success_session->dispatch_failed() && dispatch_disconnects==prior_disconnects+1 && success_session->admission().location==4 && success_session->admission().zone==&destination_zone && destination_zone.users->find_actor(actor->actor.id())==&actor->actor && directory->contains(*success_session) && !weak_lease.expired() && router.gameplay_suspended(*success_session),"failed rebind did not retain admitted actor and report failure");
+                success_services.on_disconnect={};success_services.disconnect_hook=[&](VerticalWorldSession& selected,std::function<void()> done){directory->disconnect(selected,{},std::move(done),[&](VerticalWorldSession& current,std::optional<std::uint32_t>,std::function<void()> finish){router.stop(current);check(destination_zone.users->detach(actor->actor.id()),"failed transfer cleanup lost actor");current.admission().zone=nullptr;entry.bound=false;finish();});};
+                success_session->close();check(world_registry.size()==0 && directory->size()==0 && weak_lease.expired() && success_services.unbound,"failed transfer did not drain through disconnect");
+                admission_services.transfer_select={};admission_services.transfer_enter={};quests.reset();success_services.disconnect_hook={};
+'''
+        if reentrant_probe:
+            close_test=close_test.replace('value.user_leave_lifecycle=[&](Actor&){quests->packets().leave_interactions(success_shop,leave);};', 'value.user_leave_lifecycle=[&](Actor&){quests->packets().leave_interactions(success_shop,leave);success_session->close();check(disconnects==0,"disconnect ran inside source leave");};',1)
+            close_test=close_test.replace('admission.waiting_count()==1 && !weak_lease.expired(),"disconnect lost transfer wait ownership"', 'admission.waiting_count()==0 && !current.admission().zone && !weak_lease.expired(),"disconnect ran before source leave finished"',1)
+            close_test=close_test.replace('directory->begin(success_session,std::move(pending));', 'bool begin_failed=false;try{directory->begin(success_session,std::move(pending));}catch(const std::logic_error&){begin_failed=true;}check(begin_failed && disconnects==1,"reentrant close did not fence transfer");',1)
+            start=close_test.index('                check(success_session->admission().location==2')
+            end=close_test.index('                bool rejected=false;',start)
+            close_test=close_test[:start]+'''                check(success_session->closing() && world_registry.size()==1 && admission.waiting_count()==0 && !success_services.unbound && !weak_lease.expired() && directory->contains(*success_session),"reentrant disconnect lost pending cleanup");
+'''+close_test[end:]
         source=source.replace(close_anchor,close_test,1)
     (out / 'vertical_quests_unit.cpp').write_text(source)
     shutil.copy2(coordinator / 'src/session/registry.cpp', out / 'registry.cpp')
     shutil.copy2(coordinator / 'src/game/vertical_quests.cpp', out / 'vertical_quests.cpp')
     shutil.copy2(root / 'src/game/world_admission.cpp', out / 'world_admission.cpp')
     for name in ('world', 'session', 'net', 'game', 'storage', 'quest_start_items_actor'):
-        shutil.copy2(coordinator / 'build' / f'libeternity_{name}.a', out / f'libeternity_{name}.a')
+        archive=coordinator/'build'/f'libeternity_{name}.a';snapshot=out/archive.name
+        for attempt in range(60):
+            before=archive.stat()
+            if before.st_size>1024:
+                shutil.copy2(archive,snapshot);after=archive.stat()
+                if (before.st_ino,before.st_size,before.st_mtime_ns)==(after.st_ino,after.st_size,after.st_mtime_ns):break
+            time.sleep(1)
+        else:raise RuntimeError(f'coordinator archive remained unstable: {name}')
     cmd = ['c++','-std=c++20','-DASIO_STANDALONE','-I'+base+'/include','-pthread',base+'/vertical_quests_unit.cpp',base+'/registry.cpp',base+'/vertical_quests.cpp',base+'/world_admission.cpp',
            base+'/libeternity_quest_start_items_actor.a',base+'/libeternity_world.a',base+'/libeternity_quest_start_items_actor.a',base+'/libeternity_game.a',
            base+'/libeternity_storage.a','-lodbc',base+'/libeternity_session.a',base+'/libeternity_net.a','-lcrypto','-o',base+'/probe']
-    subprocess.run(['docker','run','--rm','-v',f'{root}:/src','-w','/src','eternity-dev:bookworm',*cmd],check=True)
+    compiler='eternity-movement-transfer-compiler-'+uuid.uuid4().hex
+    try:
+        subprocess.run(['docker','run','--rm','--name',compiler,'-v',f'{root}:/src','-w','/src','eternity-dev:bookworm',*cmd],check=True)
+    except BaseException:
+        subprocess.run(['docker','rm','-f',compiler],check=False,stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL)
+        raise
     name='eternity-movement-transfer-'+uuid.uuid4().hex
     try:
         subprocess.run(['docker','run','--rm','--name',name,'-v',f'{root}:/src','-w','/src','eternity-dev:bookworm',base+'/probe'],check=True,timeout=120)
