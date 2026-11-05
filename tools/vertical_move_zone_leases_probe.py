@@ -7,7 +7,7 @@ import uuid
 from parallel_lock import resource_lock
 
 root = Path(__file__).resolve().parents[1]
-coordinator = Path('/home/franco/Projects/Eternity-foundation')
+coordinator = Path(__file__).resolve().parents[1]
 out = root / '.local/movement-zone-leases'
 with resource_lock(root, 'build', 2):
     out.mkdir(parents=True, exist_ok=True)

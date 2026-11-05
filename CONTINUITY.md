@@ -5,15 +5,14 @@
 This section is authoritative. Everything below "History" is a dated log and is
 superseded where it differs, including its estimates and resource restrictions.
 
-- `main` is the only working branch and contains all reviewed work. `PROGRESS.md`
+- `main` is the only branch and contains all useful reconstruction work. `PROGRESS.md`
   is generated from it; regenerate after integrating work.
 - The server is not playable. `--serve` reaches login, character lists/creation and
   world asset loading; selecting a character does not enter the world.
-- Validation at the merge: 371/371 native tests and complete isolated SQL integration.
-- No workers or scheduled sessions run. Overnight and worker work that was not
-  integrated is in the `backup/overnight/*` and `backup/wip/*` tags and local worktrees.
+- No workers or scheduled sessions run, and their worktrees and branches were removed.
+  Worker evidence is in `reports/`; the coordination log is in git history.
 - Ghidra 12.1.4 is no longer installed. Use 12.1.3 with its project in
-  `work/ghidra-12.1.3`; the older `work/ghidra` project does not open with it.
+  `work/ghidra-12.1.3`.
 
 Known open work:
 
@@ -25,6 +24,8 @@ Known open work:
   code. Treat its percentages as ceilings.
 
 ## History
+
+Dated log. It mentions worktrees, branches and tools that no longer exist.
 
 ## Objective and constraints
 

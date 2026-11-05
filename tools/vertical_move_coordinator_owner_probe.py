@@ -14,7 +14,7 @@ import uuid
 from parallel_lock import resource_lock
 
 root = Path(__file__).resolve().parents[1]
-coordinator = Path('/home/franco/Projects/Eternity-foundation')
+coordinator = Path(__file__).resolve().parents[1]
 out = root / '.local/movement-coordinator-owner'
 
 pool = r'''

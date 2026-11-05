@@ -4,7 +4,7 @@ from pathlib import Path
 import hashlib
 import json
 ROOT=Path(__file__).resolve().parents[1]
-MAIN=Path('/home/franco/Projects/Eternity')
+MAIN=Path(__file__).resolve().parents[1]
 FILES=['include/eternity/game/quest_requests.hpp','src/game/quest_requests.cpp',
        'include/eternity/game/quest_start_items.hpp','src/game/quest_start_items.cpp',
        'tests/data/quest-requests-flow-oracle.tsv','tests/data/quest-start-items-oracle.tsv']

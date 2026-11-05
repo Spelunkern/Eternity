@@ -3,7 +3,7 @@
 from pathlib import Path
 import hashlib,json
 ROOT=Path(__file__).resolve().parents[1]
-MAIN=Path('/home/franco/Projects/Eternity')
+MAIN=Path(__file__).resolve().parents[1]
 def main():
     manifest={};target=ROOT/'work/mob-drops-actor-rebirth-owners'
     for name in ('include/eternity/game/mob_targeting_lifecycle.hpp','src/game/mob_targeting_lifecycle.cpp'):

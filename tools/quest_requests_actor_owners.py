@@ -14,7 +14,7 @@ for path in ('include/eternity/game/actor.hpp','src/game/inventory.cpp'):
     manifest[path]={'commit':commit,'sha256':hashlib.sha256(data).hexdigest()}
 for stem in ('quest_runtime','quest_rewards'):
     for path in (f'include/eternity/game/{stem}.hpp',f'src/game/{stem}.cpp'):
-        data=(Path('/home/franco/Projects/Eternity')/path).read_bytes()
+        data=(Path(__file__).resolve().parents[1]/path).read_bytes()
         target=out/path;target.parent.mkdir(parents=True,exist_ok=True);target.write_bytes(data)
         manifest[path]={'source':'coordinator read-only','sha256':hashlib.sha256(data).hexdigest()}
 (out/'manifest.json').write_text(json.dumps(manifest,indent=2)+'\n')

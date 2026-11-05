@@ -3,7 +3,7 @@
 import hashlib
 from pathlib import Path
 root=Path(__file__).resolve().parents[1]
-source=Path('/home/franco/Projects/Eternity')
+source=Path(__file__).resolve().parents[1]
 target=root/'work/quest-requests-completion-owners'
 for name in ('quest_runtime','quest_rewards'):
     for relative in (f'include/eternity/game/{name}.hpp',f'src/game/{name}.cpp'):

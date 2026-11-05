@@ -4,7 +4,7 @@ from pathlib import Path
 import bisect,re,subprocess
 root=Path(__file__).resolve().parents[1]
 functions=[]
-for line in (Path('/home/franco/Projects/Eternity/work/reverse/ps_game.exe/functions.tsv')).read_text().splitlines():
+for line in (Path(__file__).resolve().parents[1]/'work/reverse/ps_game.exe/functions.tsv').read_text().splitlines():
     parts=line.split('\t')
     if re.fullmatch('[0-9a-fA-F]{8}',parts[0]):functions.append((int(parts[0],16),parts[1]))
 functions.sort();starts=[f[0] for f in functions]
