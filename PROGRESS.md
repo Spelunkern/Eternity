@@ -33,11 +33,11 @@ Project code only: excludes the CRT and shared libraries (`pscommon`, `snet`).
 | Status | Functions | Bytes | % bytes |
 |---|---:|---:|---:|
 | In code linked into the executable | 265 | 144 KB | 22.3% |
-| Code with a test or oracle | 275 | 152 KB | 23.5% |
-| Code without a test | 106 | 29 KB | 4.5% |
+| Code with a test or oracle | 276 | 152 KB | 23.6% |
+| Code without a test | 105 | 28 KB | 4.4% |
 | Internal range only | 29 | 17 KB | 2.6% |
-| Mentioned only | 112 | 26 KB | 4.0% |
-| No trace | 1772 | 279 KB | 43.2% |
+| Mentioned only | 114 | 26 KB | 4.0% |
+| No trace | 1770 | 278 KB | 43.1% |
 
 ## `ps_game` by branch
 

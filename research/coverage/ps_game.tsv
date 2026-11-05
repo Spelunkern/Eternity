@@ -1685,7 +1685,7 @@ address	size	name	object	scope	status	witness
 004309f0	39	CGuild::SendHouseKeepEtin	GuildMgr.obj	game	none	
 00430a20	46	CGuild::SendDBHouseKeepEtin	GuildMgr.obj	game	none	
 00430a50	110	CGuild::CalculateKeepEtin	GuildMgr.obj	game	linked	include/eternity/game/guild_client_npc.hpp
-00430ac0	452	CGuild::GetGuildHouseShopBuyRate	GuildMgr.obj	game	untested	include/eternity/game/npc_shop.hpp
+00430ac0	452	CGuild::GetGuildHouseShopBuyRate	GuildMgr.obj	game	oracle	include/eternity/game/guild_house_shop.hpp
 00430c90	205	CGuild::GetGuildHouseUseGateRate	GuildMgr.obj	game	none	
 00430d60	100	CGuild::GetGuildHouseRepairRate	GuildMgr.obj	game	none	
 00430dd0	100	CGuild::GetGuildHouseRapiceMixDecreRate	GuildMgr.obj	game	none	
@@ -1842,8 +1842,8 @@ address	size	name	object	scope	status	witness
 00434dd0	107	SSyncHeap<CGuildCreate>::Alloc	GuildMgr.obj	game	none	
 00434e40	57	SSyncHeap<CGuildCreate>::Free	GuildMgr.obj	game	none	
 00434e80	157	ParseString1<unsigned short>	GuildMgr.obj	game	linked	include/eternity/game/guild_npc_config.hpp
-00434f20	155	ParseString2<double [6]>	GuildMgr.obj	game	none	
-00434fc0	155	ParseString2<double [4]>	GuildMgr.obj	game	none	
+00434f20	155	ParseString2<double [6]>	GuildMgr.obj	game	mentioned	include/eternity/game/guild_npc_config.hpp
+00434fc0	155	ParseString2<double [4]>	GuildMgr.obj	game	mentioned	include/eternity/game/guild_npc_config.hpp
 00435060	155	ParseString1<int>	GuildMgr.obj	game	linked	include/eternity/game/guild_npc_config.hpp
 00435100	6	std::make_pair<unsigned long,CGuild *>	GuildMgr.obj	crt	untested	src/game/mob_drops_sequence.cpp
 00435110	11	std::pair<unsigned long const ,CGuild *>::pair<unsigned long const ,CGuild *><unsigned long,CGuild *>	GuildMgr.obj	crt	none	
@@ -7017,7 +7017,7 @@ address	size	name	object	scope	status	witness
 0050a805	17	_exit	LIBCMT.lib	crt	none	
 0050a816	15	_cexit	LIBCMT.lib	crt	none	
 0050a825	15	_c_exit	LIBCMT.lib	crt	none	
-0050a834	142	strtod	LIBCMT.lib	crt	none	
+0050a834	142	strtod	LIBCMT.lib	crt	mentioned	tests/guild_house_shop_unit.cpp
 0050a8d0	309	strncat	LIBCMT.lib	crt	none	
 0050aa10	70	strcspn	LIBCMT.lib	crt	none	
 0050aa58	123	__setjmp3	LIBCMT.lib	crt	none	
