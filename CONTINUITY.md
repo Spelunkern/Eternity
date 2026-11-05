@@ -1417,3 +1417,1123 @@ Independent 07 `.local/vertical-inventory-targeted.log` shows its focused
 unintegrated; isolated SQL and actual live Actor/zone/transport bindings remain
 required. Coordinator asked worker 07 to record the focused result before its
 next ActorScene assignment. Main validation 53983 is still live and queued.
+
+Independent 03 traced original location-2 waiting and zone-wait processing: a
+frame may need to survive beyond completion of the selection application call,
+so main's existing per-call serialization alone is insufficient. Coordinator
+created worktree `/home/franco/Projects/Eternity-ingress`, branch
+`coordinator/ingress`, commit `7dbe630`: adds explicit WorldChannel pause/resume
+of its bounded raw inbound queue plus a TCP wait/resume regression. It is NOT
+wired into actual WorldAdmission or merged. Its locked focused test is live in
+session 94920, log `Eternity-ingress/.local/ingress-test.log`; main session
+53983 is still running separately. Never claim complete entry from this bridge.
+
+Ingress branch follow-up `6d68908` replaces fire-and-forget pause with an
+asynchronous success acknowledgment on the socket executor, so the world owner
+can await the applied pause without blocking before zone handoff; resume before
+that acknowledgment would race across executors. Original 94920 was cancelled
+while still waiting for its build lock because source changed; no container had
+started. New focused test session 68410 is queued with the revised source. This
+is not merged, not yet validated and not bound to WorldAdmission. The owner must
+handle closed connections and schedule the acknowledgment onto its world executor.
+
+Independent 05 `.local/vertical-mobs-final-test.log` shows 304/304 and its
+`.local/vertical-mobs-final-sql.log` reports the complete isolated SQL suite.
+The idle/death frame candidate through `ea27be2` remains unintegrated; live
+shared cursor/actual providers are being developed separately. 02 now drafts a
+single whole-frame callback, so coordinator asked 02 and 05 to demonstrate one
+lease/tick and exact idle -> death -> population order in actual composition,
+not infer it from an empty callback. Main 53983 and ingress 68410 both remain
+live waiting on shared validation slots.
+
+Coordinator inspected original ps_game.exe CUser::UpdatePackets 00466cc0: it
+reads a receive queue count, closes for count >1000, and drains at most the
+captured count. Native WorldServer's current connection queue limit is eight
+frames. Original enqueue/decrypt timing, special packets and queue count/close
+semantics still require tracing before changing the native bound; the new
+unmerged admission pause currently retains the existing eight-frame limit. Worker
+03 was assigned that evidence and test. Do not treat the arbitrary bound as
+original-equivalent.
+
+Independent 04 commits `3ddd3a4`/`7e04b0f` guard movement checker FP environment,
+rejecting unsupported rounding, FTZ/DAZ, nonfinite and overflow cases explicitly.
+`.local/vertical-movement-fenv-target.log` shows focused 4096-case test passed;
+full build passed, and SQL suite passed against previously built SQL executables.
+Full native suite after this exact revision was not rerun; unsupported cases are
+not original-equivalence claims. Independent 02 committed frame delegation
+`3fad53f`, but its report currently describes the prior population-first code;
+coordinator requested updated report and exact-revision validation, plus real
+single-lease idle/death/respawn composition. Neither delivery is merged.
+
+Independent 05's uncommitted `ZoneMobs::visit_global` draft replaces the prior
+`VerticalMobsWorld::visit_mobs` boundary with direct iteration. Coordinator
+flagged that a primary-zone lease retains the zone but not a pooled mob identity;
+callbacks can release/reuse that mob. Requested a concrete same-object retention
+guard or evidence that the existing pool defers reuse, plus reentrant release/
+reuse tests. A comment requiring retention alone is insufficient. Do not merge
+the cursor draft before this is resolved.
+
+Coordinator independently regenerated independent 06's 8192-case original
+AttackDamage fixture and byte-compared successfully; also executed its original
+AttackSuccess->AttackDamage CRT seed-19 oracle (success, damage 98, draws
+100/15331/209, state 13737300). This reproduces oracle data, not native behavior
+or complete combat. Candidate `13e871d` plus subsequent dirty FP/RNG changes
+remain under worker review and unintegrated; production services/root and skill
+paths remain missing.
+
+Independent 08's `a64924f` quest composition passed its own 304-test suite and
+isolated SQL, but coordinator found `StartFrame::npc` retains a borrowed
+`ZoneNpcs::find` pointer across callbacks and dereferences it in `start_log_npc`;
+`NpcPool::release` can recycle that object. Requested worker prove lifecycle
+prevents removal/reuse across callbacks or implement a real same-NPC retention
+and nested release/reuse test. Do not merge the candidate solely on the current
+fixture's test reward provider or caller-lifetime comment.
+
+Ingress branch `6d68908` focused `world-application-unit` passed (1/1) in
+`.local/ingress-test-ack.log`, covering pause acknowledgment and deferred 0201
+resume. It is not merged, not yet bound to real WorldAdmission, and has not run
+full build/regression/SQL. Main 53983 is now building (not merely queued); avoid
+changing main sources until the pipeline finishes. Independent 05 committed
+cursor `45e40e9`, but still has no per-mob pool pin: its direct idle callback
+cannot enforce the report's required retention. Coordinator requested an actual
+retention guard/lease plus reentrant release/reallocation test before wiring.
+
+Independent 09 `5bcdda2` reports and log confirms its new disposable-catalog
+`vertical-persistence-sql-integration` passed selection, mutation, exit save and
+reload, followed by complete isolated SQL suite; `.local/vertical-persistence-sql-integration.log`
+contains the explicit success. Its follow-up native suite passed 304/304. The
+candidate `e34441a..5bcdda2` remains unintegrated; reject/repair behavior for
+relocated or overflow items, retained roster gate, single-load ownership and
+actual connection/actor lifecycle still require reconciliation. Main session
+53983 is actively building/regressing and source remains frozen.
+
+Independent 08 drafted `VerticalQuestNpcGuard` with a separate retirement map.
+Coordinator found its safety depends on every existing ZoneNpcs/NpcPool release
+being voluntarily routed through that new wrapper; direct canonical release can
+bypass it. Requested pin/deferred-reuse in canonical NpcPool/zone ownership or
+proof of a single enforced existing retirement path, plus direct release/reuse
+and nested-callback tests. Draft is uncommitted and not approved for integration.
+
+Independent 06's `.local/vertical-combat-damage-final.log` shows the focused
+normal AttackDamage original-vector test passed; focused normal and skill
+AttackSuccess tests also passed. The caller composition test is still queued in
+`.local/vertical-combat-damage-caller.log`, and its isolated SQL run is in
+progress; no complete validation or production combat claim yet. Main 53983 is
+still live waiting for the shared build slot after its successful build.
+
+Coordinator isolated integration branch `coordinator/ingress` now contains
+reviewed 03 protocol commits (through TCP `9847b8d`) and 09 persistence commits
+(through `5bcdda2`), cherry-picked through `bf2603c`; combined CMake conflict
+preserves both targets. `c1d6aea` adds the 09 SQL reload executable to the existing
+unique disposable creation fixture. Copied runtime env and server assets into
+the worktree's ignored .local. Session 69947 runs sequential focused protocol,
+gate, TCP and persistence tests, then full build and isolated SQL; it is live,
+not yet passed. This remains separate from main's still-running 53983 pipeline.
+No live WorldApplication, ActorScene, root admission or playable-server claim.
+
+Coordinator instructed all nine independent sessions to let current validation
+handles finish and avoid new full 300-test suites/rebuilds for later milestones
+unless a concrete regression requires them. Use locked focused tests and relevant
+isolated SQL; coordinator runs integrated full suite after merging. This addresses
+the observed build-slot backlog without cancelling active work or weakening the
+final validation gate. Main 53983 and ingress 69947 remain live.
+
+Independent 05 cursor revision `45e40e9` full suite `.local/vertical-mobs-cursor-tests.log`
+failed 1/305: `vertical-mobs-cursor-unit` reported `Unexpected compiled AI`.
+304 other tests passed. Worker is editing its fixture; coordinator requested
+preserving failure and a focused retry. This does not resolve the separate
+current-mob retention/pool-reuse issue. Candidate remains unintegrated.
+
+Independent 01 `.local/vertical-entry-full-integration.log` explicitly reports
+`Real SQL selection, ownership failure and 0104 latch passed` within the complete
+isolated disposable creation/guild suite. This validates the candidate SQL
+adapter's tested cases, not original retained-roster gating, signed flags, live
+actor/replica composition or production dispatch. Those remain open; worker 01
+has the original 0407 roster evidence. The candidate is not merged.
+
+Ingress integration session 69947 passed focused `vertical-protocol-tcp-unit`
+and `vertical-protocol-gate-unit` on the combined 03+09+pause branch, logs
+`.local/composed-protocol-{tcp,gate}.log` in Eternity-ingress. The TCP fixture
+covers ordered AES/XOR handoff and admission with test-owned services; it is not
+an original client or production root. Remaining focused protocol/persistence,
+full build and disposable SQL phases continue in the same live session.
+
+Ingress integration session 69947 has now passed all four focused tests:
+`vertical-protocol-tcp-unit`, `vertical-protocol-gate-unit`,
+`vertical-protocol-unit`, `vertical-persistence-unit`. Its full build and
+isolated SQL phases remain live/in progress; this is not a live application or
+original-client test. Independent 08 committed a quest-specific NPC guard
+`fa8a664`/`17c4b78`/`49253c2`, but coordinator previously flagged that canonical
+NpcPool release can bypass this wrapper. Keep it unintegrated until canonical
+retention or an enforced single retirement owner is demonstrated.
+
+Independent 08 report `8ac56ed` records focused quest guard test and isolated
+SQL passed, including nested same-ID replacement and throwing broadcast.
+However its quest-specific retirement wrapper still permits direct canonical
+NpcPool release bypass. Worker acknowledged coordinator review and is moving
+retention/deferred reuse into the canonical NPC pool with direct-release tests.
+Keep `fa8a664..8ac56ed` out of integrated production until that revised owner
+and its lifecycle tests are reviewed.
+
+Main 53983 full native build passed and its focused network/combat regression
+passed 4/4 (`world-protocol`, `world-network`, `world-application`,
+`vertical-combat`) in `.local/world-serialized-tests-final.log`. Isolated SQL
+phase is live and waiting for the SQL lock; no full main unit suite has been run
+for this exact batch. Independent 08 has an uncommitted canonical NpcPool pin/
+deferred-reuse draft replacing the bypassable quest wrapper; inspect final
+source, direct-release tests and pool lifetime before accepting.
+
+Resume checkpoint: independent 05's corrected global-cursor fixture passed the
+full native suite 305/305 (`.local/vertical-mobs-cursor-retest.log` in its
+worktree); its SQL run is queued. This does not resolve pooled mob identity
+retention during a reentrant frame: a canonical pin or proven deferred reuse is
+still required before integrating that path. Ingress 03+09+pause passed all four
+focused tests, and its full build is still running; main SQL is queued. No live
+original-client admission or production game loop has been established.
+
+Resume validation update: the combined ingress branch completed its full build
+(636/636 build steps) and is queued for isolated SQL; its four focused tests
+had already passed. The main baseline SQL phase has acquired the shared lock
+and is running. Independent 07 completed its 642-step build and isolated SQL
+integration (`.local/vertical-inventory-full-{build,sql}.log` in that worktree);
+this does not establish live ActorScene or gameplay wiring.
+
+The main baseline's isolated SQL integration finished successfully (session
+53983 exit 0, `.local/world-serialized-sql-final.log`), after its full build and
+4/4 focused network/combat tests. Independent 03's full unit suite completed
+306/306 (`.local/vertical-protocol-tcp-tests.log`); combined ingress SQL remains
+queued. Independent 08's uncommitted canonical NpcPool pin draft passed its
+focused quest test, but its final commit, lifecycle review and integration are
+still outstanding. None of these results proves original-client playability.
+
+Coordinator created `coordinator/gameplay` at `/home/franco/Projects/Eternity-gameplay`
+from the combined ingress branch and cherry-picked combat success/FP/damage,
+movement/FP and pickup handler (`37f49f2..228d086`). CMake registration conflicts
+were resolved by preserving both sets of targets. Session 58307 is queued for a
+full build, nine focused combined tests and isolated SQL, using the shared locks;
+all results are pending. The imported combat/movement/pickup code has required
+real owners and is not connected to main or proven as client gameplay. The
+separately running ingress validation is unchanged.
+
+Independent 03's latest report (`ddcfbcd`, address correction `96d4b20`)
+identifies `SWorker::RecvComplete` 004dbac0 enqueue and `CUser::UpdatePackets`
+00466cc0 count snapshot with close when over 1000. It cautions that the original
+may dispatch/ignore 0201 before location 3; holding all frames until location 3
+is not demonstrated equivalent. Ingress's eight-frame limit and pause are native
+bounded mechanisms, not a recovered original queue policy, and are not wired to
+production admission. The existing TCP test lacks deterministic ack/0201 race,
+transition order, failure and overflow coverage. Requested 03 to investigate and
+build a barrier-based regression; requested 04 live movement dispatch and 09
+single-snapshot selected-character lifecycle. These are queued independent tasks,
+not completed implementations. Gameplay session 58307 and ingress session
+69947 remain live in their respective locked build/SQL queues.
+
+Coordinator created `/home/franco/Projects/Eternity-world` on `coordinator/world`
+from gameplay and composed 02-world (`18e706c..2fd4c48`) with 05-mobs
+(`05df315..931a232`), preserving all CMake targets. Commit `30d9e66` extends the
+real world fixture to call `vertical_mobs_idle_frame` before the sole population
+pass for the same zone and tick, checking the removed obelisk mob remains absent
+through idle and respawns afterward. Session 28365 is running targeted locked
+`vertical-world-unit` then `vertical-mobs-cursor-unit`; results pending. This
+fixture uses test-owned AI services and does not solve canonical pooled mob pin,
+production scheduling/providers or live-client playability. Gameplay session
+58307 and ingress session 69947 remain running independently.
+
+Independent 03 (`ed8462d` and preceding reports) traced independent original
+world/zone/DB-agent scheduling. Zone packet processing can occur after location 3
+but before 0407 flips outgoing AES to XOR; requiring both barriers or conflating
+inbound location with cipher state changes possible original ordering. A narrow
+instruction-level location-2/3 publication gap is inferred, not observed.
+Requested 03 to split inbound dispatch from outgoing cipher and cover both orders
+with deterministic actual-admission tests. The ingress pause mechanism is not
+production-bound or proven equivalent. Independent 05 (`6ca79cf`) traced the
+original idle deadline in `CWorldThread::Update` 00407390: unsigned due check,
+next deadline `now+1000` without catchup; the separate attack cadence is 500ms.
+Its canonical MobPool retention draft is uncommitted and under review, especially
+nested callbacks and throwing deferred cleanup. No scheduler or safety claim is
+made until the real owner and exception behavior are validated.
+
+Independent 06 reports original world-thread FP evidence in `6b8c657`/`8a23aae`:
+`_threadstart` calls an image-default no-op initializer, preserving the incoming
+x87 word in the original-instruction oracle. Main-thread CRT default precision
+does not establish the new Windows thread's control word. The 53-bit nearest,
+masked normal hit/damage implementation remains conditionally validated, not
+proven for every original gameplay thread; do not silently bind it universally.
+The original Windows thread context and post-packet/Lua callback control words
+remain unobserved. No new runtime combat behavior is claimed by this trace.
+
+Coordinator created `coordinator/admission` in `/home/franco/Projects/Eternity-admission`
+from the world integration and added `WorldAdmission::update_zone_wait_packets`
+in `69c389d`. It visits the existing zone-wait list's shared cursor and invokes
+its real packet service, following `ps_game.exe CZone::UpdatePackets` 004215e0.
+The added test distinguishes world-wait from zone-wait and removes each current
+user via real `client_enter` during traversal. Targeted `world-admission-unit` is
+running/queued in session 11319; no result yet. This only exposes the missing
+zone-wait traversal; actual scheduling, decrypted packet ownership, cipher
+ordering, production services and full client admission remain unwired.
+
+Coordinator created `/home/franco/Projects/Eternity-quests` on `coordinator/quests`
+from admission and composed the independent quest adapter and canonical NpcPool
+lease change (`e73ddd8..7167c11`), preserving all CMake targets. The canonical
+pool prevents direct `release()` from recycling a pinned NPC until its last
+lease; the pool must outlive all leases and operations remain serialized. The
+worker's focused canonical quest test passed before its commit; exact final
+report/SQL and cross-branch build/tests remain outstanding. This assembly is
+not production-wired, and real reward, NPC/world ownership and client dispatch
+remain required. No new competing pool or registry is introduced.
+
+Admission integration session 11319 exited 0: locked targeted build and
+`world-admission-unit` passed on `69c389d`, including the existing 1024 original
+admission sequences and the new world-wait/zone-wait/current-removal scenario.
+Log: `/home/franco/Projects/Eternity-admission/.local/admission-zone-wait-test.log`.
+This is one component test, not a TCP admission, production scheduler or client
+playability test. Gameplay 228d086 full build completed 885/885; its focused
+combined tests and isolated SQL remain queued/running in session 58307.
+
+Independent 08 `48acc25` confirms the canonical NpcPool implementation and test
+files match `e08e97e`. Focused `vertical-quests-unit` passed, as did a subsequent
+304-test full native suite. Isolated SQL completed, but may have used binaries
+from the previous build because its job started before the rebuild finished; do
+not represent it as exact-commit SQL validation. The composed coordinator quest
+branch still requires its own validation and live reward/world binding.
+Independent 03's original executable queue oracle additionally confirms the
+1000-frame threshold is a count snapshot checked by `CUser::UpdatePackets`,
+not an enqueue cap; system packets and snapshot batch behavior have explicit
+fixtures. The current eight-frame native policy remains a known compatibility
+limit, not a reconstruction of that threshold.
+
+The coordinator copied the completed admission build tree into the separate
+quest integration worktree using `cp -a --reflink=auto`, then started locked
+session 86245 for `vertical-quests-unit` on `7167c11` plus admission/world/gameplay
+ancestors. Docker uses `/src` for both worktrees; CMake/Ninja reconfigure and
+rebuild as needed. The worktrees do not share a mutable build directory. Result
+is pending and will not substitute for the required combined full build/SQL.
+
+Cherry-picked the reviewed zone-wait traversal into main as `25d85e2`. Its
+identical source and test passed in the combined admission worktree, including
+1024 original sequences and current-node removal. Main session 7699 is queued
+for its own targeted `world-admission-unit`, full native build, and isolated
+SQL integration; all are pending for this exact main revision. The entrypoint
+still uses the roster application and does not schedule this method yet.
+
+Coordinator independently regenerated worker 03's original executable queue
+fixture with `.local/oracle-env/bin/python tools/vertical_protocol_queue_oracle.py`
+and `cmp` verified byte-identical output in `.local/coordinator-queue-oracle.tsv`
+of that worktree. Original `CUser::OnRecv` 00466d20 routes system 0002 to close
+reason 1, swallows 0003 and sends A302 to NProtect after incoming decryption.
+The current native selection-family filtering is not sufficient to reproduce
+those routes. Requested worker 03 to include the real packet-system and NProtect
+owners in the inbound split; this is pending and no fix is claimed here.
+
+Quest integration session 86245 exited 0: the separate quest worktree reused a
+copy of the completed admission build, reconfigured/rebuilt 55 targets, and
+`vertical-quests-unit` passed 1/1 on `7167c11` with admission, world, gameplay,
+and ingress ancestors present. Log `.local/composed-quests-test.log` in that
+worktree. This establishes the focused combined test only; full native suite,
+exact combined SQL, live reward providers and production dispatch remain open.
+
+Coordinator review of independent 04's uncommitted 0501 speed-check stage found
+it requires a mutable reference identical to `Actor::movement_check()`, while
+Actor currently exposes only a const accessor. Production callers cannot satisfy
+the draft safely without a shared owner change; requested worker to implement or
+propose that accessor and test mutation on the actual Actor (no copied state or
+const_cast). This is only the speed-check stage; original gates, movement and
+correction effects remain to be composed.
+
+Coordinator stopped worker 02's redundant targeted `vertical-world-unit` PID
+668975 while it was sleeping for the build lock. The identical fixture had
+already passed its fresh full 304-test suite in
+`.local/vertical-world-fixture-verify-tests.log`; the interrupted repeat was not
+counted as a pass. Worker 02 was directed to pursue the pending actual admission
+services and world scheduling work. Also observed worker 07 running its SQL
+integration and a targeted scene build in the same worktree concurrently; both
+were allowed to finish, but SQL results from that overlap must be treated as
+potentially mixed-binary provenance and not exact-scene-commit validation.
+
+Main session 7699 passed its own locked `world-admission-unit` on `25d85e2`
+(`.local/main-zone-wait-target.log`); full build is now running, with SQL next.
+Ingress session 69947 acquired the isolated SQL lock and has begun its integration
+phase (`Eternity-ingress/.local/composed-sql.log`); result remains pending.
+
+Created `/home/franco/Projects/Eternity-movement` on `coordinator/movement` from
+quest integration; cherry-picked 04's admitted-actor 0501 speed-check stage as
+`b967bd4`, preserving all CMake targets, and applied worker 04's proposed mutable
+canonical Actor movement accessor plus test without const_cast as `a4e413a`.
+Session 17196 runs locked `vertical-movement-dispatch-unit` after copying the
+completed quest build into this distinct worktree; result is pending. This stage
+requires earlier real StatusStand, life/distance/speed gates and later original
+movement, visibility, correction and cancellation effects. It is not a complete
+packet handler or production route. All Actor mutation must be serialized.
+
+Independent 01 now has an uncommitted retained-roster gate draft preceding
+`Players::load`; coordinator requested verification of the original signed
+rename field (+0x58 > 0), remaining-time field (+0x28 != 0), slot order and
+empty-slot residues because the existing CharacterSummary projections use
+booleans. Do not integrate as original-equivalent if negative/raw values are
+lost. Worker 04 was informed that coordinator already applied its proposed
+mutable Actor accessor in `a4e413a`; its next priority is actual 0501 gates,
+movement/correction continuation and synchronized visibility, not a duplicate
+accessor. The mobility test on coordinator/movement remains pending.
+
+Roster review: `src/game/characters.cpp:127` currently maps SQL row 21 with
+`byte(...) != 0` to `CharacterSummary::rename` and row 22 with `integer(...) != 0`
+to `remaining_time`; these bools cannot represent every signed source value.
+The original DB-agent roster fields and their actual SQL-to-memory conversions
+must be traced before asserting whether this loses observable gate behavior.
+Worker 01 is investigating; its draft is not integrated.
+
+Independent 03 `f2869c3` TCP handoff test passed 1/1 with actual admission,
+Actor and zone owners and test external ports; it explicitly waits for both
+zone and cipher barriers and cannot prove original pre-switch zone dispatch or
+actual frame insertion before release. Coordinator independently regenerated
+`vertical_protocol_selection_queue_oracle.py` and verified the fixture by `cmp`:
+selection-batch 0201 is ignored, world-wait retains it, zone-wait enters, and
+the modeled publication gap ignores it. This original-instruction fixture has
+intercepted DB/zone/crypto/OS ports and is not a live-client trace. Independent
+04's staged canonical Actor accessor test also passed 1/1; coordinator/movement
+has its own separate combined test pending. No full live entry claim follows.
+
+Ingress session 69947 finished with exit 0 on clean `c1d6aea`: all four focused
+protocol/persistence tests, full 636-step build and isolated SQL integration
+passed. `.local/composed-sql.log` includes selected-character mutation, exit
+save and reload plus disposable guild cleanup. This is component composition with
+test-owned world services, not live admission. Main session 7699 still waits for
+its own SQL phase; keep main source frozen until that run completes. Review the
+known original receive queue/cipher divergence before using pause as production
+behavior; this SQL pass does not resolve it.
+
+Independent 05's uncommitted MobPool retention draft completed 305/305 native
+unit tests (`.local/vertical-mobs-retain-tests.log`); it remains under review for
+deferred cleanup exceptions and nested ownership, and is not integrated.
+Independent 03 has an uncommitted inbound zone-wait/outbound-cipher split in
+`WorldProtocol` and new tests. It is not yet committed or validated; the original
+1000-snapshot queue, actual system/NProtect routing, lifecycle generations and
+production scheduler bindings remain separate requirements.
+
+World integration session 28365 passed the combined `vertical-world-unit` on
+`30d9e66`: actual primary/world/zone owners execute the mob idle/death frame
+before the one population pass, and the removed obelisk spawn remains absent
+until respawn. Log `.local/composed-world-frame.log`. Its second targeted
+`vertical-mobs-cursor-unit` is still queued/running. The test uses fixture AI
+services; canonical per-mob retention, real providers and the scheduler remain
+required before live gameplay.
+
+Movement integration session 17196 exited 0: 226-step target build and
+`vertical-movement-dispatch-unit` passed 1/1 on `a4e413a` with canonical mutable
+Actor movement state and all ingress/world/quest ancestors. Log
+`Eternity-movement/.local/composed-movement-dispatch.log`. This covers only the
+speed-check stage and ownership checks, not full 0501 gates, visibility, actual
+movement or production dispatch.
+
+World integration session 28365 finished exit 0: both
+`vertical-world-unit` and `vertical-mobs-cursor-unit` passed on `30d9e66`;
+logs `.local/composed-world-frame.log` and `.local/composed-mob-cursor.log` in
+`Eternity-world`. This combines real zone/world owners and the original cursor
+fixture but not the later MobPool retention draft, real production services,
+scheduler or an original client.
+
+Gameplay integration session 58307's focused CTest passed 9/9 on `228d086`,
+covering protocol TCP/gate, persistence, combat caller/success/skill success/
+damage, movement and inventory (`.local/gameplay-composed-tests.log`). The
+full 885-step build had already passed; isolated SQL remains queued in the same
+session. These are component tests, not real-world providers or client gameplay.
+
+Main session 7699 completed exit 0: targeted world-admission test, full build and
+isolated SQL suite passed for `25d85e2` (`.local/main-zone-wait-{target,build,sql}.log`).
+After that source-frozen validation, coordinator cherry-picked entry delivery,
+location-3 gate/TCP tests, single-snapshot persistence and SQL reload fixture
+as `d766401..5e85db5`. These are the corresponding components from the
+validated ingress branch; its optional pause/resume socket API was deliberately
+not imported because its scheduling/cipher semantics remain under review. Main
+session 39827 now runs full build, full native CTest suite and isolated SQL for
+this exact combined revision; all results are pending. The application remains
+roster-only and actual production world services and original-client play remain
+unfinished.
+
+User requested a simple live desktop dashboard. Created
+`/home/franco/Desktop/Eternity-progreso.html` and opened it with `xdg-open`.
+User service `eternity-dashboard.service` regenerates it every 30 seconds from
+`/home/franco/.local/share/eternity-dashboard/state.json`, live test logs/processes
+and main Git revision; the page refreshes itself every 30 seconds. When real
+milestones change what remains or the progress estimate, update that JSON as
+part of the same task; do not mark tests complete or client gameplay achieved
+without evidence. The dashboard service is enabled for future logins. HTML
+parser and active user service checks passed.
+
+Coordinator additionally cherry-picked 04 movement prefix `e86fa79` as
+`1a000f4` into `coordinator/movement` and queued session 61285 to validate its
+576 original movement-gate/correction cases and prior canonical dispatch test in
+sequence. The full movement continuation and live dispatch remain open.
+
+Movement integration session 61285 exited 0: both
+`vertical-movement-prefix-unit` (576 original gate/correction cases) and
+`vertical-movement-dispatch-unit` passed on `1a000f4` in the combined movement
+worktree. Logs `.local/composed-movement-prefix.log` and
+`.local/composed-movement-prefix-dispatch.log`. This does not implement the
+zone move, cell visibility, production packet dispatch or all continuations.
+Desktop dashboard state was updated with the validated milestone.
+
+Independent 02's uncommitted `reports/independent/02-world-admission.md` identifies
+that `MobPrimaryZones` owns the only actual `ZoneRegistry`, but its current lease
+API covers permanent primaries and cannot safely retain selected dynamic
+instances. Production admission additionally requires one retained connection/
+Actor/user/scene owner and actual zone, grid, rank, NProtect and transport
+services. Coordinator directed 02 to extend the existing authority with atomic,
+generation-checked primary/instance selection and deferred lifecycle tests, not
+create another registry. Its report's suggestion to wait for the outgoing cipher
+transition before zone dispatch is superseded by 03's independent-thread evidence:
+original zone entry can precede that transition. No implementation is claimed yet.
+
+Independent 06 implemented original skill damage `8511a2e`: 6144 original
+executions plus the shared-CRT success/damage trace, with focused native and
+normal regression tests passed. Coordinator independently regenerated both
+original instruction oracles and compared the 6144 fixture byte-for-byte.
+Cherry-picked into `coordinator/movement` as `a4de61c`, preserving CMake targets;
+session 22990 runs combined skill-damage and normal-damage tests. Magic damage,
+raw definition/attack-recovery live owners, hit/death services and actual Windows
+thread precision remain unresolved; this is not a production combat path.
+The desktop dashboard records this component milestone.
+
+Independent 03 implemented inbound admission routing independent of outbound
+cipher in `2d42b43`, with six focused tests passed, including real test-owned
+actor/zone admission before or after the XOR switch. Coordinator cherry-picked
+its handoff test and split as `b305521`/`dfb22e7` on new
+`/home/franco/Projects/Eternity-protocol` (`coordinator/protocol`) from the
+combined movement/skill branch. It depends on the ingress pause API already in
+that branch; neither has been imported into main. Exact FIFO insertion timing,
+returned async DB operation, stale resume, original 1000-frame snapshot and
+system/NProtect handling remain unproven/unwired. Combined validation pending.
+
+Combined combat session 22990 exited 0: both skill-damage and normal-damage
+focused tests passed on `a4de61c` in Eternity-movement; logs
+`.local/composed-skill-damage.log` and `.local/composed-skill-normal-regression.log`.
+After that build finished, its build tree was copied into the separate protocol
+worktree; session 11481 now runs split protocol, real-admission TCP handoff and
+world-protocol focused tests on `dfb22e7`. Results remain pending. These tests
+still do not establish live original-client gameplay or the original queue
+threshold/scheduling semantics.
+
+Gameplay integration session 58307 finished exit 0 on clean `228d086`: full
+885-step build, focused 9/9 CTests, and isolated SQL including character
+mutation/save/reload and disposable guild cleanup. Logs
+`Eternity-gameplay/.local/gameplay-composed-{build,tests,sql}.log`. This combines
+the entry/persistence branch with normal combat, movement check and pickup; it
+still uses test owners and is not a live world. Main session 39827 remains in
+its full unit/SQL validation; main source should stay frozen until that ends.
+The desktop dashboard state records this validated component milestone.
+
+Main session 39827 completed full native build and passed 308/308 CTests for the
+integrated entry/persistence source revision (`.local/main-entry-persistence-
+{build,tests}.log`). Its isolated SQL phase is queued/running; do not claim the
+session passed until it exits 0. This suite remains component coverage and does
+not establish production world entry or original-client gameplay. Desktop
+progress state now records the 308-test result.
+
+Protocol integration session 11481 finished exit 0 on `dfb22e7`: split routing,
+TCP handoff and world-protocol focused tests all passed in the combined worktree;
+logs `.local/composed-protocol-{split,handoff,world}.log`. Independent 03's
+`e09e38b` improves its TCP test to dispatch the received 0201 through the actual
+zone-wait visitor (still called explicitly by a fixture). Coordinator cherry-
+picked it as `18d1058` and queued session 39684 for combined handoff/gate tests.
+No original-client, real socket queue scheduler, system/NProtect, threshold or
+lifetime equivalence is established. Desktop progress state records the earlier
+three-test combined pass.
+
+Protocol session 39684 finished exit 0: combined TCP handoff through the actual
+zone-wait visitor and gate tests passed on `18d1058`, logs
+`Eternity-protocol/.local/composed-zone-{handoff,gate}.log`. The fixture invokes
+the visitor explicitly with test-owned services; no production scheduler or
+original-client test is implied. Coordinator independently regenerated 02's
+`vertical_world_scheduler_oracle.py` and matched its 160-case original fixture
+byte-for-byte. Its report traces a 250ms outer loop, zero initial deadlines and
+ordered packet/attack/effect/idle passes, but a production scheduler requires the
+real active/wait zone authority and dynamic leases. Its statement that zone-wait
+visitor does not exist is outdated: `25d85e2` on main supplies that traversal;
+active users/reset-position processing remains missing. Dashboard updated.
+
+Coordinator reviewed independent 03's uncommitted system/NProtect draft: its
+connection path currently closes on A302 before an authenticated `owner()`,
+whereas original `CUser::OnRecv` routes A302 before location/auth dispatch.
+Requested original `NProtectCSARecv` pre-auth/short-payload and real per-connection
+ownership review; do not assert native fail-close equivalence without evidence.
+Requested worker 02 to extend its scheduler instruction fixture to currently
+suppressed passes and wait-zone promotion after its retained instance work.
+Both are pending independent assignments, not completed runtime behavior.
+
+Independent 06 delivered magic normal and skill mob damage `eb4fbe4`, with
+8,192 + 6,144 original executions, independent arithmetic audit, a shared CRT
+RNG trace and four focused native tests passed. Coordinator independently
+regenerated both fixtures byte-for-byte and ran the original shared-RNG trace.
+Cherry-picked to combined `coordinator/protocol` as `9ea85f8`, with session 49110
+running magic normal/skill and both physical regressions. Results pending.
+The implementation is bounded to tested 53-bit FP; actual original Windows
+thread control word, real selected-hit/effect/death pipeline and live sources
+remain unproven. Desktop dashboard updated for this component milestone.
+
+Combined magic session 49110 finished exit 0 on `9ea85f8`: magic normal,
+magic skill, normal damage regression and skill damage regression each passed
+1/1. Logs `.local/composed-magic-{normal,skill,normal-regression,skill-regression}.log`
+in Eternity-protocol. Original Windows FP environment and live hit/death remain
+unresolved. Desktop dashboard updated. Independent 02 `27f460a` additionally
+traced original instance retirement: wait/active user counts and expiry, removal
+from actual world-thread list and owner/map indexes, then release and reuse.
+The existing ZoneRegistry has no removal/recycling or actual thread unlink owner;
+a safe generation lease depends on those real owners, not a parallel registry.
+
+Independent 01 `2f49adb` implements a retained-roster selection gate. Its
+original 2048-case ps_dbAgent fixture and focused unit passed; build and isolated
+SQL retry passed, while the initial SQL run hit the known creation-network login
+timeout. Original loader reads rename as an unsigned byte and remaining-time as
+DWORD, so bool projections preserve the relevant populated-slot decisions.
+Zero-ID/empty-slot residue is unrepresentable and explicitly rejected; stale SQL
+state remains stricter than original retained state. Coordinator independently
+regenerated the fixture byte-for-byte. Cherry-picked 01's adapter, SQL harness
+and gate into `/home/franco/Projects/Eternity-entry` `coordinator/entry` commits
+`82a5135..6e57801`, preserving BOTH entry and persistence SQL test invocations
+in the uniquely named fixture. Session 69040 runs roster unit, full build and
+isolated SQL sequentially; results pending. The two loader APIs must not both run
+for one selection: use the retained single PlayerSnapshot for Actor and replica.
+No live selection route or original-client play is claimed. Dashboard updated.
+
+Independent 03's `3af12e9`/`72a7d53` route decoded system and NProtect
+packets, with seven focused native checks and 32 original NProtect cases passed.
+Coordinator independently reproduced the original fixture byte-for-byte and
+cherry-picked both changes into `coordinator/protocol` as `ed49dd7`/`c14ea5c`;
+session 96503 runs combined system unit, TCP and handoff tests. Pre-auth A302
+currently fails closed because no early connection-owned NProtect service exists,
+unlike original absent-object behavior; 0003 reply owner is not wired, 1000-frame
+snapshot threshold and actual CCSAuth2 ownership remain open. These changes are
+not on main or in the already-running coordinator/entry branch. Dashboard updated.
+
+Independent 01's latest uncommitted follow-up changes CharacterSummary to retain
+raw unsigned-byte rename and signed DWORD remaining time rather than only bool
+projections, while preserving the original boolean wire flags. This supersedes
+any assumption that the temporary bool-only coordinator/entry branch is the final
+representation; its new original fixture and SQL/unit tests must complete and be
+reviewed before incorporation. Current entry session 69040 is testing the prior
+`6e57801` source; its result will not validate this newer draft.
+
+Independent 07's retained Actor scene `ff64606`/`861fcf3`/`c6d2520` composes
+real channel, ZoneUsers and party owner with required scene/effect services and
+explicit transport failure handling. Its final focused test, build and isolated
+SQL are reported passed; no full suite or real production service binding.
+Coordinator cherry-picked to `/home/franco/Projects/Eternity-scene` on
+`coordinator/scene` as `40792ac..d278a2d`, based on combined system protocol and
+world/gameplay/quest/movement/combat. Session 98293 runs targeted scene and party
+send tests using a copy of a completed movement build; results pending. Actual
+cell broadcaster, effect pool, shutdown and connection failure owners remain
+mandatory; no client-playability claim. Dashboard updated.
+
+Coordinator created `coordinator/entry_flow` in Eternity-entry-flow from the
+combined retained-roster branch. Commit `fdbbec8` changes the real disposable SQL
+persistence fixture to select its created character through the actual 0104
+`vertical_entry_select` and retained roster, then restore the replica from that
+same captured PlayerSnapshot. The existing gift-notification assertion detects a
+second load, and the fixture continues mutation, exit-save and reload checks.
+Session 86997 runs full build then isolated SQL sequentially on this revision;
+results pending. This is a composed SQL fixture, not a production connection,
+ActorLoad, live zone or original-client test. Do not conflate it with the newer
+uncommitted raw-roster field changes in independent 01.
+
+Combined entry session 69040 passed its retained-roster targeted unit with the
+2,048 original cases (`Eternity-entry/.local/composed-entry-roster.log`) on
+`6e57801`; its full build is running and SQL follows. This does not validate the
+later uncommitted raw-roster representation in independent 01, or a live Actor
+entry. Combined system protocol session 96503 passed its first unit test and is
+waiting for the TCP/zone handoff target checks; not a completed test chain yet.
+
+Coordinator created `coordinator/entry_owner` at Eternity-entry-owner from
+entry-flow and added `vertical_entry_select_persisted` (`d803dc7`). It runs the
+existing retained-roster/0104 gate and one `Players::load`, restores the real
+CharacterReplica from that same snapshot and actual product store/pools, then
+hands both to the caller. It propagates failures and leaves original lifecycle,
+owner retention and teardown to required real services. The disposable SQL
+fixture now uses that adapter and checks consumed latch plus a later gift remains
+unconsumed, then mutates/saves/reloads the replica. Session 21247 runs full build
+then isolated SQL; results pending. This branch has the earlier bool roster fields,
+not independent 01's later raw-field draft; no production WorldApplication,
+ActorLoad or live client path is wired. Dashboard updated.
+
+Combined protocol session 96503 has passed system unit and system TCP tests on
+`c14ea5c`; its handoff regression remains pending. The pre-auth NProtect and
+original FIFO threshold limitations still apply. Combined entry session 69040
+passed the 2048-case roster test and completed its full 689-step build on
+`6e57801`; isolated SQL remains queued/running. Main session 39827's SQL log
+has passed the selected persistence mutation/save/reload fixture, but the full
+integration and cleanup have not yet completed; do not report exit success yet.
+
+Main session 39827 finished exit 0: full build, 308/308 native CTests and
+isolated SQL including persistence reload and disposable guild cleanup passed
+for entry/persistence (`.local/main-entry-persistence-{build,tests,sql}.log`).
+Coordinator then cherry-picked validated combat success/FP/normal damage,
+movement check/FP, pickup, canonical Actor movement access and prefix, skill and
+magic damage as `7d44f7f..896d2c1`. A CMake conflict on `7d18acc` was resolved
+by including only its movement target; world/mob/quest targets are not on main.
+Main session 35289 runs full build, full CTest and isolated SQL on this combined
+revision; results pending. The prior code remains component-level and is not
+wired into production gameplay. Updated desktop dashboard to point at the NEW
+main validation logs rather than incorrectly treating the earlier pass as the
+current revision's pass; earlier 308/SQL milestone remains clearly historical.
+
+Protocol session 96503 finished exit 0: system unit, system TCP and handoff TCP
+passed on `c14ea5c` in the combined protocol worktree. Pre-auth NProtect and
+original queued threshold remain unresolved; no production equivalence claimed.
+
+Coordinator created `coordinator/foundation` at Eternity-foundation from the
+single-load entry owner (`d803dc7`) and cherry-picked system/NProtect routing
+and retained Actor scene as `c1d98c0..9d6799e`, preserving both CMake target sets.
+This combines entry, persistence, scene, protocol, world, quests, movement and
+combat branches without changing main or active test worktrees. Session 31303
+runs targeted scene, system TCP and roster tests using a copied completed protocol
+build; results pending. Full build/SQL and live connection/world assembly remain
+required; pre-auth NProtect, queue threshold and original scheduler limitations
+are unchanged. Existing entry-owner session 21247 tests its earlier exact source.
+
+Combined entry session 69040 SQL log has passed its actual retained-roster
+selection/ownership test (`Real SQL selection, ownership failure and 0104 latch
+passed`) inside its disposable fixture; remaining SQL suites and process exit
+are pending. This is not the newer raw-roster draft or the separate single-load
+entry-owner SQL test. Dashboard records the partial checkpoint accurately.
+
+Independent 02 now has an uncommitted `VerticalWorldThread` draft tied to the
+existing MobPrimaryZones/ZoneRegistry and its single enqueue owner. Coordinator
+review found its current `remove` checks only active/wait state, not which thread
+owns a RuntimeZone link; a wrong-owner remove can corrupt foreign links and
+counts. Requested exact owner identity and cross-owner/destruction/reentrancy
+tests. Draft is not integrated or validated. Dynamic lease/recycling, actual
+scheduler passes and admission lifetime remain separate required work.
+
+Combined entry session 69040 finished exit 0 on clean `6e57801`: 2048-case
+retained-roster unit, full build and isolated SQL (both actual selection/ownership
+and persistence save/reload in the same disposable fixture) passed. Logs are
+`.local/composed-entry-{roster,build,sql}.log` in Eternity-entry. These are two
+fixture tests, not proof of one load across their independent operations; separate
+entry-flow/entry-owner sessions 86997 and 21247 test that composition and remain
+live. Newer raw roster field draft, real Actor/WorldApplication and original
+client remain unvalidated. Dashboard reflects the finished combined SQL run.
+
+Light-resource mode: the user closed the nine independent terminals while gaming;
+all project build and SQL integration jobs were interrupted, disposable build
+containers stopped, and the isolated SQL Server container stopped without removing
+its data. Do not resume parallel sessions or heavy builds until the user permits.
+The worktrees and their uncommitted changes remain in place. Sessions 35289,
+21247, 86997, 31303 and 98293 mentioned above were interrupted, not validated.
+
+In independent 02's uncommitted world-thread draft, added explicit zone link
+ownership, rejected removal by a foreign thread, disabled thread copying/moving,
+and unlinked remaining zones on thread destruction. Added coverage for foreign
+active/wait removal and destructor cleanup. The zone lifetime contract remains:
+linked zones must outlive the thread; callers must unlink before destroying a
+zone. These edits are uncompiled and untested in light-resource mode. Nested
+visitor behavior and actual world integration remain unresolved.
+
+Light-resource static review found that MobPrimaryZones explicitly destroys its
+ZoneRegistry before the VerticalWorldThread member destructor: the previous
+unlink-on-thread-destruction change would access already-destroyed zones. The
+independent 02 draft now clears both thread lists before destroying the registry,
+including partial initialization, and has a clear/reuse unit case. The zone
+lifetime precondition still applies to other owners. This correction and its
+unit case remain uncompiled and untested; full ownership, nested callbacks and
+live scheduling remain open.
+
+Light static review of the independent 02 thread draft: the retained root wraps
+thread callbacks in a dispatch guard, so primary drain is deferred during a
+callback. Added a foreign-owner test covering head/middle/tail links and traversal,
+and fixed fixture zone declaration order so linked zones outlive the thread even
+on an assertion exception. Still uncompiled and untested. Nested visit may reset
+the shared cursor and restart the outer walk; do not claim reentrancy parity or
+integrate until compared with original behavior and exercised under mutation.
+
+Light static review found that deliver_vertical_entry accepted an independent
+PlayerSnapshot with matching user/character IDs while ActorLoadPipeline held a
+different snapshot; packets and initialized Actor could then disagree. In the
+coordinator/foundation worktree, require the exact pipeline snapshot before side
+effects and add a same-ID/different-data rejection case. Uncommitted, uncompiled
+and untested in light mode; production WorldApplication remains unassembled.
+
+Light review: EntryDelivery already checks social account/character and account
+catalog ownership, but previously did not check the loaded Actor's account ID.
+The foundation draft now rejects an Actor belonging to a different account before
+entry side effects; the vertical protocol fixture includes that mismatch. Changes
+remain uncompiled and untested in light-resource mode.
+
+User requested stopping work for now and no project background load. Independent
+sessions, builds and SQL container remain stopped; dashboard service disabled
+and stopped (the Desktop HTML remains but will not refresh until restarted).
+At resume inspect ActorLoadPipeline's ignored load_inventory_item return value in
+src/game/actor_load.cpp: a failed allocation may silently omit loaded inventory;
+verify its actual contract and error cleanup before implementing a correction.
+Foundation and independent 02 changes remain uncommitted and untested.
+
+User resumed the goal in this terminal only. PacketUserDBSetInfo 0046d780 case
+0502 allocation failure is documented in research/protocol.md: the original
+skips that row and continues, so rejecting the character would be inaccurate.
+Foundation draft now documents that intent and adds a pipeline case for a failed
+first allocation followed by a successful second item and pooled teardown.
+The case and other foundation edits remain uncompiled and untested.
+
+Foundation changes passed C++20 syntax-only compilation for actor_load.cpp,
+entry_delivery.cpp, vertical_protocol.cpp and vertical_protocol_unit.cpp using a
+foreground disposable container limited to 0.5 CPU. Full targeted build remains
+pending: configured Ninja dry run required 230 steps. No SQL or runtime test was
+run, and syntax checking does not validate linkage or behavior.
+
+Light-mode single-process verification: independent 02's current
+vertical_world_thread.cpp and its unit fixture were compiled and run together
+against existing static libraries in a disposable 0.5-CPU container; the fixture
+passed, including foreign head/middle/tail ownership and clear/destructor cases.
+Current mob_primary_zones.cpp and zones.cpp passed syntax-only compilation. This
+is not a fresh full link of the composed world, nor evidence for nested cursor
+parity, actual scheduler integration or the primary-owner teardown fixture.
+
+Foundation light-mode vertical protocol fixture compiled the current test plus
+actor_load.cpp, entry_delivery.cpp and vertical_protocol.cpp, linked against the
+existing static libraries, and passed in a 0.5-CPU disposable foreground
+container. This exercises matching snapshot/account rejection before side effects,
+plus original inventory allocation skip and pool teardown. It is not a fresh
+full build, SQL test or production world integration; those remain pending.
+
+Independent 02 primary-owner fixture now covers failure after the first primary
+zone has been linked: second primary omits its mob owner, initialization throws,
+and destroying the root must release all three zones. The test passed syntax-only
+compilation after correcting an initial std::span::at compile error; it has not run.
+Do not link the current changed RuntimeZone layout to old library objects for this
+integration test; a fresh consistent build is required to avoid an ABI mismatch.
+
+Foundation entry review: CharacterEntryState.level supplies the auto-character
+packet while the rest of delivery uses the loaded snapshot. The entry adapter now
+rejects a mismatched level before manager/client side effects; added a negative
+fixture. Current sources and the fixture compiled and passed with existing static
+libraries in a disposable 0.5-CPU container. Full build/SQL and production entry
+assembly remain unverified; main still installs the roster-only application.
+
+Foundation draft adds VerticalSessionCharacter: a nonmovable owner retaining the
+selected snapshot, its matching DB replica and ActorLoadPipeline with stable
+snapshot address and correct destruction order. It validates user/character IDs
+before actor construction; borrowed scene/rules/pools must outlive it. The
+vertical protocol fixture passed for stable ownership and mismatched replica,
+compiling current sources against existing static libraries at 0.5 CPU. This is
+not yet wired into WorldApplication, saves, admission or production shutdown;
+full rebuild and SQL validation remain outstanding.
+
+The foundation vertical protocol fixture now delivers full reconstructed 0407
+entry through VerticalSessionCharacter's own stable snapshot and pipeline, then
+releases the loaded Actor while retaining its matching DB replica; this passed
+with current edited sources and existing static libraries in a disposable 0.5-CPU
+container. The fixture's service callbacks are test doubles, not live world
+admission or production save/transport. Fresh full build and SQL remain pending.
+
+Foundation VerticalScene now implements ActorEffectDatabase and requires the
+actual effect database route at construction. This lets ActorLoadPipeline's Actor
+bind that route immediately, including restoration-time removals before scene
+bind. Scene fixture verifies Actor::erase_persisted forwards the real 0902 bytes;
+the existing scene/network fixture passed using current scene sources and existing
+static libraries in a 0.5-CPU disposable container. Initial manual link lacked
+crypto and cyclic static-library ordering; corrected link and rerun exited 0.
+Production must supply the actual retained ActorEffectReplicaDelivery/remote route,
+serialized mutex and failure handling; no SQL or fresh full build was run.
+
+Foundation scene fixture now composes an actual CharacterReplica::skills(),
+ActorEffectReplicaDelivery with its recursive mutex, VerticalScene and Actor.
+Removing one persisted effect through the Actor correctly removes only that entry
+from the actual replica without diagnostics. Current scene source/test passed
+with existing static libraries in a 0.5-CPU disposable container. No SQL commit,
+production lifetime assembly or fresh full build was tested.
+
+Foundation scene fixture now constructs the actual retained session, ActorLoadPipeline,
+VerticalScene, shared skill replica and ActorEffectReplicaDelivery together. A
+transient persisted skill (0505 detail 74) is deleted during Actor construction,
+before zone/scene binding, and the retained replica is verified empty. The first
+fixture attempt failed because a level-2 skill lacks the required level-1 definition;
+after adding that original lookup prerequisite the 0.5-CPU test passed. Existing
+static libraries were used; SQL, live assembly and full rebuild remain pending.
+
+Foundation inventory fixture now constructs VerticalSessionCharacter with its
+actual CharacterReplica, ActorLoadPipeline and pooled Actor, then executes a
+zone money pickup using that exact replica as the fixture's DB receiver. Actor
+and replica both advance from 10 to 17. Current test, actor_load and inventory
+adapter compiled and passed alongside 512 original request traces using existing
+static libraries in a 0.5-CPU disposable container. The DB transport here is a
+fixture callback; SQL save and production session/world integration remain open.
+
+Foundation now has CharacterReplicaDelivery: synchronous cohosted dispatch to the
+actual CharacterReplica under the same externally supplied recursive mutex required
+by CharacterSaveStore. Return codes/exceptions remain visible to the caller; it
+does not invent queue, disconnect or error policy. The inventory fixture routes
+session money pickup through it, rejects a foreign account without mutation, and
+passed alongside 512 original request traces using current adapter/test sources and
+existing static libraries at 0.5 CPU. Production binding, ordering, lifetime,
+full rebuild and SQL remain unverified.
+
+CharacterReplicaDelivery fixture now checks malformed/foreign rejection,
+unsupported opcode, inventory item-type collision returning the original disconnect
+result without modifying the retained stack, and recursive acquisition of the same
+cache mutex. It also repeats the actual session money-pickup route; all 512 request
+traces and composed cases passed against existing static libraries at 0.5 CPU.
+Caller-side disconnect policy, live delivery ordering and SQL are still pending.
+
+Foundation admission gate fixture now loads its actual Actor through the retained
+VerticalSessionCharacter snapshot/replica rather than a separately constructed
+Actor. It verifies that the admitted ZoneUsers member is that same Actor and the
+user/replica identities match. Current actor_load/vertical_protocol sources and
+fixture passed all 60 original gate vectors and actual zone admission with old
+static libraries in a 0.5-CPU disposable container. It still uses fixture
+services and does not connect production WorldApplication, SQL or socket handoff.
+
+Foundation TCP handoff fixture now owns its Actor via VerticalSessionCharacter,
+with the retained selected snapshot and DB replica, and confirms the admitted
+ZoneUsers points to that same Actor. The real local TCP test passed both barrier
+orders, admission failure, AES continuity, eight-frame overflow and disconnect,
+using current actor_load/vertical_protocol sources with existing static libraries
+in a disposable 0.5-CPU container. Selection response and services remain fixture
+implementations; this does not validate real SQL loading or production session.
+
+Foundation TCP handoff fixture now submits a real framed/encrypted 0501 after
+admission to the retained Actor's canonical speed-check stage in both transition
+orders. It checks destination, accepted result and actual zone/replica identity;
+all handoff cases passed with current actor/entry/movement sources and existing
+static libraries at 0.5 CPU. The test-only marker is not an original client
+packet. The stage does not perform MoveUserByPacket, mutate position or persist
+it; complete movement and actual production dispatch remain outstanding.
+
+Static disassembly of ps_game PacketPC 0046a47b and move routine 00416550
+recorded in foundation research/vertical-movement-continuation.md. The latter
+writes XYZ before a later target-cell bounds failure/close, so do not equate
+ZoneUsers::move_at_position with the original without tracing the real callees,
+cell/view publication and failure ordering. Evidence is static only; no movement
+continuation or persistence implementation has been claimed.
+
+Cross-check against existing research/protocol.md and src/game/maps.cpp resolves
+two previously listed movement dependencies: CMap::IsSafePos 00415360 and
+CCell::IsInnerCellView 004153c0 are already implemented and covered by the
+4,440-case original geometry oracle; ZoneUsers::move_at_position already stores
+position before validating a changed cell. Updated the continuation note to avoid
+incorrectly treating those helpers as missing. Full 00416550 cell callbacks,
+close behavior, reentrancy and subsequent 0501 publication remain to recover.
+
+Static review of original 0041f350 identifies overlapping clipped two-cell
+rectangles, a 0202 removal buffer plus CCell::SendCellInfoLeave, and a later
+0201 appearance path plus CCell::SendCellInfoEnter. Added the address-level
+findings to foundation research/vertical-movement-continuation.md. Exact
+visibility/ordering, allocation failure, live user cursor and concurrency still
+need original execution; mob movement evidence cannot be substituted.
+
+Mapped user movement integration against canonical owners in foundation research:
+ZoneUsers owns membership but does not publish cell transitions; zone-entry
+cell_info and VerticalScene cell_view remain required caller ports, not completed
+broadcasters. Native membership inserts destination before unlinking source,
+whereas original 00416550 calls source unlink first; assess observable reentrancy
+and allocation behavior when composing real callbacks. Existing mob/corpse/item/
+NPC cell code supplies partial snapshots, not a complete user cell snapshot.
+
+Foundation tools/vertical_user_move_probe.py now executes original ps_game
+00416550 with real geometry and ported locks/list/notification/close. Four
+asserted cases pass: same-cell, cross-cell, unsafe position and wrong location.
+On crossing, callbacks see new XYZ but old public cell coordinates, in unlink,
+link, notification order. Probe is not a differential native test and does not
+execute real list/snapshot callbacks; more coverage and implementation remain.
+
+Extended foundation original 00416550 probe to 64 finite boundary combinations
+covering zero, map-size rejection, inclusive overlap boundary and crossing on
+both axes. Original return, XYZ, cell and port callback order passed the explicit
+model. This is still not a native differential integration test: nonfinite values,
+inconsistent grids, real lists and notifications remain open.
+
+Foundation 00416550 probe now also passes four NaN/infinity/inconsistent-grid
+cases. Original accepts and stores NaN within the old view; if the other axis
+forces a cell change it stores the NaN then reaches the close port. Positive
+infinity is rejected before mutation; an inconsistent grid can close after
+position write. These are isolated original observations, not native parity or
+production support for malformed geometry/nonfinite movement.
+
+Foundation ZoneUsers fixture now compares its actual position/membership against
+the same 64 original probe boundary inputs and checks original same-view and
+cross-view NaN write behavior. Focused test passed (plus existing 128 hidden-user
+oracle cases), compiling current zone_users/maps sources against prebuilt static
+libraries at 0.5 CPU. No real close/view callback or full move parity claimed.
+
+Foundation adds vertical_user_view_probe.py executing original 0041f350 with
+buffer, reference, broadcast and snapshot ports. Four normal cell transitions
+passed a row-major rectangle-difference trace, including 0202/leave, 0201/051c/
+enter and later 051d. Initial probe failed due to incorrect ported callee stack
+cleanup; corrected to ret 4 and rerun passed. Only opcode/cell order for zeroed
+user state is covered, not packet contents, real recipients, allocation failure
+or live integration.
+
+Expanded original 0041f350 normal-state probe to 625 source/destination cell
+pairs including boundaries, corners, interior, unchanged cells and long moves.
+All passed the explicit row-major notification/cell-difference trace at low
+priority. Success-only allocator and ported snapshot/broadcast remain limitations;
+no native implementation or production integration has yet been validated.
+
+Original 0041f350 view probe now covers all 16 buffer-failure masks for one
+normal horizontal crossing, asserting pass suppression and callback/cell/opcode
+order. Failure of allocation 1 suppresses old view/leave snapshots; either 2 or 3
+suppresses new appearance/051c/enter; 4 suppresses the separate 051d pass.
+All four allocations are still attempted. 625 success traces plus 16 failures
+pass with ported allocator/broadcast/snapshots; no real buffer/reentry or live
+world implementation has been verified.
+
+Foundation draft implements user_view_difference, an ordered clipped old-only/
+new-only cell visitor (0041f350), and a 625-case fixture generated from actual
+original snapshot callbacks. Focused native C++20 test passed at 0.5 CPU. This
+is traversal only: no fabricated packets, allocation semantics, real snapshots,
+recipients, integration or reentrancy parity; full build/SQL remain pending.
+
+Foundation draft adds user_view_publication.hpp orchestration over required real
+buffer/snapshot/broadcast services, with observed four-buffer failure semantics,
+ordered leave/enter/optional shape passes and late shape predicate. Focused native
+test passed 625 traversal oracle cases and the 16 original normal-crossing buffer
+failure traces at 0.5 CPU. Real packet builders, cell entities, user state,
+reentrancy, world binding and full build remain unverified.
+
+Original 0041f350 view probe passed six shape variants, including vehicle shape
+sum and mutation during enter snapshot; 051d uses the late live state. The native
+publication fixture also passed a late-state mutation/suppression test and the
+625 view cases. Shape predicate and real buffers/transports remain external and
+unbound; no full build, live integration or SQL claim.
+
+Foundation adds actual Actor 0202 leave/optional 051d view-shape packet builders.
+Original 0041f350 execution confirms a vehicle sum of 256 must emit 051d with
+zero low byte; native scene fixture passed this edge, invisible mode and leave
+bytes using current source plus prebuilt libraries at 0.5 CPU. Production movement,
+appearance/equipment buffers, recipients and full build remain pending.
+
+Foundation draft implements moved-user 0201 construction using Actor and
+explicit live state. Two original 0041f350 executions check full 29-byte packets
+for permission 10/11 and vehicle mode 3/ordinary; the focused native scene test
+passed matching byte assertions with current actor/scene sources and existing
+static libraries. Live field capture after leave callbacks and production buffer/
+cell delivery remain outstanding.
+
+Foundation original 0041f350 probe checked eight full 051c speed packets for
+normal/clamp/block/fixed/restricted states. Existing character_speed produced
+matching results for four native focused scene assertions; test passed with current
+scene/actor sources and existing static libraries at 0.5 CPU. Production buffer,
+late state sampling, delivery and complete movement remain outstanding.
+
+Foundation adds UserViewActorPublication, binding actual Actor leave/appearance/
+speed/shape packet builders to the existing ordered visibility coordinator.
+Required UserViewActorTransport supplies live position/direction/permission/guild,
+real allocation/broadcast and cell snapshots. Focused scene fixture passed with
+leave callbacks mutating appearance and speed and enter callbacks mutating shape,
+verifying each message samples late state. Compiled against existing static
+libraries at 0.5 CPU; transport in the fixture is fake, production world binding,
+reentrancy, failure handling and full build remain unverified.
+
+Original cell-broadcast 004243d0 probe exposed a recipient traversal distinction:
+three-user normal list sends to all, but modeled 0040f225 current-node unlink
+inside the ported send makes the original stop after that user (it reads the
+cleared local next pointer). Native ZoneUsers::visit_cell rewinds a shared cursor
+and can continue. Do not bind it as equivalent; recover other-node removal,
+appends, nested send and subject lifetime with original execution. Probe uses
+real broadcast code but modeled unlink pointer writes and ported send/locks.
+
+Original 004243d0 probe expanded to six cases of modeled current/other unlink,
+append and reinsert. Foundation ZoneUsers now has a distinct pinned
+broadcast_cell traversal matching five corresponding native scenarios, rather
+than reusing its shared-cursor visitor; focused zone test passed (plus 128 old
+hidden-user oracle cases) using current zone/maps sources and existing static
+libraries. Cross-cell current-user reentry deliberately raises as unrecovered;
+actual network send, nested broadcast, lifetime and full build remain pending.
+
+Original cell-broadcast probe executes a nested 004243d0 during the first ported
+send and confirms independent inner/outer local traversals. Foundation native
+broadcast_cell passes the equivalent nested three-user sequence plus previous
+cases, compiled with current zone/maps sources and existing static libraries at
+0.5 CPU. No claim for nested mutation, cross-cell reentry, real socket sends,
+full build or live world integration.
+
+Original nested 004243d0 probe and native broadcast_cell tests now cover removal
+of current or next recipient during inner send. Both match the observed `0,0`
+and `0,0,2,2` sequences. Original remove writes are modeled, not executed as a
+nested original Remove; cross-cell reentry, actual socket/actor retention and
+production integration remain unresolved. Focused zone test passed at 0.5 CPU.
+
+Foundation UserViewCellTransport now connects actor publication to canonical
+ZoneUsers::broadcast_cell with required retention/queue/buffer/snapshot services.
+Focused scene test passed real three-Actor cell membership: old-only gets 0202,
+new-only gets 0201/051c, overlap gets neither; buffer/socket/snapshot services are
+fixture ports. Current scene/actor/zone sources linked to existing static libraries
+at 0.5 CPU. Not yet wired into production movement, world or SQL.
+
+Foundation scene fixture now uses an actually owning shared_ptr retention token
+for a cell recipient. Its enqueue callback detaches the recipient and drops the
+last external owner; the Actor stays alive until the in-flight broadcast returns,
+then is destroyed. Focused scene test passed with current zone/scene/actor sources
+and existing static libraries at 0.5 CPU. This checks synchronous recipient
+lifetime only: buffer queue ownership, production sockets and cell snapshots
+remain unimplemented/unverified.
+
+Foundation scene fixture exercises deferred queue ownership with two cell
+recipients sharing the same payload: after publication ends, completing one send
+retains the payload for the second, and completing both releases it. Focused test
+passed at 0.5 CPU with current scene/actor/zone sources plus prebuilt libraries.
+The fixture uses shared_ptr-backed test buffers; the actual original pool/queue,
+reference accounting and production socket binding are not implemented by this.
+
+Foundation draft UserViewSharedBuffers reuses the existing reconstructed
+SPacketBufferSend/PartyMembershipSendWorld pool and SConnection enqueue provider,
+with original capacity classes, framed payload, one owner reference and one per
+connected queued recipient. Focused scene fixture passed disconnected-recipient,
+two deferred completions and enqueue-exception reference cleanup using the real
+buffer type and a fixture pool/queue at 0.5 CPU. The buffer adapter is not wired
+to UserViewCellServices or production WorldChannel; real queue, lifetime/failure
+policy and full build remain unverified.
+
+Foundation adds UserViewSharedCellServices, binding canonical zone recipient
+traversal to UserViewSharedBuffers and checking actor/connection identity. The
+combined fixture passed old/new cell recipients, framed 0202/0201/051c and shared
+buffer releases with a multi-buffer fixture pool and synchronous completion.
+Initial one-buffer fixture failed because the original holds appearance and speed
+buffers simultaneously; replacing it with a four-slot test pool passed. Real
+socket queue, retained session lookup, entity snapshots and production world remain
+required; current source linked to existing static libraries at 0.5 CPU.
+
+Foundation adds enqueue_user_view_world_channel, converting a retained shared
+framed buffer into a plaintext copy for the actual WorldChannel, releasing its
+queue reference only after the copy/post succeeds. The focused scene fixture
+passed over a real local WorldServer TCP socket: a 0202 buffer was released by
+the pool and arrived correctly encrypted/framed. Pool and actor lookup are still
+fixture providers; this does not wire production world recipients or implement
+original network buffer timing/queue limits. Existing static libraries used.
+
+Foundation focused scene test now composes UserViewActorPublication ->
+UserViewCellTransport -> canonical ZoneUsers -> UserViewSharedBuffers -> actual
+WorldChannel over a local TCP socket. It checks ordered encrypted 0201/051c and
+buffer release; the fixture deliberately routes the connected actor as a test
+recipient and simulates cell snapshots, pool and actor-to-session lookup. It is
+not proof of real multi-client movement or production world binding. Current
+source compiled with existing static libraries at 0.5 CPU and test exited 0.
+
+Foundation adds capture_user_view_appearance, obtaining position from the actual
+ZoneUsers membership and validating the exact Actor, with permission/direction/
+guild supplied by serialized live owners. The scene fixture changes actual zone
+position in a leave callback and confirms subsequent 0201 uses the new position;
+a foreign-zone lookup rejects. Initial fixture selected rectangles with no old-only
+cells and failed as expected; corrected the transition and reran successfully at
+0.5 CPU with current sources/prebuilt libs. Production capture and complete
+movement remain unbound.
+
+Foundation ZoneUsers now exposes the actual membership cell for a retained actor;
+the focused native test verifies it over all 64 original movement boundary cases
+and missing IDs. This is NOT the original user's public +e4/+e8: during 0041f350
+callbacks the original membership has moved but those fields remain old until
+publication returns. Production movement needs that distinct delayed public state,
+serialized reentry and actual cell notifications before being wired. Focused zone
+test passed with current zone/maps sources and existing static libraries at 0.5 CPU.
+
+Executed nested original 00416550 during the ported transition notification.
+Outer target cell (1,0), inner target position (120,9,20)/cell (3,0): final
+XYZ remains inner but public cell is overwritten by outer (1,0). Lists and
+notification were ported; real nested membership and safety are unproven. This
+requires distinct position/membership/public-cell timing before production
+movement, not a single latest-position/derived-cell assumption.
+
+Added original user_move_nested_lists_probe.py with real 0040f200/00423560 list
+operations and ported locks/notification. In the constructed recursive move,
+user link ends in cell 3, public cell is 1, and cells 0..3 counters become
+ffffffff,1,0,1 despite cells 0/1 being empty. Test asserts this original behavior;
+it does NOT establish that real production callbacks permit that recursion.
+Do not model a single cell field or reproduce corruption without understanding
+actual lifecycle/locking and required compatibility boundaries.
