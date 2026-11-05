@@ -20,6 +20,7 @@
 #include "eternity/game/vertical_session_registry.hpp"
 #include "eternity/game/vertical_combat_spend_party.hpp"
 #include "eternity/game/vertical_move_packet.hpp"
+#include "eternity/game/world_users.hpp"
 #include "eternity/game/random.hpp"
 #include <utility>
 namespace eternity::game {
@@ -137,6 +138,23 @@ public:
  MobTargetingLifecycleWorld& rebirth_world(Actor&) override;
 private:
  VerticalCombatPartySoulWorld& delegate_;PartyRegistry& registry_;PartyRegistryPorts& ports_;VerticalCombatPartyLease& lease_;
+};
+// Session must provide world_user(), party_user() and party_requests(), and
+// retain the actor and all referenced state while this lease is alive.
+template<class Session>
+class VerticalCombatSessionPartySoulWorld:public VerticalCombatRegistryPartySoulWorld {
+public:
+ VerticalCombatSessionPartySoulWorld(VerticalCombatPartySoulWorld& delegate,PartyRegistry& registry,PartyRegistryPorts& ports,VerticalCombatPartyLease& lease,WorldUsers& users,VerticalSessionRegistry<Session>& sessions)
+  :VerticalCombatRegistryPartySoulWorld(delegate,registry,ports,lease),users_(users),sessions_(sessions){}
+ VerticalCombatSoulLeader retain_leader(PartyMembershipUser& member) final {
+  auto* user=users_.find(member.id);if(!user)throw std::logic_error("Soul leader missing from world index");
+  auto owner=sessions_.retain_actor(user->actor);
+  if(!owner || owner->world_user()!=user || &owner->party_user()!=&member || user->actor.id()!=member.id)throw std::logic_error("Soul leader lost its exact session ownership");
+  auto* state=&owner->party_requests();auto actor=std::shared_ptr<Actor>(owner,&user->actor);
+  return {std::move(actor),&member,state,std::move(owner)};
+ }
+private:
+ WorldUsers& users_;VerticalSessionRegistry<Session>& sessions_;
 };
 // CUser::KillSoulParty 004596a0: GetPartyBoth under the captured party lock,
 // EqualZone on live selected leader, ExpDrop, then the actual Rebirth owner.
