@@ -21,10 +21,11 @@ Known open work:
 
 - Compose the live session, world and zone owners into `--serve`, then test an
   original client.
-- `npc_shop_packet` is unrouted; `guild_house_shop_buy_rate` is unbound and
-  `CItem::InitCraftExpansion` 004ba280 is still a required port.
-- `PROGRESS.md` counts citations: a function named only as a required port counts as
-  code. Treat its percentages as ceilings.
+- NPC shop logic, guild house rates and the session adapter `VerticalWorldNpcShop` exist.
+  The adapter is not in a production gameplay chain, and only its sale path runs on a real
+  session; purchases are compared against the original at the `npc_shop_packet` level.
+- `PROGRESS.md` counts citations and reports pure virtual ports separately. A cited function
+  may still be incomplete, so treat its percentages as ceilings.
 
 ## History
 

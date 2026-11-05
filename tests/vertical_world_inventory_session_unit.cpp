@@ -1,3 +1,4 @@
+#include <iostream>
 #include <limits>
 #include "eternity/game/vertical_world_inventory_gameplay.hpp"
 #include "eternity/game/item_pool.hpp"
@@ -19,6 +20,7 @@
 #include "eternity/game/vertical_world_social_accounts.hpp"
 #include "eternity/game/vertical_world_guild_transport.hpp"
 #include "eternity/game/vertical_world_session_sql_selection.hpp"
+#include "eternity/game/vertical_world_npc_shop.hpp"
 #include "eternity/game/vertical_world_actor_scene.hpp"
 #include "eternity/game/vertical_world_party_directory.hpp"
 #include "eternity/game/vertical_world_party_requests.hpp"
@@ -137,7 +139,7 @@ struct PickupServices final:ItemPickupWorld,ZoneItemServices {
  void send_inventory_party(Actor&,const net::Packet&) override {throw std::logic_error("unexpected party send");}
  void send_inventory_database(const net::Packet&) override {++service_db;throw std::logic_error("pickup bypassed session save owner");}
  void send_money_database(const net::Packet&) override {++service_db;throw std::logic_error("money bypassed session save owner");}
- std::string inventory_item_name(const ItemDefinition&) override {throw std::logic_error("unexpected loot log name");}
+ bool allow_item_name=false;std::string inventory_item_name(const ItemDefinition&) override {if(allow_item_name)return "Shop item";throw std::logic_error("unexpected loot log name");}
  std::string inventory_drop_user_name(Actor&,std::uint32_t,bool) override {throw std::logic_error("unexpected drop name");}
  bool return_inventory_item(Actor&,GroundItem&) override {throw std::logic_error("pickup bypassed actual zone item owner");}
  GameLogSubject money_log_subject(const Actor& actor) override {if(!capture_money_log || &actor!=&owner.world_user()->actor)throw std::logic_error("unexpected money subject");GameLogSubject subject;subject.account_id=owner.account_id();subject.character_id=actor.id();return subject;}
@@ -529,6 +531,32 @@ int main(){try {
    check(actor.claim_inventory_item(1,1,*foreign_item,foreign_pool),"foreign pickup item claim failed");bool foreign_pool_rejected=false;
    try{pickup->send_inventory_database(inventory_add_packet(11,1,1,*foreign_item));}catch(const VerticalInventorySourceMismatch&){foreign_pool_rejected=true;}
    check(foreign_pool_rejected && live->character()->replica().inventory().inventory().empty() && actor.release_inventory_item(1,1,foreign_item),"pickup accepted a different item pool");
+   {// Actual session, save binding and replica: a sale crosses the retained shop owner.
+    struct ShopClock final:ItemIdClock {std::uint32_t ticks_ms() override{return 1;}std::uint32_t packed_local_calendar() override{return 1;}};
+    auto shop_clock=std::make_shared<ShopClock>();ItemDefinitions shop_items;NpcDefinitions shop_npcs;GuildHouseShopConfig shop_rates;GuildCatalogPorts shop_guild_ports;shop_guild_ports.allocate_guild=[]{return true;};shop_guild_ports.allocate_member=[]{return true;};shop_guild_ports.transport.allocate=[](const eternity::net::Packet&){return true;};shop_guild_ports.transport.release=[]{};shop_guild_ports.transport.send=[](GuildUser&,eternity::net::Packet){};GuildCatalog shop_guilds(std::move(shop_guild_ports));
+    auto shop_pool=std::make_shared<GroundItemPool>();std::vector<net::Packet> forwarded;
+    auto shop=std::make_shared<VerticalWorldNpcShop<SessionSaveStore>>(strand,live,live_zone,binding,services,actions,VerticalWorldNpcShopOwners{shop_npcs,shop_items,shop_rates,shop_guilds,shop_pool,std::make_shared<ItemIds>(7,*shop_clock),shop_clock},[&](VerticalWorldSession&,const net::Packet& packet){forwarded.push_back(packet);});
+    shop->dispatch(*live,{5,2,0,0,0,0});check(forwarded.size()==1,"NPC shop kept another opcode group");
+    ItemDefinition sold_definition;sold_definition.id=5002;sold_definition.type=5;sold_definition.type_id=2;sold_definition.stack_count=20;sold_definition.sell=7;
+    auto* sold=shop_pool->allocate();check(sold,"shop pool allocation failed");sold->definition=&sold_definition;sold->item.uid=4242;sold->item.type=5;sold->item.type_id=2;sold->item.count=5;
+    check(actor.claim_inventory_item(1,2,*sold,*shop_pool),"shop item claim failed");check(binding->apply(inventory_add_packet(11,1,2,*sold))==InventoryReplicaResult::applied,"shop item replica insert failed");
+    const auto shop_money=actor.money();const auto shop_cancels=actions->cancelled;
+    const auto shop_capture=services->capture_money_log;services->capture_money_log=true;services->allow_item_name=true;services->money_logs.clear();
+    try {
+    shop->dispatch(*live,{3,7,1,2,2});
+    check(sold->item.count==3 && actor.money()==shop_money+14 && actions->cancelled==shop_cancels+1,"retained shop partial sale differed");
+    check(live->character()->replica().core().money==actor.money(),"retained shop sale left the replica money behind");
+    const auto replica_rows=live->character()->replica().inventory().inventory();const auto replica_row=std::find_if(replica_rows.begin(),replica_rows.end(),[](const auto& row){return row.item.bag==1 && row.item.slot==2;});
+    check(replica_row!=replica_rows.end() && replica_row->item.count==3,"retained shop sale left the replica item behind");
+    shop->dispatch(*live,{3,7,1,2,3});
+    check(actor.money()==shop_money+35 && !actor.retained_inventory_item(1,2) && live->character()->replica().core().money==actor.money(),"retained shop whole sale differed");
+    const auto rows_after=live->character()->replica().inventory().inventory();check(std::none_of(rows_after.begin(),rows_after.end(),[](const auto& row){return row.item.bag==1 && row.item.slot==2;}),"retained shop whole sale left the replica row");
+    check(services->money_logs.size()==2 && services->money_logs[0].size()==0xa4 && services->money_logs[0][0]==4 && services->money_logs[0][1]==4,"retained shop sale did not emit its 0404 logs");services->capture_money_log=shop_capture;services->allow_item_name=false;services->money_logs.clear();
+    } catch(const std::exception& failure) {
+     // The test pool dies before the actor: release first so a failure is not masked by teardown.
+     std::cerr<<"NPC shop session test: "<<failure.what()<<"\n";(void)actor.release_inventory_item(1,2,sold);throw;
+    }
+    const auto restored=actor.money();actor.money()=shop_money;live->character()->replica().apply(money_database_packet(11,shop_money));check(actor.money()!=restored,"shop money reset failed");}
    const auto clock_before=services->clock_reads;check(pickup->pick_tick_ms()==100 && services->clock_reads==clock_before+1,"pickup did not use actual zone clock");
    services->on_tick=[&]{live->admission().zone=nullptr;};bool clock_zone_changed=false;try{(void)pickup->pick_tick_ms();}catch(const std::logic_error&){clock_zone_changed=true;}live->admission().zone=&live_zone;services->on_tick={};
    check(clock_zone_changed,"pickup accepted reentrant zone clock change");

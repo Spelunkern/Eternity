@@ -289,6 +289,7 @@ public:
     // both NPC lookups together; the caller retains both zones during transfer.
     void rebind_npc_zone(ZoneNpcs& expected,ZoneNpcs& destination);
     bool uses_interaction(const VerticalNpcInteraction& value) const noexcept {return &interaction_==&value;}
+    const VerticalNpcInteraction& interaction() const noexcept {return interaction_;}
 private:
     Actor& actor_;VerticalQuests& quests_;ZoneNpcs* zone_;VerticalNpcInteraction& interaction_;
     VerticalQuestPacketActions& quest_actions_;VerticalNpcPacketActions& npc_actions_;
