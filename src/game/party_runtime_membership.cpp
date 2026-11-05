@@ -8,7 +8,7 @@ void append(net::Packet& p,std::uint32_t n,unsigned bytes=4) {
     for(unsigned i=0;i<bytes;++i) p.push_back(static_cast<std::uint8_t>(n>>(i*8)));
 }
 void valid(const PartyNormalMembership& p) {
-    if(p.experience.kind!=0 || p.count<0 || p.count>7) throw std::invalid_argument("Invalid normal party projection");
+    if(p.count<0 || p.count>7) throw std::invalid_argument("Invalid normal party projection");
     for(std::int32_t i=0;i<p.count;++i) if(!p.slots[static_cast<std::size_t>(i)]) throw std::invalid_argument("Absent normal party member");
 }
 void refresh(PartyNormalMembership& p) {

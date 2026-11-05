@@ -31,7 +31,7 @@ struct PartyNormalMembership {
     // Only pUser shifts on leave; Index fields and inactive tail are retained.
     std::array<PartyMembershipUser*,7> slots{};
     std::array<std::uint32_t,7> slot_indices{};
-    PartyRuntime experience{}; // valid normal owner has kind == 0
+    PartyRuntime experience{}; // normal BODY does not validate kind
 };
 class PartyMembershipWorld {
 public:
@@ -56,7 +56,9 @@ public:
     virtual void send_log(const net::Packet&)=0;
 };
 // ps_game.exe CParty::EnterNormalParty 00445fe0 / LeaveNormalParty 00446960.
-// Caller supplies valid normal membership and non-null active slots. These do
+// Caller supplies a seven-slot projection with count 0..7 and non-null active
+// slots. The original normal BODY has no kind guard; EnterUser selects it for
+// every kind != 1. These do
 // not implement invitations, raid conversion, manager allocation or transport.
 // Shared recovered emitters, also used by registry force-disband.
 void notify_party_membership_scene(PartyMembershipUser&,PartyMembershipWorld&);

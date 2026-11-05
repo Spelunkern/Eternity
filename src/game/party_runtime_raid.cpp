@@ -66,7 +66,7 @@ bool enter_raid_party(PartyRegistryParty& p,PartyMembershipUser& user,PartyMembe
     // count+1 modulo six, so for a nonmultiple it is 1 on EVERY full chunk.
     net::Packet header;append(header,0xb0b,2);append(header,0,1);
     append(header,raid_membership_index(p,p.leader),1);append(header,raid_membership_index(p,p.sub_leader),1);
-    append(header,static_cast<std::uint32_t>(p.item_division),2);append(header,p.experience.kind,1);append(header,p.auto_join?1U:0U,1);append(header,0,1);
+    append(header,static_cast<std::uint32_t>(p.item_division),2);append(header,p.experience.kind,1);append(header,p.auto_join,1);append(header,0,1);
     net::Packet roster=header;std::int32_t included=0,in_chunk=0;
     for(std::int32_t i=0;i<30;++i) {
         auto* u=raid_membership_slot(p,i);if(!u)continue;

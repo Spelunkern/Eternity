@@ -5,7 +5,7 @@ void reset_registry_party(PartyRegistryParty& party) noexcept {
     party.experience.experience_level=0;
     party.slot_indices.fill(0xffff);party.slots.fill(nullptr);
     party.extra_indices.fill(0xffff);party.extra_slots.fill(nullptr);
-    party.experience.kind=0;party.auto_join=false;party.sub_leader=1;
+    party.experience.kind=0;party.auto_join=0;party.sub_leader=1;
 }
 void construct_registry_party(PartyRegistryParty& party,PartyRegistryPorts& ports) {
     ports.initialize_lock(PartyRegistryLock::party,&party,4000);

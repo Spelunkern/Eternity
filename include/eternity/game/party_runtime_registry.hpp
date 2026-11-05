@@ -12,7 +12,7 @@ struct PartyRegistryParty:PartyNormalMembership {
     std::array<std::uint32_t,23> extra_indices{};
     std::array<PartyMembershipUser*,23> extra_slots{};
     std::int32_t item_division{},sub_leader{};
-    bool auto_join{};
+    std::uint8_t auto_join{}; // original +0x115 raw byte, admission tests nonzero
 };
 struct PartyRegistry {
     std::atomic<std::uint32_t> id_counter{1};
