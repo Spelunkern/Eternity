@@ -1,0 +1,9 @@
+# ps_game.exe SHA256 0fb7c9f13b5bcf186118f8bfe73ab214226b93e8aa502b8e6fded4a8312bc547; CMob::AttackAI 004a1ab0 stationary normal; real range, aggro/Attack intercepted
+# now slot ai speed obelisk range distance status mutation | trace during deadline current status target_kind
+100	0	4	0	0	5	1065353216	1	0	RA	0	10	0	1	7
+100	1	0	0	0	5	1065353216	1	0	RA	1	2100	0	1	7
+100	2	0	2	1	5	1065353216	1	0	RA	2	2100	0	1	7
+100	1	4	0	0	5	1084856730	1	0	R	999	11	99	0	0
+100	2	4	0	0	5	1101004800	2	0	R	999	12	99	2	0
+100	1	4	0	0	5	1065353216	1	2	RA	1	4294966673	0	1	7
+4294967294	2	4	0	0	5	1065353216	1	0	RA	2	1998	0	1	7

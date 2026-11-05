@@ -39,6 +39,7 @@ public:
     // access uses the same external recursive mutex. Recovery writer is required;
     // an unavailable file still has the original marker-clearing behavior.
     CharacterSaveStore(storage::SqlServer& main,storage::SqlServer& auxiliary,std::uint8_t server,std::recursive_mutex& cache_mutex,CharacterRecoveryFile&,std::string catalog="PS_GameData");
+    bool uses_cache_mutex(const std::recursive_mutex& mutex) const noexcept {return &cache_mutex_==&mutex;}
     bool attempt(CharacterReplica&,bool quick,bool recovery,bool& timeout_seen,std::string_view username,const std::function<void(std::string_view)>& diagnostic={});
     UserCharacterSaveResult save(CharacterReplica&,bool periodic,bool quick,bool in_game,std::string_view username,const CharacterSaveCallbacks&,const std::function<void(std::string_view)>& diagnostic={});
     UserCharacterSaveResult save_exit(CharacterReplica&,bool shutdown,std::string_view username,const CharacterSaveCallbacks&,const std::function<void(std::string_view)>& diagnostic={});

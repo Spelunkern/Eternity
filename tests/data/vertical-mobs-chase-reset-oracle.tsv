@@ -1,0 +1,7 @@
+# ps_game.exe SHA256 0fb7c9f13b5bcf186118f8bfe73ab214226b93e8aa502b8e6fded4a8312bc547; target reset 00490980; vision cleanup, FindTarget and ResetFSM intercepted
+# status pais found | trace status target_kind target_id fixed
+2	0	0	-	2	7	42	99
+1	0	0	V	0	0	0	0
+1	1	0	VTF	100	0	0	0
+1	1	1	VT	1	7	42	0
+2	1	1	-	2	7	42	99

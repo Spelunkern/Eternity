@@ -3,6 +3,7 @@
 #include <functional>
 #include <memory>
 #include <mutex>
+#include <map>
 
 namespace eternity::game {
 void initialize_ground_item(GroundItem&);
@@ -17,6 +18,11 @@ public:
     using Allocator=std::function<std::unique_ptr<GroundItem>()>;
     explicit GroundItemPool(std::uint32_t serial=1,Allocator allocator={});
     GroundItem* allocate();
+    // Native ownership check: object belongs to this pool and is not free.
+    bool is_allocated(const GroundItem&) const;
+    // Pin prevents reuse while a serialized operation holds the object.
+    bool pin(GroundItem&);
+    void unpin(GroundItem&) noexcept;
     void release(GroundItem*);
     void release(GroundItem& item) {release(&item);}
     ItemPoolStatistics statistics() const;
@@ -26,5 +32,6 @@ private:
     Allocator allocator_;
     std::vector<std::unique_ptr<GroundItem>> objects_;
     std::vector<GroundItem*> available_;
+    std::map<GroundItem*,std::size_t> pins_;
 };
 }

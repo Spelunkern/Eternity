@@ -2,6 +2,8 @@
 #include "eternity/game/map_config.hpp"
 #include "eternity/game/random.hpp"
 #include "eternity/net/framing.hpp"
+#include <functional>
+#include <map>
 
 namespace eternity::game {
 struct ZoneDoor {
@@ -42,9 +44,13 @@ public:
     void update_doors(std::uint32_t tick,ZoneEnvironmentSink&);
     void update_weather(std::uint32_t tick,RandomSource&,ZoneEnvironmentSink&);
     net::Packet weather_packet(std::uint8_t mode) const;
+    // CCell::SendCellInfoEnter door block. Serialized access; door vector and
+    // cell membership must not be structurally mutated during callbacks.
+    void send_cell_doors(CellCoordinates,const std::function<void(const net::Packet&)>&);
 private:
     std::vector<ZoneDoor> doors_;
     std::vector<ZoneRegion> regions_;
     ZoneWeather weather_;
+    std::map<std::pair<std::int32_t,std::int32_t>,std::size_t> door_cursors_;
 };
 }

@@ -1,0 +1,14 @@
+# ps_game.exe SHA256 0fb7c9f13b5bcf186118f8bfe73ab214226b93e8aa502b8e6fded4a8312bc547; CMob::UpdateAttack 004a7db0; status and world callbacks intercepted
+# status stack now deadline sleep stun found life mutate | trace status target_kind
+100	0	50	50	0	0	1	0	0	-	100	7
+1	1	50	50	0	0	1	0	0	-	1	7
+2	0	50	50	0	0	1	0	0	-	2	7
+1	0	49	50	0	0	1	0	0	-	1	7
+1	0	50	50	1	0	1	0	0	-	1	7
+1	0	50	50	0	1	1	0	0	-	1	7
+1	0	50	50	0	0	1	0	0	FA	1	7
+1	0	50	50	0	0	0	0	0	FV	0	0
+1	0	50	50	0	0	1	1	0	FV	0	0
+1	0	50	50	0	0	0	0	1	FV	2	0
+3	0	50	50	0	0	0	0	0	R	3	7
+0	0	50	50	0	0	0	0	0	-	0	7

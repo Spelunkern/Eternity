@@ -30,7 +30,10 @@ struct QuestStartItemsActorOwners {
 class QuestStartItemsActor final:private QuestStartItemsWorld {
 public:
     QuestStartItemsActor(QuestStartItemsActorOwners,QuestStartItemsActorPorts&);
+    bool owns_actor(const Actor& actor) const noexcept {return owners_.actor.get()==&actor;}
     bool grant(std::int32_t type,std::int32_t id,std::int32_t count);
+    // Inner QuestAddItem 0047e6f0: no standalone 0205 client receipt.
+    bool add(std::int32_t type,std::int32_t id,std::int32_t count,QuestStartItemsResult&);
 private:
     struct Frame {GroundItem* unclaimed=nullptr;GroundItem* published=nullptr;};
     const ItemDefinition* find_definition(std::int32_t,std::int32_t) override;

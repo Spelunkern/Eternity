@@ -1,0 +1,4 @@
+# ps_game.exe SHA256 0fb7c9f13b5bcf186118f8bfe73ab214226b93e8aa502b8e6fded4a8312bc547; CMob::UpdateIdle 004a7e60, CZone::MoveMob 004169d0; random, EnableLine and MoveMob intercepted
+# initial_normal callback_normal random1 random2 random3 | moves resulting_next_move
+100	500	41	18467	6334	1	16884
+100	4294967295	41	18467	6334	1	16383

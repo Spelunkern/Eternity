@@ -7,9 +7,18 @@
 #include "eternity/game/linked_mobs.hpp"
 #include "eternity/game/corpses.hpp"
 #include "eternity/game/ground_items.hpp"
+#include "eternity/game/world_zone_send_queue.hpp"
 #include <memory>
 
 namespace eternity::game {
+class WorldAdmission;
+struct RuntimeZone;
+class ZoneActiveListRemoval {
+public:
+    virtual ~ZoneActiveListRemoval()=default;
+    // Remove this exact active instance from the world thread list; no reentry.
+    virtual void remove_active(RuntimeZone&) noexcept=0;
+};
 struct ZoneLocalTime {std::uint16_t month=0,day=0,weekday=0,hour=0;};
 std::optional<std::uint32_t> guild_rank_window(const MapSettings&,ZoneLocalTime);
 struct ZoneGuildAccess {
@@ -36,6 +45,8 @@ struct RuntimeZone {
     std::unique_ptr<ZoneCorpses> corpses;
     std::unique_ptr<ZoneItems> items;
     std::optional<ZoneEnvironment> environment;
+    // The original CZone owns this queue across object release and pool reuse.
+    WorldZoneSendQueue world_sends;
     std::array<InstanceZonePortal,10> instance_portals{};
     std::int32_t instance_portal_country(std::int32_t portal_id) const noexcept;
     void update_instance_portal_country(std::int32_t portal_id,std::int32_t country);
@@ -59,11 +70,19 @@ struct ZoneStatistics {
 };
 // Serialized world executor; maps and services must outlive the registry. Required services
 // own map objects, their actual initialization and the server's zone queue; no no-op defaults.
+enum class InstanceExpiryResult {occupied,waiting,retired};
 class ZoneRegistry {
 public:
     ZoneRegistry(const ServerMaps&,ZoneServices&,std::uint32_t serial=0,ZoneStatistics statistics = {});
     bool initialize();
     RuntimeZone* select(std::uint16_t map_id,const ZoneUserAccess&);
+    // Borrowed registry-order snapshot; caller must serialize and pin every
+    // returned owner before invoking any user callbacks.
+    std::vector<RuntimeZone*> logout_snapshot() const;
+    // Called for an actual world-thread active instance under its serialization.
+    // Caller ensures all external zone leases are quiescent; removal must unlink
+    // the actual active-list node. release_objects must be retry-safe on failure.
+    InstanceExpiryResult expire_instance(RuntimeZone&,WorldAdmission&,std::uint32_t now,ZoneActiveListRemoval&);
     const ZoneStatistics& statistics() const noexcept {return statistics_;}
     std::uint32_t serial() const noexcept {return serial_;}
 private:
@@ -73,6 +92,7 @@ private:
         std::map<std::uint32_t,RuntimeZone*> owned;
     };
     const ServerMaps& maps_;ZoneServices& services_;std::vector<Node> nodes_;
-    std::uint32_t serial_;ZoneStatistics statistics_;bool started_=false,ready_=false;
+    std::uint32_t serial_;ZoneStatistics statistics_;bool started_=false,ready_=false,collecting_=false;
+    RuntimeZone* retiring_=nullptr;
 };
 }

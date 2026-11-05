@@ -47,6 +47,7 @@ void QuestRuntime::add_active(RestoredQuest& quest) {
     else if(quest.definition->end_type()==3) player_kill_=changed(player_kill_,1);
 }
 void QuestRuntime::add_finished(RestoredQuest& quest) {
+    std::lock_guard lock(finished_mutex_);
     if(!quest.definition) throw std::invalid_argument("Finished quest lacks definition");
     pool_.claim(quest,this);
     try {finished_.push_back(&quest);}catch(...) {pool_.unclaim(quest);throw;}
@@ -68,13 +69,15 @@ RestoredQuest* QuestRuntime::find_active(std::uint16_t id) noexcept {for(auto* q
 void QuestRuntime::remove(RestoredQuest& quest,std::uint8_t success,QuestRuntimeWorld& world) {
     const auto at=std::find(active_.begin(),active_.end(),&quest);
     if(at==active_.end() || !quest.definition) throw std::invalid_argument("QuestRemove requires a bound active quest");
-    const bool repeat=recycles_on_removal(*quest.definition);if(!repeat) finished_.reserve(finished_.size()+1);
+    const bool repeat=recycles_on_removal(*quest.definition);std::unique_lock finished_lock(finished_mutex_,std::defer_lock);
+    if(!repeat) {finished_lock.lock();finished_.reserve(finished_.size()+1);}
     if(cursor_==&quest) cursor_=at==active_.begin()?nullptr:*std::prev(at);
     active_.erase(at);quest.success=repeat?2:success;
     if(quest.definition->end_type()==3) player_kill_=changed(player_kill_,UINT32_MAX);
     else if(quest.definition->end_type()==2) mob_kill_=changed(mob_kill_,UINT32_MAX);
     net::Packet packet{2,10};append(packet,user_id_,4);append(packet,quest.packet.id,2);append(packet,quest.success,1);
     if(repeat) {pool_.unclaim(quest);pool_.release(quest);}else finished_.push_back(&quest);
+    if(finished_lock.owns_lock()) finished_lock.unlock();
     world.send_database(packet);
 }
 }

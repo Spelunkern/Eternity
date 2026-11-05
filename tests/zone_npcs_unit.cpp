@@ -51,6 +51,14 @@ Bytes prepare(const MapDefinition& map,const NpcDefinitions& definitions,bool sy
     }
     require(zone.all().empty(),"NPC registry not emptied");number(result,static_cast<std::uint32_t>(services.events.size()));result.insert(result.end(),services.events.begin(),services.events.end());return result;
 }
+struct SnapshotViewer final:NpcViewer {
+    ZoneNpcs* zone=nullptr;Npc* remove=nullptr;bool nested=false;std::vector<Bytes> packets;
+    void send_self(const Bytes& packet) override {
+        packets.push_back(packet);
+        if(remove) {auto* target=remove;remove=nullptr;require(zone->leave(*target),"NPC snapshot removal failed");}
+        if(nested) {nested=false;SnapshotViewer inner;inner.zone=zone;zone->send_leave({0,0},inner);}
+    }
+};
 int main(int argc,char** argv) {
     try {
         require(argc==2 || argc==4,"Expected NPC runtime oracle and optional map directory/NpcQuest.SData");std::ifstream input(argv[1]);require(input.good(),"Cannot open NPC runtime oracle");
@@ -76,6 +84,15 @@ int main(int argc,char** argv) {
         // Entry uses cell bounds and accepts the last extra cell beyond nominal map size.
         Services services;ZoneNpcs zone(MapGeometry(81),services);Npc npc;npc.id=90000;npc.type=257;npc.type_id=70000;npc.angle=-3;npc.position={119,3,0};
         require(zone.enter(npc) && zone.find(npc.id)==&npc && npc.cell->x==2,"NPC extra-cell entry differs");require(zone.leave(npc) && !zone.find(npc.id),"NPC lookup survived removal");
+        Services snapshot_services;ZoneNpcs snapshot_zone(MapGeometry(81),snapshot_services);
+        Npc first,second,third;first.id=11;second.id=12;third.id=13;
+        for(auto* subject:{&first,&second,&third}) {subject->position={1,2,3};require(snapshot_zone.enter(*subject),"NPC snapshot setup");}
+        SnapshotViewer viewer;viewer.zone=&snapshot_zone;snapshot_zone.send_enter({0,0},viewer);
+        require(viewer.packets.size()==3 && viewer.packets[0]==npc_appearance(first) && viewer.packets[2]==npc_appearance(third),"NPC snapshot appearance order differs");
+        viewer.packets.clear();viewer.nested=true;snapshot_zone.send_enter({0,0},viewer);
+        require(viewer.packets.size()==4 && viewer.packets[0]==viewer.packets[1],"NPC nested cursor restart differs");
+        viewer.packets.clear();viewer.remove=&first;snapshot_zone.send_leave({0,0},viewer);
+        require(viewer.packets.size()==3 && viewer.packets[0]==Bytes({2,14,11,0,0,0}) && viewer.packets[2]==Bytes({2,14,13,0,0,0}),"NPC removal during snapshot differs");
         std::cout<<synthetic<<" original NPC initialization/entry/leave cases and "<<distribution<<" complete map populations passed\n";
     } catch(const std::exception& error) {std::cerr<<error.what()<<'\n';return 1;}
 }

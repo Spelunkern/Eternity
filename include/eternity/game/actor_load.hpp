@@ -34,6 +34,7 @@ class ActorLoadPipeline {
 public:
     ActorLoadPipeline(const PlayerSnapshot&,const ActorLoadRules&,ActorLoadOptions,ActorScene&);
     const LoadedActor& result() const noexcept {return result_;}
+    const PlayerSnapshot& snapshot() const noexcept {return player_;}
     void equipment();
     void passive();
     void effects();

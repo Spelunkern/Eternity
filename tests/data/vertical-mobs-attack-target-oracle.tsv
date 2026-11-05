@@ -1,0 +1,9 @@
+# ps_game.exe SHA256 0fb7c9f13b5bcf186118f8bfe73ab214226b93e8aa502b8e6fded4a8312bc547; CMob::Attack 004a2000; stand/hit test/view/hit continuation intercepted, real deadline
+# sleep disabled slot hit zone mutate | trace type packet next
+0	0	0	0	1	0	SRM	11	0506037b0000002a000000000000000000	2100
+0	0	1	1	1	0	SRH	12	-	2100
+0	0	1	0	0	0	SR	12	-	2100
+1	0	0	0	1	0	-	4294967295	-	0
+0	1	0	0	1	0	-	4294967295	-	0
+0	0	0	0	1	1	SRM	13	0506037b0000002a000000000000000000	2147483748
+0	0	1	1	1	1	SRH	13	-	2147483748

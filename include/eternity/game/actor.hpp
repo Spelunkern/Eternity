@@ -111,6 +111,10 @@ public:
     // Release directly through the bound pool, preserving the pointer's current
     // count. Invoke after required DB/client sends. No ItemRemove side effects.
     bool release_inventory_item(std::uint8_t bag,std::uint16_t slot,GroundItem* expected=nullptr);
+    // Serialized whole-item ownership transfer. Neither actor nor pool may be
+    // destroyed or mutated concurrently. This does not send or persist data.
+    bool transfer_inventory_item(Actor& recipient,std::uint8_t bag,std::uint16_t slot,
+        std::uint8_t destination_bag,std::uint16_t destination_slot,GroundItem* expected);
     ItemDropResult drop_item(std::uint8_t bag,std::uint16_t slot,std::int32_t count,ItemDropWorld&,GroundItemPool&);
     bool remove_item(std::uint8_t bag,std::uint16_t slot,InventoryRemovalWorld&,bool notify=true);
     bool delete_items(std::int32_t type,std::int32_t type_id,InventoryRemovalWorld&);
@@ -177,6 +181,8 @@ public:
     void cancel_vehicle(ActorActionWorld&);
     void stop_casting(ActorActionWorld&);
     void clear_duel_debuffs();
+    // Guild-duel leave clears only the damage ledger, not individual-duel state.
+    void reset_duel_damage() {reset_damage();}
     void enter_zone_lifecycle(UserPosition,std::uint16_t map,const std::function<void()>& nprotect);
     // Serialized actor executor only; mutate the retained movement-check owner.
     ZoneMovementCheck& movement_check() noexcept {return zone_lifecycle_.movement;}

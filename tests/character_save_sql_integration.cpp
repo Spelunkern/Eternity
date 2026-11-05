@@ -1,5 +1,7 @@
 #include "eternity/game/character_save.hpp"
 #include "eternity/game/user_lifecycle.hpp"
+#include "eternity/game/character_save_lifecycle.hpp"
+#include "eternity/game/vertical_save_job_bridge.hpp"
 #include "eternity/game/db_dispatch.hpp"
 #include "eternity/game/creation.hpp"
 #include <fstream>
@@ -62,6 +64,37 @@ int main(int argc,char** argv) {
         actions.clear();live.logout_select();require(actions==std::vector<std::string>{"POST10"},"Active selection logout was not deferred");require(live.dispatch_save_job(10) && actions==std::vector<std::string>{"POST10","FRIENDS","BLOCKS","SEND3","RESET","ROSTER"} && owner.status==1 && !owner.next_save_tick,"Selection job did not save, notify, reset and reload in source order");
         actions.clear();owner.status=2;live.disconnect_by_game_server();require(actions==std::vector<std::string>{"POST9"},"Game disconnect failed to defer exit saving");require(live.dispatch_save_job(9) && actions==std::vector<std::string>{"POST9","FRIENDS","BLOCKS","SEND2","SEND3","LEAVE"},"Deferred disconnect did not join SQL save with ordered account exit notifications");
         require(!db.character_write_context_active() && !auxiliary.character_write_context_active() && diagnostics.empty(),"Lifecycle SQL dispatch leaked transaction state or diagnostics");
+        // Exercise the reusable bridge against the same real SQL store.
+        actions.clear();diagnostics.clear();owner.status=2;
+        CharacterSaveLifecyclePorts bridge_ports;
+        bridge_ports.post=[&](std::uint32_t job){actions.push_back("POST"+std::to_string(job));};
+        bridge_ports.send=[&](net::Packet p){require(p.size()==6 && p[1]==3 && p[2]==0xad && p[3]==0x26 && p[4]==0 && p[5]==0,"Bridge notification lost account");actions.push_back("SEND"+std::to_string(p[0]));};
+        bridge_ports.leave=[&]{actions.push_back("LEAVE");};bridge_ports.reset=[]{};bridge_ports.roster=[](bool){};
+        bridge_ports.save_friends=callbacks.save_friends;bridge_ports.save_blocks=callbacks.save_blocks;bridge_ports.diagnostic=diagnostic;
+        std::recursive_mutex other_mutex;bool mutex_rejected=false;
+        try {CharacterSaveLifecycle invalid(owner,cache,store,other_mutex,"owner_user",bridge_ports);}catch(const std::invalid_argument&){mutex_rejected=true;}
+        require(mutex_rejected,"Bridge accepted a different store mutex");
+        CharacterSaveLifecycle bridge(owner,cache,store,mutex,"owner_user",std::move(bridge_ports));
+        auto bridge_money=packet(0x603);put(bridge_money,123,4);require(bridge.apply(bridge_money)==InventoryReplicaResult::applied,"Bridge replica update failed");
+        require(bridge.disconnect(vertical_database_disconnect_packet(9901)) && actions==std::vector<std::string>{"POST9"},"Bridge disconnect not queued");
+        require(bridge.dispatch(9) && actions==std::vector<std::string>{"POST9","FRIENDS","BLOCKS","SEND2","SEND3","LEAVE"},"Bridge SQL exit order differs");
+        require(db.query("SELECT Money FROM "+prefix+"Chars WHERE CharID="+cid+";")[0].rows[0][0]==storage::Cell{"123"},"Bridge failed to persist replica update");
+        require(diagnostics.empty() && !db.character_write_context_active() && !auxiliary.character_write_context_active(),"Bridge SQL exit leaked diagnostics or transaction");
+        // Bind the actual store to the worker-facing packet/retry collector.
+        actions.clear();diagnostics.clear();owner.status=2;
+        CharacterSaveLifecyclePorts job_ports;
+        job_ports.post=[&](std::uint32_t job){actions.push_back("POST"+std::to_string(job));};
+        job_ports.send=[&](net::Packet){actions.push_back("UNEXPECTED_DIRECT_SEND");};
+        job_ports.leave=[&]{actions.push_back("LEAVE");};job_ports.reset=[]{};job_ports.roster=[](bool){};
+        job_ports.save_friends=callbacks.save_friends;job_ports.save_blocks=callbacks.save_blocks;job_ports.diagnostic=diagnostic;
+        VerticalSaveJobBridge job_bridge(owner,cache,store,mutex,"owner_user",std::move(job_ports));
+        auto job_money=packet(0x603);put(job_money,124,4);require(job_bridge.apply(job_money)==InventoryReplicaResult::applied,"Save-job replica update failed");
+        require(job_bridge.disconnect(vertical_database_disconnect_packet(9901)) && actions==std::vector<std::string>{"POST9"},"Save-job disconnect not queued");
+        std::vector<std::uint32_t> retries;const auto collect_retry=[&](std::uint32_t job){retries.push_back(job);};
+        const auto replies=job_bridge.dispatch_collect(9,collect_retry);
+        require(retries.empty() && replies==std::vector<net::Packet>({{2,3,0xad,0x26,0,0},{3,3,0xad,0x26,0,0}}) && actions==std::vector<std::string>{"POST9","FRIENDS","BLOCKS","LEAVE"},"Save-job SQL replies/order differ");
+        require(db.query("SELECT Money FROM "+prefix+"Chars WHERE CharID="+cid+";")[0].rows[0][0]==storage::Cell{"124"},"Save-job bridge failed to persist replica");
+        require(diagnostics.empty() && !db.character_write_context_active() && !auxiliary.character_write_context_active(),"Save-job SQL leaked diagnostics or transaction");
         // Real native completion worker, with one owner and one worker for
         // deterministic SQL/notification order. Cache access shares its mutex.
         actions.clear();diagnostics.clear();owner.status=2;DbJobDispatcher dispatcher(true,1);

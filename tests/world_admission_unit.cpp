@@ -49,6 +49,15 @@ int main(int argc,char** argv) {
         combined.update_zone_wait_packets(s.zone);
         require(s.events==std::vector<std::string>{"PACKETS 0","ENTER 0","PACKETS 1","ENTER 1"},"Zone cursor lost a user after current removal");
         require(first.location==4 && second.location==4 && combined.zone_waiting_count(s.zone)==0,"Zone wait not drained");
+        first.zone=nullptr;first.map=42;const auto registration_events=s.events.size();
+        combined.wait_after_zone_leave(first);
+        require(first.location==2 && combined.waiting_count()==1 && first.map==42 && s.events.size()==registration_events,"Transfer did not enqueue detached user without registration");
+        bool duplicate=false;try {combined.wait_after_zone_leave(first);}catch(const std::logic_error&) {duplicate=true;}
+        require(duplicate && combined.waiting_count()==1,"Duplicate transfer changed waiting membership");
+        combined.update_packets();require(first.location==3 && first.zone==&s.zone && combined.zone_waiting_count(s.zone)==1,"Transfer did not reach destination zone wait");
+        require(combined.world_enter(first) && first.location==4 && combined.zone_waiting_count(s.zone)==0,"Transfer did not complete real world entry");
+        bool still_attached=false;try {combined.wait_after_zone_leave(first);}catch(const std::logic_error&) {still_attached=true;}
+        require(still_attached && first.location==4 && first.zone==&s.zone,"Transfer accepted user before zone leave");
         std::cout<<cases<<" original world admission sequences / "<<steps<<" list/wait/client/world entry operations passed\n";
     }catch(const std::exception& error) {std::cerr<<error.what()<<'\n';return 1;}
 }

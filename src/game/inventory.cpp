@@ -111,6 +111,22 @@ bool Actor::release_inventory_item(std::uint8_t bag,std::uint16_t slot,GroundIte
     const auto retained=std::find_if(retained_inventory_.begin(),retained_inventory_.end(),[&](const auto& value){return value.item==held->item;});
     retained_inventory_.erase(retained);return true;
 }
+bool Actor::transfer_inventory_item(Actor& recipient,std::uint8_t bag,std::uint16_t slot,
+    std::uint8_t destination_bag,std::uint16_t destination_slot,GroundItem* expected) {
+    if(&recipient==this || !expected)throw std::invalid_argument("Whole transfer requires distinct actors and an expected item");
+    const auto held=retained_inventory_item(bag,slot);
+    if(!held || held->item!=expected)return false;
+    const auto mirror=std::find_if(inventory_.begin(),inventory_.end(),[&](const auto& value){return value.bag==bag && value.slot==slot;});
+    if(mirror==inventory_.end() || !held->pool || !held->pool->is_allocated(*expected))
+        throw std::logic_error("Whole transfer source owner is inconsistent");
+    if(!recipient.claim_inventory_item(destination_bag,destination_slot,*expected,*held->pool))return false;
+    // Destination publication can allocate, but does not touch the distinct
+    // source actor. Once it succeeds, source removal does not release the item.
+    inventory_.erase(mirror);
+    const auto retained=std::find_if(retained_inventory_.begin(),retained_inventory_.end(),[&](const auto& value){return value.item==expected;});
+    if(retained==retained_inventory_.end())std::terminate();
+    retained_inventory_.erase(retained);return true;
+}
 void Actor::prepare_equipment_removal(std::uint16_t slot,InventoryRemovalWorld& world) {
     const auto at=[&] {return std::find_if(inventory_.begin(),inventory_.end(),[&](const auto& value){return value.bag==0 && value.slot==slot;});};
     if(slot>=13 || at()==inventory_.end()) throw std::logic_error("Missing original equipment removal slot");
@@ -204,7 +220,10 @@ InventoryReceipt Actor::admit_item(GroundItem& item,InventoryWorld& world,Ground
     for(std::int32_t bag=1;bag<=status_.skills.max_bags;++bag) {
         if(bag>9) throw std::out_of_range("Original inventory bag count exceeds storage");
         for(std::uint16_t slot=0;slot<24;++slot) if(!at(bag,slot)) {
-            auto value=item.item;value.id=item.definition->id;value.bag=static_cast<std::uint8_t>(bag);value.slot=slot;inventory_.push_back(std::move(value));retained_inventory_.push_back({static_cast<std::uint8_t>(bag),slot,&item,&pool});
+            // Publish the pooled item and its mirror together through the same
+            // ownership transfer used by other live inventory producers.
+            if(!claim_inventory_item(static_cast<std::uint8_t>(bag),slot,item,pool))
+                throw std::logic_error("Inventory slot changed during admission");
             world.send_inventory_database(inventory_add_packet(account_id_,static_cast<std::uint8_t>(bag),static_cast<std::uint8_t>(slot),item));
             send_self(inventory_receipt_packet(static_cast<std::uint8_t>(bag),static_cast<std::uint8_t>(slot),item.item,item.definition->stack_count<2));return finish(false);
         }

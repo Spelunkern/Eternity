@@ -24,14 +24,51 @@ EntryCatalogUpdate SocialCatalog::apply_db(std::span<const std::uint8_t> p) {
         else if(blocked_.size()<100) add_block({get(p,at),wire_string(p.subspan(at+4,21)),wire_string(p.subspan(at+25,51))});
     }}catch(const std::invalid_argument&){return EntryCatalogUpdate::rejected;}return EntryCatalogUpdate::applied;
 }
+EntryCatalogUpdate SocialCatalog::apply_client(std::span<const std::uint8_t> p,const std::function<void(net::Packet)>& send_db,
+    const std::function<void(net::Packet)>& send_self,const Lookup& lookup,const std::function<void(std::uint32_t,net::Packet)>& send_peer) {
+    if(p.size()<2)return EntryCatalogUpdate::rejected;
+    const auto op=get(p,0,2);if(op!=0x2205 && op!=0x2206 && op!=0x220a && op!=0x220b)return EntryCatalogUpdate::unsupported;
+    if(!send_db || !send_self || !lookup || !send_peer)throw std::invalid_argument("Missing social packet services");
+    if(p.size()<6)return EntryCatalogUpdate::rejected;
+    const bool friend_list=op==0x2205 || op==0x2206,memo=op==0x2206 || op==0x220b;const auto id=get(p,2);
+    std::string text;
+    if(memo) {
+        if(p.size()<7)return EntryCatalogUpdate::rejected;
+        // PacketComm 00475d9f / 00476010 silently ignores an over-limit
+        // declared memo length; it does not close or emit a response.
+        if(p[6]>(friend_list?51:50))return EntryCatalogUpdate::applied;
+        const auto available=std::min<std::size_t>(p.size()-7,50);const auto begin=p.begin()+7;const auto end=std::find(begin,begin+available,0);
+        if(end==begin+available && available<50)return EntryCatalogUpdate::rejected;
+        text.assign(begin,end);
+    }
+    const auto friend_it=std::find_if(friends_.begin(),friends_.end(),[&](const auto& row){return row.id==id;});
+    const auto block_it=std::find_if(blocked_.begin(),blocked_.end(),[&](const auto& row){return row.id==id;});
+    if(friend_list ? friend_it==friends_.end() : block_it==blocked_.end())return EntryCatalogUpdate::applied;
+    if(memo) {if(friend_list)friend_it->memo=text;else block_it->memo=text;}
+    else if(friend_list) {
+        // FriendRemove 004b9890 copies ID/job/name/memo from the last row,
+        // leaving family and grow bytes in the destination slot untouched.
+        if(friend_it!=friends_.end()-1) {const auto family=friend_it->family,grow=friend_it->grow;*friend_it=friends_.back();friend_it->family=family;friend_it->grow=grow;}
+        friends_.pop_back();
+    } else {*block_it=std::move(blocked_.back());blocked_.pop_back();}
+    net::Packet db{static_cast<std::uint8_t>(memo?(friend_list?4:8):(friend_list?3:7)),0x0c};append(db,account_);append(db,id);
+    if(memo){db.insert(db.end(),text.begin(),text.end());db.resize(61,0);}send_db(std::move(db));
+    net::Packet response{static_cast<std::uint8_t>(op),0x22};append(response,id);
+    if(memo){response.push_back(static_cast<std::uint8_t>(text.size()));response.insert(response.end(),text.begin(),text.end());response.push_back(0);}send_self(std::move(response));
+    if(!memo && friend_list && lookup(id)){net::Packet status{7,0x22};append(status,character_);status.push_back(0);send_peer(id,std::move(status));}
+    return EntryCatalogUpdate::applied;
+}
 void SocialCatalog::notify_online(const Lookup& lookup,const std::function<void(std::uint32_t,net::Packet)>& send) const {
     if(!lookup || !send) throw std::invalid_argument("Missing social world lookup/transport");
-    for(const auto& value:friends_) if(value.id && lookup(value.id)) {net::Packet p{7,0x22};append(p,character_);p.push_back(1);send(value.id,std::move(p));}
+    // The original reads the current slot ID before lookup and rereads the
+    // live count after each callback. Do not retain vector references across
+    // a reentrant lookup or send which can remove or append a friend.
+    for(std::size_t i=0;i<friends_.size();++i) {const auto id=friends_[i].id;if(id && lookup(id)) {net::Packet p{7,0x22};append(p,character_);p.push_back(1);send(id,std::move(p));}}
 }
 void SocialCatalog::notify_offline(const Lookup& lookup,const std::function<void(std::uint32_t,net::Packet)>& send) const {
     // ps_game.exe ReleaseFriend 004757a0; no mutual-friend check, clear or zone filter.
     if(!lookup || !send) throw std::invalid_argument("Missing social world lookup/transport");
-    for(const auto& value:friends_) if(value.id && lookup(value.id)) {net::Packet p{7,0x22};append(p,character_);p.push_back(0);send(value.id,std::move(p));}
+    for(std::size_t i=0;i<friends_.size();++i) {const auto id=friends_[i].id;if(id && lookup(id)) {net::Packet p{7,0x22};append(p,character_);p.push_back(0);send(id,std::move(p));}}
 }
 std::vector<net::Packet> SocialCatalog::packets(const Lookup& lookup) const {
     std::vector<net::Packet> out;send_packets(lookup,[&](net::Packet p){out.push_back(std::move(p));});return out;
@@ -39,9 +76,15 @@ std::vector<net::Packet> SocialCatalog::packets(const Lookup& lookup) const {
 void SocialCatalog::send_packets(const Lookup& lookup,const std::function<void(net::Packet)>& send) const {
     if(!lookup || !send) throw std::invalid_argument("Missing social world lookup/transport");
     net::Packet p{1,0x22,0};const auto flush=[&](std::uint16_t op){if(p[2]) send(std::move(p));p={static_cast<std::uint8_t>(op),static_cast<std::uint8_t>(op>>8),0};};
-    for(const auto& value:friends_) {const auto* peer=lookup(value.id);append(p,value.id);p.push_back(value.job);p.push_back(peer && peer->find(character_)?1:0);fixed(p,value.name,21);p.push_back(static_cast<std::uint8_t>(value.memo.size()));p.insert(p.end(),value.memo.begin(),value.memo.end());if(++p[2]==25) flush(0x2201);}
+    for(std::size_t i=0;i<friends_.size();++i) {
+        const auto id=friends_[i].id;const auto* peer=lookup(id);const bool online=peer && peer->find(character_);
+        // FriendRemove clears the former last fixed slot. If lookup removed
+        // the current last row, the original still serializes that zero slot.
+        const auto value=i<friends_.size()?friends_[i]:FriendEntry{};
+        append(p,value.id);p.push_back(value.job);p.push_back(online?1:0);fixed(p,value.name,21);p.push_back(static_cast<std::uint8_t>(value.memo.size()));p.insert(p.end(),value.memo.begin(),value.memo.end());if(++p[2]==25) flush(0x2201);
+    }
     flush(0x2208);
-    for(const auto& value:blocked_) {append(p,value.id);fixed(p,value.name,21);p.push_back(static_cast<std::uint8_t>(value.memo.size()));p.insert(p.end(),value.memo.begin(),value.memo.end());if(++p[2]==25) flush(0x2208);}
+    for(std::size_t i=0;i<blocked_.size();++i) {const auto value=blocked_[i];append(p,value.id);fixed(p,value.name,21);p.push_back(static_cast<std::uint8_t>(value.memo.size()));p.insert(p.end(),value.memo.begin(),value.memo.end());if(++p[2]==25) flush(0x2208);}
     if(p[2]) send(std::move(p));
 }
 EntryCatalogUpdate EntryCatalogs::apply_db(std::span<const std::uint8_t> p) {

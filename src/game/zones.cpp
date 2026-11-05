@@ -1,4 +1,6 @@
 #include "eternity/game/zones.hpp"
+#include "eternity/game/world_admission.hpp"
+#include "eternity/game/zone_users.hpp"
 #include <algorithm>
 #include <stdexcept>
 
@@ -64,6 +66,7 @@ bool ZoneRegistry::initialize() {
 RuntimeZone* ZoneRegistry::select(std::uint16_t id,const ZoneUserAccess& user) {
     // GetZoneByMapID 00413df0. Existing permanent zones bypass all user/creation checks.
     if(!ready_) throw std::logic_error("Zone registry has not initialized");
+    if(collecting_ || retiring_) throw std::logic_error("Zone registry is retiring an instance");
     const auto* map=maps_.find(id);if(!map) return nullptr;auto& node=nodes_[id];
     if(node.permanent) return node.permanent.get();
     std::optional<std::uint32_t> owner;const bool override=user.permission<=10 && user.instance_owner!=0;
@@ -108,4 +111,55 @@ RuntimeZone* ZoneRegistry::select(std::uint16_t id,const ZoneUserAccess& user) {
     auto* result=zone.get();node.active.push_back(std::move(zone));if(owner) node.owned.emplace(*owner,result);
     services_.enqueue_wait(*result);return result;
 }
+std::vector<RuntimeZone*> ZoneRegistry::logout_snapshot() const {
+    if(!ready_) throw std::logic_error("Zone registry has not initialized");
+    std::vector<RuntimeZone*> result;
+    for(const auto& node:nodes_) {
+        if(node.permanent) result.push_back(node.permanent.get());
+        for(const auto& zone:node.active) result.push_back(zone.get());
+    }
+    return result;
+}
+InstanceExpiryResult ZoneRegistry::expire_instance(RuntimeZone& zone,WorldAdmission& admission,
+    std::uint32_t now,ZoneActiveListRemoval& active_list) {
+    // CWorldThread::Update 00407a4c..00407bfa, after send processing.
+    if(!ready_) throw std::logic_error("Zone registry has not initialized");
+    if(collecting_ || (retiring_ && retiring_!=&zone)) throw std::logic_error("Another instance retirement is active");
+    const auto* map=zone.map;
+    std::size_t index=0;
+    while(index<nodes_.size() && index<=UINT16_MAX && maps_.find(static_cast<std::uint16_t>(index))!=map) ++index;
+    if(!map || index>=nodes_.size() || index>UINT16_MAX) throw std::logic_error("Instance has a foreign map owner");
+    auto& node=nodes_[index];
+    auto it=std::find_if(node.active.begin(),node.active.end(),[&](const auto& item){return item.get()==&zone;});
+    if(it==node.active.end() || map->settings.create_type==0) throw std::logic_error("Instance is not owned by this registry");
+    struct Guard {bool& value;explicit Guard(bool& v):value(v){value=true;}~Guard(){value=false;}} guard(collecting_);
+    if(!retiring_) {
+        if(!zone.users) throw std::logic_error("Instance lacks its retained user owner");
+        if(zone.users->size()!=0 || admission.zone_waiting_count(zone)!=0) return InstanceExpiryResult::occupied;
+        if(map->settings.expire_ms!=0) {
+            if(zone.expiry_tick==0) {zone.expiry_tick=now+map->settings.expire_ms;return InstanceExpiryResult::waiting;}
+            if(zone.expiry_tick>now) return InstanceExpiryResult::waiting;
+        }
+        // Reserve before detaching the real world node; allocation failure then
+        // leaves the live instance untouched.
+        node.pool.reserve(node.pool.size()+1);
+        active_list.remove_active(zone);
+        retiring_=&zone;
+        switch(map->settings.create_type) {
+            case 3:case 4:--statistics_.party_current;--statistics_.total_created;break;
+            case 5:--statistics_.rank_current;--statistics_.total_created;break;
+            case 6:--statistics_.house_current;--statistics_.total_created;break;
+        }
+        if(map->settings.create_type>=3 && map->settings.create_type<=6) {
+            const auto owned=node.owned.find(zone.owner);
+            if(owned!=node.owned.end() && owned->second==&zone) node.owned.erase(owned);
+        }
+    }
+    // Keep the retiring marker after exceptions so a retry never repeats list
+    // removal or counter updates. No new selections are admitted until then.
+    services_.release_objects(zone);
+    node.pool.push_back(std::move(*it));node.active.erase(it);retiring_=nullptr;
+    return InstanceExpiryResult::retired;
+}
+
 }

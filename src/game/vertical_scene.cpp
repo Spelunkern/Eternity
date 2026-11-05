@@ -4,17 +4,21 @@
 
 namespace eternity::game {
 VerticalScene::VerticalScene(net::WorldChannel channel,ZoneUsers& zone,PartyMembershipUser& user,
-    PartyMembershipSendWorld& party_world,VerticalSceneServices& services)
-    :channel_(std::move(channel)),zone_(zone),user_(user),party_world_(party_world),services_(services) {
-    if(!channel_.send) throw std::invalid_argument("Scene requires the real connection send channel");
+    PartyMembershipSendWorld& party_world,VerticalSceneServices& services,ActorEffectDatabase& effect_database)
+    :VerticalScene(std::move(channel),[&zone]{return &zone;},user,party_world,services,effect_database) {}
+VerticalScene::VerticalScene(net::WorldChannel channel,std::function<ZoneUsers*()> zone,PartyMembershipUser& user,
+    PartyMembershipSendWorld& party_world,VerticalSceneServices& services,ActorEffectDatabase& effect_database)
+    :channel_(std::move(channel)),zone_(std::move(zone)),user_(user),party_world_(party_world),services_(services),effect_database_(effect_database) {
+    if(!channel_.send || !zone_) throw std::invalid_argument("Scene requires the real connection and zone resolver");
 }
+void VerticalScene::send_effect_database(const net::Packet& packet) noexcept {effect_database_.send_effect_database(packet);}
 void VerticalScene::bind(Actor& a) {
-    if(actor_ || a.id()!=user_.id || a.status().in_zone || zone_.find_actor(a.id())) throw std::invalid_argument("Invalid scene Actor binding");
+    auto* zone=zone_();if(actor_ || a.id()!=user_.id || a.status().in_zone || (zone && zone->find_actor(a.id()))) throw std::invalid_argument("Invalid scene Actor binding");
     actor_=&a;
 }
 void VerticalScene::unbind() {
     if(!actor_) throw std::logic_error("Scene is not bound");
-    if(actor_->status().in_zone || zone_.find_actor(actor_->id())==actor_) throw std::logic_error("Detach Actor from zone before scene unbind");
+    auto* zone=zone_();if(actor_->status().in_zone || (zone && zone->find_actor(actor_->id())==actor_)) throw std::logic_error("Detach Actor from zone before scene unbind");
     actor_=nullptr;
 }
 Actor& VerticalScene::actor() const {if(!actor_) throw std::logic_error("Scene has no retained Actor");return *actor_;}
@@ -22,10 +26,10 @@ void VerticalScene::send_self(const net::Packet& p) noexcept {
     try {channel_.send(p);} catch(...) {services_.transport_failure(VerticalSceneFailure::self_send,std::current_exception());}
 }
 ZoneUsers* VerticalScene::user_zone() {
-    auto& a=actor();auto* member=zone_.find_actor(a.id());
+    auto& a=actor();auto* zone=zone_();if(!zone){if(a.status().in_zone)throw std::logic_error("Attached actor has no zone owner");return nullptr;}auto* member=zone->find_actor(a.id());
     if(member && member!=&a) throw std::logic_error("Zone Actor identity changed");
     if(!member && a.status().in_zone) throw std::logic_error("Actor is attached to another zone");
-    return member?&zone_:nullptr;
+    return member?zone:nullptr;
 }
 void VerticalScene::send_nearby(const net::Packet& p) {if(auto* z=user_zone()) services_.nearby(*z,actor(),p);}
 void VerticalScene::send_cell_view(const net::Packet& p) {if(auto* z=user_zone()) services_.cell_view(*z,actor(),p);}

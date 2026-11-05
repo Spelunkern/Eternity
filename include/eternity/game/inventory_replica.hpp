@@ -33,6 +33,10 @@ public:
     ~InventoryReplica();
     InventoryReplica(const InventoryReplica&)=delete;InventoryReplica& operator=(const InventoryReplica&)=delete;
     bool load(PlayerItem,bool bank=false,std::int32_t save_type=0);
+    // LoadCharacter duplicate: only a zero pooled save marker becomes 2.
+    bool load_relocated(PlayerItem,bool bank=false);
+    // Attach an already allocated row without changing its pooled markers.
+    void adopt_loaded(std::unique_ptr<CachedInventoryItem>,bool bank=false);
     bool apply_money(std::span<const std::uint8_t>); // Shared owned 0603 status field.
     InventoryReplicaResult apply(std::span<const std::uint8_t>);
     std::vector<CachedInventoryItem> inventory() const;
@@ -49,6 +53,7 @@ private:
     friend class PointItemReplica;
     friend class PurchaseReplica;
     using Item=std::unique_ptr<CachedInventoryItem>;
+    bool load_impl(PlayerItem,bool,std::int32_t,bool);
     void journal(const Item&,bool bank);
     std::uint32_t account_id_,money_;InventoryReplicaPool& pool_;
     std::array<Item,144> inventory_{};std::array<Item,240> bank_{};

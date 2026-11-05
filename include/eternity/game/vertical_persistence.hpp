@@ -6,15 +6,16 @@
 namespace eternity::game {
 // Builds the DB-agent cache from the selected snapshot. Pools and the returned
 // replica must share the lifetime and serialization of the real DB user owner.
-// Relocated/overflow inventory requires the original load-time SQL repair path,
-// which is not yet connected; reject it rather than silently lose those rows.
+// Duplicates with free slots are marked for the original later save; excess
+// duplicates return to the shared item pool after the catalog fetch. When raw
+// item catalogs exist, snapshot slots are updated to match allocation results.
 std::unique_ptr<CharacterReplica> vertical_persistence_restore(
-    const PlayerSnapshot&, std::uint8_t max_grow, InventoryReplicaPool&,
+    PlayerSnapshot&, std::uint8_t max_grow, InventoryReplicaPool&,
     SkillReplicaPool* = nullptr, QuestReplicaPool* = nullptr, PointItemPool* = nullptr);
 // Use after the entry owner has performed its one Players::load call.
 // Product loading can throw; the caller must discard the incomplete selection.
 std::unique_ptr<CharacterReplica> vertical_persistence_restore_with_products(
-    const PlayerSnapshot&, PointItemStore&, std::uint8_t max_grow, InventoryReplicaPool&,
+    PlayerSnapshot&, PointItemStore&, std::uint8_t max_grow, InventoryReplicaPool&,
     SkillReplicaPool* = nullptr, QuestReplicaPool* = nullptr, PointItemPool* = nullptr);
 // Selection uses Players' original SQL loaders; product rows are account-owned
 // and loaded by the existing PointItemStore on the same selected replica.

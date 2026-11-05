@@ -12,6 +12,9 @@ int main(int argc,char** argv) {
         require(!original.load() && !errors.empty() && errors.back().find("Rank")!=std::string::npos,"Restored Guild2 schema incompatibility changed; review the compatibility fixture");
         GuildSql load(main,auxiliary,bank_pool,port,catalog);packets.clear();errors.clear();require(load.load_maximum() && load.load(),"Disposable original guild procedures failed");
         require(errors.empty() && load.replicas().size()==2,"New metadata replicas did not invoke required bank/NPC owners once");
+        require(load.apply(net::Packet{9,11,255,255,255,255,0xea,3,0,0,8})==InventoryReplicaResult::applied,"Guild member update failed");
+        auto rank_rows=main.query("SELECT GuildLevel FROM ["+catalog+"].dbo.GuildChars WHERE CharID=1002 AND Del=0;");require(rank_rows.front().rows==std::vector<storage::Row>{{"8"}},"Guild member procedure did not persist the rank or incorrectly used guild ID");
+        require(load.apply(net::Packet{9,11,10,0,0,0,0xea,3,0,0,3})==InventoryReplicaResult::applied,"Guild member rank restoration failed");
         require(load.replicas().at(10).npcs.slots[0].type==21 && load.replicas().at(10).npcs.slots[0].level==3 && load.replicas().at(10).npcs.slots[7].type==65535 && load.replicas().at(10).npcs.slots[7].level==255,"Actual NPC SQL loading lost signed type bits/byte levels or ignored slot bounds");
         require(packets.size()==5 && packets[0]==net::Packet({1,0x0b,31,0,0,0}) && packets[1].size()==138 && packets[2].size()==1747 && packets[2][6]==60 && packets[3][6]==3 && packets[4].size()==138,"Combined SQL guild/member framing or 60-row batches changed");
         load.send_npcs();require(packets.size()==6 && packets.back()==net::Packet({0x0e,0x0b,10,0,0,0,2,21,0,3,0,255,255,255,7}),"NPC replica did not emit original slot-ordered DB packet");
@@ -72,6 +75,19 @@ int main(int argc,char** argv) {
         rows=main.query("SELECT Etin FROM "+prefix+"GuildDetails WHERE GuildID=10; SELECT COUNT(*) FROM "+prefix+"GuildStoredItems WHERE GuildID=10 AND ItemUID IN (1099511627777,1099511627778);");require(rows.size()==2 && rows[0].rows==std::vector<storage::Row>{{"777"}} && rows[1].rows==std::vector<storage::Row>{{"0"}},"Metadata failure rolled back child writes or replaced old metadata");
         main.query("ALTER TABLE "+prefix+"GuildDetails DROP CONSTRAINT EternityGuildSaveFailure;");errors.clear();require(load.save() && errors.size()==4 && npc_cache.save_type==0,"Global guild save did not commit metadata while retaining failed child state");
         rows=main.query("SELECT Etin,KeepEtin,Remark,Rank,UseHouse,BuyHouse,EtinReturnCnt FROM "+prefix+"GuildDetails WHERE GuildID=10;");require(rows.front().rows==std::vector<storage::Row>{{"503","99","Hello","2","1","1","7"}},"Actual original GuildInfo_E2 procedure received changed field order or signs");
+        require(load.apply(net::Packet{0x10,0x0b,10,0,0,0,0x21,0x43,0x65,0x07})==InventoryReplicaResult::applied && npc_cache.metadata.buy_house==1 && npc_cache.metadata.keep_etin==0x07654321 && npc_cache.save_type==2,"Guild house command did not update retained replica");
+        require(load.apply(net::Packet{0x10,0x0b,10,0,0,0,1})==InventoryReplicaResult::rejected,"Short guild house command accepted");
+        require(load.apply(net::Packet{0x10,0x0b,255,255,255,255,1,0,0,0})==InventoryReplicaResult::applied && npc_cache.metadata.keep_etin==0x07654321,"Unknown guild house command changed existing replica");
+        errors.clear();require(load.save() && npc_cache.save_type==0,"Guild house metadata save failed");
+        rows=main.query("SELECT BuyHouse,KeepEtin FROM "+prefix+"GuildDetails WHERE GuildID=10;");require(rows.front().rows==std::vector<storage::Row>{{"1","124076833"}},"Guild house update did not persist");
+        require(load.apply(net::Packet{0x10,0x0b,10,0,0,0,99,0,0,0})==InventoryReplicaResult::applied && load.save(),"Guild house fixture restore failed");
+        require(load.apply(net::Packet{0x12,0x0b,10,0,0,0,0x22,0,0,0,0x99,0,0,0,0x88,0,0,0,0x33,0,0,0})==InventoryReplicaResult::applied && npc_cache.metadata.etin==34 && npc_cache.metadata.return_count==51 && npc_cache.save_type==2,"Guild etin command did not update replica");
+        require(load.apply(net::Packet{0x13,0x0b,10,0,0,0,0x44,0,0,0})==InventoryReplicaResult::applied && npc_cache.metadata.keep_etin==68,"Guild upkeep command did not update replica");
+        require(load.apply(net::Packet{0x12,0x0b,10,0,0,0,0})==InventoryReplicaResult::rejected && load.apply(net::Packet{0x13,0x0b,10,0,0,0,0})==InventoryReplicaResult::rejected,"Short etin command accepted");
+        require(load.apply(net::Packet{0x13,0x0b,255,255,255,255,1,0,0,0})==InventoryReplicaResult::applied && npc_cache.metadata.keep_etin==68,"Unknown upkeep guild changed replica");
+        errors.clear();require(load.save() && npc_cache.save_type==0,"Guild etin metadata save failed");
+        rows=main.query("SELECT Etin,EtinReturnCnt,KeepEtin FROM "+prefix+"GuildDetails WHERE GuildID=10;");require(rows.front().rows==std::vector<storage::Row>{{"34","51","68"}},"Guild etin metadata did not persist");
+        require(load.apply(net::Packet{0x12,0x0b,10,0,0,0,0xf7,1,0,0,0,0,0,0,0,0,0,0,7,0,0,0})==InventoryReplicaResult::applied && load.apply(net::Packet{0x13,0x0b,10,0,0,0,99,0,0,0})==InventoryReplicaResult::applied && load.save(),"Guild etin fixture restore failed");
         const auto remark=[&](std::string text) {require(text.size()<=65,"Invalid remark fixture");net::Packet p{0x0a,0x0b,10,0,0,0};p.insert(p.end(),text.begin(),text.end());p.resize(71,0);return load.apply(p);};
         require(remark("O'Brien")==InventoryReplicaResult::applied,"Guild remark packet rejected");errors.clear();require(load.save() && errors.size()==5 && npc_cache.save_type==2 && main.last_query_native_error()==102,"Unescaped guild remark quote did not retain original syntax error and dirty state");
         rows=main.query("SELECT Remark FROM "+prefix+"GuildDetails WHERE GuildID=10;");require(rows.front().rows==std::vector<storage::Row>{{"Hello"}},"Invalid original remark SQL changed persisted text");
@@ -86,6 +102,23 @@ int main(int argc,char** argv) {
         rows=main.query("SELECT KeepEtin FROM "+prefix+"GuildDetails WHERE GuildID=10;");require(rows.front().rows==std::vector<storage::Row>{{"99"}},"Negative-return metadata fixture unexpectedly changed SQL state");
         main.query("USE ["+catalog+"]; EXEC(N'ALTER PROCEDURE dbo.usp_Save_Guild_NpcLv_Mod_E @GuildID int,@GNpcType smallint,@NpcLevel tinyint,@Number tinyint AS SET NOCOUNT ON; RETURN -1;');");
         errors.clear();GuildNpcReplica negative;negative.load(0,21,0);negative.upgrade(0,999,12);GuildNpcStore npc_store(auxiliary,[&](const std::string& error){errors.push_back(error);},catalog);require(npc_store.save(10,negative)==0 && negative.slots[0].marker==0 && errors.empty(),"NPC Query-only saving incorrectly inspected a procedure return value");
+        main.query("DELETE FROM "+prefix+"GuildChars WHERE CharID=1062;");
+        auto before_create=main.query("SELECT TotalCount FROM "+prefix+"Guilds WHERE GuildID=10;");
+        const auto original_count=std::stoi(*before_create.front().rows.front().front());
+        const net::Packet create_member{7,11,10,0,0,0,0x26,4,0,0,4};
+        require(load.apply(create_member)==InventoryReplicaResult::applied,"Guild member create command failed");
+        auto created=main.query("SELECT GuildID,GuildLevel,Del FROM "+prefix+"GuildChars WHERE CharID=1062;");
+        require(created.front().rows==std::vector<storage::Row>{{"10","4","0"}},"Guild member create did not persist original procedure fields");
+        auto after_create=main.query("SELECT TotalCount FROM "+prefix+"Guilds WHERE GuildID=10;");
+        require(std::stoi(*after_create.front().rows.front().front())==original_count+1,"Guild member create did not increment count");
+        require(load.apply(create_member)==InventoryReplicaResult::applied,"Duplicate guild member procedure return changed");
+        auto duplicate_count=main.query("SELECT TotalCount FROM "+prefix+"Guilds WHERE GuildID=10;");
+        require(std::stoi(*duplicate_count.front().rows.front().front())==original_count+1,"Duplicate guild member changed count");
+        require(load.apply(net::Packet{5,11,10,0,0,0})==InventoryReplicaResult::applied,"Guild delete command failed");
+        auto deleted=main.query("SELECT Del,TotalCount FROM "+prefix+"Guilds WHERE GuildID=10;");
+        require(deleted.front().rows==std::vector<storage::Row>{{"1","0"}},"Guild delete did not mark guild and clear member count");
+        auto remaining=main.query("SELECT COUNT(*) FROM "+prefix+"GuildChars WHERE GuildID=10 AND Del=0;");
+        require(remaining.front().rows==std::vector<storage::Row>{{"0"}} && !load.replicas().contains(10),"Guild delete did not retire member rows and replica");
         std::cout<<"Guild SQL procedures, restored schema diagnostic, interleaved DB/game/client loading, cached reload, bank duplicate relocation/count correction, independent SQL persistence/retry, NPC upgrade/reset persistence, complete guild save coordination, legacy remark SQL quotes and nested conversion failures passed in a disposable catalog.\n";
     }catch(const std::exception& error) {std::cerr<<error.what()<<'\n';return 1;}
 }

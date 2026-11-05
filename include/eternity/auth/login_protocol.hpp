@@ -46,6 +46,7 @@ struct LoginEvent {
     std::optional<Credentials> credentials;
     bool close = false;
     std::optional<RealmSelection> selection = std::nullopt;
+    bool heartbeat = false;
 };
 
 class LoginProtocol {

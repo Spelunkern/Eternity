@@ -1,4 +1,8 @@
 #include "eternity/game/guild_sql.hpp"
+#include "eternity/game/guild_member_update.hpp"
+#include "eternity/game/guild_member_delete.hpp"
+#include "eternity/game/guild_member_create.hpp"
+#include "eternity/game/guild_delete.hpp"
 #include <fstream>
 #include <algorithm>
 #include <iomanip>
@@ -16,8 +20,67 @@ GuildSaveResult result(unsigned int mode,unsigned int attempt) {
     if(mode==7 || mode==8) return attempt==0?GuildSaveResult{false,"HYT00",1222}:GuildSaveResult{false,"42000",mode==7?105:2627};
     if(mode==9) return attempt<2?GuildSaveResult{false,"HYT00",1222}:GuildSaveResult{false,"HYT01",999};return {};
 }
+void member_create_cases() {
+    const net::Packet p{7,11,0x78,0x56,0x34,0x12,0x98,0xba,0xdc,0xfe,255};
+    const GuildSaveResult ok{},timeout{false,"HYT00",1},error{false,"42000",2};
+    const auto run=[&](std::vector<GuildSaveResult> results,std::vector<std::size_t> diagnosed,bool success){
+        std::size_t next=0;std::vector<std::size_t> got;
+        auto execute=[&](std::uint32_t guild,std::uint32_t character,std::uint8_t rank){require(guild==0x12345678 && character==0xfedcba98 && rank==255 && next<results.size(),"Guild member create SQL parameters or retry count differs");return results[next++];};
+        auto diagnostic=[&](const GuildSaveResult&){got.push_back(next-1);};bool threw=false;
+        try{require(guild_member_create(p,execute,diagnostic)==InventoryReplicaResult::applied,"Guild member create did not apply");}catch(const std::runtime_error&){threw=true;}
+        require(threw!=success && next==results.size() && got==diagnosed,"Guild member create failure/retry ordering differs");
+    };
+    run({ok},{},true);run({timeout,ok},{},true);run({timeout,timeout,ok},{1},true);run({timeout,timeout,timeout},{1,2},false);
+    run({error,ok},{0},true);run({error,timeout},{0},false);run({timeout,error,ok},{1},true);run({error,error},{0,1},false);
+    bool missing=false;try{(void)guild_member_create(p,{},{});}catch(const std::invalid_argument&){missing=true;}require(missing,"Missing guild member create SQL service accepted");
+    require(guild_member_create(net::Packet{7,11},{},{})==InventoryReplicaResult::rejected && guild_member_create(net::Packet{8,11},{},{})==InventoryReplicaResult::unsupported,"Guild member create envelope differs");
+}
+void guild_delete_cases() {
+    const net::Packet p{5,11,0x78,0x56,0x34,0x12};const GuildSaveResult ok{},timeout{false,"HYT00",1},error{false,"42000",2};
+    const auto run=[&](std::vector<GuildSaveResult> results,std::vector<std::size_t> diagnosed,bool success){
+        std::size_t next=0,retired=0;std::vector<std::size_t> got;std::map<std::uint32_t,int> replica{{0x12345678,1}};
+        auto execute=[&](std::uint32_t guild){require(guild==0x12345678 && next<results.size() && replica.contains(guild),"Guild delete query or ordering differs");return results[next++];};
+        auto diagnostic=[&](const GuildSaveResult&){got.push_back(next-1);};auto retire=[&](std::uint32_t guild){++retired;replica.erase(guild);};bool threw=false;
+        try{require(guild_delete(p,execute,diagnostic,retire)==InventoryReplicaResult::applied,"Guild delete did not apply");}catch(const std::runtime_error&){threw=true;}
+        require(threw!=success && next==results.size() && got==diagnosed && retired==unsigned(success) && replica.contains(0x12345678)!=success,"Guild delete retry, diagnostics or retirement differs");
+    };
+    run({ok},{},true);run({timeout,ok},{},true);run({timeout,timeout,ok},{1},true);run({timeout,timeout,timeout},{1,2},false);run({error,ok},{0},true);run({error,timeout},{0},false);run({timeout,error,ok},{1},true);run({error,error},{0,1},false);
+    bool missing=false;try{(void)guild_delete(p,{}, {},{});}catch(const std::invalid_argument&){missing=true;}require(missing,"Missing guild delete services accepted");
+    require(guild_delete(net::Packet{5,11},{},{},{})==InventoryReplicaResult::rejected && guild_delete(net::Packet{6,11},{},{},{})==InventoryReplicaResult::unsupported,"Guild delete envelope differs");
+}
+void member_delete_cases() {
+    const net::Packet p{8,11,0x78,0x56,0x34,0x12,0x98,0xba,0xdc,0xfe};
+    const GuildSaveResult ok{},timeout{false,"HYT00",1},error{false,"42000",2};
+    const auto run=[&](std::vector<GuildSaveResult> results,std::vector<std::size_t> diagnosed,bool success){
+        std::size_t next=0;std::vector<std::size_t> got;
+        auto execute=[&](std::uint32_t guild,std::uint32_t character){require(guild==0x12345678 && character==0xfedcba98 && next<results.size(),"Guild member delete SQL parameters or retry count differs");return results[next++];};
+        auto diagnostic=[&](const GuildSaveResult&){got.push_back(next-1);};bool threw=false;
+        try{require(guild_member_delete(p,execute,diagnostic)==InventoryReplicaResult::applied,"Guild member delete did not apply");}catch(const std::runtime_error&){threw=true;}
+        require(threw!=success && next==results.size() && got==diagnosed,"Guild member delete failure/retry ordering differs");
+    };
+    run({ok},{},true);run({timeout,ok},{},true);run({timeout,timeout,ok},{1},true);run({timeout,timeout,timeout},{1,2},false);
+    run({error,ok},{0},true);run({error,timeout},{0},false);run({timeout,error,ok},{1},true);run({error,error},{0,1},false);
+    bool missing=false;try{(void)guild_member_delete(p,{},{});}catch(const std::invalid_argument&){missing=true;}require(missing,"Missing guild member delete SQL service accepted");
+    require(guild_member_delete(net::Packet{8,11},{},{})==InventoryReplicaResult::rejected && guild_member_delete(net::Packet{9,11},{},{})==InventoryReplicaResult::unsupported,"Guild member delete envelope differs");
+}
+void member_update_cases() {
+    const net::Packet p{9,11,0x78,0x56,0x34,0x12,0x98,0xba,0xdc,0xfe,7};
+    const GuildSaveResult ok{},timeout{false,"HYT00",1},error{false,"42000",2};
+    const auto run=[&](std::vector<GuildSaveResult> results,std::vector<std::size_t> diagnosed,bool success){
+        std::size_t next=0;std::vector<std::size_t> got;
+        auto execute=[&](std::uint32_t character,std::uint8_t rank){require(character==0xfedcba98 && rank==7 && next<results.size(),"Guild member SQL parameters or retry count differs");return results[next++];};
+        auto diagnostic=[&](const GuildSaveResult&){got.push_back(next-1);};bool threw=false;
+        try {require(guild_member_update(p,execute,diagnostic)==InventoryReplicaResult::applied,"Guild member update did not apply");}catch(const std::runtime_error&){threw=true;}
+        require(threw!=success && next==results.size() && got==diagnosed,"Guild member update failure/retry ordering differs");
+    };
+    run({ok},{},true);run({timeout,ok},{},true);run({timeout,timeout,ok},{1},true);run({timeout,timeout,timeout},{1,2},false);
+    run({error,ok},{0},true);run({error,timeout},{0},false);run({timeout,error,ok},{1},true);run({error,error},{0,1},false);
+    bool missing=false;try{(void)guild_member_update(p,{},{});}catch(const std::invalid_argument&){missing=true;}require(missing,"Missing guild member SQL service accepted");
+    require(guild_member_update(net::Packet{9,11},{},{})==InventoryReplicaResult::rejected && guild_member_update(net::Packet{10,11},{},{})==InventoryReplicaResult::unsupported,"Guild member update envelope differs");
+}
 int main(int argc,char** argv) {
     try {
+        member_create_cases();guild_delete_cases();member_delete_cases();member_update_cases();
         require(argc==2,"Expected original guild save coordinator oracle");std::ifstream input(argv[1]);require(input.good(),"Cannot open guild save oracle");
         std::map<std::uint32_t,GuildDbMetadata> guilds;std::map<std::uint32_t,unsigned int> indexes,queries;std::map<std::pair<std::string,std::uint32_t>,unsigned int> children;unsigned int scenario=0,mode=0;std::size_t cases=0,next=0;std::vector<std::string> trace;bool returned=false;std::string line;
         const auto child=[&](const std::string& kind,GuildDbMetadata& guild)->std::int32_t {const auto id=guild.metadata.listing.id;auto& attempt=children[{kind,id}];const auto profile=(scenario+indexes.at(id)+(kind=="NPC"))%3;const auto value=profile==0 || (profile==1 && attempt>0)?0:profile;++attempt;trace.push_back(kind+' '+std::to_string(id)+' '+std::to_string(value));return static_cast<std::int32_t>(value);};

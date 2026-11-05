@@ -2,6 +2,7 @@
 import secrets
 import re
 import subprocess
+import time
 
 from database import identifier, literal, sql
 
@@ -9,9 +10,27 @@ from database import identifier, literal, sql
 def run(command, build_directory="build"):
     name = "Eternity_Test_Creation_" + secrets.token_hex(6)
     catalog = identifier(name)
-    collation = sql("SELECT CONVERT(varchar(128),DATABASEPROPERTYEX('PS_GameData','Collation'));")
-    if not re.fullmatch(r"[A-Za-z0-9_]+", collation):
-        raise ValueError("Invalid source database collation identifier")
+    # SQL Server accepts master connections before restored user databases
+    # finish recovery. Wait for the three fixture sources, not just SELECT 1.
+    sources = {"PS_GameData", "PS_UserData", "PS_Billing"}
+    deadline = time.monotonic() + 120
+    while True:
+        rows = sql("SELECT name,state_desc FROM sys.databases WHERE name IN "
+                   "('PS_GameData','PS_UserData','PS_Billing') FOR JSON PATH;", json_output=True)
+        states = {row["name"]: row["state_desc"] for row in rows}
+        if sources - states.keys():
+            raise ValueError("Missing source databases: " + ", ".join(sorted(sources - states.keys())))
+        if all(states[name] == "ONLINE" for name in sources):
+            collation = sql("SELECT CONVERT(varchar(128),DATABASEPROPERTYEX('PS_GameData','Collation'));")
+            # DATABASEPROPERTYEX can still return NULL briefly after ONLINE.
+            # sqlcmd renders that value as the literal text "NULL".
+            if collation.upper() != "NULL" and re.fullmatch(r"[A-Za-z0-9_]+", collation):
+                break
+        if any(states[name] not in ("ONLINE", "RECOVERING", "RECOVERY_PENDING") for name in sources):
+            raise ValueError("Source databases unavailable: " + str(states))
+        if time.monotonic() >= deadline:
+            raise TimeoutError("Source databases did not finish recovery: " + str(states))
+        time.sleep(1)
     sql(f"CREATE DATABASE {catalog} COLLATE {collation};")
     try:
         tables = ("Chars", "CharItems", "UserMaxGrow", "GuildChars", "_DeletedChars", "UserStoredMoney", "CharEvents",
@@ -31,12 +50,14 @@ def run(command, build_directory="build"):
                 sql(f"ALTER TABLE dbo.{identifier(default['table'])} ADD DEFAULT {default['definition']} "
                     f"FOR {identifier(default['column'])};", name)
         procedures = ("usp_Create_Char_R", "usp_Save_Char_Item_Add_E", "usp_Save_Char_Country_E", "usp_Read_Chars_R",
-                      "usp_Read_Char_Items_Simple_R", "usp_Read_User_MaxGrow_R", "usp_Delete_Char_E", "usp_Read_Chars_Detail2_R",
+                      "usp_Read_Char_Items_Simple_R", "usp_Read_User_MaxGrow_R", "usp_Delete_Char_E", "usp_Delete_Char_Request_E", "usp_Read_Chars_Detail2_R",
                       "usp_Read_Char_Items_Detail_R", "usp_Read_User_StoredItems_Detail_R", "usp_Read_Char_Skills_R",
                       "usp_Read_Char_ApplySkills_R", "usp_Read_Char_Quest_R", "usp_Read_Char_FinishedQuest_R",
                       "usp_Read_Char_QuickSlots_R", "usp_Read_Char_SavePoint", "usp_Read_Chars_PointLog_R",
                       "usp_Read_User_StoredPointItems", "usp_Read_User_CashPoint_NCash", "usp_Read_Char_GuildJoinDate_R",
                       "usp_Read_Char_ConcernMarket_R", "usp_Read_FriendChar_R", "usp_Read_BanChar_R", "usp_Read_User_GiftPointItemNotify",
+                      "usp_Delete_FriendChar_E", "usp_Create_FriendChar_E", "usp_Save_FriendMemo_E",
+                      "usp_Delete_BanChar_E", "usp_Create_BanChar_E", "usp_Save_BandMemo_E",
                       "usp_Save_Char_ApplySkill_Del_E", "usp_Save_Char_ApplySkill_Add_E2",
                       "usp_Save_Char_Item_Mod_E", "usp_Save_Char_Item_Del_E", "usp_Save_User_StoredItem_Add_E",
                       "usp_Save_User_StoredItem_Mod_E", "usp_Save_User_StoredItem_Del_E",

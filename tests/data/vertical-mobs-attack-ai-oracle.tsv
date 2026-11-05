@@ -1,0 +1,9 @@
+# ps_game.exe SHA256 0fb7c9f13b5bcf186118f8bfe73ab214226b93e8aa502b8e6fded4a8312bc547; CMob::AttackAI 004a1ab0 eligibility; skill cleanup and continuation intercepted
+# mob_country user_country life immune attackable visible status | trace status target_kind in_battle
+2	1	0	0	1	1	1	C	1	7	1
+1	1	0	0	1	1	1	V	0	0	0
+2	1	1	0	1	1	1	V	0	0	0
+2	1	0	1	1	1	1	V	0	0	0
+2	1	0	0	0	1	1	V	0	0	0
+2	1	0	0	1	0	1	V	0	0	0
+2	1	1	0	1	1	2	V	2	0	0

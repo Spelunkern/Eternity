@@ -2,6 +2,7 @@
 #include "eternity/game/npcs.hpp"
 #include "eternity/game/pathfinding.hpp"
 #include "eternity/net/framing.hpp"
+#include <functional>
 #include <map>
 #include <memory>
 
@@ -73,6 +74,11 @@ public:
     virtual ~NpcBroadcast() = default;
     virtual void send_cell(CellCoordinates) = 0;
 };
+class NpcViewer {
+public:
+    virtual ~NpcViewer()=default;
+    virtual void send_self(const net::Packet&)=0;
+};
 class ZoneNpcServices {
 public:
     virtual ~ZoneNpcServices() = default;
@@ -101,13 +107,27 @@ public:
     std::uint32_t tick_ms() const noexcept override {return services_.tick_ms();}
     Npc* find(std::uint32_t) const noexcept;
     std::span<Npc* const> all() const noexcept {return members_;}
+    // CZone::UpdateNpcIdle 00422400 uses the zone's shared global cursor.
+    // The serialized caller retains this zone; pool pins the current NPC across
+    // callbacks, including detach/release. Nested visits share the cursor.
+    void visit_all(NpcPool&,const std::function<void(Npc&)>&);
     std::span<Npc* const> in_cell(CellCoordinates) const noexcept;
+    // Caller serializes the zone and retains each current NPC through callbacks.
+    // Nested snapshot traversal shares the original cell cursor.
+    void send_enter(CellCoordinates,NpcViewer&);
+    void send_leave(CellCoordinates,NpcViewer&);
 private:
     std::size_t key(CellCoordinates) const;
     void announce_transition(const Npc&,CellCoordinates previous,CellCoordinates next);
+    void link_cell(Npc&,CellCoordinates);
+    void unlink_cell(Npc&,CellCoordinates);
+    void send_cell_snapshot(CellCoordinates,NpcViewer&,bool);
+    struct Cell {std::vector<Npc*> members;std::map<std::uint64_t,Npc*> ordered;std::uint64_t cursor=0;};
     MapGeometry geometry_;ZoneNpcServices& services_;
-    std::vector<Npc*> members_;
+    std::vector<Npc*> members_;Npc* global_cursor_=nullptr;
     std::map<std::uint32_t,Npc*> index_;
-    std::map<std::size_t,std::vector<Npc*>> cells_;
+    std::map<std::size_t,Cell> cells_;
+    std::map<Npc*,std::uint64_t> cell_ordinals_;
+    std::uint64_t cell_sequence_=0;
 };
 }

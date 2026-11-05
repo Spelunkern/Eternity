@@ -1,8 +1,13 @@
 #pragma once
 #include "eternity/game/effect_timers.hpp"
 #include "eternity/game/effects.hpp"
+#include <functional>
 
 namespace eternity::game {
+struct EffectSavePorts {
+    std::function<void()> lock,unlock;
+    std::function<void(const net::Packet&)> send;
+};
 net::Packet effect_removed_packet(std::uint32_t instance_id);
 net::Packet party_effect_removed_packet(std::uint32_t character_id,std::uint16_t skill_id,std::uint8_t level,bool raid);
 class EffectObserver {
@@ -42,6 +47,10 @@ public:
     void replace_attack_elements(std::uint8_t attribute,EffectStatus& status,EffectEquipment equipment,
         const ItemDefinitions& definitions,EffectRemovalWorld& world,EffectObserver& observer);
     std::vector<net::Packet> initial_packets(std::uint32_t tick_ms) const;
+    // SendDBAgentCharGetInfo 0046cb63..0046ccd4. The supplied recursive lock
+    // is held through traversal/full batches and released before the final batch.
+    // Callback, actor and effect definitions survive synchronous reentry.
+    void save_database(std::uint32_t account,std::uint32_t tick_ms,const EffectSavePorts&);
     void reset_keep_tick(std::uint32_t tick_ms);
     void check_map(std::uint16_t map,EffectStatus&,EffectEquipment,const ItemDefinitions&,EffectRemovalWorld&,EffectObserver&);
     void release_all(EffectObserver& observer) noexcept;

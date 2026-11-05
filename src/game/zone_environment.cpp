@@ -1,5 +1,6 @@
 #include "eternity/game/zone_environment.hpp"
 #include <cmath>
+#include <stdexcept>
 
 namespace eternity::game {
 namespace {
@@ -53,6 +54,18 @@ void ZoneEnvironment::update_doors(std::uint32_t tick,ZoneEnvironmentSink& sink)
 net::Packet ZoneEnvironment::weather_packet(std::uint8_t mode) const {
     // CZone::SendWeather 004201b0 and UpdateWeather 0041d4d0 send type AND power, five bytes.
     return {0x51,4,mode,weather_.active?static_cast<std::uint8_t>(weather_.definition.state):std::uint8_t{0},weather_.active?static_cast<std::uint8_t>(weather_.definition.power):std::uint8_t{0}};
+}
+void ZoneEnvironment::send_cell_doors(CellCoordinates cell,const std::function<void(const net::Packet&)>& send) {
+    if(!send) throw std::invalid_argument("Door snapshot requires a sender");
+    auto& cursor=door_cursors_[{cell.x,cell.z}];
+    const auto next=[&](std::size_t from) {for(auto i=from;i<doors_.size();++i)
+        if(doors_[i].cell && doors_[i].cell->x==cell.x && doors_[i].cell->z==cell.z)return i+1;
+        return std::size_t{0};};
+    cursor=next(0);
+    while(cursor) {
+        const auto packet=door_packet(doors_.at(cursor-1));send(packet);
+        cursor=next(cursor);
+    }
 }
 void ZoneEnvironment::update_weather(std::uint32_t tick,RandomSource& random,ZoneEnvironmentSink& sink) {if(weather_.update(tick,random)) sink.send_all(weather_packet(1));}
 }

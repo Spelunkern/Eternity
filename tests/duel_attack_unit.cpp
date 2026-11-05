@@ -1,5 +1,6 @@
 #include "equipment_fixture.hpp"
 #include "eternity/game/actor.hpp"
+#include "eternity/game/vertical_move_active_duel.hpp"
 #include <algorithm>
 #include <bit>
 #include <fstream>
@@ -110,6 +111,19 @@ int main(int argc,char** argv) {
         }
         require(count==768,"Duel attack coverage changed");
         // Native wager drops now enter a real zone index/cell list and expire there.
+        for(bool available:{false,true}) {
+            World state;state.available=available;Scene first_scene(9001,state.trace),second_scene(9002,state.trace);
+            Actor first(9001,{}, {100,0,0},{},first_scene,{definitions,enchant,mobs}),second(9002,{}, {100,0,0},{},second_scene,{definitions,enchant,mobs});state.actors={&first,&second};
+            first.relations().duel_state=3;first.relations().duel_type=8;first.relations().duel_opponent=9002;
+            second.relations().duel_state=4;second.relations().duel_type=8;
+            vertical_leave_active_duel(first,state,[](Actor& a){return std::shared_ptr<void>(&a,[](void*){});},{});
+            std::vector<std::string> expected{"Q9002"};if(available){expected.push_back("H9002");expected.push_back("S9002:06240129230000");}
+            expected.push_back("H9001");expected.push_back("S9001:06240129230000");expected.push_back("T");
+            require(state.trace.size()==expected.size()+(available?3U:1U),"Movement duel event count differs");
+            for(std::size_t i=0;i<expected.size();++i)require(state.trace[i]==expected[i],"Movement duel event order differs");
+            require(state.trace[expected.size()].starts_with("G030e") && first.relations().duel_state==0 && (!available || second.relations().duel_state==0),"Movement duel log/state differs");
+            if(available)require(state.trace[expected.size()+1]=="T" && state.trace[expected.size()+2].starts_with("G030e"),"Movement duel second log differs");
+        }
         World world;GroundServices ground_services;const MapGeometry geometry(160);ZoneItems ground(geometry,ground_services);world.ground=&ground;world.allocate=true;world.randoms.assign(10,500);
         Scene first_scene(9001,world.trace),second_scene(9002,world.trace);Actor first(9001,{}, {100,0,0},{},first_scene,{definitions,enchant,mobs}),second(9002,{}, {100,0,0},{},second_scene,{definitions,enchant,mobs});world.actors={&first,&second};
         for(unsigned int i=0;i<3;++i) {world.items[i].id=100+i;world.items[i].item.type=5;world.items[i].item.type_id=6;world.items[i].item.count=7;world.items[i].item.make_type="A";}

@@ -45,6 +45,18 @@ int main() {
             try { (void)decoder.feed(expected); } catch (const std::logic_error&) { rejected = true; }
             require(rejected, "Invalid connection was silently reused");
         }
+        // A malformed trailing header must not erase previously completed frames.
+        {
+            FrameDecoder decoder;Packet batch=expected;batch.insert(batch.end(),{0,0});std::vector<Packet> delivered;bool invalid=false;
+            try {decoder.feed_each(batch,[&](Packet packet){delivered.push_back(std::move(packet));return true;});}
+            catch(const std::invalid_argument&) {invalid=true;}
+            require(invalid && decoder.failed() && delivered==std::vector<Packet>{payload},"Malformed tail suppressed a complete frame");
+        }
+        {
+            FrameDecoder decoder;Packet batch=expected;batch.insert(batch.end(),{0,0});unsigned delivered=0;
+            decoder.feed_each(batch,[&](Packet packet){++delivered;return packet!=payload;});
+            require(delivered==1 && !decoder.failed(),"Closed consumer parsed trailing bytes");
+        }
         bool rejected = false;
         try { (void)frame(Packet(maximum_frame_size - 1)); } catch (const std::invalid_argument&) { rejected = true; }
         require(rejected, "Oversize outgoing packet accepted");

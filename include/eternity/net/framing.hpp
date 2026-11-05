@@ -2,6 +2,7 @@
 #include <array>
 #include <cstddef>
 #include <cstdint>
+#include <functional>
 #include <span>
 #include <stdexcept>
 #include <vector>
@@ -15,6 +16,9 @@ inline constexpr std::size_t maximum_frame_size = 2048;
 class FrameDecoder {
 public:
     std::vector<Packet> feed(std::span<const std::uint8_t> bytes);
+    // Emit each complete frame before inspecting later bytes. Return false from
+    // the callback to abandon the remainder after the connection has closed.
+    void feed_each(std::span<const std::uint8_t> bytes,const std::function<bool(Packet)>& emit);
     bool failed() const noexcept { return failed_; }
     std::size_t buffered() const noexcept { return used_; }
 private:

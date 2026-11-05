@@ -39,6 +39,14 @@ int main(int argc,char** argv) {
             } else if(tag=="ENDOP") require(next==events.size(),"Extra native guild effects");else if(tag!="END") throw std::runtime_error("Unknown guild fixture row");
         }
         require(cases==72 && operations==648,"Guild membership oracle coverage changed");
+        {
+            std::recursive_mutex mutex;GuildMembership* bound=nullptr;bool nested=false;unsigned sends=0,allocations=0,releases=0;
+            GuildMemberPorts ports;ports.allocate=[&](const net::Packet&){++allocations;return true;};ports.release=[&]{++releases;};
+            ports.send=[&](GuildUser&,net::Packet){++sends;if(!nested){nested=true;bound->broadcast({2,0});}};
+            GuildMembership membership(1,ports);membership.bind_mutex(mutex);bound=&membership;GuildUser user;user.character_id=1;
+            auto record=std::make_shared<GuildMember>();record->id=1;record->user=&user;membership.online.emplace(1,record);
+            membership.broadcast({1,0});require(sends==2 && allocations==2 && releases==2,"Bound guild recursive broadcast differs");
+        }
         std::cout<<cases<<" original guild sequences, "<<operations<<" membership/list owners, officer slots, packet pool failures and client records passed\n";
     }catch(const std::exception& error) {std::cerr<<error.what()<<'\n';return 1;}
 }

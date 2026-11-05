@@ -85,10 +85,11 @@ bool vertical_combat_skill_damage(Actor& actor,MobRuntime& mob,unsigned kind,Ran
     const auto mode=input.mode;
     if(mode==0){for(std::size_t i=0;i<3;++i)damage[i]=input.values[i];return false;}
     if(mode==3){
-        if((input.values[0]||input.values[1]||input.values[2])&&input.attack_recovery.size()!=3)throw std::invalid_argument("Skill damage requires live attack recovery owner");
-        damage.fill(0);constexpr std::size_t recovery_index[]={0,2,1};
+        const auto& current=actor.resources();
+        const std::array<std::uint32_t,3> resources{current.hp,current.sp,current.mp};
+        damage.fill(0);
         for(std::size_t i=0;i<3;++i)if(input.values[i]){
-            const auto product=std::bit_cast<std::int32_t>(std::uint32_t(input.attack_recovery[recovery_index[i]])*std::uint32_t(input.values[i]));
+            const auto product=std::bit_cast<std::int32_t>(resources[i]*std::uint32_t(input.values[i]));
             damage[i]=std::max(product,1);
         }
         for(auto& value:damage)if(value>30000)value=30000;

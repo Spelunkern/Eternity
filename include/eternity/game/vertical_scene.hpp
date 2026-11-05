@@ -36,7 +36,7 @@ public:
 // Per-connection scene: all calls and membership/party mutations must run on
 // the common serialized world executor. The channel is the actual WorldServer
 // channel; sends are asynchronous and can become inert after disconnect.
-// Zone, channel owner, user, party send pool, services and scene outlive Actor,
+// Zone, channel owner, user, party send pool, services, effect database and scene outlive Actor,
 // including destructor effect-ID releases. Bind once immediately after Actor
 // construction, detach the Actor from ZoneUsers before unbind/destruction, and
 // unbind before destroying the Actor. All callbacks must retain their subjects
@@ -47,12 +47,16 @@ public:
 // A throwing party lock must not leave the lock held; a throwing enqueue must
 // not retain the reserved buffer reference or enqueue it. Successful enqueue
 // owns its reference, even if it completes synchronously.
-class VerticalScene final:public ActorScene {
+class VerticalScene final:public ActorScene,public ActorEffectDatabase {
 public:
-    VerticalScene(net::WorldChannel,ZoneUsers&,PartyMembershipUser&,PartyMembershipSendWorld&,VerticalSceneServices&);
+    VerticalScene(net::WorldChannel,ZoneUsers&,PartyMembershipUser&,PartyMembershipSendWorld&,VerticalSceneServices&,ActorEffectDatabase&);
+    // Resolver returns the actual live zone for this actor, or null while
+    // detached. Its owners outlive the scene and all calls use the world strand.
+    VerticalScene(net::WorldChannel,std::function<ZoneUsers*()>,PartyMembershipUser&,PartyMembershipSendWorld&,VerticalSceneServices&,ActorEffectDatabase&);
     void bind(Actor&);
     void unbind();
     void send_self(const net::Packet&) noexcept override;
+    void send_effect_database(const net::Packet&) noexcept override;
     void send_nearby(const net::Packet&) override;
     void send_cell_view(const net::Packet&) override;
     std::optional<bool> party_kind() const noexcept override;
@@ -68,7 +72,7 @@ public:
     void finish_periodic_damage(EffectStatus&,const SkillDefinition&,const EffectSource&,std::uint32_t) override;
 private:
     Actor& actor() const;
-    net::WorldChannel channel_;ZoneUsers& zone_;PartyMembershipUser& user_;
-    PartyMembershipSendWorld& party_world_;VerticalSceneServices& services_;Actor* actor_=nullptr;
+    net::WorldChannel channel_;std::function<ZoneUsers*()> zone_;PartyMembershipUser& user_;
+    PartyMembershipSendWorld& party_world_;VerticalSceneServices& services_;ActorEffectDatabase& effect_database_;Actor* actor_=nullptr;
 };
 }

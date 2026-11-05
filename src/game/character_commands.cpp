@@ -15,6 +15,18 @@ CharacterReply CharacterCommands::execute(std::uint32_t uid,const std::string& u
     if(packet.size()<2) return {{},true};
     const auto opcode=static_cast<unsigned int>(packet[0]) | (static_cast<unsigned int>(packet[1])<<8);
     if(opcode==0x107) return {{},true};
+    if(opcode==0x103 || opcode==0x10f) {
+        if(packet.size()!=6 || roster.country==2)return {{},true};
+        std::uint32_t id=0;for(unsigned i=0;i<4;++i)id|=std::uint32_t(packet[2+i])<<(i*8);
+        auto selected=std::find_if(roster.slots.begin(),roster.slots.end(),[id](const auto& slot){return slot && slot->id==id;});
+        if(selected==roster.slots.end())return {{},true};
+        storage::SqlServer database(config_);Characters repository(database,options_.database_id,options_.world_base,options_.catalog);
+        const auto time=opcode==0x103?pack_item_id_time(clock_().local_calendar):0;
+        if(!repository.request_deletion(uid,id,time))return {{},true};
+        (*selected)->remaining_time=opcode==0x103;
+        net::Packet response{static_cast<std::uint8_t>(opcode),1,0};response.insert(response.end(),packet.begin()+2,packet.end());
+        return {{std::move(response)},false};
+    }
     if(opcode==0x102) {
         auto checked=check_create(packet,roster);
         if(checked.close) return {{},true};

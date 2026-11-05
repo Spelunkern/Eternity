@@ -12,6 +12,9 @@ struct EntryDeliveryPorts {
     SocialCatalog::Lookup social;
     std::function<std::uint32_t()> tick;
     std::function<EntryKillCount(std::uint8_t country)> kill_count;
+    // Read after InitGuild, when sending character data. If absent, the
+    // constructor's fixed guild name is used by legacy entry callers.
+    std::function<std::string()> guild_name;
 };
 // Binds the actual loaded actor/restored catalogs to the 0407 owner's delivery
 // steps. Snapshot, actor/pipeline result, catalogs and ports outlive this adapter.

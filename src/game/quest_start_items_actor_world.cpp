@@ -20,7 +20,7 @@ bool QuestStartItemsActorWorld::request(std::uint16_t row,std::uint32_t target) 
 }
 void QuestStartItemsActorWorld::refresh_admission() {
     const auto& identity=owners_.actor->appearance().identity;
-    frame_->finished.clear();for(const auto* quest:owners_.runtime->finished()) frame_->finished.push_back({quest->packet.id,quest->success});
+    {std::lock_guard lock(owners_.runtime->finished_mutex());frame_->finished.clear();for(const auto* quest:owners_.runtime->finished()) frame_->finished.push_back({quest->packet.id,quest->success});}
     // Legacy QuestStartUser.country is the family byte (+12e), not faction (+12d).
     frame_->user={owners_.actor->status().level,identity.family,identity.grow,identity.job,use_.item,use_.deadline,frame_->finished};
 }
@@ -28,7 +28,7 @@ std::optional<QuestStartNpc> QuestStartItemsActorWorld::find_npc(std::uint32_t t
     auto npc=ports_.find_start_npc(*owners_.actor,target);refresh_admission();return npc;
 }
 bool QuestStartItemsActorWorld::active(std::uint16_t id) {return owners_.runtime->find_active(id)!=nullptr;}
-bool QuestStartItemsActorWorld::finished(std::uint16_t id) {return std::any_of(owners_.runtime->finished().begin(),owners_.runtime->finished().end(),[&](auto* q){return q->packet.id==id;});}
+bool QuestStartItemsActorWorld::finished(std::uint16_t id) {std::lock_guard lock(owners_.runtime->finished_mutex());return std::any_of(owners_.runtime->finished().begin(),owners_.runtime->finished().end(),[&](auto* q){return q->packet.id==id;});}
 bool QuestStartItemsActorWorld::find_item(std::uint8_t type,std::uint8_t id,bool consume) {return ports_.require_start_item(*owners_.actor,type,id,consume);}
 std::uint32_t QuestStartItemsActorWorld::tick_ms() {
     const auto tick=ports_.tick_ms(*owners_.actor);

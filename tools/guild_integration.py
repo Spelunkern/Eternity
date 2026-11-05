@@ -13,14 +13,14 @@ def run(command,build_directory='build'):
         # The recovered procedure orders by G.Rank, absent from recovered Guilds.
         # Supply its expected column only in this disposable fixture.
         sql('ALTER TABLE dbo.Guilds ADD Rank int NOT NULL DEFAULT 0;',name)
-        for procedure in ('usp_Read_MaxGuildID_R','usp_Read_Guild2_R','usp_Read_GuildChar_R','usp_Read_GuildNpcLv_R','usp_Read_Guild_StoredItems_Detail_R','usp_Save_Guild_StoredItem_Add_E','usp_Save_Guild_StoredItem_Mod_E','usp_Save_Guild_StoredItem_Del_E','usp_Save_Guild_NpcLv_Add_E','usp_Save_Guild_NpcLv_Mod_E','usp_Save_GuildInfo_E2'):
+        for procedure in ('usp_Read_MaxGuildID_R','usp_Read_Guild2_R','usp_Read_GuildChar_R','usp_Read_GuildNpcLv_R','usp_Read_Guild_StoredItems_Detail_R','usp_Save_Guild_StoredItem_Add_E','usp_Save_Guild_StoredItem_Mod_E','usp_Save_Guild_StoredItem_Del_E','usp_Save_Guild_NpcLv_Add_E','usp_Save_Guild_NpcLv_Mod_E','usp_Save_GuildInfo_E2','usp_Save_GuildChar_E','usp_Create_GuildChar_E','usp_Delete_Guild_E'):
             definition=sql('SELECT OBJECT_DEFINITION(OBJECT_ID('+literal('dbo.'+procedure)+')) AS definition FOR JSON PATH;','PS_GameData',json_output=True)[0]['definition']
             sql("GO\n"+definition,name)
         sql("INSERT dbo.Guilds(GuildID,GuildName,MasterUserID,MasterCharID,MasterName,Country,TotalCount,GuildPoint,Del,CreateDate,Rank) VALUES(10,'NativeGuild','native',1000,'Master',1,63,100,0,GETDATE(),3),(20,'EmptyGuild','native',2000,'Empty',0,0,200,0,GETDATE(),2),(30,'Deleted','native',3000,'Gone',0,0,0,1,GETDATE(),1); INSERT dbo.GuildDetails(GuildID,UseHouse,BuyHouse,Rank,Etin,EtinReturnCnt,KeepEtin,Remark) VALUES(10,1,1,2,300,7,9999,'Hello');",name)
         sql("INSERT dbo.GuildNpcLv(GuildID,GNpcType,NpcLevel,Number,CreateTime,Del) VALUES(10,21,3,0,GETDATE(),0),(10,-1,255,7,GETDATE(),0),(10,22,2,8,GETDATE(),0),(10,23,1,1,GETDATE(),1);",name)
         sql("SET IDENTITY_INSERT dbo.GuildStoredItems ON; INSERT dbo.GuildStoredItems(RowID,GuildID,ItemID,Type,TypeID,ItemUID,Slot,Quality,Gem1,Gem2,Gem3,Gem4,Gem5,Gem6,Craftname,[Count],MakeTime,Maketype,Del) VALUES(1,10,5001,5,1,1099511627777,4,-1,1,2,3,4,5,6,'01020304050607080903',7,'2024-05-10T12:13:14','M',0),(2,10,5001,5,1,1099511627778,4,123,6,5,4,3,2,1,' 01 02 ',2,'2024-05-10T12:13:13','M',0),(3,10,5001,5,1,1099511627779,1,124,0,0,0,0,0,0,NULL,0,'2024-05-10T12:13:12','M',0),(4,10,5001,5,1,1099511627780,240,125,0,0,0,0,0,0,'',1,'2024-05-10T12:13:11','M',0),(5,10,5001,5,1,1099511627781,2,126,0,0,0,0,0,0,'',1,'2024-05-10T12:13:10','M',1); SET IDENTITY_INSERT dbo.GuildStoredItems OFF;",name)
         # SELECT INTO omits default constraints; preserve the original insertion default.
-        for table in ('GuildStoredItems','GuildNpcLv'):
+        for table in ('GuildStoredItems','GuildNpcLv','GuildChars'):
             defaults=sql("SELECT c.name,d.definition FROM PS_GameData.sys.columns c JOIN PS_GameData.sys.default_constraints d ON c.default_object_id=d.object_id WHERE c.object_id=OBJECT_ID("+literal('PS_GameData.dbo.'+table)+") FOR JSON PATH;",name,json_output=True)
             for default in defaults:
                 sql('ALTER TABLE dbo.'+identifier(table)+' ADD DEFAULT '+default['definition']+' FOR '+identifier(default['name'])+';',name)

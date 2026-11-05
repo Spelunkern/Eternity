@@ -1,0 +1,4 @@
+# ps_game.exe SHA256 0fb7c9f13b5bcf186118f8bfe73ab214226b93e8aa502b8e6fded4a8312bc547; CUser::NProtectCSARecv 0044b7e0; socket close is ported
+object_present	location	return	close_reason
+0	0	0	0
+1	0	0	111

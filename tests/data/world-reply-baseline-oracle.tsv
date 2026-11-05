@@ -1,0 +1,7 @@
+# ps_game.exe SHA256 0fb7c9f13b5bcf186118f8bfe73ab214226b93e8aa502b8e6fded4a8312bc547; SConnection::SConnection 004d4c50, Open 004d4430, Reset 004d4340, SReply::CheckTime 004dd670; OS and queue calls are ports
+fresh 0 0 0 0
+injected 305419896 305419896
+scan 0 0
+scan 900000 0
+scan 900001 8
+scan 4294967295 8

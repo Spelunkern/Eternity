@@ -1,5 +1,6 @@
 #include "eternity/storage/sql_server.hpp"
 #include "eternity/game/definitions.hpp"
+#include "eternity/game/world_assets.hpp"
 #include "eternity/game/map_config.hpp"
 #include "eternity/game/linked_mob_config.hpp"
 #include "eternity/game/zone_environment.hpp"
@@ -56,6 +57,8 @@ int main(int argc, char** argv) {
             asio::io_context io;
             auto sessions=std::make_shared<eternity::session::Registry>();
             auto realms=std::make_shared<eternity::auth::RealmDirectory>(options.realms);
+            // The definition owner must outlive the world server and its sessions.
+            std::shared_ptr<eternity::game::WorldAssets> world_assets;
             std::unique_ptr<eternity::net::WorldServer> world;
             if(std::string_view(argv[1])=="--serve") {
                 eternity::net::WorldServerOptions game_options;
@@ -70,8 +73,9 @@ int main(int argc, char** argv) {
                 const char* configured_map=std::getenv("ETERNITY_MAP_INI");
                 const std::filesystem::path map_path=configured_map ? configured_map : ".local/server-data/Map.ini";
                 if(configured_map || std::filesystem::is_regular_file(map_path)) starts=eternity::game::read_start_positions(map_path);
+                world_assets=eternity::game::WorldAssets::load(database,map_path);
                 auto rules=std::make_shared<eternity::game::CreationRules>(eternity::game::CreationRules::load(
-                    eternity::game::Definitions::load(database),std::move(starts)));
+                    world_assets->definitions,std::move(starts)));
                 auto commands=std::make_shared<eternity::game::CharacterCommands>(database_config,
                     eternity::game::CharacterCommandOptions{database_id,base,"PS_GameData"},rules,
                     std::make_shared<eternity::game::ItemIds>(game_options.realm));
@@ -100,27 +104,22 @@ int main(int argc, char** argv) {
             return 0;
         }
         if (std::string_view(argv[1]) == "--check-original-loaders") {
-            const auto definitions = eternity::game::Definitions::load(database);
+            const char* configured=std::getenv("ETERNITY_MAP_INI");
+            const std::filesystem::path map_ini=configured?configured:".local/server-data/Map.ini";
+            const auto assets=eternity::game::WorldAssets::load(database,map_ini);
+            const auto& definitions=assets->definitions;
             for (const auto& [name, catalog] : definitions.catalogs)
                 std::cout << name << ": " << catalog.rows.size() << " rows, " << catalog.columns.size() << " columns\n";
             std::cout << "Original definition procedures loaded successfully.\n";
-            const char* configured=std::getenv("ETERNITY_MAP_INI");
-            const std::filesystem::path map_ini=configured?configured:".local/server-data/Map.ini";
-            std::ifstream npc_file(map_ini.parent_path()/"NpcQuest.SData",std::ios::binary);
-            if(!npc_file) throw std::runtime_error("Cannot open original NpcQuest.SData");
-            const eternity::net::Packet npc_data((std::istreambuf_iterator<char>(npc_file)),{});
-            const auto npcs=eternity::game::NpcDefinitions::decode(npc_data);
-            const auto quests=eternity::game::QuestDefinitions::npc_quest(npc_data);
-            const auto item_links=eternity::game::ItemQuestLinks::npc_quest(npc_data);
-            auto items=eternity::game::ItemDefinitions::load(definitions.catalogs.at("Items"));items.initialize_quest_flags(item_links);
-            std::size_t linked_items=0;for(const auto& link:item_links.records()) if(!link.start.empty() || !link.end.empty()) ++linked_items;
+            const auto& npcs=assets->npcs;const auto& quests=assets->quests;const auto& item_links=assets->item_quests;
+            std::size_t linked_items=0;for(const auto& link:item_links.records())if(!link.start.empty() || !link.end.empty())++linked_items;
             std::size_t npc_count=0;for(int type=1;type<=13;++type) npc_count+=npcs.count(type);
             std::cout << "Original NPC/quest definitions loaded: " << npc_count << " NPCs, " << quests.size() << " quests (object runtime not started).\n";
             std::cout << "Original item quest links loaded: " << linked_items << " linked slots; native quest-start flags initialized.\n";
-            const auto maps=eternity::game::ServerMaps::load(eternity::game::MapConfiguration::load(map_ini),map_ini.parent_path()/"Map");
+            std::cout << "Original blessing definitions loaded: " << assets->blessings.size(0) << " and " << assets->blessings.size(1) << " country levels.\n";
+            const auto& maps=assets->maps;
             std::cout << "Original map configuration and files loaded: " << maps.size() << " maps (runtime zones not initialized).\n";
-            const auto mobs=eternity::game::MobRuntimeTemplates::load(definitions.catalogs.at("Mobs"));
-            const auto linked=eternity::game::LinkedMobConfiguration::load(map_ini.parent_path()/"Obelisk.ini",maps.all(),mobs);
+            const auto& linked=assets->linked_mobs;
             std::size_t linked_groups=0;for(std::size_t id=0;id<maps.size();++id) linked_groups+=linked.for_map(static_cast<std::uint16_t>(id)).size();
             std::cout << "Original linked mob configuration loaded: " << linked_groups << " groups (object runtime not started).\n";
             std::size_t doors=0,regions=0;

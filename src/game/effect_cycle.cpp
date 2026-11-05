@@ -200,6 +200,29 @@ std::vector<net::Packet> EffectCycle::initial_packets(std::uint32_t tick) const 
     }
     return character_effects(entries,tick);
 }
+void EffectCycle::save_database(std::uint32_t account,std::uint32_t tick,const EffectSavePorts& ports) {
+    if(!ports.lock || !ports.unlock || !ports.send)throw std::invalid_argument("Effect save requires lock and database delivery");
+    net::Packet packet(7,0);put(packet,0,0x904,2);put(packet,2,account,4);
+    ports.lock();
+    struct Lock {const EffectSavePorts& ports;bool held=true;~Lock(){if(held)ports.unlock();}} lock{ports};
+    shared_cursor_=effects_.empty()?0:effects_.begin()->first;
+    while(shared_cursor_) {
+        const auto found=effects_.find(shared_cursor_);if(found==effects_.end())throw std::logic_error("Effect save cursor lost");
+        const auto active=found->second;const auto& definition=*active.definition;
+        if((definition.effect==3 || definition.effect==4) && definition.detail!=100) {
+            const auto now=definition.offline_countdown?tick/1000U:tick;
+            const auto difference=active.timer.end>now?active.timer.end-now:0U;
+            const auto seconds=std::min(definition.offline_countdown?difference:difference/1000U,definition.keep_time_seconds);
+            const auto offset=packet.size();packet.resize(offset+7);put(packet,offset,active.timer.effect.skill_id,2);
+            packet[offset+2]=active.timer.effect.level;put(packet,offset+3,seconds,4);++packet[6];
+            if(packet[6]==255){ports.send(packet);packet.resize(7);packet[6]=0;}
+        }
+        const auto next=shared_cursor_==0?effects_.begin():effects_.upper_bound(shared_cursor_);
+        shared_cursor_=next==effects_.end()?0:next->first;
+    }
+    lock.held=false;ports.unlock();
+    if(packet[6])ports.send(packet);
+}
 void EffectCycle::expire(std::uint32_t tick,EffectStatus& status,EffectEquipment equipment,const ItemDefinitions& definitions,
     EffectRemovalWorld& world,EffectObserver& observer) {
     // ChkEndTimeSkill 004865b0: unlink, DB erase, self notification, unapply/free; party notifications follow.

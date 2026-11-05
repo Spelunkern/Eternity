@@ -1,0 +1,9 @@
+# ps_game.exe SHA256 0fb7c9f13b5bcf186118f8bfe73ab214226b93e8aa502b8e6fded4a8312bc547; CMob::ReturnHome 004a7670; FSM/attack/path/trail/damage intercepted; far path intercepted
+# now deadline x trail pais status | result status trace
+50	51	0	0	1	3	0	3	-
+50	50	0	0	1	3	1	100	FAPTD
+50	50	0.5	1	1	3	1	100	FAPTD
+50	50	9.5	0	1	3	1	100	FAPTD
+50	50	10	1	1	3	0	3	X
+50	50	0	0	0	2	1	2	APTD
+50	50	0	0	0	3	1	0	APTD

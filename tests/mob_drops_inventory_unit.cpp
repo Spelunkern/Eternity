@@ -32,6 +32,17 @@ int main(int argc,char** argv) {try {
         check(actor.inventory().back().craft.empty(),"Pointer publication applied future craft");
         check(actor.sync_inventory_item(1,0,first) && actor.inventory().back().craft==first->item.craft && actor.inventory().back().quality==65535 && actor.inventory().back().gems[0]==7,"DB-boundary payload mirror incomplete");
         persisted=actor.inventory().back();
+        {
+            Actor recipient(43,{}, {},{},scene,{definitions,enchant,mobs},{legacy});
+            const auto before_transfer=pool.statistics();
+            check(!actor.transfer_inventory_item(recipient,1,0,0,0,first) && actor.retained_inventory_item(1,0)->item==first,"Occupied transfer destination changed source");
+            check(!actor.transfer_inventory_item(recipient,1,0,1,5,other),"Stale transfer identity accepted");
+            check(actor.transfer_inventory_item(recipient,1,0,1,5,first) && actor.inventory_slot_empty(1,0),"Whole transfer did not detach source");
+            const auto moved=recipient.retained_inventory_item(1,5);check(moved && moved->item==first && moved->pool==&pool && first->item.uid==0xfedcba9876543210ULL && first->item.count==3 && first->item.quality==65535 && first->craft_storage[19]=='0',"Whole transfer lost item identity or payload");
+            check(pool.statistics().available==before_transfer.available && pool.statistics().fresh_attempts==before_transfer.fresh_attempts,"Whole transfer allocated or freed an item");
+            check(recipient.transfer_inventory_item(actor,1,5,1,0,first) && recipient.inventory_slot_empty(1,5),"Whole transfer back failed");
+            bool same_rejected=false;try{actor.transfer_inventory_item(actor,1,0,1,1,first);}catch(const std::invalid_argument&){same_rejected=true;}check(same_rejected && actor.retained_inventory_item(1,0)->item==first,"Self transfer changed ownership");
+        }
         check(actor.release_inventory_item(1,0,first) && first->item.count==3 && actor.inventory_slot_empty(1,0) && !actor.retained_inventory_item(1,0),"Direct release copied mirror or kept ownership");
         check(!actor.release_inventory_item(1,0),"Duplicate direct release accepted");
         check(actor.exchange().mode==2 && actor.exchange().items[0].bag==1 && actor.exchange().items[0].slot==0 && actor.exchange().items[0].count==3,"Direct release performed ItemRemove exchange cleanup");

@@ -1,0 +1,6 @@
+# ps_game.exe SHA256 0fb7c9f13b5bcf186118f8bfe73ab214226b93e8aa502b8e6fded4a8312bc547; CMob::Chase 004a6de0 intermediate waypoint; real AStar, vector and path advance; allocation/locks/trail/MoveMob intercepted
+# step accepted | x_bits y_bits z_bits next_chase cursor_x cursor_z trails moves
+2	1	1094099102	1077936128	1094099102	550	14	14	1	1
+6	1	1096810496	0	1096810496	50	15	14	1	1
+6	0	1096810496	0	1096810496	50	15	14	1	1
+5	1	1096323468	1077936128	1096323468	550	14	14	1	1

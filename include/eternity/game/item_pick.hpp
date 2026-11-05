@@ -15,5 +15,12 @@ public:
     virtual UserPosition pick_position(const Actor&) = 0;
     virtual bool pick_quest_active(Actor&,std::uint16_t id) = 0;
 };
+// Optional native ownership fence for consumers that retain a selected item.
+// Invoked after the original zone unlink and before the caller mutates an actor.
+class ItemPickDetachFence {
+public:
+    virtual ~ItemPickDetachFence()=default;
+    virtual void item_pick_detached(Actor&,GroundItem&)=0;
+};
 bool ground_item_pick_enabled(const GroundItem&,std::uint32_t user_id,std::uint32_t party_id,bool checks,ItemPickClock&);
 }

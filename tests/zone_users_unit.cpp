@@ -112,6 +112,46 @@ int main(int argc,char** argv) {
             require(revealed==std::vector<std::uint32_t>{9002},"Resolved movement did not change query membership");
             require(!zone.move_at_position(9002,{-1,999,0}) && zone.position(9002)->x==69 && zone.position(9002)->y==0,"Rejected movement changed stored position");
         }
+        {
+            // Same finite boundary inputs as the original 00416550 probe;
+            // this checks only native membership and coordinates, not its ports.
+            const std::array<float,8> values{-1.F,0.F,39.5F,50.F,50.5F,80.F,159.5F,160.F};
+            for(float x:values)for(float z:values) {
+                ZoneUsers zone(MapGeometry(160),0);require(zone.attach_at_position(*actors[0],{20,3,20}),"Matrix actor attach failed");
+                const bool safe=x>=0 && x<160 && z>=0 && z<160;const bool cross=safe && (x>50 || z>50);
+                require(zone.move_at_position(9001,{x,7,z})==safe,"Movement boundary disagrees with original probe");
+                const auto position=zone.position(9001);require(position && position->x==(safe?x:20) && position->y==(safe?7:3) && position->z==(safe?z:20),"Movement position disagrees with original probe");
+                const int cx=cross?static_cast<int>(x/40):0,cz=cross?static_cast<int>(z/40):0;bool found=false;
+                const auto actual_cell=zone.cell(9001);require(actual_cell && actual_cell->x==cx && actual_cell->z==cz && !zone.cell(9999),"Current membership cell differs from original probe");
+                zone.visit_cell(cx,cz,[&](Actor& actor,UserPosition){found=&actor==actors[0].get();return true;});require(found,"Movement membership disagrees with original probe");
+            }
+            ZoneUsers zone(MapGeometry(160),0);require(zone.attach_at_position(*actors[0],{20,3,20}),"NaN actor attach failed");
+            const float nan=std::numeric_limits<float>::quiet_NaN();
+            require(zone.move_at_position(9001,{nan,7,20}) && std::isnan(zone.position(9001)->x),"Same-cell NaN differs from original");
+            require(!zone.move_at_position(9001,{nan,7,80}) && std::isnan(zone.position(9001)->x) && zone.position(9001)->z==80,"Cross-cell NaN write order differs from original");
+        }
+        {
+            const auto retain=[](Actor& actor){return std::shared_ptr<void>(&actor,[](void*){});}; // Fixture keeps actors alive.
+            for(unsigned scenario=0;scenario<5;++scenario){
+                ZoneUsers zone(2,2,0);for(unsigned i=0;i<2;++i)zone.attach(*actors[i],0,0,{0,0,0});
+                if(scenario!=3)zone.attach(*actors[2],0,0,{0,0,0});std::vector<std::uint32_t> seen;
+                zone.broadcast_cell(0,0,retain,[&](Actor& actor){seen.push_back(actor.id());if(seen.size()!=1)return;
+                    if(scenario==1)require(zone.detach(9001),"Broadcast current removal failed");
+                    if(scenario==2)require(zone.detach(9002),"Broadcast next removal failed");
+                    if(scenario==3)zone.attach(*actors[2],0,0,{0,0,0});
+                    if(scenario==4){require(zone.detach(9001),"Broadcast reinsert removal failed");zone.attach(*actors[0],0,0,{0,0,0});}
+                });
+                const std::vector<std::vector<std::uint32_t>> expected{{9001,9002,9003},{9001},{9001,9003},{9001,9002,9003},{9001}};
+                require(seen==expected[scenario],"Local-link broadcast differs from original probe");
+            }
+            for(unsigned scenario=0;scenario<3;++scenario){
+                ZoneUsers zone(2,2,0);for(auto& actor:actors)zone.attach(*actor,0,0,{0,0,0});std::vector<std::uint32_t> nested;
+                zone.broadcast_cell(0,0,retain,[&](Actor& actor){nested.push_back(actor.id());if(nested.size()==1)
+                    zone.broadcast_cell(0,0,retain,[&](Actor& inner){nested.push_back(inner.id());if(nested.size()==2 && scenario==1)require(zone.detach(9001),"Nested current removal failed");if(nested.size()==2 && scenario==2)require(zone.detach(9002),"Nested next removal failed");});});
+                const std::vector<std::vector<std::uint32_t>> expected{{9001,9001,9002,9003,9002,9003},{9001,9001},{9001,9001,9003,9003}};
+                require(nested==expected[scenario],"Nested broadcast changed original local traversal");
+            }
+        }
         std::cout<<checked<<" original hidden-user queries plus native movement and live unlink passed\n";
     } catch(const std::exception& error) {std::cerr<<error.what()<<'\n';return 1;}
 }

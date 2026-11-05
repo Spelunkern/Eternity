@@ -1,0 +1,10 @@
+# ps_game.exe SHA256 0fb7c9f13b5bcf186118f8bfe73ab214226b93e8aa502b8e6fded4a8312bc547; CMob::Attack 004a2000; target-side continuation intercepted
+# sleep stun speed disable0 disable1 disable2 | calls
+0	0	3	0	0	0	1
+1	0	3	0	0	0	0
+0	1	3	0	0	0	0
+0	0	3	1	0	0	0
+0	0	3	0	1	1	1
+0	0	255	0	0	0	1
+0	0	-1	0	0	0	1
+0	0	3	-1	0	0	0

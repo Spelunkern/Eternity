@@ -1,0 +1,4 @@
+# ps_game.exe SHA256 0fb7c9f13b5bcf186118f8bfe73ab214226b93e8aa502b8e6fded4a8312bc547; CMob::Chase 004a6de0 blocked search; real EnableLine/IsBlockSafe/FindPath/ResetPath, allocation/locks/reset-target/waypoint intercepted
+# gap | route resets found cursor_x cursor_z
+1	W	0	1	14	14
+0	-	1	0	4294967295	4294967295

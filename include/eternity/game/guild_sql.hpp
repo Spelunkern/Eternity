@@ -9,6 +9,9 @@ namespace eternity::game {
 // DB-agent metadata replica. Existing rows retain their values on another load.
 struct GuildDbMetadata {
     GuildMetadata metadata;GuildNpcReplica npcs;std::unique_ptr<GuildBankReplica> bank;std::int32_t save_type=0;
+    void set_etin(std::uint32_t etin,std::uint32_t returned); // UpdateGuildEtinAndReturnCnt 0040fd80.
+    void set_keep_etin(std::uint32_t keep); // UpdateGuildKeepEtin 0040fec0.
+    void set_house(std::uint8_t purchased,std::uint32_t keep); // UpdateGuildHouse 0040fe60.
     void set_remark(std::string_view); // UpdateGuildRemark 0040fdf0.
     bool upgrade_npc(std::uint8_t slot,std::uint16_t type,std::uint8_t level,std::uint32_t etin,std::uint32_t keep);
     void reset_npcs(std::uint32_t keep);

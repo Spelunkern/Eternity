@@ -1,4 +1,5 @@
 #include "eternity/game/obelisk_runtime_calendar.hpp"
+#include "eternity/game/world_native_calendar.hpp"
 #include <bit>
 #include <fstream>
 #include <iostream>
@@ -32,8 +33,8 @@ int main(int argc,char** argv) {
     try {
         if(argc!=2) throw std::runtime_error("Expected calendar oracle fixture");
         std::ifstream input(argv[1]);if(!input) throw std::runtime_error("Missing calendar fixture");
-        Platform platform;ObeliskRuntimeCalendarClock clock(platform);
-        std::string line;unsigned variants=0,packs=0,subtractions=0,restores=0;
+        Platform platform;ObeliskRuntimeCalendarClock clock(platform);WorldNativeCalendar native;
+        std::string line;unsigned variants=0,packs=0,subtractions=0,restores=0,native_checked=0;
         while(std::getline(input,line)) {
             if(line.empty()||line[0]=='#') continue;
             std::istringstream row(line);char kind;row>>kind;
@@ -41,6 +42,12 @@ int main(int argc,char** argv) {
                 Key fields;for(auto& value:fields) row>>value;
                 unsigned success;std::uint64_t bits;row>>success>>bits;
                 platform.variants.emplace(fields,std::pair{success!=0,bits});++variants;
+                const auto [year,month,day,hour,minute,second]=fields;
+                const std::chrono::year_month_day date{std::chrono::year{year},std::chrono::month{month},std::chrono::day{day}};
+                if(year>=2000 && year<=2063 && date.ok() && hour<=23 && minute<=59 && second<=59) {
+                    double value=-1;ObeliskRuntimeCalendar sample{year,month,0,day,hour,minute,second,0};
+                    check(success && native.variant_day(sample,value) && std::bit_cast<std::uint64_t>(value)==bits,"Native OLE variant mismatch at "+std::to_string(variants));++native_checked;
+                }
             } else if(kind=='P') {
                 platform.local=read_calendar(row);std::uint32_t expected;row>>expected;platform.local_calls=0;
                 check(clock.packed_now()==expected,"Original calendar packing mismatch at "+std::to_string(packs));
@@ -61,6 +68,8 @@ int main(int argc,char** argv) {
             check(!row.fail(),"Malformed calendar fixture row");
         }
         check(variants==2365 && packs==264 && subtractions==1229 && restores==512,"Incomplete calendar fixture");
+        check(native_checked==2135,"Incomplete native OLE comparisons");
+        double untouched=123.0;check(!native.variant_day({2024,13,0,1,0,0,0,0},untouched) && untouched==123.0,"Invalid native calendar changed output");
         std::cout<<packs<<" original local-calendar packs, "<<subtractions<<" original differences, "<<restores
                  <<" original full ownership restores; "<<variants<<" Wine OLE responses\n";return 0;
     } catch(const std::exception& e) {std::cerr<<e.what()<<'\n';return 1;}

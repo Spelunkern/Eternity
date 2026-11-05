@@ -14,6 +14,15 @@ bool QuestStartItemsActor::grant(std::int32_t type,std::int32_t id,std::int32_t 
         frame_=previous;if(current.unclaimed) owners_.pool->release(current.unclaimed);throw;
     }
 }
+bool QuestStartItemsActor::add(std::int32_t type,std::int32_t id,std::int32_t count,QuestStartItemsResult& output) {
+    Frame current;auto* previous=frame_;frame_=&current;
+    try {
+        QuestStartItemsUser user{owners_.actor->account_id(),owners_.actor->status().skills.max_bags};
+        const auto result=quest_start_items_add(type,id,count,output,user,*this);frame_=previous;return result;
+    } catch(...) {
+        frame_=previous;if(current.unclaimed) owners_.pool->release(current.unclaimed);throw;
+    }
+}
 const ItemDefinition* QuestStartItemsActor::find_definition(std::int32_t type,std::int32_t id) {
     if(type<1 || type>255 || id<1 || id>255) return nullptr;
     return owners_.definitions->find(static_cast<std::uint8_t>(type),static_cast<std::uint8_t>(id));

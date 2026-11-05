@@ -26,6 +26,7 @@ struct PlayerItem {
     std::array<std::uint8_t,6> gems{};
     std::string craft,make_type;
     bool relocated = false;
+    std::size_t source_order = 0; // Original SQL row order within this inventory.
 };
 struct PlayerSkill {
     std::uint16_t id = 0,delay = 0;
@@ -60,6 +61,8 @@ struct PlayerSnapshot {
 };
 
 PlayerCore decode_player_core(const storage::Row& row);
+// Decode one raw item procedure row before slot placement.
+PlayerItem decode_player_item(const storage::Row&,bool bank);
 void decode_player_inventory(PlayerSnapshot& player);
 void decode_player_auxiliary(PlayerSnapshot& player);
 std::vector<PlayerPointItem> decode_point_items(const storage::ResultSet&);

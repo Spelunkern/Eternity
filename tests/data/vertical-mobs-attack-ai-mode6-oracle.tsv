@@ -1,0 +1,8 @@
+# ps_game.exe SHA256 0fb7c9f13b5bcf186118f8bfe73ab214226b93e8aa502b8e6fded4a8312bc547; CMob::AttackAI 004a1ab0 mode 6; find/set/retarget/continuation intercepted
+# fixed found lower | trace slot next_attack
+0	0	0	F	4294967295	2600
+0	0	1	FA	1	12345
+0	1	0	FSC	2	12345
+0	1	1	FSC	2	12345
+1	0	0	A	2	12345
+1	1	1	A	2	12345

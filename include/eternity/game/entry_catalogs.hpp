@@ -22,10 +22,17 @@ public:
     std::uint32_t account_id() const noexcept {return account_;}
     std::uint32_t character_id() const noexcept {return character_;}
     EntryCatalogUpdate apply_db(std::span<const std::uint8_t>); // 0c01 / 0c05.
-    // Lookup/sends must not mutate these lists. InitFriend notifies every present
-    // nonzero friend, whereas 2201 marks online only with a mutual relationship.
+    // PacketComm 00475870: deletion and memo requests. send_db is called
+    // before send_self; friend deletion may also notify the online peer.
+    EntryCatalogUpdate apply_client(std::span<const std::uint8_t>,const std::function<void(net::Packet)>& send_db,
+        const std::function<void(net::Packet)>& send_self,const Lookup&,
+        const std::function<void(std::uint32_t,net::Packet)>& send_peer);
+    // Notice lookup/sends may mutate these lists: original traversal rereads
+    // the live count. 2201 marks online only with a mutual relationship.
     void notify_online(const Lookup&,const std::function<void(std::uint32_t,net::Packet)>&) const;
     void notify_offline(const Lookup&,const std::function<void(std::uint32_t,net::Packet)>&) const;
+    // Lookup/sends may synchronously mutate lists. A returned peer catalog must
+    // remain alive until its mutual-friend lookup completes.
     void send_packets(const Lookup&,const std::function<void(net::Packet)>&) const;
     std::vector<net::Packet> packets(const Lookup&) const;
 private:

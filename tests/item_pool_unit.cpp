@@ -85,6 +85,13 @@ int main(int argc,char** argv) {
         require(heap.allocate()==first && first->id==first_id,"Pool did not preserve LIFO allocation IDs");heap.release(first);invalid=false;try {heap.release(first);}catch(const std::invalid_argument&) {invalid=true;}require(invalid,"Pool accepted a double release");
         GroundItem foreign;invalid=false;try {heap.release(foreign);}catch(const std::invalid_argument&) {invalid=true;}require(invalid,"Pool accepted a foreign allocation");
         GroundItemPool failing(1,[]() -> std::unique_ptr<GroundItem> {throw std::bad_alloc();});require(failing.allocate()==nullptr && failing.statistics().fresh_attempts==1 && failing.statistics().serial==1,"Native allocation failure changed ID/counter behavior");
+        GroundItemPool pinned;auto* pinned_item=pinned.allocate();auto* ordinary=pinned.allocate();GroundItem not_owned;
+        require(pinned_item && ordinary && !pinned.pin(not_owned) && pinned.pin(*pinned_item) && pinned.pin(*pinned_item),"Item pin setup differed");
+        pinned.release(*pinned_item);pinned.release(*ordinary);require(!pinned.is_allocated(*pinned_item) && pinned.allocate()==ordinary,"Pinned free item changed ordinary LIFO reuse");
+        auto* during_pin=pinned.allocate();require(during_pin && during_pin!=pinned_item,"Pool reused a pinned free item");pinned.unpin(*pinned_item);
+        auto* during_nested_pin=pinned.allocate();require(during_nested_pin && during_nested_pin!=pinned_item,"Pool reused an item with a remaining pin");
+        pinned.unpin(*pinned_item);require(pinned.allocate()==pinned_item,"Pool did not reuse item after final unpin");
+        pinned.release(*pinned_item);pinned.release(*ordinary);pinned.release(*during_pin);pinned.release(*during_nested_pin);
         GroundItemPool concurrent;std::array<std::array<GroundItem*,64>,4> held{};std::barrier ready(4);std::array<std::thread,4> threads;
         for(std::size_t i=0;i<4;++i) threads[i]=std::thread([&,i] {for(auto& item:held[i]) item=concurrent.allocate();ready.arrive_and_wait();for(auto* item:held[i]) concurrent.release(item);});for(auto& thread:threads) thread.join();
         std::set<std::uint32_t> identities;for(const auto& batch:held) for(const auto* item:batch) identities.insert(item->id);require(identities.size()==256 && concurrent.statistics().owned==256 && concurrent.statistics().available==256 && concurrent.statistics().serial==257,"Concurrent item pool allocations reused live IDs or lost objects");

@@ -1,0 +1,7 @@
+# ps_game.exe SHA256 0fb7c9f13b5bcf186118f8bfe73ab214226b93e8aa502b8e6fded4a8312bc547; 0044cae0 defensive option dispatch; 0044c940 observed
+# guard mob_status user_mode slots calls final_guard
+0	1	0	1	7,14,1,8,2,9,4,11,3,10,5,12	0
+1	1	0	1	-	1
+0	2	0	1	-	0
+0	1	1	1	-	0
+0	1	0	0	-	0

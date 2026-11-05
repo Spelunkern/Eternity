@@ -82,6 +82,11 @@ int main(int argc,char** argv) {
         const auto roster=repository.load(owner.user_id);
         require(roster.slots[0] && roster.slots[1] && roster.slots[0]->name=="NativeHero" && roster.slots[0]->hp==250 && roster.slots[1]->hp==270,
                 "TCP-created character stats/name did not persist through original SQL");
+        const auto character_id=roster.slots[0]->id;auto deletion=[&](std::uint8_t op){Packet p{op,1};for(unsigned i=0;i<4;++i)p.push_back(static_cast<std::uint8_t>(character_id>>(i*8)));return p;};
+        auto request_delete=deletion(3);first.write(request_delete);auto expected_delete=request_delete;expected_delete.insert(expected_delete.begin()+2,0);
+        require(first.packet()==expected_delete && repository.load(owner.user_id).slots[0]->remaining_time,"TCP deletion request did not persist");
+        auto cancel_delete=deletion(15);first.write(cancel_delete);auto expected_cancel=cancel_delete;expected_cancel.insert(expected_cancel.begin()+2,0);
+        require(first.packet()==expected_cancel && !repository.load(owner.user_id).slots[0]->remaining_time,"TCP deletion cancellation did not persist");
         const auto ids=database.query("SELECT COUNT(*),COUNT(DISTINCT ItemUID) FROM ["+catalog+"].dbo.CharItems WHERE CharID IN "
             "(SELECT CharID FROM ["+catalog+"].dbo.Chars WHERE UserUID=5001); SELECT COUNT(*) FROM ["+catalog+
             "].dbo.CharItems WHERE CharID IN (SELECT CharID FROM ["+catalog+"].dbo.Chars WHERE UserUID=5001) AND "

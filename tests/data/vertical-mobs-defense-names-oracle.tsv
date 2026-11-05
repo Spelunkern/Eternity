@@ -1,0 +1,5 @@
+# ps_game.exe SHA256 0fb7c9f13b5bcf186118f8bfe73ab214226b93e8aa502b8e6fded4a8312bc547; CUser::BeAttackedItemOption 0044cae0; actual CMob::IsBothmob 0044c610; AttackItemMob intercepted
+# lua both seen_user seen_skill seen_guard final_user final_skill final_guard
+0	0	prioruser	priorskill	1	changed-user	changed-skill	0
+1	0	prioruser	option	1	prioruser	priorskill	0
+0	1	prioruser	option	1	prioruser	priorskill	0

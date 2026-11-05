@@ -1,0 +1,6 @@
+# ps_game.exe SHA256 0fb7c9f13b5bcf186118f8bfe73ab214226b93e8aa502b8e6fded4a8312bc547 CMob::Attack 004a20dc..004a20f1; casting and duel intercepted
+# initial_duel duel_after_casting | call_order
+0	0	SH
+0	1	SDH
+1	0	SH
+1	1	SDH

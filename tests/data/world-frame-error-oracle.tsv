@@ -1,0 +1,9 @@
+# ps_game.exe SHA256 0fb7c9f13b5bcf186118f8bfe73ab214226b93e8aa502b8e6fded4a8312bc547; SWorker::IORecv 004dc690; close and cleanup calls are ports
+0 0 13 disconnect
+0 1 13 dispatch
+1 0 13 disconnect
+1 1 13 dispatch
+2049 0 13 disconnect
+2049 1 13 dispatch
+65535 0 13 disconnect
+65535 1 13 dispatch

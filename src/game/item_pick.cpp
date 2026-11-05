@@ -25,6 +25,8 @@ GroundItem* ZoneItems::pick(Actor& user,std::uint32_t id,std::int32_t& error,boo
             if(!active) {error=2;return nullptr;}
         }
     }
-    leave(*item);return item; // Success preserves the caller's existing error word.
+    leave(*item);
+    if(auto* fence=dynamic_cast<ItemPickDetachFence*>(&world))fence->item_pick_detached(user,*item);
+    return item; // Success preserves the caller's existing error word.
 }
 }

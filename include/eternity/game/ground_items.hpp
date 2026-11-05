@@ -42,6 +42,8 @@ public:
     ~ZoneItems();
     ZoneItems(const ZoneItems&) = delete;
     ZoneItems& operator=(const ZoneItems&) = delete;
+    // Same live clock used by EnterItem expiry and CItem::PickEnable.
+    std::uint32_t current_tick_ms() {return services_.tick_ms();}
     bool enter(GroundItem&,std::uint8_t appearance,std::uint32_t lifetime=60000);
     bool leave(GroundItem&);
     GroundItem* find(std::uint32_t id) const noexcept;

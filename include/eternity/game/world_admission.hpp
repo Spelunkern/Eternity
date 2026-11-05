@@ -46,12 +46,36 @@ public:
     void track_selection(WorldAdmissionUser&); // location 1, after roster loading.
     void untrack(WorldAdmissionUser&);
     bool wait(WorldAdmissionUser&);
+    // CWorld::ZoneLeaveUserMoveLocal 0040d1d0 after successful source leave.
+    // The caller has already updated map/position and notified the party.
+    void wait_after_zone_leave(WorldAdmissionUser&);
     void update_packets();
+    // CWorld::UpdateNetSend 0040c1b0: connected users, then selection users.
+    void visit_global_users(const std::function<std::shared_ptr<void>(WorldAdmissionUser&)>& retain,
+        const std::function<void(WorldAdmissionUser&)>& visit);
+    bool visit_global_users_while(const std::function<std::shared_ptr<void>(WorldAdmissionUser&)>& retain,
+        const std::function<void(WorldAdmissionUser&)>& visit,const std::function<bool()>& keep_running);
+    bool visit_connected_users_while(const std::function<std::shared_ptr<void>(WorldAdmissionUser&)>& retain,
+        const std::function<void(WorldAdmissionUser&)>& visit,const std::function<bool()>& keep_running);
     // CZone::UpdatePackets 004215e0: visit that zone's waiting users with the
     // shared cursor. The caller owns the zone update cadence and serialization.
     void update_zone_wait_packets(RuntimeZone&);
+    // Visit the actual zone-wait list with a retained session for each user.
+    void visit_zone_waiting(RuntimeZone&,
+        const std::function<std::shared_ptr<void>(WorldAdmissionUser&)>& retain,
+        const std::function<void(WorldAdmissionUser&)>& visit);
+    // CZone logout update 00421830: live zone-wait cursor. The callback may
+    // untrack the current user but must keep that user alive until it returns.
+    void update_zone_wait_logout_deadlines(RuntimeZone&,std::uint32_t tick,
+        const std::function<void(WorldAdmissionUser&)>& logout);
+    // Pin before clearing a due deadline; a missing session must leave it due.
+    void update_zone_wait_logout_deadlines(RuntimeZone&,std::uint32_t tick,
+        const std::function<std::shared_ptr<void>(WorldAdmissionUser&)>& retain,
+        const std::function<void(WorldAdmissionUser&)>& logout);
     bool client_enter(WorldAdmissionUser&); // CUser::ZoneEnterUserMove 0044b8a0.
     bool world_enter(WorldAdmissionUser&); // CWorld::ZoneEnterUserMove 0040d000.
+    // True only when all global and per-zone admission lists are empty.
+    bool empty() const noexcept;
     std::size_t connected_count() const;
     std::size_t selection_count() const;
     std::size_t waiting_count() const;

@@ -2,7 +2,7 @@
 
 namespace eternity::game {
 EntryDelivery::EntryDelivery(const PlayerSnapshot& player,const LoadedActor& loaded,const SocialCatalog& social,const EntryCatalogs& catalogs,ExperienceBounds experience,std::string guild_name,EntryDeliveryPorts ports):player_(player),loaded_(loaded),social_(social),catalogs_(catalogs),experience_(experience),guild_(std::move(guild_name)),ports_(std::move(ports)) {
-    if(!loaded.actor || loaded.learned.invalid || loaded.actor->id()!=player.core.character.id || social.account_id()!=player.core.user_id || social.character_id()!=player.core.character.id || catalogs.account_id()!=player.core.user_id) throw std::invalid_argument("Entry delivery requires matching loaded character/catalog ownership");
+    if(!loaded.actor || loaded.learned.invalid || loaded.actor->id()!=player.core.character.id || loaded.actor->account_id()!=player.core.user_id || social.account_id()!=player.core.user_id || social.character_id()!=player.core.character.id || catalogs.account_id()!=player.core.user_id) throw std::invalid_argument("Entry delivery requires matching loaded character/catalog ownership");
     if(!ports_.send_self || !ports_.send_peer || !ports_.social || !ports_.tick || !ports_.kill_count) throw std::invalid_argument("Incomplete entry delivery services");
 }
 bool EntryDelivery::send(CharacterEntryStep step) const {
@@ -10,7 +10,7 @@ bool EntryDelivery::send(CharacterEntryStep step) const {
     auto& actor=*loaded_.actor;using Step=CharacterEntryStep;
     switch(step) {
     case Step::init_friends:social_.notify_online(ports_.social,ports_.send_peer);break;
-    case Step::data: {auto core=player_.core;core.money=actor.money();ports_.send_self(character_data(core,actor.status().skills.equipment.base.maximum,experience_,guild_));break;}
+    case Step::data: {auto core=player_.core;core.money=actor.money();auto guild=ports_.guild_name?ports_.guild_name():guild_;ports_.send_self(character_data(core,actor.status().skills.equipment.base.maximum,experience_,guild));break;}
     case Step::items:batch(character_items(actor.inventory(),actor.status().skills.max_bags));break;
     case Step::bank:batch(character_bank(player_.bank,player_.core.stored_money));break;
     case Step::skills:ports_.send_self(character_skills(loaded_.learned.active,ports_.tick()));break;

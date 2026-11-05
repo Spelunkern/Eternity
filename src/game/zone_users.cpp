@@ -61,6 +61,11 @@ std::optional<UserPosition> ZoneUsers::position(std::uint32_t id) const {
     const std::lock_guard lock(mutex_);
     const auto member=users_.find(id);if(member==users_.end()) return {};return member->second.position;
 }
+std::optional<UserCell> ZoneUsers::cell(std::uint32_t id) const {
+    const std::lock_guard lock(mutex_);const auto member=users_.find(id);if(member==users_.end())return {};
+    return UserCell{static_cast<std::int32_t>(member->second.cell%static_cast<std::size_t>(width_)),
+        static_cast<std::int32_t>(member->second.cell/static_cast<std::size_t>(width_))};
+}
 bool ZoneUsers::visit_cell(std::int32_t x,std::int32_t z,const std::function<bool(Actor&,UserPosition)>& visitor) {
     const std::lock_guard lock(mutex_);
     auto& cell=cells_.at(index(x,z));cell.cursor=0;
@@ -70,7 +75,23 @@ bool ZoneUsers::visit_cell(std::int32_t x,std::int32_t z,const std::function<boo
     }
     cell.cursor=0;return false;
 }
-bool ZoneUsers::detach(std::uint32_t id) {
+void ZoneUsers::broadcast_cell(std::int32_t x,std::int32_t z,const RetainActor& retain,const std::function<void(Actor&)>& send) {
+    if(!retain || !send) throw std::invalid_argument("Cell broadcast requires retention and send services");
+    const std::lock_guard lock(mutex_);const auto cell_index=index(x,z);auto& cell=cells_[cell_index];
+    auto current=cell.members.begin();
+    while(current!=cell.members.end()) {
+        const auto id=current->second;auto& member=users_.at(id);Actor* actor=member.actor;
+        auto pin=retain(*actor);if(!pin)throw std::logic_error("Cell broadcast could not retain actor");
+        send(*actor);
+        const auto live=users_.find(id);
+        if(live==users_.end() || live->second.actor!=actor)return;
+        if(live->second.cell!=cell_index)throw std::logic_error("Cross-cell reentry during broadcast is not recovered");
+        current=cell.members.upper_bound(live->second.ordinal);
+    }
+}
+bool ZoneUsers::detach(std::uint32_t id) {return detach_impl(id,false);}
+bool ZoneUsers::detach_for_zone_leave(std::uint32_t id) {return detach_impl(id,true);}
+bool ZoneUsers::detach_impl(std::uint32_t id,bool preserve_zone_status) {
     const std::lock_guard lock(mutex_);
     const auto entry=users_.find(id);if(entry==users_.end()) return false;
     if(user_cursor_==entry->second.arrival) {
@@ -80,7 +101,7 @@ bool ZoneUsers::detach(std::uint32_t id) {
             if(member.arrival<entry->second.arrival && member.arrival>user_cursor_)user_cursor_=member.arrival;
         }
     }
-    unlink(entry->second);entry->second.actor->status().in_zone=false;users_.erase(entry);return true;
+    unlink(entry->second);if(!preserve_zone_status)entry->second.actor->status().in_zone=false;users_.erase(entry);return true;
 }
 void ZoneUsers::move(std::uint32_t id,std::int32_t x,std::int32_t z,UserPosition position) {
     const std::lock_guard lock(mutex_);

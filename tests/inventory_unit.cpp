@@ -90,6 +90,7 @@ int main(int argc,char** argv) {
             Actor actor(9001,{}, {},{},scene,{definitions,enchant,mobs});actor.account_id()=12345;
             const auto item=[&](std::uint8_t number,std::uint64_t uid) {auto* value=pool.allocate();value->definition=&definition;value->item.type=5;value->item.type_id=1;value->item.count=number;value->item.uid=uid;return value;};
             first=item(2,777);first->item.quality=500;require(actor.receive_item(*first,world,pool)==InventoryReceipt::stored && pool.statistics().available==0,"Stored inventory allocation was not retained");
+            const auto retained=actor.retained_inventory_item(1,0);require(retained && retained->item==first && retained->pool==&pool && first->item.bag==1 && first->item.slot==0 && first->item.id==first->definition->id,"Stored item ownership and position diverged");
             auto* second=item(3,888);second->item.quality=12345;require(actor.receive_item(*second,world,pool)==InventoryReceipt::merged && first->item.count==5 && actor.inventory()[0].count==5 && first->item.quality==500 && pool.statistics().available==1,"Later stacking lost retained identity/payload");
             last=item(200,999);require(last==second,"Inventory merge did not return its input to the actual LIFO pool");
             require(actor.receive_item(*last,world,pool)==InventoryReceipt::stored && first->item.count==10 && last->item.count==195 && actor.inventory().size()==2 && actor.inventory()[1].slot==1 && actor.inventory()[1].count==195,"Oversized remainder was split or retained counts diverged");

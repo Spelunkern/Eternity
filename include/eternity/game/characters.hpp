@@ -46,6 +46,9 @@ public:
         std::chrono::sys_seconds made_at);
     bool save_country(std::uint32_t user_id,std::uint8_t country,bool new_account);
     bool erase(std::uint32_t user_id,std::uint32_t character_id);
+    // ps_dbAgent DBCharacter::DeleteCharacterReq 0041e5e0 / RecoverCharacterReq
+    // 0041e740. A zero timestamp cancels the pending deletion.
+    bool request_deletion(std::uint32_t user_id,std::uint32_t character_id,std::uint32_t packed_time);
 private:
     storage::SqlServer& database_;
     std::uint8_t server_id_;

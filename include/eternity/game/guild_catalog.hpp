@@ -3,7 +3,9 @@
 #include "eternity/game/entry_catalogs.hpp"
 #include "eternity/game/guild_npcs.hpp"
 #include "eternity/game/guild_bank.hpp"
+#include "eternity/game/guild_duel_state.hpp"
 #include <vector>
+#include <mutex>
 
 namespace eternity::game {
 struct GuildMetadata {
@@ -13,10 +15,14 @@ struct GuildMetadata {
 };
 struct LoadedGuild {
     GuildMetadata metadata;
+    // All guild operations share this lock, including nested membership sends.
+    std::recursive_mutex mutex;
     GuildMembership membership;
     GuildNpcs npcs;
+    GuildDuelState duel;
+    bool deleting=false; // Prevent reentrant manager deletion through transport callbacks.
     std::unique_ptr<GuildBank> bank;
-    LoadedGuild(GuildMetadata value,GuildMemberPorts port,GuildBankServices* services=nullptr):metadata(std::move(value)),membership(metadata.listing.id,std::move(port)),bank(services?std::make_unique<GuildBank>(*services):nullptr) {}
+    LoadedGuild(GuildMetadata value,GuildMemberPorts port,GuildBankServices* services=nullptr):metadata(std::move(value)),membership(metadata.listing.id,std::move(port)),bank(services?std::make_unique<GuildBank>(*services):nullptr) {duel.guild=this;membership.bind_mutex(mutex);}
 };
 struct GuildCatalogPorts {
     GuildMemberPorts transport;
@@ -33,7 +39,10 @@ public:
     EntryCatalogUpdate apply(std::span<const std::uint8_t>);
     LoadedGuild* find(std::uint32_t) const;
     LoadedGuild* find(std::string_view name) const;
+    LoadedGuild* find_membership(const GuildMembership*) const noexcept;
     GuildDirectory& directory() noexcept {return directory_;}
+    void retire(LoadedGuild&); // Remove active ID/name indexes; retained leases remain valid.
+    GuildMembership::Record allocate_application(); // JoinRequest 0042e120, actual guild-user allocator.
     std::uint32_t maximum_id() const noexcept {return maximum_;}
     std::map<std::uint32_t,GuildListing> listings() const;
 private:

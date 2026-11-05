@@ -1,0 +1,18 @@
+# ps_game.exe SHA256 0fb7c9f13b5bcf186118f8bfe73ab214226b93e8aa502b8e6fded4a8312bc547; CUser::KillSoul 004599e0 selected item branch; ItemUseNSend/GetBindPos/Rebirth intercepted
+# after_zone map_present change_map change_max final_hp final_sp final_mp events
+0	0	0	0	50	150	100	I,R4:7:0:7,8,9
+0	0	0	1	151	150	100	I,R4:7:0:7,8,9
+0	0	1	0	50	150	100	I,R4:7:0:7,8,9
+0	0	1	1	151	150	100	I,R4:7:0:7,8,9
+0	1	0	0	50	150	100	I,M,R4:7:0:4,5,6
+0	1	0	1	151	150	100	I,M,R4:7:0:4,5,6
+0	1	1	0	50	150	100	I,M,R4:8:0:4,5,6
+0	1	1	1	151	150	100	I,M,R4:8:0:4,5,6
+1	0	0	0	50	150	100	I,Z,R4:9:0:1,2,3
+1	0	0	1	151	150	100	I,Z,R4:9:0:1,2,3
+1	0	1	0	50	150	100	I,Z,R4:9:0:1,2,3
+1	0	1	1	151	150	100	I,Z,R4:9:0:1,2,3
+1	1	0	0	50	150	100	I,Z,R4:9:0:1,2,3
+1	1	0	1	151	150	100	I,Z,R4:9:0:1,2,3
+1	1	1	0	50	150	100	I,Z,R4:9:0:1,2,3
+1	1	1	1	151	150	100	I,Z,R4:9:0:1,2,3

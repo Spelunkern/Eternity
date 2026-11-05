@@ -24,9 +24,9 @@ struct Fixture {
         eternity::game::CharacterSummary character;character.id=7;character.slot=3;character.name="NativeHero";
         roster.slots[3]=character;return roster;
     },[this](const eternity::session::LoginSession& owner,eternity::game::CharacterRoster&,const Packet& packet) {
-        ++requests;require(owner.user_id==42 && packet==Packet({9,1,0}),"World command lost decrypted identity/payload");
+        ++requests;require(owner.user_id==42 && packet.size()==3 && packet[0]==9 && packet[1]==1 && packet[2]<16,"World command lost decrypted identity/payload");
         // Synthetic dispatcher reply checks ordering and persistent AES; country persistence is tested separately.
-        return eternity::game::CharacterReply{{{9,1,0,2}},false};
+        return eternity::game::CharacterReply{{{9,1,packet[2],2}},false};
     }),login(io,login_options(),[](const eternity::auth::Credentials&,std::uint64_t,const std::string&) {
         return eternity::auth::LoginResult{0,42};
     },registry) {
@@ -53,6 +53,7 @@ int main() {
         Packet connect{1,0xa3,42,0,0,0};connect.insert(connect.end(),accepted.begin()+8,accepted.begin()+24);
         PeerSocket world(fixture.world.port());auto stream=net::frame(connect);
         Packet command{9,1,0};outgoing.crypt(command);const auto early=net::frame(command);stream.insert(stream.end(),early.begin(),early.end());
+        for(int i=1;i<16;++i) {Packet next{9,1,static_cast<std::uint8_t>(i)};outgoing.crypt(next);const auto encoded=net::frame(next);stream.insert(stream.end(),encoded.begin(),encoded.end());}
         world.write(std::span(stream).first(1));world.write(std::span(stream).subspan(1));
         auto greeting=world.packet();incoming.crypt(greeting);
         require(greeting.size()==20 && greeting[0]==1 && greeting[1]==0xa3 && greeting[2]==0 && greeting[3]==2,
@@ -65,8 +66,12 @@ int main() {
         auto populated=world.packet();incoming.crypt(populated);
         require(populated.size()==83 && populated[2]==3 && populated[3]==7 && populated[56]=='N',"Populated character corrupted over TCP");
         auto answer=world.packet();incoming.crypt(answer);
-        require(answer==Packet({9,1,0,2}) && fixture.loads==1 && fixture.requests==1,"Pending command ran before initial character load");
-        PeerSocket replay(fixture.world.port());replay.write(net::frame(connect));replay.closed();
+        require(answer==Packet({9,1,0,2}),"Pending command ran before initial character load");
+        for(int i=1;i<16;++i) {auto reply=world.packet();incoming.crypt(reply);require(reply==Packet({9,1,static_cast<std::uint8_t>(i),2}),"Queued encrypted command lost or reordered");}
+        require(fixture.loads==1 && fixture.requests==16,"Queued commands were not delivered once");
+        PeerSocket replay(fixture.world.port());auto replay_frame=net::frame(connect);auto replay_stream=replay_frame;
+        for(int i=1;i<11;++i) replay_stream.insert(replay_stream.end(),replay_frame.begin(),replay_frame.end());
+        replay.write(replay_stream);replay.closed();
         require(fixture.registry->find(42)->location==session::LoginSession::Location::world && fixture.loads==1,
                 "Token replay reached world data loader or erased owner");
         PeerSocket replacement(fixture.login.port());LoginPeer replacement_peer(replacement.packet());

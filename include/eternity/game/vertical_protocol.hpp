@@ -13,6 +13,11 @@ struct VerticalProtocolServices {
     std::function<std::uint32_t()> world_day,system_time;
     std::function<bool()> lock_guild;
     std::function<void()> unlock_guild;
+    // Optional retained quest owner; when supplied it owns both quest steps.
+    std::function<void(CharacterEntryStep,Actor&)> quest_entry;
+    // Optional owner cancellation boundary. Called on the serialized world
+    // strand around delivery steps and callbacks; exceptions abort delivery.
+    std::function<void()> checkpoint;
 };
 // Successful ps_game.exe PacketUserDBChar 0046cf60, 0407 branch
 // 0046d4c1..0046d717. The caller owns state, pipeline and their lifetimes.

@@ -1,4 +1,8 @@
 #include "eternity/game/guild_sql.hpp"
+#include "eternity/game/guild_member_update.hpp"
+#include "eternity/game/guild_member_delete.hpp"
+#include "eternity/game/guild_member_create.hpp"
+#include "eternity/game/guild_delete.hpp"
 #include <bit>
 #include <algorithm>
 #include <charconv>
@@ -25,6 +29,9 @@ net::Packet packet(const GuildMetadata& data,const GuildMetadata& cached) {
     append(p,0);append(p,cached.return_count);return p;
 }
 }
+void GuildDbMetadata::set_etin(std::uint32_t etin,std::uint32_t returned) {metadata.etin=etin;metadata.return_count=returned;save_type=2;}
+void GuildDbMetadata::set_keep_etin(std::uint32_t keep) {metadata.keep_etin=keep;save_type=2;}
+void GuildDbMetadata::set_house(std::uint8_t purchased,std::uint32_t keep) {metadata.buy_house=purchased;metadata.keep_etin=keep;save_type=2;}
 void GuildDbMetadata::set_remark(std::string_view value) {
     metadata.listing.notice=std::string(value.substr(0,std::min(std::size_t{64},value.find('\0'))));save_type=2;
 }
@@ -113,10 +120,67 @@ bool GuildSql::load_bank(std::uint32_t id,GuildBankReplica& bank) {
 InventoryReplicaResult GuildSql::apply(std::span<const std::uint8_t> p) {
     if(p.size()<6) return InventoryReplicaResult::rejected;
     const auto op=std::uint32_t{p[0]}|(std::uint32_t{p[1]}<<8);
+    if(op==0xb05) {
+        if(main_.transaction_active())throw std::logic_error("Guild delete requires autocommit");
+        std::string diagnostic;
+        return guild_delete(p,[&](std::uint32_t guild) {
+            try {
+                const std::array<storage::Parameter,1> parameters{std::int64_t{std::bit_cast<std::int32_t>(guild)}};
+                (void)main_.query("EXEC "+prefix_+"usp_Delete_Guild_E ?;",parameters);return GuildSaveResult{};
+            } catch(const storage::SqlError& error) {diagnostic=error.what();return GuildSaveResult{false,error.sqlstate,error.native_error};}
+              catch(const std::exception& error) {diagnostic=error.what();return GuildSaveResult{false,{},0};}
+        },[&](const GuildSaveResult&){ports_.diagnostic(diagnostic);},[&](std::uint32_t guild){replicas_.erase(guild);});
+    }
+    if(op==0xb07) {
+        if(main_.transaction_active())throw std::logic_error("Guild member create requires autocommit");
+        std::string diagnostic;
+        return guild_member_create(p,[&](std::uint32_t guild,std::uint32_t character,std::uint8_t rank) {
+            try {
+                const std::array<storage::Parameter,3> parameters{std::int64_t{std::bit_cast<std::int32_t>(guild)},std::int64_t{std::bit_cast<std::int32_t>(character)},std::int64_t{rank}};
+                (void)main_.query("EXEC "+prefix_+"usp_Create_GuildChar_E ?, ?, ?;",parameters);return GuildSaveResult{};
+            } catch(const storage::SqlError& error) {diagnostic=error.what();return GuildSaveResult{false,error.sqlstate,error.native_error};}
+              catch(const std::exception& error) {diagnostic=error.what();return GuildSaveResult{false,{},0};}
+        },[&](const GuildSaveResult&){ports_.diagnostic(diagnostic);});
+    }
+    if(op==0xb08) {
+        if(main_.transaction_active())throw std::logic_error("Guild member delete requires autocommit");
+        std::string diagnostic;
+        return guild_member_delete(p,[&](std::uint32_t guild,std::uint32_t character) {
+            try {
+                const std::array<storage::Parameter,2> parameters{std::int64_t{std::bit_cast<std::int32_t>(guild)},std::int64_t{std::bit_cast<std::int32_t>(character)}};
+                (void)main_.query("EXEC "+prefix_+"usp_Delete_GuildChar_E ?, ?;",parameters);return GuildSaveResult{};
+            } catch(const storage::SqlError& error) {diagnostic=error.what();return GuildSaveResult{false,error.sqlstate,error.native_error};}
+              catch(const std::exception& error) {diagnostic=error.what();return GuildSaveResult{false,{},0};}
+        },[&](const GuildSaveResult&){ports_.diagnostic(diagnostic);});
+    }
+    if(op==0xb09) {
+        if(main_.transaction_active())throw std::logic_error("Guild member update requires autocommit");
+        std::string diagnostic;
+        return guild_member_update(p,[&](std::uint32_t character,std::uint8_t rank) {
+            try {
+                const std::array<storage::Parameter,2> parameters{std::int64_t{std::bit_cast<std::int32_t>(character)},std::int64_t{rank}};
+                (void)main_.query("EXEC "+prefix_+"usp_Save_GuildChar_E ?, ?;",parameters);return GuildSaveResult{};
+            } catch(const storage::SqlError& error) {diagnostic=error.what();return GuildSaveResult{false,error.sqlstate,error.native_error};}
+              catch(const std::exception& error) {diagnostic=error.what();return GuildSaveResult{false,{},0};}
+        },[&](const GuildSaveResult&){ports_.diagnostic(diagnostic);});
+    }
     if(op==0xb0a) {
         if(p.size()!=71) return InventoryReplicaResult::rejected;
         std::uint32_t id=0;for(unsigned int i=0;i<4;++i) id|=std::uint32_t{p[2+i]}<<(8*i);
         const auto found=replicas_.find(id);if(found!=replicas_.end()) found->second.set_remark(std::string_view(reinterpret_cast<const char*>(p.data()+6),65));
+        return InventoryReplicaResult::applied;
+    }
+    if(op==0xb12 || op==0xb13) {
+        if(p.size()!=(op==0xb12?22U:10U))return InventoryReplicaResult::rejected;
+        const auto dword=[&](std::size_t at){std::uint32_t value=0;for(unsigned int i=0;i<4;++i)value|=std::uint32_t{p[at+i]}<<(8*i);return value;};
+        const auto found=replicas_.find(dword(2));
+        if(found!=replicas_.end()) {if(op==0xb12)found->second.set_etin(dword(6),dword(18));else found->second.set_keep_etin(dword(6));}
+        return InventoryReplicaResult::applied;
+    }
+    if(op==0xb10) {
+        if(p.size()!=10) return InventoryReplicaResult::rejected;
+        const auto dword=[&](std::size_t at){std::uint32_t value=0;for(unsigned int i=0;i<4;++i)value|=std::uint32_t{p[at+i]}<<(8*i);return value;};
+        const auto found=replicas_.find(dword(2));if(found!=replicas_.end())found->second.set_house(1,dword(6));
         return InventoryReplicaResult::applied;
     }
     if(op==0xb0f || op==0xb17) {

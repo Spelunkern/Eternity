@@ -101,16 +101,35 @@ bool ZoneNpcs::enter(Npc& npc) {
     if(x<0 || z<0 || x>=count || z>=count) return false;
     if(npc.cell || (npc.zone && npc.zone!=this)) throw std::invalid_argument("NPC already belongs to a zone");
     npc.cell=CellCoordinates{x,z};npc.zone=this;
-    cells_[key(*npc.cell)].push_back(&npc);members_.push_back(&npc);index_.emplace(npc.id,&npc);
+    link_cell(npc,*npc.cell);members_.push_back(&npc);index_.emplace(npc.id,&npc);
     services_.send_cell_view(*npc.cell,npc_appearance(npc));return true;
 }
 bool ZoneNpcs::leave(Npc& npc) {
     // LeaveNpc 00416e90 unlinks before broadcasting; cell coordinates clear after.
     if(npc.zone!=this || !npc.cell) return false;
-    const auto cell=*npc.cell;index_.erase(npc.id);std::erase(members_,&npc);auto& contents=cells_.at(key(cell));std::erase(contents,&npc);
-    if(contents.empty()) cells_.erase(key(cell));
+    const auto cell=*npc.cell;index_.erase(npc.id);
+    const auto position=std::find(members_.begin(),members_.end(),&npc);
+    if(global_cursor_==&npc) {
+        if(position==members_.end()) throw std::logic_error("NPC traversal cursor lost membership");
+        global_cursor_=position==members_.begin()?nullptr:*std::prev(position);
+    }
+    if(position!=members_.end()) members_.erase(position);
+    unlink_cell(npc,cell);
     npc.zone=nullptr;
     net::Packet packet(6);put(packet,0,0xe02,2);put(packet,2,npc.id,4);services_.send_cell_view(cell,packet);npc.cell.reset();return true;
+}
+void ZoneNpcs::visit_all(NpcPool& pool,const std::function<void(Npc&)>& visit) {
+    if(!visit) throw std::invalid_argument("NPC traversal requires a visitor");
+    global_cursor_=members_.empty()?nullptr:members_.front();
+    while(global_cursor_) {
+        auto* current=global_cursor_;auto lease=pool.pin(*current);visit(*current);
+        // LeaveNpc may have backed the shared cursor to the predecessor; nested
+        // traversals can also replace it. Never dereference the released NPC.
+        auto next=global_cursor_?std::find(members_.begin(),members_.end(),global_cursor_):members_.end();
+        if(global_cursor_ && next==members_.end()) throw std::logic_error("NPC traversal cursor lost membership");
+        next=global_cursor_?std::next(next):members_.begin();
+        global_cursor_=next==members_.end()?nullptr:*next;
+    }
 }
 void ZoneNpcs::announce_transition(const Npc& npc,CellCoordinates previous,CellCoordinates next) {
     // SendMoveNpc 0041faa0 requires exclusion on BOTH axes, rather than ordinary
@@ -131,9 +150,7 @@ bool ZoneNpcs::move(Npc& npc,UserPosition destination,std::uint8_t mode) {
     if(!geometry_.view(previous).contains(destination.x,destination.z)) {
         const auto x=truncate(static_cast<double>(npc.position.x)/40.0),z=truncate(static_cast<double>(npc.position.z)/40.0);
         if(x>=0 && z>=0 && x<geometry_.cell_count() && z<geometry_.cell_count() && (x!=previous.x || z!=previous.z)) {
-            const CellCoordinates next{x,z};auto& old_cell=cells_.at(key(previous));std::erase(old_cell,&npc);
-            if(old_cell.empty()) cells_.erase(key(previous));
-            cells_[key(next)].push_back(&npc);
+            const CellCoordinates next{x,z};unlink_cell(npc,previous);link_cell(npc,next);
             announce_transition(npc,previous,next);npc.cell=next;
         }
     }
@@ -144,6 +161,30 @@ bool ZoneNpcs::move(Npc& npc,UserPosition destination,std::uint8_t mode) {
         each_cell(view(*npc.cell,geometry_.cell_count()),[&](CellCoordinates cell){buffer->send_cell(cell);});
     return true;
 }
+void ZoneNpcs::link_cell(Npc& npc,CellCoordinates coordinates) {
+    if(cell_sequence_==UINT64_MAX) throw std::overflow_error("NPC cell sequence exhausted");
+    auto& cell=cells_[key(coordinates)];const auto ordinal=++cell_sequence_;
+    cell.members.push_back(&npc);cell.ordered.emplace(ordinal,&npc);cell_ordinals_.emplace(&npc,ordinal);
+}
+void ZoneNpcs::unlink_cell(Npc& npc,CellCoordinates coordinates) {
+    auto& cell=cells_.at(key(coordinates));const auto ordinal=cell_ordinals_.at(&npc);
+    const auto it=cell.ordered.find(ordinal);
+    if(cell.cursor==ordinal) cell.cursor=it==cell.ordered.begin()?0:std::prev(it)->first;
+    cell.ordered.erase(it);std::erase(cell.members,&npc);cell_ordinals_.erase(&npc);
+}
+void ZoneNpcs::send_cell_snapshot(CellCoordinates coordinates,NpcViewer& viewer,bool entering) {
+    const auto found=cells_.find(key(coordinates));if(found==cells_.end()) return;
+    auto& cell=found->second;cell.cursor=cell.ordered.empty()?0:cell.ordered.begin()->first;
+    while(cell.cursor) {
+        const auto* npc=cell.ordered.at(cell.cursor);
+        if(entering) viewer.send_self(npc_appearance(*npc));
+        else {net::Packet packet(6);put(packet,0,0xe02,2);put(packet,2,npc->id,4);viewer.send_self(packet);}
+        const auto next=cell.cursor==0?cell.ordered.begin():cell.ordered.upper_bound(cell.cursor);
+        cell.cursor=next==cell.ordered.end()?0:next->first;
+    }
+}
+void ZoneNpcs::send_enter(CellCoordinates cell,NpcViewer& viewer) {send_cell_snapshot(cell,viewer,true);}
+void ZoneNpcs::send_leave(CellCoordinates cell,NpcViewer& viewer) {send_cell_snapshot(cell,viewer,false);}
 Npc* ZoneNpcs::find(std::uint32_t id) const noexcept {const auto found=index_.find(id);return found==index_.end()?nullptr:found->second;}
-std::span<Npc* const> ZoneNpcs::in_cell(CellCoordinates cell) const noexcept {const auto found=cells_.find(key(cell));return found==cells_.end()?std::span<Npc* const>{}:std::span<Npc* const>(found->second);}
+std::span<Npc* const> ZoneNpcs::in_cell(CellCoordinates cell) const noexcept {const auto found=cells_.find(key(cell));return found==cells_.end()?std::span<Npc* const>{}:std::span<Npc* const>(found->second.members);}
 }

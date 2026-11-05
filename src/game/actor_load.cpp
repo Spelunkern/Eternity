@@ -11,7 +11,9 @@ ActorLoadPipeline::ActorLoadPipeline(const PlayerSnapshot& player,const ActorLoa
         ActorEquipmentRules{rules.items,rules.enchant,rules.mobs},options.inventory_pool?std::vector<PlayerItem>{}:player.items);
     auto& actor=*result.actor;
     actor.account_id()=player.core.user_id;actor.money()=player.core.money;
-    if(options.inventory_pool) for(const auto& item:player.items) actor.load_inventory_item(item,*options.inventory_pool);
+    // PacketUserDBSetInfo 0046d780 case 0502 skips a row when its item
+    // allocation fails and continues loading subsequent rows.
+    if(options.inventory_pool) for(const auto& item:player.items) (void)actor.load_inventory_item(item,*options.inventory_pool);
     actor.appearance().identity=user_shape_identity(player.core,options.country);
     actor.relations().guild_id=player.core.guild_id;
     actor.effects().restore(player.effects,rules.skills,player.core.character.map,options.disconnected_seconds,options.tick_ms,actor);

@@ -95,7 +95,7 @@ LoginEvent LoginProtocol::receive(net::Packet payload) {
                         (static_cast<std::uint16_t>(payload[1]) << 8);
     // SAgent::PacketSystem 004127b0: close=2, reply/liveness=3.
     if (opcode == 2) return reject();
-    if (opcode == 3) return {};
+    if (opcode == 3) { LoginEvent event; event.heartbeat = true; return event; }
     if (opcode == 0xa101 && state_ == State::key_exchange) {
         if (payload.size() < 3 || payload[2] == 0 || payload[2] > 128 ||
             payload.size() < static_cast<std::size_t>(payload[2]) + 3) return reject();

@@ -3,8 +3,14 @@
 
 namespace eternity::net {
 std::vector<Packet> FrameDecoder::feed(std::span<const std::uint8_t> bytes) {
-    if (failed_) throw std::logic_error("Transport decoder is closed after an invalid frame");
     std::vector<Packet> packets;
+    feed_each(bytes,[&packets](Packet packet) {packets.push_back(std::move(packet));return true;});
+    return packets;
+}
+
+void FrameDecoder::feed_each(std::span<const std::uint8_t> bytes,const std::function<bool(Packet)>& emit) {
+    if (failed_) throw std::logic_error("Transport decoder is closed after an invalid frame");
+    if (!emit) throw std::invalid_argument("Transport decoder requires a frame callback");
     while (!bytes.empty()) {
         const auto count = std::min(expected_ - used_, bytes.size());
         std::copy_n(bytes.begin(), count, buffer_.begin() + static_cast<std::ptrdiff_t>(used_));
@@ -20,12 +26,11 @@ std::vector<Packet> FrameDecoder::feed(std::span<const std::uint8_t> bytes) {
             }
             if (used_ < expected_) continue;
         }
-        packets.emplace_back(buffer_.begin() + 2,
-                             buffer_.begin() + static_cast<std::ptrdiff_t>(expected_));
+        Packet packet(buffer_.begin() + 2,buffer_.begin() + static_cast<std::ptrdiff_t>(expected_));
         used_ = 0;
         expected_ = 2;
+        if (!emit(std::move(packet))) return;
     }
-    return packets;
 }
 
 Packet frame(std::span<const std::uint8_t> payload) {

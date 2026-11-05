@@ -1,0 +1,26 @@
+# ps_game.exe SHA256 0fb7c9f13b5bcf186118f8bfe73ab214226b93e8aa502b8e6fded4a8312bc547; CMob::StatusAttackStop 00490980, vision/find/reset intercepted, actual GetStatus
+# initial after_vision pais found status target_kind target_id events
+0	0	0	0	0	0	0	V
+0	0	0	1	0	0	0	V
+0	0	1	0	0	1	42	VFR
+0	0	1	1	0	1	42	VF
+0	2	0	0	2	0	0	V
+0	2	0	1	2	0	0	V
+0	2	1	0	2	1	42	VFR
+0	2	1	1	2	1	42	VF
+1	0	0	0	0	0	0	V
+1	0	0	1	0	0	0	V
+1	0	1	0	0	1	42	VFR
+1	0	1	1	0	1	42	VF
+1	2	0	0	2	0	0	V
+1	2	0	1	2	0	0	V
+1	2	1	0	2	1	42	VFR
+1	2	1	1	2	1	42	VF
+2	0	0	0	2	1	42	-
+2	0	0	1	2	1	42	-
+2	0	1	0	2	1	42	-
+2	0	1	1	2	1	42	-
+2	2	0	0	2	1	42	-
+2	2	0	1	2	1	42	-
+2	2	1	0	2	1	42	-
+2	2	1	1	2	1	42	-

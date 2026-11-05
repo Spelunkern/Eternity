@@ -1,0 +1,7 @@
+# ps_game.exe SHA256 0fb7c9f13b5bcf186118f8bfe73ab214226b93e8aa502b8e6fded4a8312bc547; CMob::Attack 004a2188; callbacks intercepted; FindTarget returns none except status 100 which selects target 501
+# status pais trace final_status target_kind target_id
+1	0	VD	0	0	42
+1	1	VTRD	100	0	0
+2	0	VD	2	0	42
+2	1	VTRD	100	0	0
+100	1	VTD	100	1	501

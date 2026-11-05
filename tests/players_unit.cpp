@@ -1,3 +1,4 @@
+#include <algorithm>
 #include "eternity/game/player_packets.hpp"
 #include <iostream>
 
@@ -43,6 +44,25 @@ int main() {
         game::decode_player_inventory(snapshot);
         require(snapshot.items.size()==121 && snapshot.overflow_items.size()==1 && snapshot.overflow_items[0].uid==999,
                 "Full inventory relocated a duplicate into equipment slots or lost its record");
+        snapshot.catalogs["Items"].rows.clear();snapshot.catalogs["Bank"].rows.clear();
+        for(unsigned int slot=0;slot<6;++slot)snapshot.catalogs["Bank"].rows.push_back(item(0,slot,2000+slot,true));
+        snapshot.catalogs["Bank"].rows.push_back(item(0,0,9999,true));game::decode_player_inventory(snapshot);
+        require(snapshot.bank.size()==6 && snapshot.overflow_bank.size()==1 && snapshot.overflow_bank[0].uid==9999,"Bank duplicate escaped original six-slot relocation window");
+        // Compare all six-slot occupancy masks and duplicate-list lengths with
+        // the original 00421df7..00421e81 instruction-level probe.
+        for(unsigned mask=0;mask<64;++mask) for(unsigned count=1;count<=8;++count) {
+            snapshot.catalogs["Bank"].rows.clear();
+            for(unsigned slot=0;slot<6;++slot)if(mask&(1U<<slot))snapshot.catalogs["Bank"].rows.push_back(item(0,slot,2000+slot,true));
+            snapshot.catalogs["Bank"].rows.push_back(item(0,6,3000,true));
+            for(unsigned i=0;i<count;++i)snapshot.catalogs["Bank"].rows.push_back(item(0,6,4000+i,true));
+            game::decode_player_inventory(snapshot);unsigned assigned=0;
+            for(unsigned slot=0;slot<6;++slot)if(!(mask&(1U<<slot)) && assigned<count) {
+                const auto uid=4000+assigned++;auto found=std::find_if(snapshot.bank.begin(),snapshot.bank.end(),[&](const auto& v){return v.slot==slot;});
+                require(found!=snapshot.bank.end() && found->uid==uid && found->relocated,"Bank duplicate ordering differs from original");
+            }
+            require(snapshot.overflow_bank.size()==count-assigned,"Bank duplicate release count differs from original");
+            for(unsigned i=assigned;i<count;++i)require(snapshot.overflow_bank[i-assigned].uid==4000+i,"Bank duplicate release ordering differs from original");
+        }
         snapshot.catalogs["Skills"].rows.assign(256,storage::Row{"7","1","0","0"});
         bool excessive=false;try{game::decode_player_inventory(snapshot);}catch(const std::runtime_error&){excessive=true;}
         require(excessive,"Original 255-skill limit was not enforced");

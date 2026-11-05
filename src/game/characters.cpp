@@ -212,6 +212,17 @@ bool Characters::erase(std::uint32_t uid,std::uint32_t character_id) {
     return deleted.rows.size()==1 && integer(deleted.rows[0],0)>=0;
 }
 
+bool Characters::request_deletion(std::uint32_t uid,std::uint32_t character_id,std::uint32_t packed_time) {
+    if(uid==0 || uid>2147483647 || character_id==0 || character_id>2147483647)
+        throw std::invalid_argument("Invalid character deletion request identity");
+    const std::array<storage::Parameter,3> identity={std::int64_t{server_id_},std::int64_t{uid},std::int64_t{character_id}};
+    const auto owned=result(database_.query("SELECT CharID FROM "+prefix_+"Chars WHERE ServerID=? AND UserUID=? AND CharID=? AND Del=0;",identity),1);
+    if(owned.rows.empty())return false;
+    const std::array<storage::Parameter,2> parameters={std::int64_t{character_id},std::int64_t{std::bit_cast<std::int32_t>(packed_time)}};
+    const auto saved=result(database_.query("DECLARE @Saved int; EXEC @Saved="+prefix_+"usp_Delete_Char_Request_E ?,?; SELECT @Saved;",parameters),1);
+    return saved.rows.size()==1 && integer(saved.rows[0],0)>=0;
+}
+
 std::vector<net::Packet> character_list(const CharacterRoster& roster,bool include_country) {
     // CUser::PacketUserDBChar, ps_game.exe 0046cf60, case 403.
     std::vector<net::Packet> packets;

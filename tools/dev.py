@@ -51,6 +51,7 @@ def run():
         subprocess.run(command + ["build/zone-environment-unit", "tests/data/zone-environment-oracle.tsv", ".local/server-data/Map"], cwd=ROOT, check=True)
         subprocess.run(command + ["build/map-config-unit", "tests/data/map-config-oracle.tsv", ".local/server-data"], cwd=ROOT, check=True)
         subprocess.run(command + ["sh", "-c", "build/maps-unit tests/data/maps-oracle.tsv tests/data/map-geometry-oracle.tsv .local/server-data/Map && build/quests-unit tests/data/quests-oracle.tsv .local/server-data/NpcQuest.SData && build/storage-integration && build/login-sql-integration && build/world-sql-integration"], cwd=ROOT, check=True)
+        subprocess.run(command + ["build/world-assets-sql-integration", ".local/server-data/Map.ini"], cwd=ROOT, check=True)
         # Explicit fixture IDs require IDENTITY_INSERT. Keep those privileges out of the runtime login.
         admin_command = command[:-1] + ["--env-file", str(ROOT / ".local" / "sqlserver.env"), IMAGE,
             "sh", "-c", 'ETERNITY_DB_USER=sa ETERNITY_DB_PASSWORD="$MSSQL_SA_PASSWORD" exec build/characters-sql-integration']

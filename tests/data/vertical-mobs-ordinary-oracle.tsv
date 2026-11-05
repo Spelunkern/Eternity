@@ -1,0 +1,8 @@
+# ps_game.exe SHA256 0fb7c9f13b5bcf186118f8bfe73ab214226b93e8aa502b8e6fded4a8312bc547; CMob::UpdateIdle 004a7e60; status/Targeting stubbed, movement intercepted
+# now next_target next_move obelisk found | target_calls moves resulting_next_target
+50	51	50	0	0	0	1	51
+50	50	50	0	1	1	0	0
+50	0	50	1	0	1	0	0
+50	0	51	0	0	1	0	0
+50	0	50	0	0	1	1	0
+50	50	50	0	0	1	1	0

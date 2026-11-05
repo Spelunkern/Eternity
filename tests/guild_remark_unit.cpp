@@ -18,6 +18,14 @@ int main(int argc,char** argv) {
             else if(tag=="SQL") {std::array<GuildDbMetadata*,1> ordered{&guild};require(save_guilds(ordered,ports),"Original remark coordinator rejected");std::string raw;row>>raw;require(query==decode(raw),"Original remark formatted SQL differs at case "+std::to_string(cases));}
             else if(tag!="END") throw std::runtime_error("Unknown guild remark fixture row");
         }
+        GuildDbMetadata house;house.metadata.listing.id=10;house.metadata.buy_house=7;house.metadata.keep_etin=111;house.save_type=1;
+        house.set_house(1,0x87654321);require(house.metadata.buy_house==1 && house.metadata.keep_etin==0x87654321 && house.save_type==2,"Guild house update lost dirty metadata");
+        std::array<GuildDbMetadata*,1> ordered{&house};query.clear();require(save_guilds(ordered,ports) && house.save_type==0 && query.find("EXEC usp_Save_GuildInfo_E2 10,0,0,'',1,0,-2023406815,0,0 ")!=std::string::npos,"Guild house update not passed to retained save");
+        house.set_house(1,0);require(house.metadata.keep_etin==0 && house.save_type==2,"Guild house zero upkeep update ignored");
+        GuildDbMetadata etin;etin.metadata.listing.id=10;etin.metadata.keep_etin=111;etin.save_type=1;
+        etin.set_etin(0x87654321,0xabcdef01);require(etin.metadata.etin==0x87654321 && etin.metadata.return_count==0xabcdef01 && etin.metadata.keep_etin==111 && etin.save_type==2,"Guild etin replica update differs");
+        etin.set_keep_etin(0x80000001);require(etin.metadata.keep_etin==0x80000001 && etin.save_type==2,"Guild upkeep replica update differs");
+        std::array<GuildDbMetadata*,1> etin_ordered{&etin};query.clear();require(save_guilds(etin_ordered,ports) && etin.save_type==0 && query.find("EXEC usp_Save_GuildInfo_E2 10,0,-2023406815,'',0,-1412567295,-2147483647,0,0 ")!=std::string::npos,"Guild etin values missing from signed save");
         require(cases==128,"Original guild remark coverage changed");std::cout<<cases<<" original guild remark copies and formatted SQL queries matched quotes, terminators and integer widths\n";
     }catch(const std::exception& error) {std::cerr<<error.what()<<'\n';return 1;}
 }

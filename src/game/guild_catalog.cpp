@@ -7,9 +7,21 @@ std::uint32_t get(std::span<const std::uint8_t> p,std::size_t at,unsigned int n=
 std::string text(std::span<const std::uint8_t> p,std::size_t at,std::size_t width) {const auto value=p.subspan(at,width);const auto end=std::find(value.begin(),value.end(),0);if(end==value.end()) throw std::invalid_argument("Unterminated guild load string");return {value.begin(),end};}
 }
 GuildCatalog::GuildCatalog(GuildCatalogPorts port):ports_(std::move(port)) {if(!ports_.allocate_guild || !ports_.allocate_member || !ports_.transport.allocate || !ports_.transport.release || !ports_.transport.send) throw std::invalid_argument("Incomplete guild catalog services");}
+void GuildCatalog::retire(LoadedGuild& guild) {
+    const auto id=guild.metadata.listing.id;const auto it=ids_.find(id);
+    if(it==ids_.end() || it->second!=&guild)throw std::logic_error("Guild retirement lost active owner");
+    ids_.erase(it);names_.erase(name_key(guild.metadata.listing.name));
+}
+GuildMembership::Record GuildCatalog::allocate_application() {
+    if(!ports_.allocate_member())return {};
+    auto record=std::make_shared<GuildMember>();retained_members_.push_back(record);return record;
+}
 std::string GuildCatalog::name_key(std::string_view value) {std::string key(value.substr(0,value.find('\0')));for(auto& c:key) if(c>='A' && c<='Z') c=static_cast<char>(c-'A'+'a');return key;}
 LoadedGuild* GuildCatalog::find(std::uint32_t id) const {const auto it=ids_.find(id);return it==ids_.end()?nullptr:it->second;}
 LoadedGuild* GuildCatalog::find(std::string_view name) const {const auto it=names_.find(name_key(name));return it==names_.end()?nullptr:it->second;}
+LoadedGuild* GuildCatalog::find_membership(const GuildMembership* membership) const noexcept {
+    if(!membership)return nullptr;for(const auto& guild:retained_)if(&guild->membership==membership)return guild.get();return nullptr;
+}
 std::map<std::uint32_t,GuildListing> GuildCatalog::listings() const {std::map<std::uint32_t,GuildListing> out;for(const auto& [id,guild]:ids_) out.emplace(id,guild->metadata.listing);return out;}
 EntryCatalogUpdate GuildCatalog::apply(std::span<const std::uint8_t> p) {
     if(p.size()<2) return EntryCatalogUpdate::rejected;const auto op=get(p,0,2);
@@ -27,7 +39,7 @@ EntryCatalogUpdate GuildCatalog::apply(std::span<const std::uint8_t> p) {
             auto& info=data.listing;info.id=get(row,0);info.name=text(row,4,25);info.master=text(row,29,21);info.country=row[50];info.points=get(row,51);info.rank=row[55];data.etin=get(row,56);data.use_house=row[60];info.notice=text(row,61,65);data.buy_house=row[126];data.keep_etin=get(row,127);data.return_count=get(row,131);
             auto owned=std::make_unique<LoadedGuild>(std::move(data),ports_.transport,ports_.bank);auto* value=owned.get();retained_.push_back(std::move(owned));ids_.emplace(value->metadata.listing.id,value);names_.emplace(name_key(value->metadata.listing.name),value);maximum_=std::max(maximum_,value->metadata.listing.id);
         } else {
-            if(!ports_.allocate_member()) continue;auto member=std::make_shared<GuildMember>();member->id=get(row,0);member->level=static_cast<std::int32_t>(get(row,4,2));member->job=row[6];const auto raw_rank=row[7];member->rank=raw_rank;member->name=text(row,8,21);
+            if(!ports_.allocate_member()) continue;std::lock_guard lock(guild->mutex);auto member=std::make_shared<GuildMember>();member->id=get(row,0);member->level=static_cast<std::int32_t>(get(row,4,2));member->job=row[6];const auto raw_rank=row[7];member->rank=raw_rank;member->name=text(row,8,21);
             auto& metadata=guild->metadata;if(member->name==metadata.listing.master && member->rank!=1) member->rank=1;
             if(raw_rank==1) metadata.listing.master=member->name;
             if(raw_rank!=0) {guild->membership.offline.emplace(member->id,member);if(raw_rank<=2) ++metadata.officers;}

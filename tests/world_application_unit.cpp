@@ -1,5 +1,8 @@
 #include "eternity/net/world_server.hpp"
 #include "login_socket.hpp"
+#include "../src/net/outbound_budget.hpp"
+#include "../src/net/world_reply_schedule.hpp"
+#include <barrier>
 #include <condition_variable>
 #include <iostream>
 #include <mutex>
@@ -14,6 +17,7 @@ struct State {
     bool entered=false,released=false,pause_confirmed=false;
     unsigned int opens=0,receives=0,closes=0,destroyed=0;
     session::LoginSession identity{};
+    std::optional<std::uint32_t> close_reason;
     net::WorldChannel channel;
     void wait(const std::function<bool()>& predicate) {
         std::unique_lock lock(mutex);
@@ -57,6 +61,10 @@ public:
             channel.enter_character_selection();channel.send({9,1,static_cast<std::uint8_t>(sequence)});
         } else channel.send({9,1,static_cast<std::uint8_t>(sequence)});
     }
+    void close_with_reason(std::optional<std::uint32_t> reason) override {
+        {std::lock_guard lock(state->mutex);state->close_reason=reason;}
+        close();
+    }
     void close() override {
         {std::lock_guard lock(state->mutex);++state->closes;state->changed.notify_all();}
         if(state->behavior==Behavior::close_error) throw std::runtime_error("Test close failure");
@@ -66,13 +74,15 @@ struct Fixture {
     asio::io_context io;
     std::shared_ptr<session::Registry> registry=std::make_shared<session::Registry>();
     std::shared_ptr<State> state=std::make_shared<State>();
+    std::shared_ptr<std::atomic_uint64_t> clock;
     net::WorldServer world;
     std::jthread runner;
-    static net::WorldServerOptions options(std::size_t limit) {
-        net::WorldServerOptions result;result.port=0;result.maximum_queued_bytes=limit;return result;
+    static net::WorldServerOptions options(std::size_t limit,const std::shared_ptr<std::atomic_uint64_t>& clock) {
+        net::WorldServerOptions result;result.port=0;result.maximum_queued_bytes=limit;
+        if(clock){result.reply_scan_interval=10ms;result.monotonic_ms=[clock]{return clock->load();};}return result;
     }
-    explicit Fixture(Behavior behavior=Behavior::normal,std::size_t limit=0xc0000)
-        : world(io,options(limit),registry,[state=state](const session::LoginSession& account,net::WorldChannel channel) -> std::unique_ptr<net::WorldApplication> {
+    explicit Fixture(Behavior behavior=Behavior::normal,std::size_t limit=0xc0000,std::shared_ptr<std::atomic_uint64_t> test_clock={})
+        : clock(std::move(test_clock)),world(io,options(limit,clock),registry,[state=state](const session::LoginSession& account,net::WorldChannel channel) -> std::unique_ptr<net::WorldApplication> {
             {std::lock_guard lock(state->mutex);state->identity=account;state->channel=channel;}
             if(state->behavior==Behavior::factory_error) throw std::runtime_error("Test factory failure");
             if(state->behavior==Behavior::null_factory) return {};
@@ -84,7 +94,7 @@ struct Fixture {
     Packet reserve(std::uint32_t id=42,std::uint64_t sid=101) {
         session::LoginSession account{id,sid,11,"native",{}, {}};account.token.fill(static_cast<std::uint8_t>(sid));
         auto previous=registry->add(account);if(previous && previous->disconnect) previous->disconnect();
-        const auto now=static_cast<std::uint64_t>(std::chrono::duration_cast<std::chrono::milliseconds>(
+        const auto now=clock?clock->load():static_cast<std::uint64_t>(std::chrono::duration_cast<std::chrono::milliseconds>(
             std::chrono::steady_clock::now().time_since_epoch()).count());
         require(registry->select(id,sid,0,now),"Cannot reserve application session");
         Packet connect{1,0xa3};for(unsigned int i=0;i<4;++i) connect.push_back(static_cast<std::uint8_t>(id>>(i*8)));
@@ -109,6 +119,26 @@ struct Peer {
 int main() {
     try {
         {
+            struct ScheduleCase {std::uint32_t previous,now;bool due;std::uint32_t next;};
+            // Advance once to seed the desired next tick: interval 300000.
+            for(const auto test:std::array<ScheduleCase,8>{{{0,0,true,300000},{300000,299999,false,300000},
+                {300000,300000,true,600000},{0xffffff00U,0xfffffeffU,false,0xffffff00U},
+                {0xffffff00U,0xffffff00U,true,299744},{0xffffff00U,0,false,0xffffff00U},
+                {300000,0xffffff00U,true,299744},{299744,299744,true,599744}}}) {
+                net::detail::WorldReplySchedule schedule(300000);
+                if(test.previous!=0)require(schedule.due(static_cast<std::uint32_t>(test.previous-300000)),"scan schedule setup failed");
+                require(schedule.due(test.now)==test.due && schedule.next()==test.next,"original scan schedule differs");
+            }
+        }
+        {
+            net::detail::OutboundBudget budget(64);std::barrier phase(17);std::array<bool,16> accepted{};std::vector<std::jthread> threads;
+            for(std::size_t i=0;i<accepted.size();++i) threads.emplace_back([&,i]{auto reservation=budget.reserve(16);accepted[i]=bool(reservation);phase.arrive_and_wait();phase.arrive_and_wait();});
+            phase.arrive_and_wait();const auto count=std::count(accepted.begin(),accepted.end(),true);const auto used=budget.used();phase.arrive_and_wait();threads.clear();
+            require(count==4 && used==64 && budget.used()==0,"concurrent output reservations exceeded limit or leaked");
+            auto first=budget.reserve(32);auto copy=first;first.reset();require(budget.used()==32,"shared reservation released too early");copy.reset();
+            require(budget.used()==0 && !budget.reserve(65),"output reservation release or oversize handling failed");
+        }
+        {
             Fixture fixture;Peer first(fixture,fixture.reserve(),true);
             require(first.selection()==Packet({9,1,0}) && first.selection()==Packet({9,1,1}),"Early command ran before open or lost application state");
             first.command(1);require(first.selection()==Packet({9,1,2}),"Selection send changed before wire transition");
@@ -125,6 +155,57 @@ int main() {
             first.close();second.close();fixture.state->wait([&]{return fixture.state->closes==2 && fixture.state->destroyed==2;});
             retained.send({9,1,88});retained.enter_world();retained.disconnect();
             require(fixture.registry->size()==0 && fixture.world.application_failures()==0,"Disconnect leaked account or application failure");
+        }
+        // Zero-ID connect packets consume the original undefined allowance;
+        // a valid connect remains usable until that allowance is exhausted.
+        {
+            Fixture fixture;auto connect=fixture.reserve();PeerSocket peer(fixture.world.port());Packet zero{1,0xa3,0,0,0,0};zero.resize(22);
+            auto stream=net::frame(zero);auto one=stream;for(unsigned i=1;i<10;++i)stream.insert(stream.end(),one.begin(),one.end());
+            auto valid=net::frame(connect);stream.insert(stream.end(),valid.begin(),valid.end());peer.write(stream);
+            net::LegacyCipher incoming(net::SessionSecrets{});auto greeting=peer.packet();incoming.crypt(greeting);
+            require(greeting.size()==20 && greeting[0]==1 && greeting[1]==0xa3,"zero-ID attempts prevented a valid world connect");
+            auto opened=peer.packet();incoming.crypt(opened);require(opened==Packet({9,1,0}),"valid retry did not reach world owner");
+        }
+        {
+            Fixture fixture;PeerSocket peer(fixture.world.port());Packet zero{1,0xa3,0,0,0,0};zero.resize(22);
+            auto stream=net::frame(zero);auto one=stream;for(unsigned i=1;i<11;++i)stream.insert(stream.end(),one.begin(),one.end());
+            peer.write(stream);peer.closed();
+            {std::lock_guard lock(fixture.state->mutex);require(fixture.state->opens==0,"zero-ID attempts reached world owner");}
+        }
+        // A system close preceding a malformed coalesced frame keeps its reason.
+        {
+            Fixture fixture;Peer peer(fixture,fixture.reserve());require(peer.selection()==Packet({9,1,0}),"Missing close-order open");
+            std::this_thread::sleep_for(50ms); // Let the open callback release the per-connection worker.
+            Packet leave{2,0};peer.outgoing.crypt(leave);auto bytes=net::frame(leave);bytes.insert(bytes.end(),{0,0});peer.socket.write(bytes);peer.socket.closed();
+            fixture.state->wait([&]{return fixture.state->destroyed==1;});
+            {std::lock_guard lock(fixture.state->mutex);require(fixture.state->close_reason==1,"malformed tail replaced system close reason");}
+        }
+        // A malformed transport length retains the original receive-worker
+        // reason, including when its two-byte header is split across reads.
+        for(const Packet invalid:{Packet{0,0},Packet{1,0},Packet{1,8},Packet{255,255}}) {
+            Fixture fixture;Peer peer(fixture,fixture.reserve());require(peer.selection()==Packet({9,1,0}),"Missing malformed-frame open");
+            peer.socket.write(std::span(invalid).first(1));
+            {std::unique_lock lock(fixture.state->mutex);require(!fixture.state->changed.wait_for(lock,30ms,[&]{return fixture.state->closes!=0;}),"partial frame header closed the connection");}
+            peer.socket.write(std::span(invalid).subspan(1));peer.socket.closed();fixture.state->wait([&]{return fixture.state->destroyed==1;});
+            {std::lock_guard lock(fixture.state->mutex);require(fixture.state->closes==1 && fixture.state->close_reason==13,"invalid frame lost original close reason");}
+            require(fixture.world.application_failures()==0,"invalid frame counted as application failure");
+        }
+        // Exercise both original timeout branches on the actual server scan.
+        {
+            auto clock=std::make_shared<std::atomic_uint64_t>(1000);Fixture fixture(Behavior::normal,0xc0000,clock);Peer peer(fixture,fixture.reserve());
+            require(peer.selection()==Packet({9,1,0}),"Missing initial reply-scan open");clock->store(900000);
+            {std::unique_lock lock(fixture.state->mutex);require(!fixture.state->changed.wait_for(lock,60ms,[&]{return fixture.state->closes!=0;}),"initial reply scan closed at inclusive boundary");}
+            clock->store(900010);peer.socket.closed();fixture.state->wait([&]{return fixture.state->destroyed==1;});
+            {std::lock_guard lock(fixture.state->mutex);require(fixture.state->close_reason==8,"initial reply scan lost timeout reason");}
+        }
+        {
+            auto clock=std::make_shared<std::atomic_uint64_t>(1000);Fixture fixture(Behavior::normal,0xc0000,clock);Peer peer(fixture,fixture.reserve());
+            require(peer.selection()==Packet({9,1,0}),"Missing reply-scan open");Packet reply{3,0};peer.outgoing.crypt(reply);peer.socket.write(net::frame(reply));peer.command(0);
+            require(peer.selection()==Packet({9,1,1}),"reply did not preserve encrypted input");clock->store(901000);
+            {std::unique_lock lock(fixture.state->mutex);require(!fixture.state->changed.wait_for(lock,60ms,[&]{return fixture.state->closes!=0;}),"reply scan closed at inclusive boundary");}
+            clock->store(901010);peer.socket.closed();fixture.state->wait([&]{return fixture.state->destroyed==1;});
+            {std::lock_guard lock(fixture.state->mutex);require(fixture.state->close_reason==8,"reply scan lost timeout close reason");}
+            require(fixture.world.application_failures()==0,"reply timeout counted as application failure");
         }
         // A second frame can arrive while the first application call is still
         // preparing the transition. It must be decoded after the posted state
@@ -204,6 +285,17 @@ int main() {
                 require(packet==expected,"Catalog-sized output exceeded obsolete 16 KiB cap or lost order");
             }
             peer.close();fixture.state->wait([&]{return fixture.state->destroyed==1;});
+        }
+        // A stalled socket executor cannot allow unbounded pending send posts.
+        {
+            Fixture fixture(Behavior::normal,512);Peer peer(fixture,fixture.reserve());
+            require(peer.selection()==Packet({9,1,0}),"Missing output-bound test open");net::WorldChannel channel;
+            {std::lock_guard lock(fixture.state->mutex);channel=fixture.state->channel;}
+            channel.pause_input([state=fixture.state](bool active){if(active)state->block();});
+            fixture.state->wait([&]{return fixture.state->entered;});
+            for(unsigned i=0;i<1000;++i)channel.send(Packet(128,9));
+            fixture.state->release();fixture.state->wait([&]{return fixture.state->destroyed==1;});
+            require(fixture.world.application_failures()==0,"pending output overflow counted as application failure");
         }
         {
             Fixture fixture(Behavior::bulk,512);Peer peer(fixture,fixture.reserve());peer.socket.closed();

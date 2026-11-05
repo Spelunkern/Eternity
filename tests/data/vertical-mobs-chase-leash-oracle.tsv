@@ -1,0 +1,11 @@
+# ps_game.exe SHA256 0fb7c9f13b5bcf186118f8bfe73ab214226b93e8aa502b8e6fded4a8312bc547; CMob::Chase 004a6de0 leash; real distance/GetStatus, reset and movement intercepted
+# mob_x target_x home_x fixed pais status | trace result status target_kind target_id found (float x values as DWORD bits)
+0	1110966272	0	0	0	1	P	0	3	0	42	0
+0	1110966272	0	0	0	2	P	0	2	0	42	0
+0	1110704128	0	0	0	1	M	0	1	7	42	1
+1110966272	0	0	0	0	1	P	0	0	0	42	0
+1110966272	0	0	0	0	2	P	0	2	0	42	0
+1110966272	0	0	0	1	1	FP	0	100	0	0	0
+1110966272	0	0	0	1	2	FP	0	100	0	0	0
+0	1114636288	0	1	0	1	M	0	1	7	42	1
+0	2143289344	0	0	0	1	M	0	1	7	42	1

@@ -1,6 +1,7 @@
 #include "eternity/game/item_pool.hpp"
 #include "eternity/game/equipment.hpp"
 #include <algorithm>
+#include <iterator>
 #include <new>
 #include <stdexcept>
 
@@ -26,7 +27,8 @@ GroundItem* GroundItemPool::allocate() {
     // SSyncHeap<CItem>::Alloc 0040adb0 is LIFO. The fresh-attempt counter
     // increments even when operator new returns null. Fresh native storage is zeroed.
     std::lock_guard lock(mutex_);GroundItem* item=nullptr;
-    if(!available_.empty()) {item=available_.back();available_.pop_back();}
+    const auto reusable=std::find_if(available_.rbegin(),available_.rend(),[&](GroundItem* candidate){return !pins_.contains(candidate);});
+    if(reusable!=available_.rend()) {item=*reusable;available_.erase(std::next(reusable).base());}
     else {
         ++fresh_attempts_;
         try {
@@ -39,6 +41,22 @@ GroundItem* GroundItemPool::allocate() {
     // increments only its item-specific counter when the retained runtime ID is zero.
     if(item->id==0) item->id=++serial_;
     initialize_ground_item(*item);return item;
+}
+bool GroundItemPool::is_allocated(const GroundItem& item) const {
+    std::lock_guard lock(mutex_);
+    return std::any_of(objects_.begin(),objects_.end(),[&](const auto& object){return object.get()==&item;}) &&
+        std::find(available_.begin(),available_.end(),&item)==available_.end();
+}
+bool GroundItemPool::pin(GroundItem& item) {
+    std::lock_guard lock(mutex_);
+    if(std::none_of(objects_.begin(),objects_.end(),[&](const auto& object){return object.get()==&item;}) ||
+       std::find(available_.begin(),available_.end(),&item)!=available_.end())return false;
+    ++pins_[&item];return true;
+}
+void GroundItemPool::unpin(GroundItem& item) noexcept {
+    std::lock_guard lock(mutex_);auto entry=pins_.find(&item);
+    if(entry==pins_.end() || entry->second==0)std::terminate();
+    if(--entry->second==0)pins_.erase(entry);
 }
 void GroundItemPool::release(GroundItem* item) {
     // CObjectMgr::FreeItem 0040a590 accepts null and otherwise retains payload.

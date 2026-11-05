@@ -1,0 +1,9 @@
+# ps_game.exe SHA256 0fb7c9f13b5bcf186118f8bfe73ab214226b93e8aa502b8e6fded4a8312bc547; CMob::UpdateIdle 004a7e60 movement body, GetMoveSpeed 004908c0/00490900; random observed, zone absent
+# now x chase ai def_speed step normal stop sleep stun hold speed | status next_move random_count
+50	0	0	4	1	2	100	0	0	0	0	2	0	11284	1
+50	11	0	1	1	2	100	0	0	0	0	2	3	0	0
+50	1	1	1	1	2	100	0	0	0	0	2	3	0	0
+50	0	0	1	1	2	100	1	0	0	0	2	0	11284	1
+50	0	0	1	1	2	100	0	0	0	1	2	0	11041	3
+4294967280	0	0	1	1	2	4294967295	0	0	0	0	2	0	10874	3
+50	0	0	1	0	2	100	0	0	0	0	2	0	11284	1

@@ -5,7 +5,7 @@ namespace eternity::game {
 class VerticalCombatRangedPassive {
 public:
     virtual ~VerticalCombatRangedPassive()=default;
-    // Pure, non-reentrant read of actual CUser +1330. Its owner is not yet exposed.
+    // Pure, non-reentrant read of actual CUser +1330 passive state.
     virtual std::int32_t ranged_penalty_suppression(const Actor&)=0;
 };
 // Retain the actor, mob, mob definition, RNG, element table and zone through
@@ -16,13 +16,11 @@ public:
 bool vertical_combat_normal_damage(Actor&,MobRuntime&,unsigned kind,RandomSource&,
     ZoneUsers&,VerticalCombatRangedPassive&,std::span<const float,81> elements,std::array<std::int32_t,3>& damage);
 // Borrow raw stSkillInfo +66 and +68/+6a/+6c from the same retained skill
-// definition. attack_recovery is the live HP/SP/MP owner for CUser +1238/3c/40;
-// it is required only by mode 3 when at least one damage word is nonzero.
+// definition. Mode 3 reads the live actor HP/SP/MP owner directly.
 struct VerticalCombatSkillDamageInputs {
     const UserSkillDefinition& skill;
     std::uint8_t mode;
-    std::array<std::uint16_t,3> values; // HP, MP, SP
-    std::span<const std::int32_t> attack_recovery; // HP, SP, MP
+    std::array<std::uint16_t,3> values; // Original output-word order.
 };
 // Skill AttackDamage 0044d540 modes 0..5 and other-mode fallback. Melee/ranged
 // and magic weapon branches are supported.

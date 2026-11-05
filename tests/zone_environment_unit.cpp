@@ -80,6 +80,10 @@ int main(int argc,char** argv) {
         require(!zone.use_door(1,2099,sink),"Door cooldown ended early");zone.update_doors(1100,sink);MicrosoftRandom random(123);zone.update_weather(0,random,sink);zone.update_weather(10,random,sink);
         require(sink.events==std::vector<std::string>{"C03040001","C03040101","C03040100","C03040000","A5104010203"},"Combined door/weather operation order changed");
         require(sink.cells.size()==4 && sink.cells[0].x==0 && sink.cells[1].x==1 && sink.cells[2].x==1 && sink.cells[3].x==0,"Prepared door used the wrong view cell");
+        ZoneEnvironment snapshot_zone;ZoneDoor a,b;a.id=0x12;b.id=0x13;a.cell=b.cell=CellCoordinates{1,1};b.open=true;
+        snapshot_zone.doors().push_back(a);snapshot_zone.doors().push_back(b);std::vector<unsigned> seen;bool nested=true;
+        std::function<void(const eternity::net::Packet&)> observe=[&](const auto& packet){seen.push_back(packet.at(2));if(nested){nested=false;snapshot_zone.send_cell_doors({1,1},observe);}};
+        snapshot_zone.send_cell_doors({1,1},observe);require(seen==std::vector<unsigned>{0x12,0x12,0x13,0x12,0x13},"Original nested door cursor differs");
         std::cout<<synthetic<<" original preparations, "<<actual<<" map environments, "<<doors<<" door and "<<weather<<" weather cases plus "<<randoms<<" random sequences passed\n";
     } catch(const std::exception& error) {std::cerr<<error.what()<<'\n';return 1;}
 }

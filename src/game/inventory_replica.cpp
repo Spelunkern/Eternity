@@ -23,10 +23,18 @@ std::uint64_t get(std::span<const std::uint8_t> p,std::size_t offset,unsigned in
 void dirty(CachedInventoryItem& item) {if(item.save_type==0) item.save_type=2;}
 void craft(CachedInventoryItem& item,std::span<const std::uint8_t> value) {std::copy_n(value.begin(),21,item.craft_storage.begin());item.craft_storage[20]=0;const auto end=std::find(item.craft_storage.begin(),item.craft_storage.end(),0);item.item.craft.assign(item.craft_storage.begin(),end);}
 }
-bool InventoryReplica::load(PlayerItem value,bool bank,std::int32_t save_type) {
+bool InventoryReplica::load(PlayerItem value,bool bank,std::int32_t save_type) {return load_impl(std::move(value),bank,save_type,false);}
+bool InventoryReplica::load_relocated(PlayerItem value,bool bank) {return load_impl(std::move(value),bank,0,true);}
+bool InventoryReplica::load_impl(PlayerItem value,bool bank,std::int32_t save_type,bool relocated) {
     if(value.slot>=(bank?240:24) || (!bank && value.bag>=6) || value.craft.size()>20 || value.craft.find('\0')!=std::string::npos) throw std::invalid_argument("Invalid resolved DB-agent item row");
     auto& slot=bank?bank_[value.slot]:inventory_[value.bag*24+value.slot];if(slot) throw std::invalid_argument("Duplicate DB-agent item row");
-    auto item=pool_.allocate();if(!item) return false;item->item=std::move(value);item->save_type=save_type;item->saved_type=0;item->craft_storage.fill(0);std::copy(item->item.craft.begin(),item->item.craft.end(),item->craft_storage.begin());slot=std::move(item);return true;
+    auto item=pool_.allocate();if(!item) return false;item->item=std::move(value);if(relocated) dirty(*item);else item->save_type=save_type;std::copy(item->item.craft.begin(),item->item.craft.end(),item->craft_storage.begin());item->craft_storage[item->item.craft.size()]=0;item->craft_storage[20]=0;slot=std::move(item);return true;
+}
+void InventoryReplica::adopt_loaded(std::unique_ptr<CachedInventoryItem> item,bool bank) {
+    if(!item || item->item.slot>=(bank?240:24) || (!bank && item->item.bag>=6)) throw std::invalid_argument("Invalid adopted inventory row");
+    auto& slot=bank?bank_[item->item.slot]:inventory_[item->item.bag*24+item->item.slot];
+    if(slot) throw std::invalid_argument("Duplicate adopted inventory row");
+    slot=std::move(item);
 }
 void InventoryReplica::journal(const Item& item,bool bank) {if(item->save_type!=1) (bank?deleted_bank_:deleted_inventory_).push_back(item->item.uid);}
 std::vector<CachedInventoryItem> InventoryReplica::inventory() const {std::vector<CachedInventoryItem> result;for(std::size_t i=0;i<inventory_.size();++i) if(inventory_[i]) {result.push_back(*inventory_[i]);result.back().item.bag=static_cast<std::uint8_t>(i/24);result.back().item.slot=static_cast<std::uint16_t>(i%24);}return result;}

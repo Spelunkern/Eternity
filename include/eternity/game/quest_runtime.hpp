@@ -1,6 +1,7 @@
 #pragma once
 #include "eternity/game/quests.hpp"
 #include <memory>
+#include <mutex>
 #include <map>
 #include <span>
 #include <vector>
@@ -43,6 +44,9 @@ public:
     QuestRuntime(std::uint32_t user,QuestRuntimePool& pool):user_id_(user),pool_(pool) {}
     ~QuestRuntime();
     QuestRuntime(const QuestRuntime&)=delete;QuestRuntime& operator=(const QuestRuntime&)=delete;
+    // Native owner binding: admission, removal and progress must share the
+    // same account and CQuest heap throughout the serialized user lifetime.
+    bool bound_to(std::uint32_t account,const QuestRuntimePool& pool) const noexcept {return user_id_==account && &pool_==&pool;}
     // QuestAdd appends under the list lock, then accounts outside it.
     void add_active_unaccounted(RestoredQuest&);
     void add_active(RestoredQuest&);
@@ -55,6 +59,9 @@ public:
     RestoredQuest* active_cursor() const noexcept {return cursor_;}
     std::span<RestoredQuest* const> active() const noexcept {return active_;}
     std::span<RestoredQuest* const> finished() const noexcept {return finished_;}
+    // Finished-list entry traversal and completed-quest insertion share this
+    // distinct recursive lock. Other runtime operations remain world-serialized.
+    std::recursive_mutex& finished_mutex() const noexcept {return finished_mutex_;}
     std::int32_t& mob_kill_quests() noexcept {return mob_kill_;}
     std::int32_t& player_kill_quests() noexcept {return player_kill_;}
     // CUser::QuestRemove 0047e150. Required DB delivery follows finished-list
@@ -63,6 +70,7 @@ public:
 private:
     std::uint32_t user_id_;QuestRuntimePool& pool_;
     std::vector<RestoredQuest*> active_,finished_;RestoredQuest* cursor_=nullptr;
+    mutable std::recursive_mutex finished_mutex_;
     std::int32_t mob_kill_=0,player_kill_=0;
 };
 }

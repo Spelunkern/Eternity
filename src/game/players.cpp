@@ -73,6 +73,8 @@ PlayerItem item(const storage::Row& row,bool bank) {
 }
 }
 
+PlayerItem decode_player_item(const storage::Row& row,bool bank) {return item(row,bank);}
+
 PlayerCore decode_player_core(const storage::Row& row) {
     // DBCharacter::LoadCharacter, ps_dbAgent.exe 00420610, 53 ordered result columns.
     if(row.size()!=53) throw std::runtime_error("Original character detail row changed");
@@ -101,16 +103,17 @@ void decode_player_inventory(PlayerSnapshot& player) {
     player.items.clear();player.bank.clear();player.skills.clear();player.overflow_items.clear();player.overflow_bank.clear();
     const auto decode=[&](std::string_view catalog,bool bank) {
         std::array<std::optional<PlayerItem>,240> slots;std::vector<PlayerItem> duplicates;
+        std::size_t source_order=0;
         for(const auto& row:player.catalogs.at(std::string(catalog)).rows) {
-            auto value=item(row,bank);
+            auto value=item(row,bank);value.source_order=source_order++;
             if((bank && value.slot>=240) || (!bank && (value.bag>=6 || value.slot>=24))) continue;
             const auto index=bank ? value.slot : value.bag*24+value.slot;
             if(slots[static_cast<std::size_t>(index)]) duplicates.push_back(std::move(value));
             else slots[static_cast<std::size_t>(index)]=std::move(value);
         }
         for(auto& value:duplicates) {
-            auto free=std::find_if(slots.begin()+(bank?0:24),slots.begin()+(bank?240:144),[](const auto& slot){return !slot;});
-            if(free==slots.begin()+(bank?240:144)) {(bank?player.overflow_bank:player.overflow_items).push_back(std::move(value));continue;}
+            auto free=std::find_if(slots.begin()+(bank?0:24),slots.begin()+(bank?6:144),[](const auto& slot){return !slot;});
+            if(free==slots.begin()+(bank?6:144)) {(bank?player.overflow_bank:player.overflow_items).push_back(std::move(value));continue;}
             const auto index=static_cast<std::size_t>(free-slots.begin());value.relocated=true;
             value.bag=bank?0:static_cast<std::uint8_t>(index/24);value.slot=static_cast<std::uint16_t>(bank?index:index%24);*free=std::move(value);
         }

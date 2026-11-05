@@ -14,9 +14,46 @@ std::string hex(const net::Packet& p) {std::ostringstream out;out<<std::hex<<std
 void append(net::Packet& p,std::uint32_t value,unsigned int bytes=4) {for(unsigned int i=0;i<bytes;++i) p.push_back(static_cast<std::uint8_t>(value>>(8*i)));}
 void fixed(net::Packet& p,const std::string& value,std::size_t width) {p.insert(p.end(),value.begin(),value.end());p.resize(p.size()+width-value.size(),0);}
 net::Packet db(std::uint16_t op) {net::Packet p;append(p,op,2);append(p,530001);p.push_back(1);return p;}
+void reentrant_notices() {
+    for(bool online:{false,true})for(unsigned mode=0;mode<3;++mode) {
+        SocialCatalog social(71,0x12345678),peer(72,5);social.add_friend({5,0,0,0,"Five",""});social.add_friend({8,0,0,0,"Eight",""});if(mode!=2)social.add_friend({9,0,0,0,"Nine",""});
+        std::vector<std::string> effects;bool changed=false;
+        const auto remove=[&]{const auto ignore=[](net::Packet){};const auto absent=[](std::uint32_t)->const SocialCatalog*{return nullptr;};
+            require(social.apply_client(net::Packet{5,0x22,5,0,0,0},ignore,ignore,absent,[](std::uint32_t,net::Packet){})==EntryCatalogUpdate::applied,"reentrant friend removal rejected");};
+        const auto lookup=[&](std::uint32_t id)->const SocialCatalog* {effects.push_back("lookup "+std::to_string(id));if(mode==0 && !changed){changed=true;remove();}return id==5 || id==9?&peer:nullptr;};
+        const auto send=[&](std::uint32_t id,net::Packet p){effects.push_back("send "+std::to_string(id));require(p==net::Packet({7,0x22,0x78,0x56,0x34,0x12,static_cast<std::uint8_t>(online)}),"reentrant notice packet differs");
+            if(!changed && mode==1){changed=true;remove();}else if(!changed && mode==2){changed=true;social.add_friend({9,0,0,0,"Nine",""});}};
+        if(online)social.notify_online(lookup,send);else social.notify_offline(lookup,send);
+        const auto expected=mode==2?std::vector<std::string>{"lookup 5","send 5","lookup 8","lookup 9","send 9"}:std::vector<std::string>{"lookup 5","send 5","lookup 8"};
+        require(changed && effects==expected,"reentrant social notice iteration differs");
+    }
+}
+void reentrant_lists() {
+    for(unsigned mode=0;mode<7;++mode) {
+        SocialCatalog social(71,101),peer(72,2);peer.add_friend({101,0,0,0,"Owner",""});const unsigned friends=mode==0 || mode==5 || mode==6?1:mode==1?2:mode==2?25:mode==3?26:0;const unsigned blocks=mode==4?25:0;
+        for(unsigned i=1;i<=friends;++i)social.add_friend({i,0,0,static_cast<std::uint8_t>(i),"F"+std::to_string(i),""});
+        for(unsigned i=1;i<=blocks;++i)social.add_block({i,"B"+std::to_string(i),""});
+        std::vector<net::Packet> packets;bool changed=false;
+        const auto remove=[&]{const auto ignore=[](net::Packet){};const auto absent=[](std::uint32_t)->const SocialCatalog*{return nullptr;};
+            require(social.apply_client(net::Packet{5,0x22,1,0,0,0},ignore,ignore,absent,[](std::uint32_t,net::Packet){})==EntryCatalogUpdate::applied,"list friend removal rejected");};
+        const auto lookup=[&](std::uint32_t)->const SocialCatalog* {if((mode<=1 || mode==6) && !changed){changed=true;remove();}return mode==6?&peer:nullptr;};
+        const auto send=[&](net::Packet packet){packets.push_back(std::move(packet));if(changed)return;
+            if(mode==2 || mode==5){changed=true;social.add_friend({26,0,0,26,"F26",""});}
+            else if(mode==3){changed=true;remove();}
+            else if(mode==4 && packets.back()[0]==8){changed=true;social.add_block({26,"B26",""});}};
+        social.send_packets(lookup,send);require(changed && !packets.empty(),"list reentrant mutation missing");
+        if(mode==0)require(packets.size()==1 && packets[0].size()==31 && packets[0][2]==1 && packets[0][3]==0 && packets[0][7]==0 && packets[0][9]==0,"removed final fixed slot differs");
+        if(mode==6)require(packets.size()==1 && packets[0][3]==0 && packets[0][8]==1,"mutual status did not use lookup before slot mutation");
+        if(mode==1)require(packets.size()==1 && packets[0][2]==1 && packets[0][3]==2 && packets[0][7]==2,"lookup-time swapped row differs");
+        if(mode==2 || mode==4)require(packets.size()==2 && packets[0][2]==25 && packets[1][2]==1 && packets[1][3]==26,"batch-boundary append differs");
+        if(mode==3)require(packets.size()==1 && packets[0][2]==25 && social.friends().size()==25,"batch-boundary deletion differs");
+        if(mode==5)require(packets.size()==1 && packets[0][2]==1 && social.friends().size()==2,"final flush incorrectly revisited friends");
+    }
+}
 }
 int main(int argc,char** argv) {
     try {
+        reentrant_notices();reentrant_lists();
         require(argc==2,"Expected original entry catalog oracle");std::ifstream input(argv[1]);require(input.good(),"Cannot open entry catalog oracle");std::string line,kind;std::vector<std::string> events;std::size_t social=0,catalogs=0,kills=0,honors=0,guilds=0,sends=0,next=0;std::unique_ptr<SocialCatalog> cache,mutual,one_way;std::unique_ptr<EntryCatalogs> items;std::map<std::uint32_t,GuildListing> listings;unsigned int presence=0;std::uint8_t country=0;
         const auto packet=[&](net::Packet p){events.push_back("PACKET "+hex(p));};
         const auto lookup=[&](std::uint32_t id)->const SocialCatalog* {events.push_back("LOOKUP "+std::to_string(id));const bool present=presence==1 || presence==3 || (presence==2 && id%3!=0);const bool related=(presence==1 && id%2==0) || (presence==2 && id%5==1);return present?(related?mutual.get():one_way.get()):nullptr;};

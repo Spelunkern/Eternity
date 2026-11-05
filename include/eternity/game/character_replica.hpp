@@ -31,12 +31,15 @@ public:
     const MarketReplica& market() const noexcept {return market_;}
     GrowthReplica& growth() noexcept {return growth_;}
     const GrowthReplica& growth() const noexcept {return growth_;}
+    // Retained owners outlive every pool-backed member, even if the replica is
+    // moved independently from the selection result.
+    void retain_resources(std::shared_ptr<void> owner) {if(!owner || retained_resources_)throw std::invalid_argument("Replica resources already set or missing");retained_resources_=std::move(owner);}
     InventoryReplicaResult apply(std::span<const std::uint8_t>);
     bool body_changed() const noexcept {return body_changed_;}
     // Core portion of CUser::SaveSuccess 00409560, after complete character commit.
     void core_save_success() noexcept {body_changed_=false;}
 private:
-    PlayerCore core_;InventoryReplica inventory_;PointItemPool owned_point_pool_;PointItemReplica points_;PurchaseReplica purchases_;SkillReplicaPool owned_skill_pool_;SkillReplica skills_;
+    std::shared_ptr<void> retained_resources_;PlayerCore core_;InventoryReplica inventory_;PointItemPool owned_point_pool_;PointItemReplica points_;PurchaseReplica purchases_;SkillReplicaPool owned_skill_pool_;SkillReplica skills_;
     QuestReplicaPool owned_quest_pool_;QuestReplica quests_;InterfaceReplica interface_;MarketReplica market_;GrowthReplica growth_;bool body_changed_=false;
 };
 }
