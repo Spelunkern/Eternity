@@ -7,6 +7,7 @@
 #include "eternity/net/world_retained_lookup.hpp"
 #include "eternity/net/world_priority_batch.hpp"
 #include "eternity/net/world_priority_flush.hpp"
+#include "eternity/net/world_priority_owner.hpp"
 #include "eternity/game/user_priority_queue.hpp"
 #include <future>
 #include <barrier>
@@ -219,6 +220,34 @@ static void verify_connection_identity(){
  callback_release.set_value();gates.br=true;
  check(done.wait_for(3s)==std::future_status::ready && done.get(),"identity stop stalled");
  check(!ib->active() && !cb.connection_identity(),"stop retained a live connection identity");thread.join();
+}
+
+static void verify_priority_owner_reentrant_drain(){
+ asio::io_context socket_io,world_io;auto work=asio::make_work_guard(world_io);Strand strand(asio::make_strand(world_io));
+ auto sessions=std::make_shared<session::Registry>();auto pool=std::make_shared<PriorityPoolFixture>(strand);net::WorldServerOptions options;options.port=0;
+ std::promise<net::WorldChannel> channel_promise;auto channel_future=channel_promise.get_future();
+ net::WorldServer server(socket_io,options,sessions,[&](const session::LoginSession&,net::WorldChannel channel){channel_promise.set_value(channel);return std::make_unique<IdentityApp>(std::move(channel));});
+ server.start();std::jthread socket_thread([&]{socket_io.run();}),world_thread([&]{world_io.run();});
+ struct Cleanup{net::WorldServer& server;asio::io_context& socket_io;asio::io_context& world_io;~Cleanup(){server.stop();socket_io.stop();world_io.stop();}} cleanup{server,socket_io,world_io};
+ const auto now=static_cast<std::uint64_t>(std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now().time_since_epoch()).count());
+ session::LoginSession account{11,101,1,"native",{}, {}};account.token.fill(11);sessions->add(account);check(sessions->select(11,101,0,now),"priority owner setup failed");
+ PeerSocket peer(server.port());net::Packet connect{1,0xa3,11,0,0,0};connect.insert(connect.end(),16,11);peer.write(net::frame(connect));
+ check(channel_future.wait_for(3s)==std::future_status::ready,"priority owner channel stalled");auto channel=channel_future.get();peer.packet();peer.packet();
+ std::shared_ptr<net::WorldPriorityOwner> owner;std::atomic_bool poll_fault{true},early_drain=false,inside_drain=false;
+ std::promise<void> started,result_seen,drained;auto start=started.get_future(),result=result_seen.get_future(),done=drained.get_future();
+ asio::post(strand,[&]{owner=net::WorldPriorityOwner::create(strand,pool,channel,[&](bool ok){
+   if(!ok)throw std::logic_error("real priority write failed");owner->close_and_wait([&]{inside_drain=!owner->drained();owner->retry();drained.set_value();});
+   early_drain=owner->drained();result_seen.set_value();},[&]{if(poll_fault.exchange(false))throw std::runtime_error("injected owner poll post failure");});
+  for(auto& buffer:pool->buffers){buffer.references=1;buffer.frame={4,0,0x8b,0x77};check(owner->queue().enqueue(1,buffer,1,0),"priority owner enqueue failed");game::release_party_membership_buffer(buffer,*pool);}
+  owner->flush();check(owner->outstanding()==1,"priority owner lost real batch");started.set_value();});
+ check(start.wait_for(3s)==std::future_status::ready,"priority owner flush stalled");peer.packet();peer.packet();check(result.wait_for(3s)==std::future_status::ready,"priority owner result stalled");
+ std::promise<bool> observed;auto observation=observed.get_future();asio::post(strand,[&]{observed.set_value(owner->closed() && !owner->drained() && owner->outstanding()==1 && bool(owner->poll_post_error()));});
+ check(observation.wait_for(3s)==std::future_status::ready && observation.get() && !early_drain && done.wait_for(0s)==std::future_status::timeout,"failed priority owner poll lost its drain fence");
+ asio::post(strand,[&]{owner->retry();});check(done.wait_for(3s)==std::future_status::ready && inside_drain && pool->frees==2,"priority owner retry did not drain actual batch");
+ std::promise<bool> checked;auto checked_result=checked.get_future();asio::post(strand,[&]{checked.set_value(owner->drained() && owner->outstanding()==0 && !owner->poll_post_error());owner.reset();});
+ check(checked_result.wait_for(3s)==std::future_status::ready && checked_result.get(),"priority owner did not finish after callback");
+ std::promise<bool> stopped;auto stop=stopped.get_future();server.stop([&](bool ok){stopped.set_value(ok);});check(stop.wait_for(3s)==std::future_status::ready && stop.get(),"priority owner transport stop stalled");
+ work.reset();socket_thread.join();world_thread.join();
 }
 
 static void verify_signed_batch_limit(){
@@ -903,5 +932,5 @@ int main(){try{
  auto selected=a.packet();in_a.crypt(selected);check(selected==net::Packet({4,1,0,42,0,0,0}),"asynchronous selection reply differs");
  auto entered=a.packet();in_a.crypt(entered);check(entered==net::Packet({0x7c,0x77}),"queued entry was not delivered after publication");
  server.stop();thread.join();check(!state->invalid && state->opened==2 && state->received==4 && state->closed==2 && state->destroyed==2,"shutdown did not drain both world applications");
- check(server.application_failures()==0,"application error while draining");verify_connection_identity();verify_signed_batch_limit();verify_priority_world_close_barrier();verify_async_drain();verify_stop_close_barrier();verify_stop_close_failure();verify_factory_failure_fence();verify_real_session_reservation(false);verify_real_session_reservation(true);verify_close_submission_behind_worker();verify_close_submission_reason();verify_owner_stop_transport_failure();verify_owner_stop_post_retry_race();verify_owner_stop_retry();verify_owner_stop_separate_io();verify_retained_lookup();verify_retained_lookup_delivery_failure(false);verify_retained_lookup_delivery_failure(true);verify_retained_lookup_delivery_auto_close();verify_retained_lookup_delivery_stop_race();verify_retained_lookup_failure();verify_known_live_duplicate();verify_late_retained_lookup();std::cout<<"shared world strand handles and drains two TCP connections\n";
+ check(server.application_failures()==0,"application error while draining");verify_connection_identity();verify_priority_owner_reentrant_drain();verify_signed_batch_limit();verify_priority_world_close_barrier();verify_async_drain();verify_stop_close_barrier();verify_stop_close_failure();verify_factory_failure_fence();verify_real_session_reservation(false);verify_real_session_reservation(true);verify_close_submission_behind_worker();verify_close_submission_reason();verify_owner_stop_transport_failure();verify_owner_stop_post_retry_race();verify_owner_stop_retry();verify_owner_stop_separate_io();verify_retained_lookup();verify_retained_lookup_delivery_failure(false);verify_retained_lookup_delivery_failure(true);verify_retained_lookup_delivery_auto_close();verify_retained_lookup_delivery_stop_race();verify_retained_lookup_failure();verify_known_live_duplicate();verify_late_retained_lookup();std::cout<<"shared world strand handles and drains two TCP connections\n";
  }catch(const std::exception& e){std::cerr<<e.what()<<'\n';return 1;}}
