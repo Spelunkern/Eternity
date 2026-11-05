@@ -2206,6 +2206,8 @@ if(BUILD_TESTING)
     add_executable(party-runtime-raw-flags-unit tests/party_runtime_raw_flags_unit.cpp)
     target_link_libraries(party-runtime-raw-flags-unit PRIVATE eternity_game)
     add_test(NAME party-runtime-raw-flags-unit COMMAND party-runtime-raw-flags-unit ${CMAKE_CURRENT_SOURCE_DIR}/tests/data/party-runtime-raw-flags-oracle.tsv)
+endif()
+
 # Worker 09: full numeric CalculateParam assignment and recursive conversion writes.
 if(BUILD_TESTING)
     add_executable(mob-ai-states-argument-numeric-unit tests/mob_ai_states_argument_numeric_unit.cpp)
@@ -2214,6 +2216,8 @@ if(BUILD_TESTING)
     add_executable(mob-ai-states-nested-numeric-unit tests/mob_ai_states_nested_numeric_unit.cpp)
     target_link_libraries(mob-ai-states-nested-numeric-unit PRIVATE eternity_game)
     add_test(NAME mob-ai-states-nested-numeric-unit COMMAND mob-ai-states-nested-numeric-unit ${CMAKE_CURRENT_SOURCE_DIR}/tests/data/mob_ai_states_nested_numeric-oracle.tsv)
+endif()
+
 target_sources(eternity_game PRIVATE src/game/user_skill_runtime_announcement.cpp)
 if(BUILD_TESTING)
     add_executable(user-skill-runtime-announcement-unit tests/user_skill_runtime_announcement_unit.cpp)
