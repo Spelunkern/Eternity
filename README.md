@@ -26,6 +26,8 @@ combat and gameplay remain unfinished; the server is not playable. Client work
 is deferred. The active MD5 login path requires a missing original procedure;
 the available legacy SQL path is tested.
 
+Function-by-function progress against the original PDBs: [PROGRESO.md](PROGRESO.md).
+
 Verify original files with `sha256sum -c SHA256SUMS`.
 
 ```sh

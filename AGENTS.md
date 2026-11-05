@@ -11,3 +11,4 @@
 - Documentation and code are in English; keep documentation brief and current.
 - Do not describe protocol stubs or a successful database connection as a playable server.
 - Validate changes with the native build, relevant unit tests and isolated SQL integration tests.
+- After integrating work, regenerate `PROGRESO.md` and `research/coverage/` with `python3 tools/coverage.py --ref coordinator/foundation`. Citations are not proof of equivalence.
