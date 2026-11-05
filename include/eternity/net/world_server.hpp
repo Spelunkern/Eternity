@@ -1,4 +1,5 @@
 #pragma once
+#include <array>
 #include "eternity/net/world_protocol.hpp"
 #include "eternity/game/characters.hpp"
 #include "eternity/game/character_commands.hpp"
@@ -114,6 +115,9 @@ struct WorldChannel {
     std::function<void()> disconnect;
     // Preserve a known original service close reason (for example NProtect 111).
     std::function<void(std::uint32_t)> disconnect_with_reason;
+    // Immutable IPv4 peer captured on the socket strand at accept. Missing
+    // means lookup failed; consumers must not substitute an address.
+    std::optional<std::array<std::uint8_t,4>> peer_ipv4;
 };
 
 // Factory, open, receive and close run on one per-connection worker strand.

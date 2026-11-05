@@ -80,6 +80,7 @@ struct WorldServer::Impl::Connection : std::enable_shared_from_this<Connection> 
     tcp::socket socket;
     std::weak_ptr<Impl> owner;
     std::uint64_t id;
+    std::optional<std::array<std::uint8_t,4>> peer_ipv4;
     std::unique_ptr<WorldProtocol> protocol;
     FrameDecoder decoder;
     std::array<std::uint8_t,8192> input{};
@@ -114,7 +115,10 @@ struct WorldServer::Impl::Connection : std::enable_shared_from_this<Connection> 
     bool working = false,loaded = false,input_paused = false;
     Connection(tcp::socket peer,const std::shared_ptr<Impl>& server,std::uint64_t identity)
         : socket(std::move(peer)),owner(server),id(identity),worker(asio::make_strand(server->database)),
-          lifetime(socket.get_executor()),output_budget(server->options.maximum_queued_bytes) {}
+          lifetime(socket.get_executor()),output_budget(server->options.maximum_queued_bytes) {
+        asio::error_code error;const auto endpoint=socket.remote_endpoint(error);
+        if(!error && endpoint.address().is_v4())peer_ipv4=endpoint.address().to_v4().to_bytes();
+    }
     void start() {
         const auto server=owner.lock();if(!server) return close();
         const auto weak=weak_from_this();const auto executor=socket.get_executor();
@@ -310,6 +314,7 @@ struct WorldServer::Impl::Connection : std::enable_shared_from_this<Connection> 
             } catch(...) {--self->tracked_pending;--self->pending_batches;return false;}
             return true;
         };
+        result.peer_ipv4=peer_ipv4;
         result.send=[weak,executor](Packet packet) {
             const auto self=weak.lock();if(!self) return;
             std::lock_guard lock(self->lifecycle_mutex);if(self->closed || self->output_rejected) return;

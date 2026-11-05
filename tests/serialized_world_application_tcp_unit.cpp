@@ -24,7 +24,7 @@ static void check(bool v,const char* m){if(!v)throw std::runtime_error(m);}
 struct State {Strand strand;unsigned opened=0,received=0,closed=0,destroyed=0;bool invalid=false;explicit State(Strand s):strand(s){}};
 struct App final:net::WorldApplication {
  State& state;net::WorldChannel channel;std::uint32_t id;game::WorldAdmissionUser user;game::RuntimeZone zone;std::shared_ptr<game::VerticalAdmissionHandoff> handoff;
- App(State& s,net::WorldChannel c,std::uint32_t uid):state(s),channel(std::move(c)),id(uid){check(state.strand.running_in_this_thread(),"factory outside shared strand");}
+ App(State& s,net::WorldChannel c,std::uint32_t uid):state(s),channel(std::move(c)),id(uid){check(state.strand.running_in_this_thread(),"factory outside shared strand");check(channel.peer_ipv4==std::array<std::uint8_t,4>{127,0,0,1},"accepted socket peer IPv4 was not retained");}
  ~App() override{if(!state.strand.running_in_this_thread())state.invalid=true;++state.destroyed;}
  void open() override{check(state.strand.running_in_this_thread(),"open outside shared strand");++state.opened;channel.send({0x7a,0x77,static_cast<std::uint8_t>(id)});}
  void receive(const net::Packet& packet) override{

@@ -29,6 +29,7 @@
 #include "eternity/game/vertical_world_inventory_party.hpp"
 #include "eternity/game/vertical_world_inventory_actions.hpp"
 #include "eternity/game/vertical_world_inventory_cancel.hpp"
+#include "eternity/game/vertical_world_inventory_settlement.hpp"
 #include "eternity/game/zone_leave_bound.hpp"
 #include <bit>
 #include "eternity/game/vertical_world_session_ack.hpp"
@@ -870,6 +871,25 @@ int main(){try {
    runtime_shop_owners.on_shop=[&]{live->admission().zone=nullptr;};bool lost_zone=false;
    try{retained_expiry->dispatch(*live,{1,0x0a,43,0,0,0});}catch(const std::logic_error&){lost_zone=true;}live->admission().zone=&live_zone;runtime_shop_owners.on_shop={};
    check(lost_zone && actor.exchange().mode==0 && runtime_exchange_timer==0,"exchange accepted a reentrant zone change");
+   auto retained_expiry=runtime_exchange_owner.lock();check(bool(retained_expiry),"gameplay did not expose its retained exchange owner");
+   {struct Clock final:ItemIdClock {std::uint32_t ticks_ms() override{return 1;}std::uint32_t packed_local_calendar() override{return 1;}};
+    auto clock=std::make_shared<Clock>();auto ids=std::make_shared<ItemIds>(7,*clock);auto scratch=std::make_shared<VerticalWorldInventorySettlementScratch>();
+    scratch->db.resize(57);scratch->outgoing_item.resize(181);scratch->receiver.resize(36);scratch->incoming_item.resize(179);scratch->outgoing_money.resize(126);scratch->incoming_money.resize(111);
+    using Settlement=VerticalWorldInventorySettlement<SessionSaveStore,SessionSaveStore>;
+    bool missing_address=false;try{Settlement missing(strand,sessions,runtime,live,live_zone,runtime_items,ids,clock,runtime_pickup_services,scratch,{});}catch(const std::invalid_argument&){missing_address=true;}
+    bool missing_ip=false;try{(void)vertical_world_inventory_connection_ipv4(*live);}catch(const std::logic_error&){missing_ip=true;}
+    live->channel().peer_ipv4=std::array<std::uint8_t,4>{1,2,3,4};check(vertical_world_inventory_connection_ipv4(*live)==0x04030201U,"settlement connection IPv4 byte order changed");live->channel().peer_ipv4.reset();
+    unsigned address_calls=0;Settlement actual(strand,sessions,runtime,live,live_zone,runtime_items,ids,clock,runtime_pickup_services,scratch,[&](VerticalWorldSession&)->std::uint32_t{++address_calls;throw std::logic_error("address unavailable");});
+    bool self_rejected=false;try{actual.validate_before_ready(actor,actor);}catch(const std::logic_error&){self_rejected=true;}
+    check(missing_address && missing_ip && self_rejected && address_calls==0 && actor.exchange().mode==0,"retained settlement accepted missing address or identical sessions");
+    auto composed=vertical_world_inventory_party_settlement_gameplay(strand,sessions,runtime,live,live_zone,runtime_party_ptr,
+        [](VerticalWorldSession&,Actor&,RuntimeZone&,WorldAdmissionUser&,ZoneEntryState&){return std::make_shared<SessionIgnoredMove>();},
+        runtime_pickup_services,runtime_actions,runtime_item_links,runtime_items,ids,clock,runtime_pickup_services,scratch,
+        [](VerticalWorldSession&,const net::Packet&){throw std::logic_error("unexpected settlement fallback");});
+    actor.exchange().mode=3;actor.exchange().peer=&actor;actor.exchange().ready=1;bool composed_rejected=false;
+    try{(void)composed->dispatch(*live,{5,0x0a,0});}catch(const std::logic_error&){composed_rejected=true;}
+    check(composed_rejected && actor.exchange().mode==3 && actor.exchange().ready==1,"composed gameplay hid invalid settlement participants");
+    actor.exchange()={};}
    {auto reject=std::make_shared<RejectExchangeSettlement>();auto ready_owner=VerticalWorldInventoryExchange::create(strand,sessions,live,live_zone,runtime_actions,
       [](VerticalWorldSession&,const net::Packet&){throw std::logic_error("ready fell through");},reject);
     actor.exchange().mode=3;actor.exchange().peer=&actor;actor.exchange().ready=1;bool failed=false;
