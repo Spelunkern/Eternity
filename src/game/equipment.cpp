@@ -83,6 +83,7 @@ ItemDefinitions ItemDefinitions::load(const storage::ResultSet& table) {
         item.attribute=static_cast<std::uint8_t>(n("Attrib",255));if(item.attribute>8) item.attribute=0;
         item.special=static_cast<std::uint8_t>(n("Special",255));item.experience=static_cast<std::uint8_t>(n("Exp",255));
         item.stack_count=static_cast<std::uint8_t>(n("Count",255));
+        item.buy=n("Buy",2147483647);item.sell=n("Sell",2147483647);
         item.server=static_cast<std::uint8_t>(n("Server",255));if(item.server>=10) item.server=0;
         const auto quality=n("Quality");item.quality={static_cast<std::uint16_t>(quality),static_cast<std::uint16_t>(quality/2),
             static_cast<std::uint16_t>(static_cast<long double>(quality)*0.1F)};

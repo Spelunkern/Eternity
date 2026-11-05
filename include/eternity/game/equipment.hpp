@@ -14,6 +14,7 @@ struct ItemDefinition {
     PlayerResources resources{};
     bool quest_start=false; // stItemInfo+9c, initialized by CalcQuestItem.
     std::uint8_t stack_count=1; // stItemInfo+4b.
+    std::uint32_t buy=0,sell=0; // stItemInfo nBuy +80 and nSell +84.
 };
 class ItemDefinitions {
 public:
