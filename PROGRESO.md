@@ -21,7 +21,7 @@ Solo código propio del proyecto: sin CRT ni bibliotecas comunes (`pscommon`, `s
 
 | Binario | Funciones | Con código | % funciones | Bytes | Con código | % bytes | Avance por bytes |
 |---|---:|---:|---:|---:|---:|---:|---|
-| `ps_game` | 2559 | 669 | 26.1 % | 646 KB | 337 KB | 52.2 % | `██████░░░░░░` |
+| `ps_game` | 2559 | 675 | 26.4 % | 646 KB | 341 KB | 52.8 % | `██████░░░░░░` |
 | `ps_dbAgent` | 644 | 43 | 6.7 % | 129 KB | 34 KB | 26.7 % | `███░░░░░░░░░` |
 | `ps_login` | 218 | 6 | 2.8 % | 18 KB | 3 KB | 13.8 % | `██░░░░░░░░░░` |
 | `ps_session` | 299 | 1 | 0.3 % | 34 KB | 1 KB | 3.4 % | `░░░░░░░░░░░░` |
@@ -33,11 +33,11 @@ Solo código propio del proyecto: sin CRT ni bibliotecas comunes (`pscommon`, `s
 | Estado | Funciones | Bytes | % bytes |
 |---|---:|---:|---:|
 | En código enlazado al ejecutable | 265 | 144 KB | 22.3 % |
-| Código con prueba u oráculo | 272 | 148 KB | 22.9 % |
-| Código sin prueba | 103 | 28 KB | 4.4 % |
+| Código con prueba u oráculo | 275 | 152 KB | 23.5 % |
+| Código sin prueba | 106 | 29 KB | 4.5 % |
 | Solo un tramo interno | 29 | 17 KB | 2.6 % |
-| Solo mencionada | 114 | 26 KB | 4.0 % |
-| Sin rastro | 1776 | 283 KB | 43.8 % |
+| Solo mencionada | 112 | 26 KB | 4.0 % |
+| Sin rastro | 1772 | 279 KB | 43.2 % |
 
 ## `ps_game` por rama
 
@@ -46,7 +46,7 @@ Una función cuenta si la rama tiene código que la cite, entera o en parte.
 | Rama | Funciones con código | % bytes |
 |---|---:|---:|
 | `main` | 507 | 41.4 % |
-| `coordinator/foundation` | 669 | 52.2 % |
+| `coordinator/foundation` | 675 | 52.8 % |
 | `overnight/01-entry` | 546 | 43.5 % |
 | `overnight/02-world` | 585 | 45.1 % |
 | `overnight/03-movement` | 548 | 43.6 % |
@@ -57,23 +57,23 @@ Una función cuenta si la rama tiene código que la cite, entera o en parte.
 | `overnight/08-social` | 570 | 45.9 % |
 | `overnight/09-network` | 546 | 43.7 % |
 | `overnight/snapshot-20261105` | 543 | 43.5 % |
-| `todas las ramas comparadas` | 675 | 52.4 % |
+| `todas las ramas comparadas` | 681 | 53.1 % |
 
 ## `ps_game` por archivo original
 
 | Archivo | Funciones | Con código | Bytes | % bytes | Avance |
 |---|---:|---:|---:|---:|---|
 | `GameData.obj` | 50 | 19 | 40 KB | 64.7 % | `████████░░░░` |
-| `GuildMgr.obj` | 172 | 36 | 35 KB | 39.2 % | `█████░░░░░░░` |
+| `GuildMgr.obj` | 172 | 37 | 35 KB | 40.5 % | `█████░░░░░░░` |
 | `Mob.obj` | 102 | 25 | 30 KB | 75.4 % | `█████████░░░` |
 | `MarketMgr.obj` | 109 | 1 | 24 KB | 0.1 % | `░░░░░░░░░░░░` |
 | `UserItemRepairGem.obj` | 25 | 1 | 22 KB | 1.4 % | `░░░░░░░░░░░░` |
-| `UserPacket.obj` | 31 | 11 | 20 KB | 75.0 % | `█████████░░░` |
+| `UserPacket.obj` | 31 | 13 | 20 KB | 92.4 % | `███████████░` |
 | `UserItem.obj` | 37 | 13 | 17 KB | 51.1 % | `██████░░░░░░` |
 | `Map.obj` | 39 | 7 | 15 KB | 75.4 % | `█████████░░░` |
 | `UserPacketExtAdminCmd.obj` | 13 | 0 | 15 KB | 0.0 % | `░░░░░░░░░░░░` |
 | `World.obj` | 114 | 23 | 13 KB | 42.4 % | `█████░░░░░░░` |
-| `Zone.obj` | 92 | 30 | 12 KB | 53.4 % | `██████░░░░░░` |
+| `Zone.obj` | 92 | 31 | 12 KB | 54.0 % | `██████░░░░░░` |
 | `UserDeath.obj` | 26 | 14 | 12 KB | 70.8 % | `████████░░░░` |
 | `MobLuaFSM.obj` | 35 | 13 | 11 KB | 51.8 % | `██████░░░░░░` |
 | `PartyMgr.obj` | 65 | 34 | 11 KB | 78.1 % | `█████████░░░` |
@@ -85,7 +85,7 @@ Una función cuenta si la rama tiene código que la cite, entera o en parte.
 | `User.obj` | 60 | 16 | 10 KB | 80.1 % | `██████████░░` |
 | `UserAttackSkill.obj` | 15 | 7 | 9 KB | 70.4 % | `████████░░░░` |
 | `UserState.obj` | 25 | 14 | 9 KB | 73.5 % | `█████████░░░` |
-| `ServerApp.obj` | 52 | 4 | 9 KB | 19.6 % | `██░░░░░░░░░░` |
+| `ServerApp.obj` | 52 | 5 | 9 KB | 20.6 % | `██░░░░░░░░░░` |
 | `MobAttackSkill.obj` | 17 | 3 | 8 KB | 5.6 % | `█░░░░░░░░░░░` |
 | `ZoneUpdate.obj` | 32 | 17 | 7 KB | 85.5 % | `██████████░░` |
 | `Cell.obj` | 68 | 10 | 7 KB | 45.4 % | `█████░░░░░░░` |
@@ -158,7 +158,7 @@ Una función cuenta si la rama tiene código que la cite, entera o en parte.
 | `ServerWorldThread.obj` | 6 | 2 | 1 KB | 78.8 % | `█████████░░░` |
 | `UserSkillPassive.obj` | 5 | 3 | 1 KB | 54.4 % | `███████░░░░░` |
 | `MapPath.obj` | 3 | 2 | 1 KB | 95.6 % | `███████████░` |
-| `UserBilling.obj` | 9 | 1 | 1 KB | 4.0 % | `░░░░░░░░░░░░` |
+| `UserBilling.obj` | 9 | 2 | 1 KB | 6.7 % | `█░░░░░░░░░░░` |
 | `ZoneMapUpdate.obj` | 5 | 3 | 1 KB | 82.7 % | `██████████░░` |
 | `UserPacketChar.obj` | 3 | 3 | 1 KB | 100.0 % | `████████████` |
 | `MobFSMAttack.obj` | 4 | 1 | 1 KB | 11.8 % | `█░░░░░░░░░░░` |
@@ -194,6 +194,7 @@ Una función cuenta si la rama tiene código que la cite, entera o en parte.
 | `CUser::PacketProcessing` | `00466da0` | 1898 | En código enlazado al ejecutable |
 | `CUser::PacketCharacter` | `0046bf20` | 810 | En código enlazado al ejecutable |
 | `CUser::PacketMaininterface` | `00468420` | 6348 | Código con prueba u oráculo |
+| `CUser::PacketShop` | `0046af10` | 3609 | Código con prueba u oráculo |
 | `CUser::PacketParty` | `004676c0` | 3424 | Código con prueba u oráculo |
 | `CUser::PacketPC` | `0046a230` | 3285 | Código con prueba u oráculo |
 | `CUser::PacketExchange` | `0046ec90` | 1664 | Código con prueba u oráculo |
@@ -206,7 +207,6 @@ Una función cuenta si la rama tiene código que la cite, entera o en parte.
 | `CUser::PacketAdminCmdB` | `00471f40` | 4572 | Sin rastro |
 | `CUser::PacketAdminCmdD` | `00473970` | 3788 | Sin rastro |
 | `CUser::PacketAdminCmdE` | `00474840` | 3708 | Sin rastro |
-| `CUser::PacketShop` | `0046af10` | 3609 | Sin rastro |
 | `CUser::PacketPoint` | `004797c0` | 3228 | Sin rastro |
 | `CUser::PacketMyShop` | `00478bd0` | 2976 | Sin rastro |
 | `CUser::PacketMarket` | `00477740` | 2720 | Sin rastro |
@@ -234,7 +234,6 @@ Una función cuenta si la rama tiene código que la cite, entera o en parte.
 | `CUser::ItemGemRemovePos` | `004633a0` | 3887 | `UserItemRepairGem.obj` |
 | `CUser::PacketAdminCmdD` | `00473970` | 3788 | `UserPacketExtAdminCmd.obj` |
 | `CUser::PacketAdminCmdE` | `00474840` | 3708 | `UserPacketExtAdminCmd.obj` |
-| `CUser::PacketShop` | `0046af10` | 3609 | `UserPacket.obj` |
 | `CGameData::ReLoadConstItem` | `004c31a0` | 3373 | `GameData.obj` |
 | `CServerApp::OnConsoleCommand` | `00402ce0` | 3276 | `ServerApp.obj` |
 | `CUser::PacketPoint` | `004797c0` | 3228 | `UserPacketPoint.obj` |
@@ -267,5 +266,6 @@ Una función cuenta si la rama tiene código que la cite, entera o en parte.
 | `CUser::ExchangePvP` | `0047caf0` | 1448 | `UserPvPPacket.obj` |
 | `CUser::ItemBankToBag` | `0045bf30` | 1443 | `UserItem.obj` |
 | `CUser::SkillAttackRangeSelect` | `00450f70` | 1432 | `UserAttackSkillMob.obj` |
+| `CUser::PacketPVPGuild` | `0047da70` | 1426 | `UserPvPPacket.obj` |
 
 El detalle función por función está en `research/coverage/<binario>.tsv`.

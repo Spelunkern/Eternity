@@ -119,7 +119,7 @@ address	size	name	object	scope	status	witness
 00402670	19	SCriticalSection::SCriticalSection	Global.obj	game	nada	
 00402690	50	main	Main.obj	game	nada	
 004026d0	62	CGameData::GetMobInfo	ServerApp.obj	game	enlazado	src/game/equipment.cpp
-00402710	83	CGameData::GetItemInfo	ServerApp.obj	game	referencia	tests/data/quest-start-items-oracle.tsv
+00402710	83	CGameData::GetItemInfo	ServerApp.obj	game	con_oraculo	include/eternity/game/npc_shop.hpp
 00402770	99	CGameData::GetSkillInfo	ServerApp.obj	game	nada	
 004027e0	42	CGameData::GetMobSkillInfo	ServerApp.obj	game	referencia	tests/data/mob-targeting-bindings-full-oracle.tsv
 00402810	7	CWorld::GetUserCount	ServerApp.obj	game	nada	
@@ -1047,7 +1047,7 @@ address	size	name	object	scope	status	witness
 004169d0	576	CZone::MoveMob	Zone.obj	game	enlazado	include/eternity/game/zone_mobs.hpp
 00416c10	133	CZone::AddNpc	Zone.obj	game	nada	
 00416ca0	106	CZone::RemoveNpc	Zone.obj	game	nada	
-00416d10	82	CZone::FindNpc	Zone.obj	game	nada	
+00416d10	82	CZone::FindNpc	Zone.obj	game	sin_oraculo	include/eternity/game/npc_shop.hpp
 00416d70	283	CZone::EnterNpc	Zone.obj	game	con_oraculo	src/game/zone_npcs.cpp
 00416e90	157	CZone::LeaveNpc	Zone.obj	game	con_oraculo	src/game/zone_npcs.cpp
 00416f30	379	CZone::MoveNpc	Zone.obj	game	con_oraculo	src/game/zone_npcs.cpp
@@ -1685,7 +1685,7 @@ address	size	name	object	scope	status	witness
 004309f0	39	CGuild::SendHouseKeepEtin	GuildMgr.obj	game	nada	
 00430a20	46	CGuild::SendDBHouseKeepEtin	GuildMgr.obj	game	nada	
 00430a50	110	CGuild::CalculateKeepEtin	GuildMgr.obj	game	enlazado	include/eternity/game/guild_client_npc.hpp
-00430ac0	452	CGuild::GetGuildHouseShopBuyRate	GuildMgr.obj	game	nada	
+00430ac0	452	CGuild::GetGuildHouseShopBuyRate	GuildMgr.obj	game	sin_oraculo	include/eternity/game/npc_shop.hpp
 00430c90	205	CGuild::GetGuildHouseUseGateRate	GuildMgr.obj	game	nada	
 00430d60	100	CGuild::GetGuildHouseRepairRate	GuildMgr.obj	game	nada	
 00430dd0	100	CGuild::GetGuildHouseRapiceMixDecreRate	GuildMgr.obj	game	nada	
@@ -3029,7 +3029,7 @@ address	size	name	object	scope	status	witness
 0044b2b0	7	CUser::LeaveGuild	User.obj	game	sin_oraculo	include/eternity/game/guild_client_leave_leader.hpp
 0044b2c0	109	CUser::CancleActionVehicle	User.obj	game	enlazado	src/game/actor_actions.cpp
 0044b330	157	CUser::CancleActionVehicle2	User.obj	game	nada	
-0044b3d0	447	CUser::CancleActionExc	User.obj	game	con_oraculo	include/eternity/game/vertical_world_inventory_cancel.hpp
+0044b3d0	447	CUser::CancleActionExc	User.obj	game	con_oraculo	include/eternity/game/npc_shop.hpp
 0044b590	11	CUser::CancleActionMyShop	User.obj	game	nada	
 0044b5a0	37	CUser::GetPartyIndex	User.obj	game	nada	
 0044b5d0	212	CUser::NProtectCSAInit	User.obj	game	nada	
@@ -3166,7 +3166,7 @@ address	size	name	object	scope	status	witness
 00456b10	1201	CUser::AttackSuccess	UserAttackUser.obj	game	con_oraculo	include/eternity/game/vertical_combat_success.hpp
 00456fd0	93	CUser::CriticalSuccess	UserAttackUser.obj	game	nada	
 00457030	2592	CUser::AttackDamage	UserAttackUser.obj	game	referencia	tests/data/vertical_combat_damage_oracle.tsv
-00457a50	28	SUniqueIDGenByServer::GenID	UserBilling.obj	game	referencia	tests/data/mob-drops-uid-oracle.tsv
+00457a50	28	SUniqueIDGenByServer::GenID	UserBilling.obj	game	con_oraculo	include/eternity/game/npc_shop.hpp
 00457a70	41	CUser::BillingApply	UserBilling.obj	game	enlazado	src/game/skills.cpp
 00457aa0	48	CUser::BillingRemove	UserBilling.obj	game	nada	
 00457ad0	40	CUser::SendBillingInfo	UserBilling.obj	game	nada	
@@ -3287,7 +3287,7 @@ address	size	name	object	scope	status	witness
 00465570	108	FindItemChat	UserItemUse.obj	game	nada	
 004655e0	5684	CUser::ItemUse	UserItemUse.obj	game	nada	
 00466c20	13	stItemInfo::IsQuest	UserPacket.obj	game	nada	
-00466c30	34	CNpcData::GetShopNpc	UserPacket.obj	game	nada	
+00466c30	34	CNpcData::GetShopNpc	UserPacket.obj	game	sin_oraculo	include/eternity/game/npc_shop.hpp
 00466c60	1	CUser::WritePacketLog	UserPacket.obj	game	nada	
 00466c70	15	CUser::EnterCharSelect	UserPacket.obj	game	nada	
 00466c80	8	CUser::LeaveCharSelect	UserPacket.obj	game	nada	
@@ -3308,7 +3308,7 @@ address	size	name	object	scope	status	witness
 0046a120	234	stUserMoveChk::Update	UserPacket.obj	game	con_oraculo	include/eternity/game/vertical_movement.hpp
 0046a210	20	GetMotionValue	UserPacket.obj	game	nada	
 0046a230	3285	CUser::PacketPC	UserPacket.obj	game	con_oraculo	include/eternity/game/vertical_movement_dispatch.hpp
-0046af10	3609	CUser::PacketShop	UserPacket.obj	game	nada	
+0046af10	3609	CUser::PacketShop	UserPacket.obj	game	con_oraculo	include/eternity/game/npc_shop.hpp
 0046bd30	8	TP_GAMELOG_ITEM_SHOPDROP::TP_GAMELOG_ITEM_SHOPDROP	UserPacket.obj	game	nada	
 0046bd40	204	CUser::PacketGem	UserPacket.obj	game	nada	
 0046be10	156	CUser::PacketQuest	UserPacket.obj	game	con_oraculo	include/eternity/game/vertical_quests.hpp
@@ -3398,7 +3398,7 @@ address	size	name	object	scope	status	witness
 00478450	80	stMyShop::Use	UserPacketMyShop.obj	game	nada	
 004784a0	62	stMyShop::Unuse	UserPacketMyShop.obj	game	referencia	research/vertical-movement-continuation.md
 004784e0	56	stMyShop::MyUseShopUnuse	UserPacketMyShop.obj	game	nada	
-00478520	171	stMyShop::Ended	UserPacketMyShop.obj	game	con_oraculo	include/eternity/game/zone_leave_interactions.hpp
+00478520	171	stMyShop::Ended	UserPacketMyShop.obj	game	con_oraculo	include/eternity/game/npc_shop.hpp
 004785d0	154	stMyShop::Stopped	UserPacketMyShop.obj	game	nada	
 00478670	172	stMyShop::Send	UserPacketMyShop.obj	game	nada	
 00478720	180	stMyShop::SendStopped	UserPacketMyShop.obj	game	con_oraculo	include/eternity/game/zone_shop_shutdown.hpp
@@ -5890,7 +5890,7 @@ address	size	name	object	scope	status	witness
 004d4340	37	SConnection::Reset	pscommon.lib	common	referencia	tests/data/world-reply-baseline-oracle.tsv
 004d4370	30	SConnection::ResetQueue	pscommon.lib	common	nada	
 004d4390	8	SConnection::ResetSocket	pscommon.lib	common	nada	
-004d43a0	55	SConnection::Close	pscommon.lib	common	nada	
+004d43a0	55	SConnection::Close	pscommon.lib	common	sin_oraculo	include/eternity/game/npc_shop.hpp
 004d43e0	13	SConnection::Disconnect	pscommon.lib	common	nada	
 004d43f0	57	SConnection::Open	pscommon.lib	common	nada	
 004d4430	53	SConnection::Open	pscommon.lib	common	referencia	tests/data/world-reply-baseline-oracle.tsv
