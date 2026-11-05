@@ -23,6 +23,8 @@ int main(int argc,char** argv) {
             guild_house->price_diagnostic==expected_house.price_diagnostic,"Guild house configuration differs from original loader");
         const auto map_count=maps->size(),quest_count=quests->size(),blessing_count=blessings->size(0);std::weak_ptr<game::WorldAssets> weak=assets;
         require(blessing_count>0 && blessings->size(1)>0,"Original blessing definitions were not loaded");
+        // Original GuildHouse.ini: shop rates and level tables replace executable defaults.
+        {const auto& shop=guild_house->config.shop;if(shop.buy_rate!=std::array<double,4>{0.95,0.90,0.85,0.80} || shop.potion_buy_rate!=std::array<double,4>{0.90,0.80,0.70,0.60} || shop.npc_ids[0][1][2][0]!=198 || shop.npc_ids[1][3][3][0]!=225) throw std::runtime_error("Original guild house shop configuration differs");}
         assets.reset();require(!weak.expired() && maps->size()==map_count && quests->size()==quest_count && blessings->size(0)==blessing_count && !links->records().empty(),"Runtime aliases failed to retain original definitions");
         maps.reset();quests.reset();items.reset();links.reset();require(!weak.expired(),"Blessings did not retain original definitions");
         blessings.reset();require(!weak.expired(),"Guild configuration did not retain original definitions");

@@ -1,5 +1,6 @@
 #pragma once
 #include "eternity/game/guild_client_npc.hpp"
+#include <cstdlib>
 #include <filesystem>
 #include <fstream>
 #include <iterator>
@@ -69,9 +70,48 @@ inline void guild_npc_apply_profile(GuildNpcUpgradeConfig& config,std::string_vi
     apply("general","upgradeetin",config.costs[3],3);apply("smith","keepetin",config.upkeep[4],5);
     apply("smith","upgradeetin",config.costs[4],5);
 }
+// g_GuildNpcIdShopOnLevel 00541cb0: [country][gate, weapon, defense, general][level][column].
+using GuildNpcShopIds=std::array<std::array<std::array<std::array<std::uint16_t,3>,4>,4>,2>;
+struct GuildHouseShopConfig {
+    std::array<double,4> buy_rate{0.99,0.98,0.95,0.9}; // g_GuildNpcShopDecreRate 00541c18.
+    std::array<double,4> potion_buy_rate{0.9,0.8,0.7,0.6}; // g_GuildNpcPotionShopDecreRate 00541c38.
+    GuildNpcShopIds npc_ids=[] {
+        constexpr std::array<std::array<std::array<std::uint16_t,3>,4>,2> first{{
+            {{{37,38,39},{196,197,198},{200,201,202},{200,201,202}}},{{{41,42,43},{207,208,209},{211,212,213},{200,201,202}}}}};
+        GuildNpcShopIds ids{};
+        for(std::size_t country=0;country<2;++country) for(std::size_t type=0;type<4;++type) for(std::size_t level=1;level<=3;++level)
+            ids[country][type][level][0]=first[country][type][level-1];
+        return ids;
+    }();
+};
+// ParseString2<double[4]> 00434fc0: missing tokens keep their retained value.
+inline void guild_house_shop_rates(std::array<double,4>& row,std::string_view value) {
+    constexpr std::string_view delimiters=" ,=()[]{}\t\r\n";
+    value=value.substr(0,254);
+    for(auto& cell:row) {
+        auto first=value.find_first_not_of(delimiters);if(first==value.npos)break;
+        value.remove_prefix(first);const auto end=value.find_first_of(delimiters);
+        cell=std::strtod(std::string(value.substr(0,end)).c_str(),nullptr);
+        if(end==value.npos)break;value.remove_prefix(end);
+    }
+}
+// InitGuildHouseIniFile 00431b1a, 00431b5a and the NpcLevel loop 00431eac..00431fd2.
+inline void guild_house_apply_shop_profile(GuildHouseShopConfig& config,std::string_view text) {
+    using namespace guild_npc_config_detail;
+    const auto values=profile(text);
+    if(auto it=values.find({"shopdefault","buydecrerate"});it!=values.end() && !it->second.empty())guild_house_shop_rates(config.buy_rate,it->second);
+    if(auto it=values.find({"shopdefault","buypotiondecrerate"});it!=values.end() && !it->second.empty())guild_house_shop_rates(config.potion_buy_rate,it->second);
+    constexpr std::array<const char*,4> keys{"gatekeeper","shopweapon","shopdefen","shopgeneral"};
+    constexpr std::array<const char*,2> sections{"npclevel_light","npclevel_dark"};
+    for(std::size_t country=0;country<2;++country) for(std::size_t type=0;type<4;++type) for(std::size_t level=1;level<=3;++level) {
+        const auto found=values.find({sections[country],keys[type]+std::to_string(level)});
+        if(found!=values.end())config.npc_ids[country][type][level][0]=static_cast<std::uint16_t>(decimal(found->second));
+    }
+}
 struct GuildHouseConfiguration {
     std::uint32_t purchase_price=50000000;
     GuildNpcUpgradeConfig npc=guild_npc_executable_defaults(2000);
+    GuildHouseShopConfig shop;
 };
 // Returns whether the original loader emits its invalid/missing price diagnostic.
 // Callers must forward that diagnostic through their real logging owner.
@@ -82,7 +122,7 @@ inline bool guild_house_apply_profile(GuildHouseConfiguration& config,std::strin
     const auto value=supplied?guild_npc_config_detail::decimal(found->second):0u;
     const bool diagnostic=value==0 || (value&0x80000000u)!=0;
     if(supplied)config.purchase_price=value;
-    guild_npc_apply_profile(config.npc,text);
+    guild_npc_apply_profile(config.npc,text);guild_house_apply_shop_profile(config.shop,text);
     return diagnostic;
 }
 struct GuildHouseConfigurationLoad {GuildHouseConfiguration config;bool price_diagnostic;};
