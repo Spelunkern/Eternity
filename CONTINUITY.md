@@ -2111,3 +2111,429 @@ fixture tests, not proof of one load across their independent operations; separa
 entry-flow/entry-owner sessions 86997 and 21247 test that composition and remain
 live. Newer raw roster field draft, real Actor/WorldApplication and original
 client remain unvalidated. Dashboard reflects the finished combined SQL run.
+
+Light-resource mode: the user closed the nine independent terminals while gaming;
+all project build and SQL integration jobs were interrupted, disposable build
+containers stopped, and the isolated SQL Server container stopped without removing
+its data. Do not resume parallel sessions or heavy builds until the user permits.
+The worktrees and their uncommitted changes remain in place. Sessions 35289,
+21247, 86997, 31303 and 98293 mentioned above were interrupted, not validated.
+
+In independent 02's uncommitted world-thread draft, added explicit zone link
+ownership, rejected removal by a foreign thread, disabled thread copying/moving,
+and unlinked remaining zones on thread destruction. Added coverage for foreign
+active/wait removal and destructor cleanup. The zone lifetime contract remains:
+linked zones must outlive the thread; callers must unlink before destroying a
+zone. These edits are uncompiled and untested in light-resource mode. Nested
+visitor behavior and actual world integration remain unresolved.
+
+Light-resource static review found that MobPrimaryZones explicitly destroys its
+ZoneRegistry before the VerticalWorldThread member destructor: the previous
+unlink-on-thread-destruction change would access already-destroyed zones. The
+independent 02 draft now clears both thread lists before destroying the registry,
+including partial initialization, and has a clear/reuse unit case. The zone
+lifetime precondition still applies to other owners. This correction and its
+unit case remain uncompiled and untested; full ownership, nested callbacks and
+live scheduling remain open.
+
+Light static review of the independent 02 thread draft: the retained root wraps
+thread callbacks in a dispatch guard, so primary drain is deferred during a
+callback. Added a foreign-owner test covering head/middle/tail links and traversal,
+and fixed fixture zone declaration order so linked zones outlive the thread even
+on an assertion exception. Still uncompiled and untested. Nested visit may reset
+the shared cursor and restart the outer walk; do not claim reentrancy parity or
+integrate until compared with original behavior and exercised under mutation.
+
+Light static review found that deliver_vertical_entry accepted an independent
+PlayerSnapshot with matching user/character IDs while ActorLoadPipeline held a
+different snapshot; packets and initialized Actor could then disagree. In the
+coordinator/foundation worktree, require the exact pipeline snapshot before side
+effects and add a same-ID/different-data rejection case. Uncommitted, uncompiled
+and untested in light mode; production WorldApplication remains unassembled.
+
+Light review: EntryDelivery already checks social account/character and account
+catalog ownership, but previously did not check the loaded Actor's account ID.
+The foundation draft now rejects an Actor belonging to a different account before
+entry side effects; the vertical protocol fixture includes that mismatch. Changes
+remain uncompiled and untested in light-resource mode.
+
+User requested stopping work for now and no project background load. Independent
+sessions, builds and SQL container remain stopped; dashboard service disabled
+and stopped (the Desktop HTML remains but will not refresh until restarted).
+At resume inspect ActorLoadPipeline's ignored load_inventory_item return value in
+src/game/actor_load.cpp: a failed allocation may silently omit loaded inventory;
+verify its actual contract and error cleanup before implementing a correction.
+Foundation and independent 02 changes remain uncommitted and untested.
+
+User resumed the goal in this terminal only. PacketUserDBSetInfo 0046d780 case
+0502 allocation failure is documented in research/protocol.md: the original
+skips that row and continues, so rejecting the character would be inaccurate.
+Foundation draft now documents that intent and adds a pipeline case for a failed
+first allocation followed by a successful second item and pooled teardown.
+The case and other foundation edits remain uncompiled and untested.
+
+Foundation changes passed C++20 syntax-only compilation for actor_load.cpp,
+entry_delivery.cpp, vertical_protocol.cpp and vertical_protocol_unit.cpp using a
+foreground disposable container limited to 0.5 CPU. Full targeted build remains
+pending: configured Ninja dry run required 230 steps. No SQL or runtime test was
+run, and syntax checking does not validate linkage or behavior.
+
+Light-mode single-process verification: independent 02's current
+vertical_world_thread.cpp and its unit fixture were compiled and run together
+against existing static libraries in a disposable 0.5-CPU container; the fixture
+passed, including foreign head/middle/tail ownership and clear/destructor cases.
+Current mob_primary_zones.cpp and zones.cpp passed syntax-only compilation. This
+is not a fresh full link of the composed world, nor evidence for nested cursor
+parity, actual scheduler integration or the primary-owner teardown fixture.
+
+Foundation light-mode vertical protocol fixture compiled the current test plus
+actor_load.cpp, entry_delivery.cpp and vertical_protocol.cpp, linked against the
+existing static libraries, and passed in a 0.5-CPU disposable foreground
+container. This exercises matching snapshot/account rejection before side effects,
+plus original inventory allocation skip and pool teardown. It is not a fresh
+full build, SQL test or production world integration; those remain pending.
+
+Independent 02 primary-owner fixture now covers failure after the first primary
+zone has been linked: second primary omits its mob owner, initialization throws,
+and destroying the root must release all three zones. The test passed syntax-only
+compilation after correcting an initial std::span::at compile error; it has not run.
+Do not link the current changed RuntimeZone layout to old library objects for this
+integration test; a fresh consistent build is required to avoid an ABI mismatch.
+
+Foundation entry review: CharacterEntryState.level supplies the auto-character
+packet while the rest of delivery uses the loaded snapshot. The entry adapter now
+rejects a mismatched level before manager/client side effects; added a negative
+fixture. Current sources and the fixture compiled and passed with existing static
+libraries in a disposable 0.5-CPU container. Full build/SQL and production entry
+assembly remain unverified; main still installs the roster-only application.
+
+Foundation draft adds VerticalSessionCharacter: a nonmovable owner retaining the
+selected snapshot, its matching DB replica and ActorLoadPipeline with stable
+snapshot address and correct destruction order. It validates user/character IDs
+before actor construction; borrowed scene/rules/pools must outlive it. The
+vertical protocol fixture passed for stable ownership and mismatched replica,
+compiling current sources against existing static libraries at 0.5 CPU. This is
+not yet wired into WorldApplication, saves, admission or production shutdown;
+full rebuild and SQL validation remain outstanding.
+
+The foundation vertical protocol fixture now delivers full reconstructed 0407
+entry through VerticalSessionCharacter's own stable snapshot and pipeline, then
+releases the loaded Actor while retaining its matching DB replica; this passed
+with current edited sources and existing static libraries in a disposable 0.5-CPU
+container. The fixture's service callbacks are test doubles, not live world
+admission or production save/transport. Fresh full build and SQL remain pending.
+
+Foundation VerticalScene now implements ActorEffectDatabase and requires the
+actual effect database route at construction. This lets ActorLoadPipeline's Actor
+bind that route immediately, including restoration-time removals before scene
+bind. Scene fixture verifies Actor::erase_persisted forwards the real 0902 bytes;
+the existing scene/network fixture passed using current scene sources and existing
+static libraries in a 0.5-CPU disposable container. Initial manual link lacked
+crypto and cyclic static-library ordering; corrected link and rerun exited 0.
+Production must supply the actual retained ActorEffectReplicaDelivery/remote route,
+serialized mutex and failure handling; no SQL or fresh full build was run.
+
+Foundation scene fixture now composes an actual CharacterReplica::skills(),
+ActorEffectReplicaDelivery with its recursive mutex, VerticalScene and Actor.
+Removing one persisted effect through the Actor correctly removes only that entry
+from the actual replica without diagnostics. Current scene source/test passed
+with existing static libraries in a 0.5-CPU disposable container. No SQL commit,
+production lifetime assembly or fresh full build was tested.
+
+Foundation scene fixture now constructs the actual retained session, ActorLoadPipeline,
+VerticalScene, shared skill replica and ActorEffectReplicaDelivery together. A
+transient persisted skill (0505 detail 74) is deleted during Actor construction,
+before zone/scene binding, and the retained replica is verified empty. The first
+fixture attempt failed because a level-2 skill lacks the required level-1 definition;
+after adding that original lookup prerequisite the 0.5-CPU test passed. Existing
+static libraries were used; SQL, live assembly and full rebuild remain pending.
+
+Foundation inventory fixture now constructs VerticalSessionCharacter with its
+actual CharacterReplica, ActorLoadPipeline and pooled Actor, then executes a
+zone money pickup using that exact replica as the fixture's DB receiver. Actor
+and replica both advance from 10 to 17. Current test, actor_load and inventory
+adapter compiled and passed alongside 512 original request traces using existing
+static libraries in a 0.5-CPU disposable container. The DB transport here is a
+fixture callback; SQL save and production session/world integration remain open.
+
+Foundation now has CharacterReplicaDelivery: synchronous cohosted dispatch to the
+actual CharacterReplica under the same externally supplied recursive mutex required
+by CharacterSaveStore. Return codes/exceptions remain visible to the caller; it
+does not invent queue, disconnect or error policy. The inventory fixture routes
+session money pickup through it, rejects a foreign account without mutation, and
+passed alongside 512 original request traces using current adapter/test sources and
+existing static libraries at 0.5 CPU. Production binding, ordering, lifetime,
+full rebuild and SQL remain unverified.
+
+CharacterReplicaDelivery fixture now checks malformed/foreign rejection,
+unsupported opcode, inventory item-type collision returning the original disconnect
+result without modifying the retained stack, and recursive acquisition of the same
+cache mutex. It also repeats the actual session money-pickup route; all 512 request
+traces and composed cases passed against existing static libraries at 0.5 CPU.
+Caller-side disconnect policy, live delivery ordering and SQL are still pending.
+
+Foundation admission gate fixture now loads its actual Actor through the retained
+VerticalSessionCharacter snapshot/replica rather than a separately constructed
+Actor. It verifies that the admitted ZoneUsers member is that same Actor and the
+user/replica identities match. Current actor_load/vertical_protocol sources and
+fixture passed all 60 original gate vectors and actual zone admission with old
+static libraries in a 0.5-CPU disposable container. It still uses fixture
+services and does not connect production WorldApplication, SQL or socket handoff.
+
+Foundation TCP handoff fixture now owns its Actor via VerticalSessionCharacter,
+with the retained selected snapshot and DB replica, and confirms the admitted
+ZoneUsers points to that same Actor. The real local TCP test passed both barrier
+orders, admission failure, AES continuity, eight-frame overflow and disconnect,
+using current actor_load/vertical_protocol sources with existing static libraries
+in a disposable 0.5-CPU container. Selection response and services remain fixture
+implementations; this does not validate real SQL loading or production session.
+
+Foundation TCP handoff fixture now submits a real framed/encrypted 0501 after
+admission to the retained Actor's canonical speed-check stage in both transition
+orders. It checks destination, accepted result and actual zone/replica identity;
+all handoff cases passed with current actor/entry/movement sources and existing
+static libraries at 0.5 CPU. The test-only marker is not an original client
+packet. The stage does not perform MoveUserByPacket, mutate position or persist
+it; complete movement and actual production dispatch remain outstanding.
+
+Static disassembly of ps_game PacketPC 0046a47b and move routine 00416550
+recorded in foundation research/vertical-movement-continuation.md. The latter
+writes XYZ before a later target-cell bounds failure/close, so do not equate
+ZoneUsers::move_at_position with the original without tracing the real callees,
+cell/view publication and failure ordering. Evidence is static only; no movement
+continuation or persistence implementation has been claimed.
+
+Cross-check against existing research/protocol.md and src/game/maps.cpp resolves
+two previously listed movement dependencies: CMap::IsSafePos 00415360 and
+CCell::IsInnerCellView 004153c0 are already implemented and covered by the
+4,440-case original geometry oracle; ZoneUsers::move_at_position already stores
+position before validating a changed cell. Updated the continuation note to avoid
+incorrectly treating those helpers as missing. Full 00416550 cell callbacks,
+close behavior, reentrancy and subsequent 0501 publication remain to recover.
+
+Static review of original 0041f350 identifies overlapping clipped two-cell
+rectangles, a 0202 removal buffer plus CCell::SendCellInfoLeave, and a later
+0201 appearance path plus CCell::SendCellInfoEnter. Added the address-level
+findings to foundation research/vertical-movement-continuation.md. Exact
+visibility/ordering, allocation failure, live user cursor and concurrency still
+need original execution; mob movement evidence cannot be substituted.
+
+Mapped user movement integration against canonical owners in foundation research:
+ZoneUsers owns membership but does not publish cell transitions; zone-entry
+cell_info and VerticalScene cell_view remain required caller ports, not completed
+broadcasters. Native membership inserts destination before unlinking source,
+whereas original 00416550 calls source unlink first; assess observable reentrancy
+and allocation behavior when composing real callbacks. Existing mob/corpse/item/
+NPC cell code supplies partial snapshots, not a complete user cell snapshot.
+
+Foundation tools/vertical_user_move_probe.py now executes original ps_game
+00416550 with real geometry and ported locks/list/notification/close. Four
+asserted cases pass: same-cell, cross-cell, unsafe position and wrong location.
+On crossing, callbacks see new XYZ but old public cell coordinates, in unlink,
+link, notification order. Probe is not a differential native test and does not
+execute real list/snapshot callbacks; more coverage and implementation remain.
+
+Extended foundation original 00416550 probe to 64 finite boundary combinations
+covering zero, map-size rejection, inclusive overlap boundary and crossing on
+both axes. Original return, XYZ, cell and port callback order passed the explicit
+model. This is still not a native differential integration test: nonfinite values,
+inconsistent grids, real lists and notifications remain open.
+
+Foundation 00416550 probe now also passes four NaN/infinity/inconsistent-grid
+cases. Original accepts and stores NaN within the old view; if the other axis
+forces a cell change it stores the NaN then reaches the close port. Positive
+infinity is rejected before mutation; an inconsistent grid can close after
+position write. These are isolated original observations, not native parity or
+production support for malformed geometry/nonfinite movement.
+
+Foundation ZoneUsers fixture now compares its actual position/membership against
+the same 64 original probe boundary inputs and checks original same-view and
+cross-view NaN write behavior. Focused test passed (plus existing 128 hidden-user
+oracle cases), compiling current zone_users/maps sources against prebuilt static
+libraries at 0.5 CPU. No real close/view callback or full move parity claimed.
+
+Foundation adds vertical_user_view_probe.py executing original 0041f350 with
+buffer, reference, broadcast and snapshot ports. Four normal cell transitions
+passed a row-major rectangle-difference trace, including 0202/leave, 0201/051c/
+enter and later 051d. Initial probe failed due to incorrect ported callee stack
+cleanup; corrected to ret 4 and rerun passed. Only opcode/cell order for zeroed
+user state is covered, not packet contents, real recipients, allocation failure
+or live integration.
+
+Expanded original 0041f350 normal-state probe to 625 source/destination cell
+pairs including boundaries, corners, interior, unchanged cells and long moves.
+All passed the explicit row-major notification/cell-difference trace at low
+priority. Success-only allocator and ported snapshot/broadcast remain limitations;
+no native implementation or production integration has yet been validated.
+
+Original 0041f350 view probe now covers all 16 buffer-failure masks for one
+normal horizontal crossing, asserting pass suppression and callback/cell/opcode
+order. Failure of allocation 1 suppresses old view/leave snapshots; either 2 or 3
+suppresses new appearance/051c/enter; 4 suppresses the separate 051d pass.
+All four allocations are still attempted. 625 success traces plus 16 failures
+pass with ported allocator/broadcast/snapshots; no real buffer/reentry or live
+world implementation has been verified.
+
+Foundation draft implements user_view_difference, an ordered clipped old-only/
+new-only cell visitor (0041f350), and a 625-case fixture generated from actual
+original snapshot callbacks. Focused native C++20 test passed at 0.5 CPU. This
+is traversal only: no fabricated packets, allocation semantics, real snapshots,
+recipients, integration or reentrancy parity; full build/SQL remain pending.
+
+Foundation draft adds user_view_publication.hpp orchestration over required real
+buffer/snapshot/broadcast services, with observed four-buffer failure semantics,
+ordered leave/enter/optional shape passes and late shape predicate. Focused native
+test passed 625 traversal oracle cases and the 16 original normal-crossing buffer
+failure traces at 0.5 CPU. Real packet builders, cell entities, user state,
+reentrancy, world binding and full build remain unverified.
+
+Original 0041f350 view probe passed six shape variants, including vehicle shape
+sum and mutation during enter snapshot; 051d uses the late live state. The native
+publication fixture also passed a late-state mutation/suppression test and the
+625 view cases. Shape predicate and real buffers/transports remain external and
+unbound; no full build, live integration or SQL claim.
+
+Foundation adds actual Actor 0202 leave/optional 051d view-shape packet builders.
+Original 0041f350 execution confirms a vehicle sum of 256 must emit 051d with
+zero low byte; native scene fixture passed this edge, invisible mode and leave
+bytes using current source plus prebuilt libraries at 0.5 CPU. Production movement,
+appearance/equipment buffers, recipients and full build remain pending.
+
+Foundation draft implements moved-user 0201 construction using Actor and
+explicit live state. Two original 0041f350 executions check full 29-byte packets
+for permission 10/11 and vehicle mode 3/ordinary; the focused native scene test
+passed matching byte assertions with current actor/scene sources and existing
+static libraries. Live field capture after leave callbacks and production buffer/
+cell delivery remain outstanding.
+
+Foundation original 0041f350 probe checked eight full 051c speed packets for
+normal/clamp/block/fixed/restricted states. Existing character_speed produced
+matching results for four native focused scene assertions; test passed with current
+scene/actor sources and existing static libraries at 0.5 CPU. Production buffer,
+late state sampling, delivery and complete movement remain outstanding.
+
+Foundation adds UserViewActorPublication, binding actual Actor leave/appearance/
+speed/shape packet builders to the existing ordered visibility coordinator.
+Required UserViewActorTransport supplies live position/direction/permission/guild,
+real allocation/broadcast and cell snapshots. Focused scene fixture passed with
+leave callbacks mutating appearance and speed and enter callbacks mutating shape,
+verifying each message samples late state. Compiled against existing static
+libraries at 0.5 CPU; transport in the fixture is fake, production world binding,
+reentrancy, failure handling and full build remain unverified.
+
+Original cell-broadcast 004243d0 probe exposed a recipient traversal distinction:
+three-user normal list sends to all, but modeled 0040f225 current-node unlink
+inside the ported send makes the original stop after that user (it reads the
+cleared local next pointer). Native ZoneUsers::visit_cell rewinds a shared cursor
+and can continue. Do not bind it as equivalent; recover other-node removal,
+appends, nested send and subject lifetime with original execution. Probe uses
+real broadcast code but modeled unlink pointer writes and ported send/locks.
+
+Original 004243d0 probe expanded to six cases of modeled current/other unlink,
+append and reinsert. Foundation ZoneUsers now has a distinct pinned
+broadcast_cell traversal matching five corresponding native scenarios, rather
+than reusing its shared-cursor visitor; focused zone test passed (plus 128 old
+hidden-user oracle cases) using current zone/maps sources and existing static
+libraries. Cross-cell current-user reentry deliberately raises as unrecovered;
+actual network send, nested broadcast, lifetime and full build remain pending.
+
+Original cell-broadcast probe executes a nested 004243d0 during the first ported
+send and confirms independent inner/outer local traversals. Foundation native
+broadcast_cell passes the equivalent nested three-user sequence plus previous
+cases, compiled with current zone/maps sources and existing static libraries at
+0.5 CPU. No claim for nested mutation, cross-cell reentry, real socket sends,
+full build or live world integration.
+
+Original nested 004243d0 probe and native broadcast_cell tests now cover removal
+of current or next recipient during inner send. Both match the observed `0,0`
+and `0,0,2,2` sequences. Original remove writes are modeled, not executed as a
+nested original Remove; cross-cell reentry, actual socket/actor retention and
+production integration remain unresolved. Focused zone test passed at 0.5 CPU.
+
+Foundation UserViewCellTransport now connects actor publication to canonical
+ZoneUsers::broadcast_cell with required retention/queue/buffer/snapshot services.
+Focused scene test passed real three-Actor cell membership: old-only gets 0202,
+new-only gets 0201/051c, overlap gets neither; buffer/socket/snapshot services are
+fixture ports. Current scene/actor/zone sources linked to existing static libraries
+at 0.5 CPU. Not yet wired into production movement, world or SQL.
+
+Foundation scene fixture now uses an actually owning shared_ptr retention token
+for a cell recipient. Its enqueue callback detaches the recipient and drops the
+last external owner; the Actor stays alive until the in-flight broadcast returns,
+then is destroyed. Focused scene test passed with current zone/scene/actor sources
+and existing static libraries at 0.5 CPU. This checks synchronous recipient
+lifetime only: buffer queue ownership, production sockets and cell snapshots
+remain unimplemented/unverified.
+
+Foundation scene fixture exercises deferred queue ownership with two cell
+recipients sharing the same payload: after publication ends, completing one send
+retains the payload for the second, and completing both releases it. Focused test
+passed at 0.5 CPU with current scene/actor/zone sources plus prebuilt libraries.
+The fixture uses shared_ptr-backed test buffers; the actual original pool/queue,
+reference accounting and production socket binding are not implemented by this.
+
+Foundation draft UserViewSharedBuffers reuses the existing reconstructed
+SPacketBufferSend/PartyMembershipSendWorld pool and SConnection enqueue provider,
+with original capacity classes, framed payload, one owner reference and one per
+connected queued recipient. Focused scene fixture passed disconnected-recipient,
+two deferred completions and enqueue-exception reference cleanup using the real
+buffer type and a fixture pool/queue at 0.5 CPU. The buffer adapter is not wired
+to UserViewCellServices or production WorldChannel; real queue, lifetime/failure
+policy and full build remain unverified.
+
+Foundation adds UserViewSharedCellServices, binding canonical zone recipient
+traversal to UserViewSharedBuffers and checking actor/connection identity. The
+combined fixture passed old/new cell recipients, framed 0202/0201/051c and shared
+buffer releases with a multi-buffer fixture pool and synchronous completion.
+Initial one-buffer fixture failed because the original holds appearance and speed
+buffers simultaneously; replacing it with a four-slot test pool passed. Real
+socket queue, retained session lookup, entity snapshots and production world remain
+required; current source linked to existing static libraries at 0.5 CPU.
+
+Foundation adds enqueue_user_view_world_channel, converting a retained shared
+framed buffer into a plaintext copy for the actual WorldChannel, releasing its
+queue reference only after the copy/post succeeds. The focused scene fixture
+passed over a real local WorldServer TCP socket: a 0202 buffer was released by
+the pool and arrived correctly encrypted/framed. Pool and actor lookup are still
+fixture providers; this does not wire production world recipients or implement
+original network buffer timing/queue limits. Existing static libraries used.
+
+Foundation focused scene test now composes UserViewActorPublication ->
+UserViewCellTransport -> canonical ZoneUsers -> UserViewSharedBuffers -> actual
+WorldChannel over a local TCP socket. It checks ordered encrypted 0201/051c and
+buffer release; the fixture deliberately routes the connected actor as a test
+recipient and simulates cell snapshots, pool and actor-to-session lookup. It is
+not proof of real multi-client movement or production world binding. Current
+source compiled with existing static libraries at 0.5 CPU and test exited 0.
+
+Foundation adds capture_user_view_appearance, obtaining position from the actual
+ZoneUsers membership and validating the exact Actor, with permission/direction/
+guild supplied by serialized live owners. The scene fixture changes actual zone
+position in a leave callback and confirms subsequent 0201 uses the new position;
+a foreign-zone lookup rejects. Initial fixture selected rectangles with no old-only
+cells and failed as expected; corrected the transition and reran successfully at
+0.5 CPU with current sources/prebuilt libs. Production capture and complete
+movement remain unbound.
+
+Foundation ZoneUsers now exposes the actual membership cell for a retained actor;
+the focused native test verifies it over all 64 original movement boundary cases
+and missing IDs. This is NOT the original user's public +e4/+e8: during 0041f350
+callbacks the original membership has moved but those fields remain old until
+publication returns. Production movement needs that distinct delayed public state,
+serialized reentry and actual cell notifications before being wired. Focused zone
+test passed with current zone/maps sources and existing static libraries at 0.5 CPU.
+
+Executed nested original 00416550 during the ported transition notification.
+Outer target cell (1,0), inner target position (120,9,20)/cell (3,0): final
+XYZ remains inner but public cell is overwritten by outer (1,0). Lists and
+notification were ported; real nested membership and safety are unproven. This
+requires distinct position/membership/public-cell timing before production
+movement, not a single latest-position/derived-cell assumption.
+
+Added original user_move_nested_lists_probe.py with real 0040f200/00423560 list
+operations and ported locks/notification. In the constructed recursive move,
+user link ends in cell 3, public cell is 1, and cells 0..3 counters become
+ffffffff,1,0,1 despite cells 0/1 being empty. Test asserts this original behavior;
+it does NOT establish that real production callbacks permit that recursion.
+Do not model a single cell field or reproduce corruption without understanding
+actual lifecycle/locking and required compatibility boundaries.
