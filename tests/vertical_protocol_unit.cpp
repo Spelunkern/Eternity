@@ -56,10 +56,10 @@ int main() {try {
         services.delivery.tick=[](){return 10000U;};services.delivery.kill_count=[](std::uint8_t){return EntryKillCount{};};
         services.send_manager=[&](net::Packet p){scene.record('M',p);};services.world_day=[](){return 1234U;};services.system_time=[](){return 5678U;};
         services.lock_guild=[](){return false;};services.unlock_guild=[](){};
-        std::vector<CharacterEntryStep> lifecycle;services.lifecycle=[&](CharacterEntryStep step,Actor& actor){require(&actor==pipeline.result().actor.get(),"wrong actor");lifecycle.push_back(step);};
+        std::vector<CharacterEntryStep> lifecycle;services.lifecycle=[&](CharacterEntryStep step,Actor& actor){require(&actor==pipeline.result().actor.get(),"wrong actor");lifecycle.push_back(step);if(step==CharacterEntryStep::pvp_reset)actor.status().shape=13;};
         deliver_vertical_entry(state,pipeline,player,social,catalogs,{0,100},"",services);
         require(state.ready && state.runtime_id==character.id,"entry did not finish");
-        require(lifecycle==std::vector<CharacterEntryStep>{CharacterEntryStep::wait_user,CharacterEntryStep::init_guild,CharacterEntryStep::pvp_reset,CharacterEntryStep::flush},"lifecycle order differs");
+        require(lifecycle==std::vector<CharacterEntryStep>{CharacterEntryStep::wait_user,CharacterEntryStep::init_guild,CharacterEntryStep::pvp_reset,CharacterEntryStep::run_mode,CharacterEntryStep::flush},"lifecycle order differs");
         require(scene.events.size()>5 && scene.events[0]=="M030839300000" && scene.events[1].starts_with("S0b05") && scene.events[2]=="S04010029230000" && scene.events[3]=="S0404d2040000", "original 0407 initialization/ACK order differs");
         auto loaded=pipeline.release();require(loaded.actor && loaded.actor->id()==character.id,"pipeline ownership lost");
         Scene other_scene;ActorLoadPipeline other(player,rules,{10000,0,0,nullptr},other_scene);state.user_id++;

@@ -41,7 +41,7 @@ void deliver_vertical_entry(CharacterEntryState& state,ActorLoadPipeline& pipeli
             if(services.quest_entry && (step==CharacterEntryStep::quests || step==CharacterEntryStep::finished_quests)) {services.quest_entry(step,*loaded.actor);return;}
             if(!delivery.send(step)) services.lifecycle(step,*loaded.actor);return;
         }
-        };run();checkpoint();
+        };run();if(step==CharacterEntryStep::pvp_reset)state.motion=loaded.actor->status().shape;checkpoint();
     };
     checkpoint();complete_character_selection(state,ports);checkpoint();
 }

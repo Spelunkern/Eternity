@@ -1,5 +1,6 @@
 #pragma once
 #include "eternity/game/guild_rejoin_deadline.hpp"
+#include "eternity/game/vertical_world_session_auto_character.hpp"
 #include "eternity/game/vertical_owned_selection.hpp"
 #include "eternity/game/roster_world_handoff.hpp"
 #include "eternity/game/vertical_admission_handoff.hpp"
@@ -99,6 +100,15 @@ public:
                 [](VerticalWorldSession& self,std::exception_ptr error){self.fail(error);});
         } catch(...) {registry.release(account.user_id,*session);throw;}
         return session;
+    }
+    // Install only from this connection's successful manager authorization.
+    // The caller supplies the actual socket UID held by the network owner.
+    void install_manager_connect(std::span<const std::uint8_t> packet,std::uint32_t connection) {
+        require_strand();if(opened_ || closing_ || failed_ || auto_character_)throw std::logic_error("Manager connection already installed or session opened");
+        auto_character_=VerticalWorldSessionAutoCharacter::from_manager(packet,account_,connection);
+    }
+    std::uint32_t retained_auto_character_id() const {
+        require_strand();if(!auto_character_)throw std::logic_error("Manager auto-character state unavailable");return auto_character_->value();
     }
     void open() {require_strand();if(opened_)throw std::logic_error("World session already open");world_.track_selection(user_);opened_=true;}
     void receive(const net::Packet& packet) {
@@ -288,7 +298,7 @@ private:
     }
     Strand strand_;Registry& registry_;WorldAdmission& world_;VerticalWorldSessionServices& services_;std::uint32_t account_;std::string username_;net::WorldChannel channel_;
     WorldAdmissionUser user_;ZoneEntryState zone_entry_;VerticalMotionState motion_;std::uint32_t exchange_timeout_=0;ZoneLeaveRequestState zone_requests_;GuildUser guild_user_;PartyMembershipUser party_user_;PartyRequestState party_requests_;
-    std::optional<CharacterEntryState> entry_state_;VerticalWorldActorScene scene_;std::shared_ptr<VerticalSessionCharacter> character_;std::unique_ptr<WorldUser> world_user_;
+    std::optional<VerticalWorldSessionAutoCharacter> auto_character_;std::optional<CharacterEntryState> entry_state_;VerticalWorldActorScene scene_;std::shared_ptr<VerticalSessionCharacter> character_;std::unique_ptr<WorldUser> world_user_;
     std::recursive_mutex ack_mutex_;std::unique_ptr<VerticalDatabaseAckUser> database_ack_;
     std::unique_ptr<VerticalQuestPorts> quest_ports_;std::unique_ptr<VerticalQuestSession> quest_session_;
     std::shared_ptr<VerticalOwnedSelection<VerticalWorldSession>> selection_;

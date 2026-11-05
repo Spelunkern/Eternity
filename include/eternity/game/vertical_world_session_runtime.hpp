@@ -1,5 +1,6 @@
 #pragma once
 #include "eternity/game/vertical_world_session_packet_router.hpp"
+#include "eternity/game/vertical_world_session_entry_state.hpp"
 #include "eternity/game/vertical_world_session_save_teardown.hpp"
 #include "eternity/game/vertical_world_session_social.hpp"
 #include "eternity/game/vertical_quests_world_session.hpp"
@@ -56,6 +57,10 @@ public:
         // Return a fresh, unstarted preparation bound to this exact session.
         std::function<std::shared_ptr<Preparation>(std::shared_ptr<VerticalWorldSession>)> preparation;
         std::function<CharacterEntryState(VerticalWorldSession&)> entry_state;
+        // Alternative to a full provider; must return the actual live flags.
+        std::function<VerticalWorldSessionEntryFlags(VerticalWorldSession&)> entry_flags;
+        // Uses the retained SQL reset flags; supplies actual live CUser+57e8.
+        std::function<std::uint32_t(VerticalWorldSession&)> entry_auto_character_id;
         // Loaded original experience definitions; outlives the runtime.
         const Experience* experience=nullptr;
         // The loaded live guild catalog and its transport outlive the runtime.
@@ -88,7 +93,7 @@ public:
             [this](VerticalWorldSession& session,RuntimeZone& zone){return ports_.gameplay(session,zone);},
             [this](VerticalWorldSession& session,const net::Packet& packet){return dispatch_owned(session,packet);}) {
         if(!ports_.actor_rules || !ports_.actor_options || !ports_.actor_scene || !ports_.configure_admission || !ports_.preparation ||
-           !ports_.entry_state || !ports_.experience || !ports_.guilds || !ports_.world_users || !ports_.protocol || !ports_.waiting ||
+           (unsigned(bool(ports_.entry_state))+unsigned(bool(ports_.entry_flags))+unsigned(bool(ports_.entry_auto_character_id))!=1) || !ports_.experience || !ports_.guilds || !ports_.world_users || !ports_.protocol || !ports_.waiting ||
            !ports_.gameplay || !ports_.nprotect || !ports_.unavailable || !ports_.failure || !ports_.disconnect)
             throw std::invalid_argument("Incomplete live session runtime services");
     }
@@ -160,7 +165,16 @@ public:
         context->preparation->cancel([context,done=std::move(done)]() mutable {context->preparing=false;done();},
             [this,weak](std::exception_ptr error){if(auto owner=weak.lock())ports_.failure(*owner,error);});
     }
-    CharacterEntryState entry_state(VerticalWorldSession& session) override {require_strand();return ports_.entry_state(session);}
+    CharacterEntryState entry_state(VerticalWorldSession& session) override {
+        require_strand();
+        if(ports_.entry_flags)return vertical_world_session_entry_state(session,ports_.entry_flags(session));
+        if(ports_.entry_auto_character_id) {
+            const auto auto_id=ports_.entry_auto_character_id(session);auto* character=session.character();
+            if(session.closing() || session.failed() || !character)throw std::logic_error("Entry flags lost selected session");
+            return vertical_world_session_entry_state(session,vertical_world_session_entry_flags(character->snapshot().core,auto_id));
+        }
+        return ports_.entry_state(session);
+    }
     const SocialCatalog& social(VerticalWorldSession& session) override {require_strand();auto context=find(session);if(!context->social)throw std::logic_error("Session has no social selection");return context->social->catalog();}
     VerticalWorldSessionSocial& social_session(VerticalWorldSession& session) {require_strand();auto context=find(session);if(!context->social)throw std::logic_error("Session has no social selection");return *context->social;}
     VerticalWorldSocialAccounts& social_accounts() {require_strand();return social_accounts_;}
