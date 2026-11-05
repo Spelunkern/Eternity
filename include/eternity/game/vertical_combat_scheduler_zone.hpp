@@ -17,6 +17,7 @@
 #include "eternity/game/user_view_actor_publication.hpp"
 #include "eternity/game/party_runtime_membership_send.hpp"
 #include "eternity/game/party_runtime_registry.hpp"
+#include "eternity/game/vertical_session_registry.hpp"
 #include "eternity/game/random.hpp"
 #include <utility>
 namespace eternity::game {
@@ -397,6 +398,17 @@ public:
  bool move_rebirth_local(Actor&,std::uint16_t,const UserPosition&) final;
 private:
  Actor& actor_;WorldAdmissionUser& admission_;ZoneEntryState& entry_;PartyRequestState& state_;UserViewActorTransport& view_;VerticalCombatRebirthLocalServices& local_;
+};
+// The actual world session must retain the actor and its scene/zone owners as
+// required by VerticalSessionRegistry. Registry access is world-serialized.
+template<class Session>
+class VerticalCombatRebirthMoveSessionServices:public VerticalCombatRebirthMoveLocalServices {
+public:
+ VerticalCombatRebirthMoveSessionServices(Actor& actor,WorldAdmissionUser& admission,ZoneEntryState& entry,PartyRequestState& state,UserViewActorTransport& view,VerticalCombatRebirthLocalServices& local,VerticalSessionRegistry<Session>& sessions)
+  :VerticalCombatRebirthMoveLocalServices(actor,admission,entry,state,view,local),sessions_(sessions){}
+ std::shared_ptr<void> retain_move_peer(Actor& peer) final {return sessions_.retain_actor(peer);}
+private:
+ VerticalSessionRegistry<Session>& sessions_;
 };
 bool vertical_combat_rebirth_move(Actor&,std::uint16_t,const UserPosition&,ActorActionWorld&,VerticalCombatRebirthMoveServices&);
 // All non-movement lifecycle operations remain the actual retained delegate.
