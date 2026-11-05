@@ -1,5 +1,10 @@
 # Overnight coordination
 
+**Historical, finished on 2026-11-05.** All sessions stopped and the reviewed work is
+in `main`. Unintegrated branch state is preserved in the `backup/overnight/*` and
+`backup/wip/*` tags. This log was written during the work and later entries are in
+Spanish; it is kept unedited as a record.
+
 On 2026-11-05, nine separate Codex CLI sessions were started in
 `/home/franco/Projects/Eternity-overnight/01-entry` through `09-network`, using
 `gpt-6.1-terra`, reasoning `low`, and service tier `default`. Each branch starts

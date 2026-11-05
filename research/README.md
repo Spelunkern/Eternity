@@ -1,6 +1,7 @@
 # Baseline
 
-Analysis uses Ghidra 12.1.4 with the exact EXE/PDB pairs. Reproduce with
+The baseline used Ghidra 12.1.4 with the exact EXE/PDB pairs; later exports may use
+another version, and addresses come from the same binaries. Reproduce with
 `tools/reverse.py`; use `--process` to export an already imported program.
 `tools/database.py export` extracts the restored SQL catalog, and
 `tools/contracts.py` compares it with SQL call candidates found by Ghidra.

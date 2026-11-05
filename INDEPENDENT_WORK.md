@@ -1,5 +1,9 @@
 # Independent work — 2026-11-04
 
+**Historical, finished.** No workers run now and these worktrees receive no new work.
+Their results are in `main`; current status is in [PROGRESS.md](PROGRESS.md) and
+[CONTINUITY.md](CONTINUITY.md).
+
 Goal: original EP4.5 client connects and plays with original server behavior. No
 claim of playable completion. Nine fresh interactive Codex sessions start from
 18a3891 in separate worktrees and branches; they do not auto-restart. Previous

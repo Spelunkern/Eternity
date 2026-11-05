@@ -1,6 +1,30 @@
-# Eternity continuity — active 2026-11-03
+# Eternity continuity
 
-The user resumed complete native server reconstruction. Continue server work.
+## Current state — 2026-11-05
+
+This section is authoritative. Everything below "History" is a dated log and is
+superseded where it differs, including its estimates and resource restrictions.
+
+- `main` is the only working branch and contains all reviewed work. `PROGRESS.md`
+  is generated from it; regenerate after integrating work.
+- The server is not playable. `--serve` reaches login, character lists/creation and
+  world asset loading; selecting a character does not enter the world.
+- Validation at the merge: 371/371 native tests and complete isolated SQL integration.
+- No workers or scheduled sessions run. Overnight and worker work that was not
+  integrated is in the `backup/overnight/*` and `backup/wip/*` tags and local worktrees.
+- Ghidra 12.1.4 is no longer installed. Use 12.1.3 with its project in
+  `work/ghidra-12.1.3`; the older `work/ghidra` project does not open with it.
+
+Known open work:
+
+- Compose the live session, world and zone owners into `--serve`, then test an
+  original client.
+- `npc_shop_packet` is unrouted; `guild_house_shop_buy_rate` is unbound and
+  `CItem::InitCraftExpansion` 004ba280 is still a required port.
+- `PROGRESS.md` counts citations: a function named only as a required port counts as
+  code. Treat its percentages as ceilings.
+
+## History
 
 ## Objective and constraints
 

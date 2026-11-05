@@ -1,5 +1,9 @@
 # Eternity parallel work
 
+**Historical, finished.** No workers run now and these worktrees receive no new work.
+Their results are in `main`; current status is in [PROGRESS.md](PROGRESS.md) and
+[CONTINUITY.md](CONTINUITY.md).
+
 The user authorized nine independent worker terminals plus the existing main
 coordinator on 2026-11-03. Each uses `gpt-6.1-sol`, reasoning **low**, the current
 `fast` tier, full access and approval policy `never`. Authentication and other

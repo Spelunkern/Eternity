@@ -1259,6 +1259,9 @@ if(BUILD_TESTING)
     add_executable(obelisk-runtime-asset-unit tests/obelisk_runtime_asset_unit.cpp)
     target_link_libraries(obelisk-runtime-asset-unit PRIVATE eternity_game)
     add_test(NAME obelisk-runtime-asset-unit COMMAND obelisk-runtime-asset-unit ${CMAKE_CURRENT_SOURCE_DIR}/tests/data/obelisk-runtime-asset-oracle.tsv ${CMAKE_CURRENT_SOURCE_DIR}/.local/server-data/Obelisk.ini)
+    if(NOT EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/.local/server-data/Obelisk.ini") # Private asset, absent from clean checkouts.
+        set_tests_properties(obelisk-runtime-asset-unit PROPERTIES DISABLED TRUE)
+    endif()
 endif()
 
 # Worker 05: retained normal party request dispatch.
@@ -1501,6 +1504,9 @@ if(BUILD_TESTING)
         target_link_libraries(obelisk-runtime-maps-unit PRIVATE obelisk-maps-catalog-evidence)
     endif()
     add_test(NAME obelisk-runtime-maps-unit COMMAND obelisk-runtime-maps-unit ${CMAKE_CURRENT_SOURCE_DIR}/tests/data/obelisk-runtime-maps-oracle.tsv ${CMAKE_CURRENT_SOURCE_DIR}/.local/server-data ${CMAKE_CURRENT_SOURCE_DIR}/work/obelisk-runtime-maps-unit)
+    if(NOT EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/.local/server-data/Obelisk.ini") # Private asset, absent from clean checkouts.
+        set_tests_properties(obelisk-runtime-maps-unit PROPERTIES DISABLED TRUE)
+    endif()
 endif()
 
 target_sources(eternity_game PRIVATE src/game/user_skill_runtime_ready.cpp)

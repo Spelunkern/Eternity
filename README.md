@@ -21,7 +21,8 @@ Full map: [PROGRESS.md](PROGRESS.md). Generated on 2026-11-05 from `main`.
 
 Native Linux reconstruction of the Shaiya EP4.5 server in C++20, using SQL Server.
 Complete means an original EP4 client can connect and play with original server behavior.
-SQLite migration is deferred. Gameplay is not implemented yet.
+SQLite migration is deferred. Gameplay systems exist as tested components, but
+they are not connected to the running server.
 
 `originals/` contains unmodified Windows executables and matching PDB symbols for
 `ps_game`, `ps_dbAgent`, `ps_login`, `ps_session`, `ps_gameLog`, and `ps_userLog`.
@@ -31,15 +32,21 @@ Source: the EP4.5 `PSM_Server/ShaiyaServerPatch/Server` distribution, including
 its matching `ps_login.exe`. Database backups, configuration, credentials and
 runtime assets stay local.
 
-Implemented and independently tested: SQL contracts, encrypted login/game TCP
-handshakes, account sessions, character lists/creation, actor preparation and
-persistence, map/zone/entity ownership, mob death reward coordination, mob-kill quest
-progress, corpse cleanup and respawn, linked mob lifecycle and configuration, guild
-persistence and several inventory/combat primitives. See the
+Running today through `--serve`: SQL contracts, encrypted login/game TCP handshakes,
+account sessions, character lists/creation and loading of the original world assets.
+
+Implemented and tested as components, not yet reachable from a client: character
+selection and entry, world and zone lifecycle, movement, mob AI and combat, player
+combat and skills, inventory, drops, exchange and the NPC shop, quests, parties,
+guilds and persistence. Most are compared against the original executable by
+instruction-level oracles. See [PROGRESS.md](PROGRESS.md) and the
 [reconstruction notes](research/protocol.md) for evidence and remaining work.
 
+CI runs without private assets, so tests that require them are reported as disabled;
+run them locally after `tools/data.py`.
+
 `--serve` starts login/game listeners with shared sessions and the persisted
-calendar. Faction selection and character creation work over TCP. Character
+calendar, and loads and retains the original world assets. Faction selection and character creation work over TCP. Character
 selection still does not enter the world. Live world integration, complete AI,
 combat and gameplay remain unfinished; the server is not playable. Client work
 is deferred. The active MD5 login path requires a missing original procedure;
@@ -64,7 +71,8 @@ python3 tools/dev.py run --serve
 ```
 
 Reverse engineering uses Ghidra: set `GHIDRA_HOME` and `JAVA_HOME`, then run
-`python3 tools/reverse.py all`. Generated analysis stays in `work/`;
+`python3 tools/reverse.py all`. A project only opens with the Ghidra version that
+created it or a newer one. Generated analysis stays in `work/`;
 database exports and credentials stay in `.local/`. Both directories are ignored.
 `--serve-login` advertises its world offline; `--serve` makes character creation
 available through the legacy SQL login path. Ports default to 30800/30810;
