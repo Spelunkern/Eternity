@@ -1,4 +1,4 @@
-#include "eternity/game/mob_ai_states_argument_writes.hpp"
+#include "eternity/game/mob_ai_states_argument_numeric.hpp"
 #include "eternity/game/mob_ai_states_bindings.hpp"
 #include <algorithm>
 #include <bit>
@@ -229,7 +229,7 @@ std::int32_t interpret_mob_ai_zero_argument_calls(MobAiConfiguredFsm& owner,MobA
 }
 
 namespace eternity::game {
-static bool calculate_argument_values(MobAiConfiguredFsm& owner,MobAiConfiguredCondition& condition,MobAiParameter& output,bool arithmetic=false,const std::function<MobAiParameter(const MobAiToken&)>& system_call={},bool writing=false){
+static bool calculate_argument_values(MobAiConfiguredFsm& owner,MobAiConfiguredCondition& condition,MobAiParameter& output,bool arithmetic=false,const std::function<MobAiParameter(const MobAiToken&)>& system_call={},bool writing=false,bool numeric_writes=false){
     MobAiValueStack stack;stack.capacity=20;stack.slots=std::vector<MobAiParameter>(20,MobAiParameter(0));MobAiParameter numeric(0);bool known=false;
     for(;;){
         const auto index=std::bit_cast<std::int32_t>(condition.words[2]);
@@ -263,10 +263,13 @@ static bool calculate_argument_values(MobAiConfiguredFsm& owner,MobAiConfiguredC
         }else if(token.type==8&&arithmetic){
             const auto first=pop(stack);const auto second=pop(stack);assign(numeric,second);known=true;
             if(writing&&token.opcode>=10&&token.opcode<=16){
-                if((first.type!=1&&first.type!=3)||(second.type!=1&&second.type!=3))throw std::logic_error("Mob AI argument assignment requires the unrecovered noninteger matrix");
+                if(!(numeric_writes&&token.opcode==10)&&((first.type!=1&&first.type!=3)||(second.type!=1&&second.type!=3)))throw std::logic_error("Mob AI argument assignment requires the unrecovered noninteger matrix");
                 if(token.opcode==10){
-                    const auto bits=first.type==1?static_cast<std::uint32_t>(first.integer):first.dword;
-                    if(second.type==1)numeric.integer=std::bit_cast<std::int32_t>(bits);else numeric.dword=bits;
+                    if(numeric_writes)numeric_assignment(numeric,first);
+                    else{
+                        const auto bits=first.type==1?static_cast<std::uint32_t>(first.integer):first.dword;
+                        if(second.type==1)numeric.integer=std::bit_cast<std::int32_t>(bits);else numeric.dword=bits;
+                    }
                 }else if(token.opcode==13||token.opcode==14){
                     const auto left=second.type==1?static_cast<std::uint32_t>(second.integer):second.dword;
                     const auto bits=token.opcode==13?left+1U:left-1U;
@@ -285,7 +288,7 @@ static bool calculate_argument_values(MobAiConfiguredFsm& owner,MobAiConfiguredC
 
 namespace eternity::game {
 void calculate_mob_ai_argument(MobAiConfiguredFsm& owner,MobAiConfiguredCondition& condition,MobAiParameter& output){static_cast<void>(calculate_argument_values(owner,condition,output));}
-static std::int32_t interpret_expression_calls(MobAiConfiguredFsm& owner,MobAiConfiguredCondition& condition,MobAiSystemCatalog& definitions,MobAiArgumentDispatcher& dispatcher,bool arithmetic,bool nested=false,bool writing=false){
+static std::int32_t interpret_expression_calls(MobAiConfiguredFsm& owner,MobAiConfiguredCondition& condition,MobAiSystemCatalog& definitions,MobAiArgumentDispatcher& dispatcher,bool arithmetic,bool nested=false,bool writing=false,bool numeric_writes=false){
     std::function<MobAiParameter(const MobAiToken&)> call;
     call=[&](const MobAiToken& token){
         const auto before=definitions.find(token.function_id);
@@ -293,7 +296,7 @@ static std::int32_t interpret_expression_calls(MobAiConfiguredFsm& owner,MobAiCo
         const auto count=before->second.parameter_count;
         std::vector<MobAiParameter> arguments;MobAiParameter argument(0);bool known=false;
         for(std::int32_t i=0;i<count;++i){
-            known=calculate_argument_values(owner,condition,argument,arithmetic,nested?call:std::function<MobAiParameter(const MobAiToken&)>{},writing)||known;
+            known=calculate_argument_values(owner,condition,argument,arithmetic,nested?call:std::function<MobAiParameter(const MobAiToken&)>{},writing,numeric_writes)||known;
             if(!known)throw std::logic_error("Mob AI first argument has undefined original retained type");
             MobAiParameter copy(argument.type);assign(copy,argument);arguments.push_back(copy);
         }
@@ -331,4 +334,9 @@ std::int32_t interpret_mob_ai_nested_calls(MobAiConfiguredFsm& owner,MobAiConfig
 namespace eternity::game {
 void calculate_mob_ai_writing_argument(MobAiConfiguredFsm& owner,MobAiConfiguredCondition& condition,MobAiParameter& output){static_cast<void>(calculate_argument_values(owner,condition,output,true,{},true));}
 std::int32_t interpret_mob_ai_writing_calls(MobAiConfiguredFsm& owner,MobAiConfiguredCondition& condition,MobAiSystemCatalog& definitions,MobAiArgumentDispatcher& dispatcher){return interpret_expression_calls(owner,condition,definitions,dispatcher,true,true,true);}
+}
+
+namespace eternity::game {
+void calculate_mob_ai_numeric_writing_argument(MobAiConfiguredFsm& owner,MobAiConfiguredCondition& condition,MobAiParameter& output){static_cast<void>(calculate_argument_values(owner,condition,output,true,{},true,true));}
+std::int32_t interpret_mob_ai_numeric_argument_calls(MobAiConfiguredFsm& owner,MobAiConfiguredCondition& condition,MobAiSystemCatalog& definitions,MobAiArgumentDispatcher& dispatcher){return interpret_expression_calls(owner,condition,definitions,dispatcher,true,true,true,true);}
 }
