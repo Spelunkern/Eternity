@@ -1,0 +1,1915 @@
+address	size	name	object	scope	status	witness
+00401000	74	Reconnect	Server.obj	game	nada	
+00401050	35	CReConnector::CReConnector	Server.obj	game	nada	
+00401080	11	CReConnector::~CReConnector	Server.obj	game	nada	
+00401090	566	CReConnector::OnUpdate	Server.obj	game	nada	
+004012d0	348	CServer::CServer	Server.obj	game	nada	
+00401430	78	SServerTACD::SServerTACD	Server.obj	game	nada	
+00401480	77	SServerTACD::~SServerTACD	Server.obj	game	nada	
+004014d0	7	SSession::SSession	Server.obj	game	nada	
+004014e0	100	SServerTAC::~SServerTAC	Server.obj	game	nada	
+00401550	150	SServerTBase::~SServerTBase	Server.obj	game	nada	
+004015f0	92	SAgent::~SAgent	Server.obj	game	nada	
+00401650	11	SAgentParam::~SAgentParam	Server.obj	game	nada	
+00401660	258	CServer::~CServer	Server.obj	game	nada	
+00401770	365	CServer::Start	Server.obj	game	enlazado	include/eternity/net/login_reply.hpp
+004018e0	29	CServer::Shutdown	Server.obj	game	nada	
+00401900	127	CServer::OnDisconnectClient	Server.obj	game	nada	
+00401980	41	CServer::ConnectToMgr	Server.obj	game	nada	
+004019b0	41	CServer::ConnectToLog	Server.obj	game	nada	
+004019e0	16	CServer::AllocConnection	Server.obj	game	nada	
+004019f0	97	CServer::FreeConnection	Server.obj	game	nada	
+00401a60	348	CServer::AddUser	Server.obj	game	nada	
+00401bc0	77	CServer::RemoveUser	Server.obj	game	nada	
+00401c10	82	CServer::FindUser	Server.obj	game	nada	
+00401c70	137	CServer::OnConnect	Server.obj	game	nada	
+00401d00	20	CServer::OnDisconnect	Server.obj	game	nada	
+00401d20	262	CServer::EndRemoveConnection	Server.obj	game	nada	
+00401e30	19	std::less<unsigned long>::operator()	Server.obj	crt	nada	
+00401e50	70	SSyncList2<SConnection>::~SSyncList2<SConnection>	Server.obj	game	nada	
+00401ea0	28	SSyncHeap<CUser>::SSyncHeap<CUser>	Server.obj	game	nada	
+00401ec0	67	SSyncHeap<CUser>::~SSyncHeap<CUser>	Server.obj	game	nada	
+00401f10	136	SSyncHeap<CUser>::Alloc	Server.obj	game	nada	
+00401fa0	60	SSyncHeap<CUser>::Free	Server.obj	game	nada	
+00401fe0	88	SSyncList<CUser>::SSyncList<CUser>	Server.obj	game	nada	
+00402040	67	SSyncList<CUser>::~SSyncList<CUser>	Server.obj	game	nada	
+00402090	4	SSyncList<CUser>::Count	Server.obj	game	nada	
+004020a0	64	SSyncList<CUser>::AddBack	Server.obj	game	nada	
+004020e0	81	SSyncList<CUser>::Remove	Server.obj	game	nada	
+00402140	104	SSyncMap<unsigned long,CUser *>::SSyncMap<unsigned long,CUser *>	Server.obj	game	nada	
+004021b0	156	SSyncMap<unsigned long,CUser *>::~SSyncMap<unsigned long,CUser *>	Server.obj	game	nada	
+00402250	4	SSyncMap<unsigned long,CUser *>::Count	Server.obj	game	nada	
+00402260	8	SSyncMap<unsigned long,CUser *>::Lock	Server.obj	game	nada	
+00402270	8	SSyncMap<unsigned long,CUser *>::Unlock	Server.obj	game	nada	
+00402280	60	SSyncMap<unsigned long,CUser *>::Add	Server.obj	game	nada	
+004022c0	80	SSyncMap<unsigned long,CUser *>::Remove	Server.obj	game	nada	
+00402310	60	SSyncMap<unsigned long,CUser *>::Find	Server.obj	game	nada	
+00402350	44	std::map<unsigned long,CUser *,std::less<unsigned long>,std::allocator<std::pair<unsigned long const ,CUser *> > >::~map<unsigned long,CUser *,std::less<unsigned long>,std::allocator<std::pair<unsigned long const ,CUser *> > >	Server.obj	crt	nada	
+00402380	39	std::map<unsigned long,CUser *,std::less<unsigned long>,std::allocator<std::pair<unsigned long const ,CUser *> > >::map<unsigned long,CUser *,std::less<unsigned long>,std::allocator<std::pair<unsigned long const ,CUser *> > >	Server.obj	crt	nada	
+004023b0	44	std::_Tree<std::_Tmap_traits<unsigned long,CUser *,std::less<unsigned long>,std::allocator<std::pair<unsigned long const ,CUser *> >,0> >::~_Tree<std::_Tmap_traits<unsigned long,CUser *,std::less<unsigned long>,std::allocator<std::pair<unsigned long const ,CUser *> >,0> >	Server.obj	crt	nada	
+004023e0	6	std::_Tree<std::_Tmap_traits<unsigned long,CUser *,std::less<unsigned long>,std::allocator<std::pair<unsigned long const ,CUser *> >,0> >::end	Server.obj	crt	nada	
+004023f0	4	std::_Tree<std::_Tmap_traits<unsigned long,CUser *,std::less<unsigned long>,std::allocator<std::pair<unsigned long const ,CUser *> >,0> >::size	Server.obj	crt	nada	
+00402400	181	std::_Tree<std::_Tmap_traits<unsigned long,CUser *,std::less<unsigned long>,std::allocator<std::pair<unsigned long const ,CUser *> >,0> >::insert	Server.obj	crt	nada	
+004024c0	691	std::_Tree<std::_Tmap_traits<unsigned long,CUser *,std::less<unsigned long>,std::allocator<std::pair<unsigned long const ,CUser *> >,0> >::erase	Server.obj	crt	nada	
+00402780	90	std::_Tree<std::_Tmap_traits<unsigned long,CUser *,std::less<unsigned long>,std::allocator<std::pair<unsigned long const ,CUser *> >,0> >::find	Server.obj	crt	nada	
+004027e0	7	std::_Tree<std::_Tmap_traits<unsigned long,CUser *,std::less<unsigned long>,std::allocator<std::pair<unsigned long const ,CUser *> >,0> >::iterator::iterator	Server.obj	crt	nada	
+004027f0	6	std::_Tree<std::_Tmap_traits<unsigned long,CUser *,std::less<unsigned long>,std::allocator<std::pair<unsigned long const ,CUser *> >,0> >::iterator::operator->	Server.obj	crt	nada	
+00402800	10	std::_Tree<std::_Tmap_traits<unsigned long,CUser *,std::less<unsigned long>,std::allocator<std::pair<unsigned long const ,CUser *> >,0> >::const_iterator::operator==	Server.obj	crt	nada	
+00402810	10	std::_Tree<std::_Tmap_traits<unsigned long,CUser *,std::less<unsigned long>,std::allocator<std::pair<unsigned long const ,CUser *> >,0> >::const_iterator::operator!=	Server.obj	crt	nada	
+00402820	25	std::out_of_range::out_of_range	Server.obj	crt	nada	
+00402840	101	std::logic_error::logic_error	Server.obj	crt	nada	
+004028b0	59	std::basic_string<char,std::char_traits<char>,std::allocator<char> >::basic_string<char,std::char_traits<char>,std::allocator<char> >	Server.obj	crt	nada	
+004028f0	4	std::_Tree<std::_Tmap_traits<unsigned long,CUser *,std::less<unsigned long>,std::allocator<std::pair<unsigned long const ,CUser *> >,0> >::_Color	Server.obj	crt	nada	
+00402900	4	std::_Tree<std::_Tmap_traits<unsigned long,CUser *,std::less<unsigned long>,std::allocator<std::pair<unsigned long const ,CUser *> >,0> >::_Isnil	Server.obj	crt	nada	
+00402910	4	std::_Tree<std::_Tmap_traits<unsigned long,CUser *,std::less<unsigned long>,std::allocator<std::pair<unsigned long const ,CUser *> >,0> >::_Key	Server.obj	crt	nada	
+00402920	1	std::_Tree<std::_Tmap_traits<unsigned long,CUser *,std::less<unsigned long>,std::allocator<std::pair<unsigned long const ,CUser *> >,0> >::_Left	Server.obj	crt	nada	
+00402930	4	std::_Tree<std::_Tmap_traits<unsigned long,CUser *,std::less<unsigned long>,std::allocator<std::pair<unsigned long const ,CUser *> >,0> >::_Parent	Server.obj	crt	nada	
+00402940	4	std::_Tree<std::_Tmap_traits<unsigned long,CUser *,std::less<unsigned long>,std::allocator<std::pair<unsigned long const ,CUser *> >,0> >::_Right	Server.obj	crt	nada	
+00402950	39	std::_Tree<std::_Tmap_traits<unsigned long,CUser *,std::less<unsigned long>,std::allocator<std::pair<unsigned long const ,CUser *> >,0> >::_Tree<std::_Tmap_traits<unsigned long,CUser *,std::less<unsigned long>,std::allocator<std::pair<unsigned long const ,CUser *> >,0> >	Server.obj	crt	nada	
+00402980	8	std::_Tree<std::_Tmap_traits<unsigned long,CUser *,std::less<unsigned long>,std::allocator<std::pair<unsigned long const ,CUser *> >,0> >::begin	Server.obj	crt	nada	
+00402990	45	std::_Tree<std::_Tmap_traits<unsigned long,CUser *,std::less<unsigned long>,std::allocator<std::pair<unsigned long const ,CUser *> >,0> >::lower_bound	Server.obj	crt	nada	
+004029c0	633	std::_Tree<std::_Tmap_traits<unsigned long,CUser *,std::less<unsigned long>,std::allocator<std::pair<unsigned long const ,CUser *> >,0> >::_Insert	Server.obj	crt	nada	
+00402c40	4	std::_Tree<std::_Tmap_traits<unsigned long,CUser *,std::less<unsigned long>,std::allocator<std::pair<unsigned long const ,CUser *> >,0> >::_Lmost	Server.obj	crt	nada	
+00402c50	76	std::_Tree<std::_Tmap_traits<unsigned long,CUser *,std::less<unsigned long>,std::allocator<std::pair<unsigned long const ,CUser *> >,0> >::_Lrotate	Server.obj	crt	nada	
+00402ca0	28	std::_Tree<std::_Tmap_traits<unsigned long,CUser *,std::less<unsigned long>,std::allocator<std::pair<unsigned long const ,CUser *> >,0> >::_Max	Server.obj	crt	nada	
+00402cc0	19	std::_Tree<std::_Tmap_traits<unsigned long,CUser *,std::less<unsigned long>,std::allocator<std::pair<unsigned long const ,CUser *> >,0> >::_Min	Server.obj	crt	nada	
+00402ce0	7	std::_Tree<std::_Tmap_traits<unsigned long,CUser *,std::less<unsigned long>,std::allocator<std::pair<unsigned long const ,CUser *> >,0> >::_Rmost	Server.obj	crt	nada	
+00402cf0	7	std::_Tree<std::_Tmap_traits<unsigned long,CUser *,std::less<unsigned long>,std::allocator<std::pair<unsigned long const ,CUser *> >,0> >::_Root	Server.obj	crt	nada	
+00402d00	80	std::_Tree<std::_Tmap_traits<unsigned long,CUser *,std::less<unsigned long>,std::allocator<std::pair<unsigned long const ,CUser *> >,0> >::_Rrotate	Server.obj	crt	nada	
+00402d50	44	std::_Tree<std::_Tmap_traits<unsigned long,CUser *,std::less<unsigned long>,std::allocator<std::pair<unsigned long const ,CUser *> >,0> >::_Tidy	Server.obj	crt	nada	
+00402d80	1	std::_Tmap_traits<unsigned long,CUser *,std::less<unsigned long>,std::allocator<std::pair<unsigned long const ,CUser *> >,0>::_Kfn	Server.obj	crt	nada	
+00402d90	1	std::allocator<std::pair<unsigned long const ,CUser *> >::allocator<std::pair<unsigned long const ,CUser *> >	Server.obj	crt	nada	
+00402da0	8	std::allocator<std::_Tree_nod<std::_Tmap_traits<unsigned long,CUser *,std::less<unsigned long>,std::allocator<std::pair<unsigned long const ,CUser *> >,0> >::_Node>::deallocate	Server.obj	crt	nada	
+00402db0	1	std::allocator<std::_Tree_nod<std::_Tmap_traits<unsigned long,CUser *,std::less<unsigned long>,std::allocator<std::pair<unsigned long const ,CUser *> >,0> >::_Node>::destroy	Server.obj	crt	nada	
+00402dc0	3	std::_Tree<std::_Tmap_traits<unsigned long,CUser *,std::less<unsigned long>,std::allocator<std::pair<unsigned long const ,CUser *> >,0> >::iterator::iterator	Server.obj	crt	nada	
+00402dd0	6	std::_Tree<std::_Tmap_traits<unsigned long,CUser *,std::less<unsigned long>,std::allocator<std::pair<unsigned long const ,CUser *> >,0> >::iterator::operator*	Server.obj	crt	nada	
+00402de0	10	std::_Tree<std::_Tmap_traits<unsigned long,CUser *,std::less<unsigned long>,std::allocator<std::pair<unsigned long const ,CUser *> >,0> >::iterator::operator++	Server.obj	crt	nada	
+00402df0	10	std::_Tree<std::_Tmap_traits<unsigned long,CUser *,std::less<unsigned long>,std::allocator<std::pair<unsigned long const ,CUser *> >,0> >::iterator::operator--	Server.obj	crt	nada	
+00402e00	7	std::_Tree<std::_Tmap_traits<unsigned long,CUser *,std::less<unsigned long>,std::allocator<std::pair<unsigned long const ,CUser *> >,0> >::const_iterator::const_iterator	Server.obj	crt	nada	
+00402e10	3	std::_Tree<std::_Tmap_traits<unsigned long,CUser *,std::less<unsigned long>,std::allocator<std::pair<unsigned long const ,CUser *> >,0> >::const_iterator::_Mynode	Server.obj	crt	nada	
+00402e20	16	std::pair<std::_Tree<std::_Tmap_traits<unsigned long,CUser *,std::less<unsigned long>,std::allocator<std::pair<unsigned long const ,CUser *> >,0> >::iterator,bool>::pair<std::_Tree<std::_Tmap_traits<unsigned long,CUser *,std::less<unsigned long>,std::allocator<std::pair<unsigned long const ,CUser *> >,0> >::iterator,bool>	Server.obj	crt	nada	
+00402e30	25	std::length_error::length_error	Server.obj	crt	nada	
+00402e50	39	std::basic_string<char,std::char_traits<char>,std::allocator<char> >::assign	Server.obj	crt	nada	
+00402e80	3	std::allocator<char>::allocator<char>	Server.obj	crt	nada	
+00402e90	4	std::_Tree<std::_Tmap_traits<unsigned long,CUser *,std::less<unsigned long>,std::allocator<std::pair<unsigned long const ,CUser *> >,0> >::_Myval	Server.obj	crt	nada	
+00402ea0	6	std::_Tree<std::_Tmap_traits<unsigned long,CUser *,std::less<unsigned long>,std::allocator<std::pair<unsigned long const ,CUser *> >,0> >::max_size	Server.obj	crt	nada	
+00402eb0	178	std::_Tree<std::_Tmap_traits<unsigned long,CUser *,std::less<unsigned long>,std::allocator<std::pair<unsigned long const ,CUser *> >,0> >::erase	Server.obj	crt	nada	
+00402f70	37	std::_Tree<std::_Tmap_traits<unsigned long,CUser *,std::less<unsigned long>,std::allocator<std::pair<unsigned long const ,CUser *> >,0> >::_Init	Server.obj	crt	nada	
+00402fa0	37	std::_Tree<std::_Tmap_traits<unsigned long,CUser *,std::less<unsigned long>,std::allocator<std::pair<unsigned long const ,CUser *> >,0> >::_Lbound	Server.obj	crt	nada	
+00402fd0	59	std::_Tree<std::_Tmap_traits<unsigned long,CUser *,std::less<unsigned long>,std::allocator<std::pair<unsigned long const ,CUser *> >,0> >::_Buynode	Server.obj	crt	nada	
+00403010	3	std::_Tree_val<std::_Tmap_traits<unsigned long,CUser *,std::less<unsigned long>,std::allocator<std::pair<unsigned long const ,CUser *> >,0> >::_Tree_val<std::_Tmap_traits<unsigned long,CUser *,std::less<unsigned long>,std::allocator<std::pair<unsigned long const ,CUser *> >,0> >	Server.obj	crt	nada	
+00403020	1	std::allocator<std::pair<unsigned long const ,CUser *> >::allocator<std::pair<unsigned long const ,CUser *> >	Server.obj	crt	nada	
+00403030	1	std::allocator<std::_Tree_nod<std::_Tmap_traits<unsigned long,CUser *,std::less<unsigned long>,std::allocator<std::pair<unsigned long const ,CUser *> >,0> >::_Node *>::destroy	Server.obj	crt	nada	
+00403040	3	std::_Tree<std::_Tmap_traits<unsigned long,CUser *,std::less<unsigned long>,std::allocator<std::pair<unsigned long const ,CUser *> >,0> >::const_iterator::const_iterator	Server.obj	crt	nada	
+00403050	6	std::_Tree<std::_Tmap_traits<unsigned long,CUser *,std::less<unsigned long>,std::allocator<std::pair<unsigned long const ,CUser *> >,0> >::const_iterator::operator*	Server.obj	crt	nada	
+00403060	10	std::_Tree<std::_Tmap_traits<unsigned long,CUser *,std::less<unsigned long>,std::allocator<std::pair<unsigned long const ,CUser *> >,0> >::const_iterator::operator++	Server.obj	crt	nada	
+00403070	10	std::_Tree<std::_Tmap_traits<unsigned long,CUser *,std::less<unsigned long>,std::allocator<std::pair<unsigned long const ,CUser *> >,0> >::const_iterator::operator--	Server.obj	crt	nada	
+00403080	234	std::basic_string<char,std::char_traits<char>,std::allocator<char> >::assign	Server.obj	crt	nada	
+00403170	43	std::_Tree<std::_Tmap_traits<unsigned long,CUser *,std::less<unsigned long>,std::allocator<std::pair<unsigned long const ,CUser *> >,0> >::clear	Server.obj	crt	nada	
+004031a0	7	std::_Tree<std::_Tmap_traits<unsigned long,CUser *,std::less<unsigned long>,std::allocator<std::pair<unsigned long const ,CUser *> >,0> >::_Root	Server.obj	crt	nada	
+004031b0	55	std::_Tree<std::_Tmap_traits<unsigned long,CUser *,std::less<unsigned long>,std::allocator<std::pair<unsigned long const ,CUser *> >,0> >::_Buynode	Server.obj	crt	nada	
+004031f0	3	std::_Tree_ptr<std::_Tmap_traits<unsigned long,CUser *,std::less<unsigned long>,std::allocator<std::pair<unsigned long const ,CUser *> >,0> >::_Tree_ptr<std::_Tmap_traits<unsigned long,CUser *,std::less<unsigned long>,std::allocator<std::pair<unsigned long const ,CUser *> >,0> >	Server.obj	crt	nada	
+00403200	6	std::allocator<std::pair<unsigned long const ,CUser *> >::max_size	Server.obj	crt	nada	
+00403210	19	std::allocator<std::_Tree_nod<std::_Tmap_traits<unsigned long,CUser *,std::less<unsigned long>,std::allocator<std::pair<unsigned long const ,CUser *> >,0> >::_Node>::allocate	Server.obj	crt	nada	
+00403230	14	std::_Tree<std::_Tmap_traits<unsigned long,CUser *,std::less<unsigned long>,std::allocator<std::pair<unsigned long const ,CUser *> >,0> >::iterator::operator++	Server.obj	crt	nada	
+00403240	81	std::_Tree<std::_Tmap_traits<unsigned long,CUser *,std::less<unsigned long>,std::allocator<std::pair<unsigned long const ,CUser *> >,0> >::const_iterator::_Dec	Server.obj	crt	nada	
+004032a0	75	std::_Tree<std::_Tmap_traits<unsigned long,CUser *,std::less<unsigned long>,std::allocator<std::pair<unsigned long const ,CUser *> >,0> >::const_iterator::_Inc	Server.obj	crt	nada	
+004032f0	41	std::_Tree_nod<std::_Tmap_traits<unsigned long,CUser *,std::less<unsigned long>,std::allocator<std::pair<unsigned long const ,CUser *> >,0> >::_Node::_Node	Server.obj	crt	nada	
+00403320	57	std::basic_string<char,std::char_traits<char>,std::allocator<char> >::_Inside	Server.obj	crt	nada	
+00403360	53	std::_Tree<std::_Tmap_traits<unsigned long,CUser *,std::less<unsigned long>,std::allocator<std::pair<unsigned long const ,CUser *> >,0> >::_Erase	Server.obj	crt	nada	
+004033a0	3	std::_Tree_nod<std::_Tmap_traits<unsigned long,CUser *,std::less<unsigned long>,std::allocator<std::pair<unsigned long const ,CUser *> >,0> >::_Tree_nod<std::_Tmap_traits<unsigned long,CUser *,std::less<unsigned long>,std::allocator<std::pair<unsigned long const ,CUser *> >,0> >	Server.obj	crt	nada	
+004033b0	9	std::allocator<std::_Tree_nod<std::_Tmap_traits<unsigned long,CUser *,std::less<unsigned long>,std::allocator<std::pair<unsigned long const ,CUser *> >,0> >::_Node *>::construct	Server.obj	crt	nada	
+004033c0	3	std::_Tmap_traits<unsigned long,CUser *,std::less<unsigned long>,std::allocator<std::pair<unsigned long const ,CUser *> >,0>::_Tmap_traits<unsigned long,CUser *,std::less<unsigned long>,std::allocator<std::pair<unsigned long const ,CUser *> >,0>	Server.obj	crt	nada	
+004033d0	77	SSyncList2<SConnection>::Reset	Server.obj	game	nada	
+00403420	93	SSyncHeap<CUser>::Release	Server.obj	game	nada	
+00403480	132	SSyncList<CUser>::Release	Server.obj	game	nada	
+00403510	58	SSyncMap<unsigned long,CUser *>::Release	Server.obj	game	nada	
+00403550	6	std::make_pair<unsigned long,CUser *>	Server.obj	crt	nada	
+00403560	11	std::pair<unsigned long const ,CUser *>::pair<unsigned long const ,CUser *><unsigned long,CUser *>	Server.obj	crt	nada	
+00403570	19	std::swap<char>	Server.obj	crt	nada	
+00403590	1	std::_Destroy<std::_Tree_nod<std::_Tmap_traits<unsigned long,CUser *,std::less<unsigned long>,std::allocator<std::pair<unsigned long const ,CUser *> >,0> >::_Node>	Server.obj	crt	nada	
+004035a0	1	std::_Destroy<std::_Tree_nod<std::_Tmap_traits<unsigned long,CUser *,std::less<unsigned long>,std::allocator<std::pair<unsigned long const ,CUser *> >,0> >::_Node *>	Server.obj	crt	nada	
+004035b0	1	std::allocator<std::_Tree_nod<std::_Tmap_traits<unsigned long,CUser *,std::less<unsigned long>,std::allocator<std::pair<unsigned long const ,CUser *> >,0> >::_Node *>::allocator<std::_Tree_nod<std::_Tmap_traits<unsigned long,CUser *,std::less<unsigned long>,std::allocator<std::pair<unsigned long const ,CUser *> >,0> >::_Node *><std::pair<unsigned long const ,CUser *> >	Server.obj	crt	nada	
+004035c0	19	std::_Allocate<std::_Tree_nod<std::_Tmap_traits<unsigned long,CUser *,std::less<unsigned long>,std::allocator<std::pair<unsigned long const ,CUser *> >,0> >::_Node>	Server.obj	crt	nada	
+004035e0	1	std::allocator<std::_Tree_nod<std::_Tmap_traits<unsigned long,CUser *,std::less<unsigned long>,std::allocator<std::pair<unsigned long const ,CUser *> >,0> >::_Node>::allocator<std::_Tree_nod<std::_Tmap_traits<unsigned long,CUser *,std::less<unsigned long>,std::allocator<std::pair<unsigned long const ,CUser *> >,0> >::_Node><std::pair<unsigned long const ,CUser *> >	Server.obj	crt	nada	
+004035f0	9	std::_Construct<std::_Tree_nod<std::_Tmap_traits<unsigned long,CUser *,std::less<unsigned long>,std::allocator<std::pair<unsigned long const ,CUser *> >,0> >::_Node *,std::_Tree_nod<std::_Tmap_traits<unsigned long,CUser *,std::less<unsigned long>,std::allocator<std::pair<unsigned long const ,CUser *> >,0> >::_Node *>	Server.obj	crt	nada	
+00403600	27	CUser::`scalar deleting destructor'	Server.obj	game	nada	
+00403620	16	std::pair<unsigned long,CUser *>::pair<unsigned long,CUser *>	Server.obj	crt	nada	
+00403630	3	SSession::OnUpdateStatisticsClient	Server.obj	game	nada	
+00403640	3	SSession::OnUpdateStatistics	Server.obj	game	nada	
+00403650	13	SServerTAC::SetMaxConnection	Server.obj	game	nada	
+00403660	7	SAgent::SetMaxConnection	Server.obj	game	nada	
+00403670	11	SServerTAC::StopAcception	Server.obj	game	nada	
+00403680	11	SServerTAC::StartAcception	Server.obj	game	nada	
+00403690	7	SServerTAC::IsAcception	Server.obj	game	nada	
+004036a0	4	SAcceptor::IsAcception	Server.obj	game	nada	
+004036b0	11	SServerTAC::DisconnectAll	Server.obj	game	nada	
+004036c0	31	std::basic_string<char,std::char_traits<char>,std::allocator<char> >::_Eos	Server.obj	crt	nada	
+004036e0	13	std::char_traits<char>::assign	Server.obj	crt	nada	
+004036f0	35	std::char_traits<char>::copy	Server.obj	crt	nada	
+00403720	201	std::basic_string<char,std::char_traits<char>,std::allocator<char> >::_Grow	Server.obj	crt	nada	
+004037f0	6	std::basic_string<char,std::char_traits<char>,std::allocator<char> >::max_size	Server.obj	crt	nada	
+00403800	4	std::allocator<char>::max_size	Server.obj	crt	nada	
+00403810	318	std::basic_string<char,std::char_traits<char>,std::allocator<char> >::_Copy	Server.obj	crt	nada	
+00403950	16	std::allocator<char>::allocate	Server.obj	crt	nada	
+00403960	14	std::_Allocate<char>	Server.obj	crt	nada	
+00403970	14	std::basic_string<char,std::char_traits<char>,std::allocator<char> >::_Myptr	Server.obj	crt	nada	
+00403980	225	std::basic_string<char,std::char_traits<char>,std::allocator<char> >::assign	Server.obj	crt	nada	
+00403a70	4	std::basic_string<char,std::char_traits<char>,std::allocator<char> >::size	Server.obj	crt	nada	
+00403a80	115	std::basic_string<char,std::char_traits<char>,std::allocator<char> >::erase	Server.obj	crt	nada	
+00403b00	5	std::char_traits<char>::move	Server.obj	crt	nada	
+00403b10	14	std::basic_string<char,std::char_traits<char>,std::allocator<char> >::_Myptr	Server.obj	crt	nada	
+00403b20	1	operator delete	Server.obj	game	nada	
+00403b30	5	operator new	Server.obj	game	nada	
+00403b40	19	std::char_traits<char>::length	Server.obj	crt	nada	
+00403b60	30	std::length_error::`scalar deleting destructor'	Server.obj	crt	nada	
+00403b80	14	std::logic_error::what	Server.obj	crt	nada	
+00403b90	14	std::basic_string<char,std::char_traits<char>,std::allocator<char> >::c_str	Server.obj	crt	nada	
+00403ba0	50	std::length_error::~length_error	Server.obj	crt	nada	
+00403be0	25	std::length_error::length_error	Server.obj	crt	nada	
+00403c00	95	std::logic_error::logic_error	Server.obj	crt	nada	
+00403c60	82	std::basic_string<char,std::char_traits<char>,std::allocator<char> >::_Tidy	Server.obj	crt	nada	
+00403cc0	14	std::allocator<char>::deallocate	Server.obj	crt	nada	
+00403cd0	5	std::_String_val<char,std::allocator<char> >::_String_val<char,std::allocator<char> >	Server.obj	crt	nada	
+00403ce0	5	std::allocator<char>::allocator<char>	Server.obj	crt	nada	
+00403cf0	37	std::basic_string<char,std::char_traits<char>,std::allocator<char> >::basic_string<char,std::char_traits<char>,std::allocator<char> >	Server.obj	crt	nada	
+00403d20	30	std::logic_error::`scalar deleting destructor'	Server.obj	crt	nada	
+00403d40	30	std::out_of_range::`scalar deleting destructor'	Server.obj	crt	nada	
+00403d60	50	std::logic_error::~logic_error	Server.obj	crt	nada	
+00403da0	50	std::out_of_range::~out_of_range	Server.obj	crt	nada	
+00403de0	38	std::basic_string<char,std::char_traits<char>,std::allocator<char> >::~basic_string<char,std::char_traits<char>,std::allocator<char> >	Server.obj	crt	nada	
+00403e10	25	std::out_of_range::out_of_range	Server.obj	crt	nada	
+00403e30	37	SNode::RemoveLink	Server.obj	game	nada	
+00403e60	19	SCriticalSection::SCriticalSection	Server.obj	game	nada	
+00403e80	11	CMonitorNet::DecreaseUserCount	Server.obj	game	nada	
+00403e90	8	SCriticalSection::Unlock	Server.obj	game	nada	
+00403ea0	8	SCriticalSection::Leave	Server.obj	game	nada	
+00403eb0	8	SCriticalSection::Lock	Server.obj	game	nada	
+00403ec0	8	SCriticalSection::Enter	Server.obj	game	nada	
+00403ed0	11	CMonitorNet::IncreaseUserCount	Server.obj	game	nada	
+00403ee0	9	SServerTACD::AddDBClient	Server.obj	game	nada	
+00403ef0	4	SDBDispatcher::AssociateClient	Server.obj	game	nada	
+00403f00	4	SDBDispatchClient::SetDispatcher	Server.obj	game	nada	
+00403f10	4	SConnectionParam::GetCloseErr	Server.obj	game	nada	
+00403f20	4	SConnectionParam::GetCloseType	Server.obj	game	nada	
+00403f30	7	SConnectionTBase::GetType	Server.obj	game	nada	
+00403f40	32	SServerTAC::InitUseConnect	Server.obj	game	nada	
+00403f60	32	SServerTAC::InitUseAccept	Server.obj	game	nada	
+00403f80	6	SServerTACD::GetDBDispatcher	Server.obj	game	nada	
+00403f90	7	SDBDispatcher::SetSync	Server.obj	game	nada	
+00403fa0	6	SServerTAC::GetAgentConnect	Server.obj	game	nada	
+00403fb0	8	SCriticalSection::~SCriticalSection	Server.obj	game	nada	
+00403fc0	6	SWinsock::~SWinsock	Server.obj	game	nada	
+00403fd0	6	SWinsock::Cleanup	Server.obj	game	nada	
+00403fe0	7	SConnectionTBase::SetType	Server.obj	game	nada	
+00403ff0	6	SServerTAC::GetAgentAccept	Server.obj	game	nada	
+00404000	25	SAgent::GetStatistics	Server.obj	game	nada	
+00404020	7	SServerTAC::GetMaxConnection	Server.obj	game	nada	
+00404030	7	SAgent::GetMaxConnection	Server.obj	game	nada	
+00404040	7	SServerTAC::GetNumConnection	Server.obj	game	nada	
+00404050	7	SAgent::GetNumConnection	Server.obj	game	nada	
+00404060	4	SSyncList2<SConnection>::Count	Server.obj	game	nada	
+00404070	13	SServerTAC::AddClient	Server.obj	game	nada	
+00404080	10	SThreadTTerm::SetUpdateTerm	Server.obj	game	nada	
+00404090	4	SInternetAddress::GetIP	Server.obj	game	nada	
+004040a0	4	SConnection::GetAddress	Server.obj	game	nada	
+004040b0	15	SInternetAddress::GetPort	Server.obj	game	nada	
+004040c0	4	CUserCrypto::IsInitKey	User.obj	game	nada	
+004040d0	4	CUserCrypto::IsInitPublicKey	User.obj	game	nada	
+004040e0	4	CUserCrypto::GetSessionKey	User.obj	game	nada	
+004040f0	194	CUser::CUser	User.obj	game	nada	
+004041c0	168	CUser::~CUser	User.obj	game	nada	
+00404270	65	CUser::Reset	User.obj	game	nada	
+004042c0	44	CUser::SendPacketCustomProc	User.obj	game	nada	
+004042f0	646	CUser::OnRecv	User.obj	game	nada	
+00404580	384	CUser::ChkPasswd	User.obj	game	nada	
+00404700	411	CUser::ChkPasswdMD5	User.obj	game	nada	
+004048a0	129	CUser::SendUserDisconnect	User.obj	game	nada	
+00404930	129	CUser::LoginOK	User.obj	game	nada	
+004049c0	63	CUser::LoginFailed	User.obj	game	nada	
+00404a00	14	CUser::NetDisconnected	User.obj	game	nada	
+00404a10	247	CUser::OnDispatchDB	User.obj	game	nada	
+00404b10	1	SConnection::OnSend	User.obj	game	nada	
+00404b20	25	SDBDispatchClient::Reset	User.obj	game	nada	
+00404b40	11	SInternetAddress::GetAddress	User.obj	game	nada	
+00404b50	7	SPacketBufferSend::GetPacket	User.obj	game	nada	
+00404b60	10	SCriticalSection::Owner::~Owner	User.obj	game	nada	
+00404b70	22	SCriticalSection::Owner::Owner	User.obj	game	nada	
+00404b90	82	SDBDispatchClient::~SDBDispatchClient	User.obj	game	nada	
+00404bf0	69	SSyncQueueStatus::~SSyncQueueStatus	User.obj	game	nada	
+00404c40	41	SDBDispatchClient::SDBDispatchClient	User.obj	game	nada	
+00404c70	28	SSyncQueueStatus::SSyncQueueStatus	User.obj	game	nada	
+00404c90	82	__RandBlock16	UserCrypto.obj	game	nada	
+00404cf0	39	CUserCrypto::CUserCrypto	UserCrypto.obj	game	nada	
+00404d20	26	CUserCrypto::~CUserCrypto	UserCrypto.obj	game	nada	
+00404d40	9	CUserCrypto::Reset	UserCrypto.obj	game	nada	
+00404d50	142	CUserCrypto::GetKeyGen	UserCrypto.obj	game	enlazado	src/session/registry.cpp
+00404de0	190	CUserCrypto::KeyPublicSend	UserCrypto.obj	game	enlazado	src/net/login_crypto.cpp
+00404ea0	358	CUserCrypto::KeyInit	UserCrypto.obj	game	enlazado	src/net/login_crypto.cpp
+00405010	32	CUserCrypto::Enc	UserCrypto.obj	game	nada	
+00405030	35	CUserCrypto::Dec	UserCrypto.obj	game	nada	
+00405060	10	SPacketBufferSend::GetPacketLength	UserCrypto.obj	game	nada	
+00405070	23	CClientToMgr::CClientToMgr	ClientToMgr.obj	game	nada	
+00405090	11	CClientToMgr::~CClientToMgr	ClientToMgr.obj	game	nada	
+004050a0	1574	CClientToMgr::OnRecv	ClientToMgr.obj	game	nada	
+004056d0	122	CClientToMgr::SendConnect	ClientToMgr.obj	game	nada	
+00405750	60	CClientToMgr::SendStatus	ClientToMgr.obj	game	nada	
+00405790	3	SConnection::SendPacketCustomProc	ClientToMgr.obj	game	nada	
+004057a0	4	SUniqueIDGen::SetStartID	ClientToMgr.obj	game	nada	
+004057b0	11	SConnectionTBaseReconnect::~SConnectionTBaseReconnect	ClientToMgr.obj	game	nada	
+004057c0	3	SConnection::OnRecv	ClientToMgr.obj	game	nada	
+004057d0	11	SConnectionTBase::~SConnectionTBase	ClientToMgr.obj	game	nada	
+004057e0	23	SConnectionTBaseReconnect::SConnectionTBaseReconnect	ClientToMgr.obj	game	nada	
+00405800	16	SConnectionTBase::SConnectionTBase	ClientToMgr.obj	game	nada	
+00405810	23	CClientToPasspod::CClientToPasspod	ClientToPasspod.obj	game	nada	
+00405830	30	CClientToPasspod::`scalar deleting destructor'	ClientToPasspod.obj	game	nada	
+00405850	11	CClientToPasspod::~CClientToPasspod	ClientToPasspod.obj	game	nada	
+00405860	3	CClientToPasspod::OnRecv	ClientToPasspod.obj	game	nada	
+00405870	17	SUniqueIDGen::~SUniqueIDGen	Global.obj	game	nada	
+00405890	41	SUniqueIDGen::`scalar deleting destructor'	Global.obj	game	nada	
+004058c0	106	SUniqueIDGen::SUniqueIDGen	Global.obj	game	nada	
+00405930	21	CServerSystemInfo::CServerSystemInfo	Global.obj	game	nada	
+00405950	50	main	Main.obj	game	nada	
+00405990	31	CServerList::GetShowCount	ServerApp.obj	game	nada	
+004059b0	19	CServerList::GetShowTotal	ServerApp.obj	game	nada	
+004059d0	37	CServerList::HideLastServer	ServerApp.obj	game	nada	
+00405a00	20	CServerList::ShowLastServer	ServerApp.obj	game	nada	
+00405a20	11	CServerList::ShowLastServerAll	ServerApp.obj	game	nada	
+00405a30	33	CServerApp::CServerApp	ServerApp.obj	game	nada	
+00405a60	30	CServerApp::`scalar deleting destructor'	ServerApp.obj	game	nada	
+00405a80	28	CServerApp::~CServerApp	ServerApp.obj	game	nada	
+00405aa0	26	CServerApp::Init	ServerApp.obj	game	nada	
+00405ac0	17	CServerApp::Destroy	ServerApp.obj	game	nada	
+00405ae0	8	CServerApp::RunApp	ServerApp.obj	game	nada	
+00405af0	273	CServerApp::InitConsoleCommand	ServerApp.obj	game	nada	
+00405c10	1284	CServerApp::OnConsoleCommand	ServerApp.obj	game	nada	
+00406120	86	ServerStart	ServerApp.obj	game	nada	
+00406180	260	ServerShutdown	ServerApp.obj	game	nada	
+00406290	314	InitLogFile	ServerApp.obj	game	nada	
+004063d0	937	InitServer	ServerApp.obj	game	nada	
+00406780	262	InitDB	ServerApp.obj	game	nada	
+00406890	3	SCrashDump::CrashHandler	ServerApp.obj	game	nada	
+004068a0	21	SServerApplication::IsShutdown	ServerApp.obj	game	nada	
+004068c0	22	SEvent::Wait	ServerApp.obj	game	nada	
+004068e0	62	SConsole::OnConsoleCommandExit	ServerApp.obj	game	nada	
+00406920	5	SConsole::OnConsoleCommand	ServerApp.obj	game	nada	
+00406930	1	SShareMemTCommandServer::OnWrite	ServerApp.obj	game	nada	
+00406940	1	SService::Continue	ServerApp.obj	game	nada	
+00406950	1	SService::Pause	ServerApp.obj	game	nada	
+00406960	7	SDatabasePool::SetLog	ServerApp.obj	game	nada	
+00406970	103	CKeyMgr::CKeyMgr	Crypt.obj	game	nada	
+004069e0	97	CKeyMgr::~CKeyMgr	Crypt.obj	game	nada	
+00406a50	5	CKeyMgr::Start	Crypt.obj	game	nada	
+00406a60	21	CKeyMgr::GetKey	Crypt.obj	game	nada	
+00406a80	48	CKeyMgr::GenKey	Crypt.obj	game	nada	
+00406ab0	57	CKeyMgr::GenKeyByThread	Crypt.obj	game	nada	
+00406af0	94	CKeyMgr::OnUpdate	Crypt.obj	game	nada	
+00406b50	757	GetUser	DB.obj	game	enlazado	include/eternity/auth/login_protocol.hpp
+00406e50	789	GetUserMD5	DB.obj	game	enlazado	include/eternity/auth/login_protocol.hpp
+00407170	13	SBitValue<unsigned short>::Get	DB.obj	game	nada	
+00407180	46	SBitValue<unsigned short>::Get	DB.obj	game	nada	
+004071b0	4	SDatabase::GetQueryError	DB.obj	game	nada	
+004071c0	29	CServerList::CServerList	ServerList.obj	game	nada	
+004071e0	1	CServerList::~CServerList	ServerList.obj	game	nada	
+004071f0	17	CServerList::Init	ServerList.obj	game	nada	
+00407210	103	CServerList::AddServer	ServerList.obj	game	nada	
+00407280	31	CServerList::SetStatus	ServerList.obj	game	nada	
+004072a0	12	CServerList::SetUserCount	ServerList.obj	game	nada	
+004072b0	12	CServerList::SetUserCountMax	ServerList.obj	game	nada	
+004072c0	508	CServerList::SendList	ServerList.obj	game	nada	
+004074c0	22	CServerList::GetIP	ServerList.obj	game	nada	
+004074e0	26	CServerList::EnableConnect	ServerList.obj	game	nada	
+00407500	43	CServerList::EnableUserCount	ServerList.obj	game	nada	
+00407530	39	CServerList::EnableVersion	ServerList.obj	game	nada	
+00407560	69	CServerList::GetRealServerID	ServerList.obj	game	nada	
+004075b0	197	StrParseServerMapping	ServerList.obj	game	nada	
+00407680	391	CServerList::LoadCombServerList	ServerList.obj	game	nada	
+00407810	9	Max<int>	ServerList.obj	game	nada	
+00407820	108	CLogConnection::CLogConnection	pscommon.lib	common	nada	
+00407890	30	CLogConnection::`scalar deleting destructor'	pscommon.lib	common	nada	
+004078b0	97	CLogConnection::~CLogConnection	pscommon.lib	common	nada	
+00407920	3	CLogConnection::OnRecv	pscommon.lib	common	nada	
+00407930	169	CLogConnection::StartFile	pscommon.lib	common	nada	
+004079e0	169	CLogConnection::StartFileChkUtf8	pscommon.lib	common	nada	
+00407a90	82	CLogConnection::SendConnect	pscommon.lib	common	nada	
+00407b00	30	CMonitorNet::CMonitorNet	pscommon.lib	common	nada	
+00407b20	30	CMonitorNet::`scalar deleting destructor'	pscommon.lib	common	nada	
+00407b40	11	CMonitorNet::~CMonitorNet	pscommon.lib	common	nada	
+00407b50	425	CMonitorNet::OnRecv	pscommon.lib	common	nada	
+00407d00	95	CMonitorNet::InitServerInfo	pscommon.lib	common	nada	
+00407d60	16	CMonitorNet::SendServerInfo	pscommon.lib	common	nada	
+00407d70	49	CMonitorNet::SendUserCount	pscommon.lib	common	nada	
+00407db0	44	CMonitorNet::SendAcceptPause	pscommon.lib	common	nada	
+00407de0	44	CMonitorNet::SendAcceptResume	pscommon.lib	common	nada	
+00407e10	44	CMonitorNet::SendDisconnectAll	pscommon.lib	common	nada	
+00407e40	104	CMonitorNet::SendNotify	pscommon.lib	common	nada	
+00407eb0	97	StrCmpFromLast	pscommon.lib	common	nada	
+00407f20	31	StrCpyTrim	pscommon.lib	common	nada	
+00407f40	146	StrParseIP	pscommon.lib	common	nada	
+00407fe0	8	CryptoPasswdGenKey	pscommon.lib	common	nada	
+00407ff0	8	CryptoPasswdEncToHex	pscommon.lib	common	nada	
+00408000	8	CryptoPasswdDecFromHex	pscommon.lib	common	nada	
+00408010	114	DBCryptoPasswdEncToHex	pscommon.lib	common	nada	
+00408090	90	DBCryptoPasswdDecFromHex	pscommon.lib	common	nada	
+004080f0	80	strtokdb	pscommon.lib	common	nada	
+00408140	548	StrParseDB	pscommon.lib	common	nada	
+00408370	21	StrParse	pscommon.lib	common	nada	
+00408390	137	CreatePathByFile	pscommon.lib	common	nada	
+00408420	142	CreatePathByPath	pscommon.lib	common	nada	
+004084b0	136	SetExcutePath	pscommon.lib	common	nada	
+00408540	74	GetSystemTime	pscommon.lib	common	nada	
+00408590	68	GetTimeToString	pscommon.lib	common	nada	
+004085e0	68	GetTimeToString2	pscommon.lib	common	nada	
+00408630	271	SubTimeSecond	pscommon.lib	common	nada	
+00408740	109	SubTimeSecond	pscommon.lib	common	nada	
+004087b0	73	ConvTime	pscommon.lib	common	nada	
+00408800	52	ConvTime	pscommon.lib	common	nada	
+00408840	53	ConvTime	pscommon.lib	common	nada	
+00408880	98	ConvTimeToString	pscommon.lib	common	nada	
+004088f0	48	ConvTimeToString	pscommon.lib	common	nada	
+00408920	43	ConvStrToInt	pscommon.lib	common	nada	
+00408950	288	ConvTimeFromString	pscommon.lib	common	nada	
+00408a70	76	ConvTimeFromString	pscommon.lib	common	nada	
+00408ac0	154	SUniqueIDGen::GenID	pscommon.lib	common	nada	
+00408b60	154	SUniqueIDGen::GenIDU	pscommon.lib	common	nada	
+00408c00	52	SFile::Open	pscommon.lib	common	nada	
+00408c40	23	SFile::Close	pscommon.lib	common	nada	
+00408c60	19	SFile::Read	pscommon.lib	common	nada	
+00408c80	19	SFile::Write	pscommon.lib	common	nada	
+00408ca0	34	SFile::Seek	pscommon.lib	common	nada	
+00408cd0	34	SFile::SeekCurrent	pscommon.lib	common	nada	
+00408d00	34	SFile::SeekEnd	pscommon.lib	common	nada	
+00408d30	160	Printf	pscommon.lib	common	nada	
+00408dd0	1003	PS_ServerAppMain	pscommon.lib	common	nada	
+004091c0	1451	PS_ServerAppMain	pscommon.lib	common	nada	
+00409770	42	md5_init	Crypt.lib	common	nada	
+004097a0	2496	md5_process	Crypt.lib	common	nada	
+0040a160	167	md5_update	Crypt.lib	common	nada	
+0040a210	283	md5_final	Crypt.lib	common	nada	
+0040a330	1	SMD5::SMD5	Crypt.lib	common	nada	
+0040a340	1	SMD5::~SMD5	Crypt.lib	common	nada	
+0040a350	42	SMD5::Init	Crypt.lib	common	nada	
+0040a380	17	SMD5::Update	Crypt.lib	common	nada	
+0040a3a0	5	SMD5::Final	Crypt.lib	common	nada	
+0040a3b0	108	SMD5::MD5	Crypt.lib	common	nada	
+0040a420	35	SRAND	Crypt.lib	common	nada	
+0040a450	43	SRand	Crypt.lib	common	nada	
+0040a480	314	SRandBlock16	Crypt.lib	common	nada	
+0040a5c0	626	SRandBlock32	Crypt.lib	common	nada	
+0040a840	1252	SRandBlock64	Crypt.lib	common	nada	
+0040ad30	199	SRandBlock	Crypt.lib	common	nada	
+0040ae00	117	RandKey	Crypt.lib	common	nada	
+0040ae80	116	BinToHexUnit	Crypt.lib	common	nada	
+0040af00	39	HexToBinUnit	Crypt.lib	common	nada	
+0040af30	249	BinToHex	Crypt.lib	common	nada	
+0040b030	128	HexToBin	Crypt.lib	common	nada	
+0040b0b0	247	BinToHexL	Crypt.lib	common	nada	
+0040b1b0	124	HexToBinL	Crypt.lib	common	nada	
+0040b230	116	BinToHexUnitS	Crypt.lib	common	nada	
+0040b2b0	249	BinToHexS	Crypt.lib	common	nada	
+0040b3b0	247	BinToHexLS	Crypt.lib	common	nada	
+0040b4b0	1062	PCryptoPasswdGenKey	Crypt.lib	common	nada	
+0040b8e0	82	`PCryptoPasswdGenKey'::`2'::keyv::Set	Crypt.lib	common	nada	
+0040b940	239	PCryptoPasswdEncToHex	Crypt.lib	common	nada	
+0040ba30	469	PCryptoPasswdDecFromHex	Crypt.lib	common	nada	
+0040bc10	101	BinToMpz	Crypt.lib	common	nada	
+0040bc80	35	MpzToBin	Crypt.lib	common	nada	
+0040bcb0	106	SRsa::SRsa	Crypt.lib	common	nada	
+0040bd20	104	SRsa::~SRsa	Crypt.lib	common	nada	
+0040bd90	685	SRsa::SetKeyH	Crypt.lib	common	nada	
+0040c040	499	SRsa::GenKeyPair	Crypt.lib	common	nada	
+0040c240	93	SRsa::TestKey	Crypt.lib	common	nada	
+0040c2a0	22	SRsa::Enc	Crypt.lib	common	nada	
+0040c2c0	115	SRsa::Dec	Crypt.lib	common	nada	
+0040c340	37	SRsa::GetPublicKeyN	Crypt.lib	common	nada	
+0040c370	71	SRsa::GetPublicKey	Crypt.lib	common	nada	
+0040c3c0	74	SRsa::Enc	Crypt.lib	common	nada	
+0040c410	72	SRsa::Dec	Crypt.lib	common	nada	
+0040c460	30	SRsaEnc::SRsaEnc	Crypt.lib	common	nada	
+0040c480	26	SRsaEnc::~SRsaEnc	Crypt.lib	common	nada	
+0040c4a0	3	SRsaEnc::Set	Crypt.lib	common	nada	
+0040c4b0	74	SRsaEnc::Enc	Crypt.lib	common	nada	
+0040c500	72	SRsaEnc::Dec	Crypt.lib	common	nada	
+0040c550	21	SRsaPublic::SRsaPublic	Crypt.lib	common	nada	
+0040c570	23	SRsaPublic::~SRsaPublic	Crypt.lib	common	nada	
+0040c590	22	SRsaPublic::Enc	Crypt.lib	common	nada	
+0040c5b0	185	SRsaPublic::SetKeyH	Crypt.lib	common	nada	
+0040c670	35	SRsaPublic::SetKey	Crypt.lib	common	nada	
+0040c6a0	128	SRsaPublic::Enc	Crypt.lib	common	nada	
+0040c720	143	RandGmp	Crypt.lib	common	nada	
+0040c7b0	1294	AES_set_encrypt_key	Crypt.lib	common	nada	
+0040ccc0	571	AES_set_decrypt_key	Crypt.lib	common	nada	
+0040cf00	1321	AES_encrypt	Crypt.lib	common	nada	
+0040d430	1351	AES_decrypt	Crypt.lib	common	nada	
+0040d980	1	SAes::SAes	Crypt.lib	common	nada	
+0040d990	1	SAes::~SAes	Crypt.lib	common	nada	
+0040d9a0	11	SAes::InitKeyEnc	Crypt.lib	common	nada	
+0040d9b0	11	SAes::InitKeyDec	Crypt.lib	common	nada	
+0040d9c0	41	SAes::InitIV	Crypt.lib	common	nada	
+0040d9f0	14	SAes::EncBlock	Crypt.lib	common	nada	
+0040da00	14	SAes::DecBlock	Crypt.lib	common	nada	
+0040da10	181	SAes::EncECB	Crypt.lib	common	nada	
+0040dad0	55	SAes::DecECB	Crypt.lib	common	nada	
+0040db10	33	SAes::CtrInc	Crypt.lib	common	nada	
+0040db40	441	SAes::EncCTR	Crypt.lib	common	nada	
+0040dd00	13	SAes::DecCTR	Crypt.lib	common	nada	
+0040dd10	9	SAes::Enc	Crypt.lib	common	nada	
+0040dd20	9	SAes::Dec	Crypt.lib	common	nada	
+0040dd30	10651	sha256_transform	Crypt.lib	common	nada	
+004106d0	70	sha256_init	Crypt.lib	common	nada	
+00410720	170	sha256_update	Crypt.lib	common	nada	
+004107d0	407	sha256_final	Crypt.lib	common	nada	
+00410970	1	SSha256::SSha256	Crypt.lib	common	nada	
+00410980	1	SSha256::~SSha256	Crypt.lib	common	nada	
+00410990	70	SSha256::Init	Crypt.lib	common	nada	
+004109e0	11	SSha256::Update	Crypt.lib	common	nada	
+004109f0	5	SSha256::Final	Crypt.lib	common	nada	
+00410a00	138	SSha256::Sha256	Crypt.lib	common	nada	
+00410a90	1	SHmac::SHmac	Crypt.lib	common	nada	
+00410aa0	1	SHmac::~SHmac	Crypt.lib	common	nada	
+00410ab0	412	SHmac::Init	Crypt.lib	common	nada	
+00410c50	11	SHmac::Update	Crypt.lib	common	nada	
+00410c60	35	SHmac::Final	Crypt.lib	common	nada	
+00410c90	506	SHmac::Hmac	Crypt.lib	common	nada	
+00410e90	3	SInternetAddress::SInternetAddress	pscommon.lib	common	nada	
+00410ea0	29	SInternetAddress::Set	pscommon.lib	common	nada	
+00410ec0	7	SPacketBufferSend::GetLength	pscommon.lib	common	nada	
+00410ed0	4	SPacketBufferSend::GetBuffer	pscommon.lib	common	nada	
+00410ee0	11	SPacketBufferSend::IncRef	pscommon.lib	common	nada	
+00410ef0	32	SSyncQueueBuffer::SSyncQueueBuffer	pscommon.lib	common	nada	
+00410f10	68	SSyncQueueBuffer::~SSyncQueueBuffer	pscommon.lib	common	nada	
+00410f60	4	SSyncQueueBuffer::Count	pscommon.lib	common	nada	
+00410f70	35	SSyncQueueBufferSend::SSyncQueueBufferSend	pscommon.lib	common	nada	
+00410fa0	68	SSyncQueueBufferSend::~SSyncQueueBufferSend	pscommon.lib	common	nada	
+00410ff0	10	SConnection::IsConnected	pscommon.lib	common	nada	
+00411000	39	SConnectionParam::SetParamSocket	pscommon.lib	common	nada	
+00411030	22	SConnectionParam::SConnectionParam	pscommon.lib	common	nada	
+00411050	11	SConnectionParam::~SConnectionParam	pscommon.lib	common	nada	
+00411060	145	SConnection::~SConnection	pscommon.lib	common	nada	
+00411100	37	SConnection::Reset	pscommon.lib	common	nada	
+00411130	30	SConnection::ResetQueue	pscommon.lib	common	nada	
+00411150	8	SConnection::ResetSocket	pscommon.lib	common	nada	
+00411160	55	SConnection::Close	pscommon.lib	common	nada	
+004111a0	13	SConnection::Disconnect	pscommon.lib	common	nada	
+004111b0	57	SConnection::Open	pscommon.lib	common	nada	
+004111f0	53	SConnection::Open	pscommon.lib	common	nada	
+00411230	26	SConnection::SendQueuePriority	pscommon.lib	common	nada	
+00411250	19	SConnection::SendNow	pscommon.lib	common	nada	
+00411270	20	SConnection::SendRequest	pscommon.lib	common	nada	
+00411290	19	SConnection::RecvRequest	pscommon.lib	common	nada	
+004112b0	5	SConnection::SendComplete	pscommon.lib	common	nada	
+004112c0	37	SConnection::RecvComplete	pscommon.lib	common	nada	
+004112f0	27	SConnection::RecvComplete	pscommon.lib	common	nada	
+00411310	19	SConnection::RecvCompleteDirect	pscommon.lib	common	nada	
+00411330	20	SConnection::ChkPacketSystem	pscommon.lib	common	nada	
+00411350	387	SConnection::Connect	pscommon.lib	common	nada	
+004114e0	355	SConnection::Connect	pscommon.lib	common	nada	
+00411650	328	SConnection::ConnectTest	pscommon.lib	common	nada	
+004117a0	263	SConnection::ConnectTest	pscommon.lib	common	nada	
+004118b0	1	SConnectionCustomRecv::RecvComplete	pscommon.lib	common	nada	
+004118c0	8	SConnectionCustomRecv::RecvComplete	pscommon.lib	common	nada	
+004118d0	56	SConnectionCustomRecv::RecvCompleteDirect	pscommon.lib	common	nada	
+00411910	89	SConnectionTServer::UpdatePackets	pscommon.lib	common	nada	
+00411970	35	SConnectionTBaseReconnect::SendQueuePriority	pscommon.lib	common	nada	
+004119a0	28	SConnectionTBaseReconnect::SendNow	pscommon.lib	common	nada	
+004119c0	35	SConnectionTServerReconnect::SendQueuePriority	pscommon.lib	common	nada	
+004119f0	28	SConnectionTServerReconnect::SendNow	pscommon.lib	common	nada	
+00411a10	158	SConnection::SConnection	pscommon.lib	common	nada	
+00411ab0	42	SConnection::Send	pscommon.lib	common	nada	
+00411ae0	107	SConnection::Send	pscommon.lib	common	nada	
+00411b50	119	SConnection::SendNow	pscommon.lib	common	nada	
+00411bd0	54	SConnection::SendNow	pscommon.lib	common	nada	
+00411c10	17	SConnectionTBaseReconnect::Send	pscommon.lib	common	nada	
+00411c30	51	SConnectionTBaseReconnect::Send	pscommon.lib	common	nada	
+00411c70	17	SConnectionTBaseReconnect::SendNow	pscommon.lib	common	nada	
+00411c90	63	SConnectionTBaseReconnect::SendNow	pscommon.lib	common	nada	
+00411cd0	17	SConnectionTServerReconnect::Send	pscommon.lib	common	nada	
+00411cf0	51	SConnectionTServerReconnect::Send	pscommon.lib	common	nada	
+00411d30	17	SConnectionTServerReconnect::SendNow	pscommon.lib	common	nada	
+00411d50	63	SConnectionTServerReconnect::SendNow	pscommon.lib	common	nada	
+00411d90	9	SEvent::SEvent	pscommon.lib	common	nada	
+00411da0	14	SEvent::~SEvent	pscommon.lib	common	nada	
+00411db0	175	SEvent::Create	pscommon.lib	common	nada	
+00411e60	15	SEvent::Set	pscommon.lib	common	nada	
+00411e70	3	SEvent::GetHandle	pscommon.lib	common	nada	
+00411e80	4	SThread::IsRun	pscommon.lib	common	nada	
+00411e90	20	SThread::SThread	pscommon.lib	common	nada	
+00411eb0	7	SThread::~SThread	pscommon.lib	common	nada	
+00411ec0	23	SThread::SetThreadPriority	pscommon.lib	common	nada	
+00411ee0	5	SThread::End	pscommon.lib	common	nada	
+00411ef0	26	SThread::Wait	pscommon.lib	common	nada	
+00411f10	56	SThread::WaitShutdown	pscommon.lib	common	nada	
+00411f50	76	SThread::Terminate	pscommon.lib	common	nada	
+00411fa0	25	SThread::ThreadFunction	pscommon.lib	common	nada	
+00411fc0	67	SThreadTBase::SThreadTBase	pscommon.lib	common	nada	
+00412010	1	SThreadTBase::OnUpdate	pscommon.lib	common	nada	
+00412020	31	SThreadTBase::~SThreadTBase	pscommon.lib	common	nada	
+00412040	72	SThreadTBase::Shutdown	pscommon.lib	common	nada	
+00412090	17	SThreadTBase::ShutdownNow	pscommon.lib	common	nada	
+004120b0	40	SThreadTBase::Run	pscommon.lib	common	nada	
+004120e0	80	SThreadTTerm::SThreadTTerm	pscommon.lib	common	nada	
+00412130	31	SThreadTTerm::~SThreadTTerm	pscommon.lib	common	nada	
+00412150	72	SThreadTTerm::Shutdown	pscommon.lib	common	nada	
+004121a0	61	SThreadTTerm::Run	pscommon.lib	common	nada	
+004121e0	97	SThreadTWake::SThreadTWake	pscommon.lib	common	nada	
+00412250	45	SThreadTWake::~SThreadTWake	pscommon.lib	common	nada	
+00412280	72	SThreadTWake::Shutdown	pscommon.lib	common	nada	
+004122d0	84	SThreadTWake::Run	pscommon.lib	common	nada	
+00412330	44	SThread::Start	pscommon.lib	common	nada	
+00412360	41	SNode2::RemoveLink2	pscommon.lib	common	nada	
+00412390	28	SPacketBufferSend::DecRef	pscommon.lib	common	nada	
+004123b0	5	SPacketBufferSend::AllocForClone	pscommon.lib	common	nada	
+004123c0	30	SPacketBufferSend::FreeForClone	pscommon.lib	common	nada	
+004123e0	67	SConnectionParam::GetStatistics	pscommon.lib	common	nada	
+00412430	4	SConnection::GetSocket	pscommon.lib	common	nada	
+00412440	198	SAgentParam::SAgentParam	pscommon.lib	common	nada	
+00412510	31	SAgentParam::SetParamSocket	pscommon.lib	common	nada	
+00412530	45	SAgentParam::SetParamReply	pscommon.lib	common	nada	
+00412560	31	SAgentParam::SetParamSender	pscommon.lib	common	nada	
+00412580	10	SAgentParam::SetParamDispatcher	pscommon.lib	common	nada	
+00412590	10	SAgentParam::SetParamStatistics	pscommon.lib	common	nada	
+004125a0	10	SAgentParam::SetParamLog	pscommon.lib	common	nada	
+004125b0	10	SAgentParam::SetPacketSystem	pscommon.lib	common	nada	
+004125c0	10	SAgentParam::SetPacketSendCustomProc	pscommon.lib	common	nada	
+004125d0	44	SAgent::InitReply	pscommon.lib	common	nada	
+00412600	44	SAgent::InitSender	pscommon.lib	common	nada	
+00412630	44	SAgent::InitStatistics	pscommon.lib	common	nada	
+00412660	15	SAgent::InitLog	pscommon.lib	common	nada	
+00412670	24	SAgent::InitDispatcher	pscommon.lib	common	nada	
+00412690	24	SAgent::InitFilterIP	pscommon.lib	common	nada	
+004126b0	19	SAgent::InitType	pscommon.lib	common	nada	
+004126d0	48	SAgent::Init	pscommon.lib	common	nada	
+00412700	11	SAgent::RecvRequest	pscommon.lib	common	nada	
+00412710	11	SAgent::SendRequest	pscommon.lib	common	nada	
+00412720	11	SAgent::SendRequestQueuePriority	pscommon.lib	common	nada	
+00412730	11	SAgent::SendNowRequest	pscommon.lib	common	nada	
+00412740	100	SAgent::UpdateStatitics	pscommon.lib	common	nada	
+004127b0	69	SAgent::PacketSystem	pscommon.lib	common	nada	
+00412800	27	SAgent::ErrorLog	pscommon.lib	common	nada	
+00412820	32	SAgent::ErrorLog	pscommon.lib	common	nada	
+00412840	19	SAgent::AllocSocket	pscommon.lib	common	nada	
+00412860	83	SSyncList2<SConnection>::SSyncList2<SConnection>	pscommon.lib	common	nada	
+004128c0	11	SSyncList2<SConnection>::Lock	pscommon.lib	common	nada	
+004128d0	11	SSyncList2<SConnection>::Unlock	pscommon.lib	common	nada	
+004128e0	74	SSyncList2<SConnection>::AddBack	pscommon.lib	common	nada	
+00412930	84	SSyncList2<SConnection>::Remove	pscommon.lib	common	nada	
+00412990	45	SSyncList2<SConnection>::Front	pscommon.lib	common	nada	
+004129c0	43	SSyncList2<SConnection>::Next	pscommon.lib	common	nada	
+004129f0	111	SAgent::AddConnection	pscommon.lib	common	nada	
+00412a60	436	SAgent::OnAccept	pscommon.lib	common	nada	
+00412c20	108	SAgent::DisconnectAll	pscommon.lib	common	nada	
+00412c90	315	SAgent::Disconnect	pscommon.lib	common	nada	
+00412dd0	111	SAgent::UpdateSend	pscommon.lib	common	nada	
+00412e40	284	SAgent::UpdateReply	pscommon.lib	common	referencia	tests/data/login-reply-schedule-oracle.tsv
+00412f60	59	SAgent::SAgent	pscommon.lib	common	nada	
+00412fa0	35	SLog::SLog	pscommon.lib	common	nada	
+00412fd0	37	SLog::~SLog	pscommon.lib	common	nada	
+00413000	185	SLog::StartFile	pscommon.lib	common	nada	
+004130c0	185	SLog::StartFileChkUtf8	pscommon.lib	common	nada	
+00413180	42	SLog::EndFile	pscommon.lib	common	nada	
+004131b0	42	SLog::FlushFile	pscommon.lib	common	nada	
+004131e0	229	SLog::PrintFile	pscommon.lib	common	nada	
+004132d0	238	SLog::PrintFileDirect	pscommon.lib	common	nada	
+004133c0	184	SLog::PrintFileDirect1	pscommon.lib	common	nada	
+00413480	165	SLog::PrintFileText	pscommon.lib	common	nada	
+00413530	165	SLog::PrintFileTextNL	pscommon.lib	common	nada	
+004135e0	239	SLog::PrintFileBuffer	pscommon.lib	common	nada	
+004136d0	275	SLog::PrintFileHex	pscommon.lib	common	nada	
+004137f0	32	SLog::Print	pscommon.lib	common	nada	
+00413810	32	SLog::Printf	pscommon.lib	common	nada	
+00413830	108	SLog::Print1Param	pscommon.lib	common	nada	
+004138a0	30	SLog::`scalar deleting destructor'	pscommon.lib	common	nada	
+004138c0	4	SThreadTTerm::GetUpdateTerm	pscommon.lib	common	nada	
+004138d0	44	stConnectionStatistics::Reset	pscommon.lib	common	nada	
+00413900	131	stConnectionStatistics::Average	pscommon.lib	common	nada	
+00413990	137	stConnectionStatistics::ToString	pscommon.lib	common	nada	
+00413a20	72	stServerStatistics::Reset	pscommon.lib	common	nada	
+00413a70	250	stServerStatistics::Average	pscommon.lib	common	nada	
+00413b70	220	stServerStatistics::ToString	pscommon.lib	common	nada	
+00413c50	45	SStatistics::SStatistics	pscommon.lib	common	nada	
+00413c80	79	SStatistics::~SStatistics	pscommon.lib	common	nada	
+00413cd0	38	SStatistics::AddAgent	pscommon.lib	common	nada	
+00413d00	64	SStatistics::OnUpdate	pscommon.lib	common	nada	
+00413d40	199	SStatistics::TickReset	pscommon.lib	common	nada	
+00413e10	48	SStatistics::ConnectRequest	pscommon.lib	common	nada	
+00413e40	164	SStatistics::Connect	pscommon.lib	common	nada	
+00413ef0	141	SStatistics::Disconnect	pscommon.lib	common	nada	
+00413f80	84	SStatistics::RecvBytes	pscommon.lib	common	nada	
+00413fe0	84	SStatistics::SendBytes	pscommon.lib	common	nada	
+00414040	44	SStatistics::GetStatisticsTotal	pscommon.lib	common	nada	
+00414070	47	SStatistics::GetStatisticsTick	pscommon.lib	common	nada	
+004140a0	46	stConnectionStatistics::stConnectionStatistics	pscommon.lib	common	nada	
+004140d0	74	stServerStatistics::stServerStatistics	pscommon.lib	common	nada	
+00414120	3	SWinsock::SWinsock	pscommon.lib	common	nada	
+00414130	20	SWinsock::Startup	pscommon.lib	common	nada	
+00414150	45	SServerTBase::InitTerm	pscommon.lib	common	nada	
+00414180	186	SServerTBase::InitUse	pscommon.lib	common	nada	
+00414240	51	SServerTBase::InitLog	pscommon.lib	common	nada	
+00414280	185	SServerTBase::Start	pscommon.lib	common	nada	
+00414340	59	SServerTBase::Shutdown	pscommon.lib	common	nada	
+00414380	204	SServerTAC::Start	pscommon.lib	common	nada	
+00414450	103	SServerTAC::Shutdown	pscommon.lib	common	nada	
+004144c0	166	SServerTA::Start	pscommon.lib	common	nada	
+00414570	92	SServerTA::Shutdown	pscommon.lib	common	nada	
+004145d0	130	SServerTC::Start	pscommon.lib	common	nada	
+00414660	70	SServerTC::Shutdown	pscommon.lib	common	nada	
+004146b0	108	SServerTACD::Start	pscommon.lib	common	nada	
+00414720	20	SServerTACD::Shutdown	pscommon.lib	common	nada	
+00414740	108	SServerTAD::Start	pscommon.lib	common	nada	
+004147b0	20	SServerTAD::Shutdown	pscommon.lib	common	nada	
+004147d0	103	SServerTCD::Start	pscommon.lib	common	nada	
+00414840	81	SServerTCD::Shutdown	pscommon.lib	common	nada	
+004148a0	4	SSyncHeapBlock<SQueueSendNode,1024>::CountAlloc	pscommon.lib	common	nada	
+004148b0	4	SSyncHeapBlock<SQueueSendNode,1024>::CountNode	pscommon.lib	common	nada	
+004148c0	7	SSyncHeapBlock<SQueueSendNode,1024>::CountUse	pscommon.lib	common	nada	
+004148d0	4	SSyncHeapBlock<SContext,1024>::CountAlloc	pscommon.lib	common	nada	
+004148e0	4	SSyncHeapBlock<SContext,1024>::CountNode	pscommon.lib	common	nada	
+004148f0	7	SSyncHeapBlock<SContext,1024>::CountUse	pscommon.lib	common	nada	
+00414900	4	SSyncHeapBlock<SContextSend,1024>::CountAlloc	pscommon.lib	common	nada	
+00414910	4	SSyncHeapBlock<SContextSend,1024>::CountNode	pscommon.lib	common	nada	
+00414920	7	SSyncHeapBlock<SContextSend,1024>::CountUse	pscommon.lib	common	nada	
+00414930	4	SSyncHeapBlock<SContextAccept,1024>::CountAlloc	pscommon.lib	common	nada	
+00414940	4	SSyncHeapBlock<SContextAccept,1024>::CountNode	pscommon.lib	common	nada	
+00414950	7	SSyncHeapBlock<SContextAccept,1024>::CountUse	pscommon.lib	common	nada	
+00414960	4	SSyncHeapBlock<SQueuePrioritySendNode,1024>::CountAlloc	pscommon.lib	common	nada	
+00414970	4	SSyncHeapBlock<SQueuePrioritySendNode,1024>::CountNode	pscommon.lib	common	nada	
+00414980	7	SSyncHeapBlock<SQueuePrioritySendNode,1024>::CountUse	pscommon.lib	common	nada	
+00414990	4	SSyncHeapBlock<SQueueStatusNode,1024>::CountAlloc	pscommon.lib	common	nada	
+004149a0	4	SSyncHeapBlock<SQueueStatusNode,1024>::CountNode	pscommon.lib	common	nada	
+004149b0	7	SSyncHeapBlock<SQueueStatusNode,1024>::CountUse	pscommon.lib	common	nada	
+004149c0	4	SSyncHeapBlock<SPacketBufferSendN<32>,1024>::CountAlloc	pscommon.lib	common	nada	
+004149d0	4	SSyncHeapBlock<SPacketBufferSendN<32>,1024>::CountNode	pscommon.lib	common	nada	
+004149e0	7	SSyncHeapBlock<SPacketBufferSendN<32>,1024>::CountUse	pscommon.lib	common	nada	
+004149f0	4	SSyncHeapBlock<SPacketBufferSendN<128>,1024>::CountAlloc	pscommon.lib	common	nada	
+00414a00	4	SSyncHeapBlock<SPacketBufferSendN<128>,1024>::CountNode	pscommon.lib	common	nada	
+00414a10	7	SSyncHeapBlock<SPacketBufferSendN<128>,1024>::CountUse	pscommon.lib	common	nada	
+00414a20	4	SSyncHeapBlock<SPacketBufferSendN<2048>,1024>::CountAlloc	pscommon.lib	common	nada	
+00414a30	4	SSyncHeapBlock<SPacketBufferSendN<2048>,1024>::CountNode	pscommon.lib	common	nada	
+00414a40	7	SSyncHeapBlock<SPacketBufferSendN<2048>,1024>::CountUse	pscommon.lib	common	nada	
+00414a50	191	SServerTBase::SServerTBase	pscommon.lib	common	nada	
+00414b10	1	SServerTBase::DisconnectAll	pscommon.lib	common	nada	
+00414b20	3	SServerTBase::IsAcception	pscommon.lib	common	nada	
+00414b30	3	SServerTBase::StartAcception	pscommon.lib	common	nada	
+00414b40	1	SServerTBase::StopAcception	pscommon.lib	common	nada	
+00414b50	3	SServerTBase::GetNumConnection	pscommon.lib	common	nada	
+00414b60	3	SServerTBase::GetMaxConnection	pscommon.lib	common	nada	
+00414b70	3	SServerTBase::SetMaxConnection	pscommon.lib	common	nada	
+00414b80	171	SServerTBase::HeapMemInfoGet	pscommon.lib	common	nada	
+00414c30	111	SServerTA::SServerTA	pscommon.lib	common	nada	
+00414ca0	11	SServerTA::DisconnectAll	pscommon.lib	common	nada	
+00414cb0	7	SServerTA::IsAcception	pscommon.lib	common	nada	
+00414cc0	11	SServerTA::StartAcception	pscommon.lib	common	nada	
+00414cd0	11	SServerTA::StopAcception	pscommon.lib	common	nada	
+00414ce0	7	SServerTA::GetMaxConnection	pscommon.lib	common	nada	
+00414cf0	13	SServerTA::SetMaxConnection	pscommon.lib	common	nada	
+00414d00	7	SServerTA::GetNumConnection	pscommon.lib	common	nada	
+00414d10	95	SServerTC::SServerTC	pscommon.lib	common	nada	
+00414d70	63	SServerTBase::HeapMemInfoPrint	pscommon.lib	common	nada	
+00414db0	78	SServerTBase::HeapMemInfoLog	pscommon.lib	common	nada	
+00414e00	140	SServerTAC::SServerTAC	pscommon.lib	common	nada	
+00414e90	7	SThreadMulti::IsRun	pscommon.lib	common	nada	
+00414ea0	7	SThreadMulti::CountThread	pscommon.lib	common	nada	
+00414eb0	9	SCompletionPort::SCompletionPort	pscommon.lib	common	nada	
+00414ec0	15	SCompletionPort::~SCompletionPort	pscommon.lib	common	nada	
+00414ed0	31	SCompletionPort::CreateDevice	pscommon.lib	common	nada	
+00414ef0	32	SCompletionPort::PostStatus	pscommon.lib	common	nada	
+00414f10	37	SCompletionPort::GetStatus	pscommon.lib	common	nada	
+00414f40	7	SDBDispatcher::GetSync	pscommon.lib	common	nada	
+00414f50	30	CalculateNumberOfDBThreads	pscommon.lib	common	nada	
+00414f70	42	SDBDispatcher::SDBDispatcher	pscommon.lib	common	nada	
+00414fa0	35	SDBDispatcher::~SDBDispatcher	pscommon.lib	common	nada	
+00414fd0	42	SDBDispatcher::Init	pscommon.lib	common	nada	
+00415000	44	SDBDispatcher::Start	pscommon.lib	common	nada	
+00415030	64	SDBDispatcher::Shutdown	pscommon.lib	common	nada	
+00415070	25	SDBDispatcher::PostDispatch	pscommon.lib	common	nada	
+00415090	27	SDBDispatcher::ErrorLog	pscommon.lib	common	nada	
+004150b0	32	SDBDispatcher::ErrorLog	pscommon.lib	common	nada	
+004150d0	87	SDBDispatchClient::PostDispatchDB	pscommon.lib	common	nada	
+00415130	124	SDBDispatchClient::DispatchDB	pscommon.lib	common	nada	
+004151b0	12	SDBDispatcher::OnDispatch	pscommon.lib	common	nada	
+004151c0	117	SDBDispatcher::Run	pscommon.lib	common	nada	
+00415240	9	SListenSocket::SListenSocket	pscommon.lib	common	nada	
+00415250	25	SListenSocket::~SListenSocket	pscommon.lib	common	nada	
+00415270	3	SListenSocket::GetSocket	pscommon.lib	common	nada	
+00415280	31	SListenSocket::Create	pscommon.lib	common	nada	
+004152a0	61	SListenSocket::Bind	pscommon.lib	common	nada	
+004152e0	23	SListenSocket::Listen	pscommon.lib	common	nada	
+00415300	60	SListenSocket::Accept	pscommon.lib	common	nada	
+00415340	35	SListenSocket::Close	pscommon.lib	common	nada	
+00415370	15	SEvent::Reset	pscommon.lib	common	nada	
+00415380	3	SAcceptorEx::GetListenSocket	pscommon.lib	common	nada	
+00415390	102	SAcceptor::SAcceptor	pscommon.lib	common	nada	
+00415400	67	SAcceptor::~SAcceptor	pscommon.lib	common	nada	
+00415450	35	SAcceptor::Init	pscommon.lib	common	nada	
+00415480	284	SAcceptor::StartAcception	pscommon.lib	common	nada	
+004155a0	51	SAcceptor::StopAcception	pscommon.lib	common	nada	
+004155e0	219	SAcceptor::Run	pscommon.lib	common	nada	
+004156c0	30	SAcceptorEx::SAcceptorEx	pscommon.lib	common	nada	
+004156e0	25	SAcceptorEx::~SAcceptorEx	pscommon.lib	common	nada	
+00415700	53	SAcceptorEx::Init	pscommon.lib	common	nada	
+00415740	3	SAcceptorEx::Start	pscommon.lib	common	nada	
+00415750	315	SAcceptorEx::StartAcception	pscommon.lib	common	nada	
+00415890	39	SAcceptorEx::StopAcception	pscommon.lib	common	nada	
+004158c0	16	SAcceptorMulti::SAcceptorMulti	pscommon.lib	common	nada	
+004158d0	84	SAcceptorEx::`vector deleting destructor'	pscommon.lib	common	nada	
+00415930	55	SAcceptorMulti::Reset	pscommon.lib	common	nada	
+00415970	255	SAcceptorMulti::Init	pscommon.lib	common	nada	
+00415a70	304	SAcceptorMulti::Init	pscommon.lib	common	nada	
+00415ba0	3	SAcceptorMulti::Start	pscommon.lib	common	nada	
+00415bb0	50	SAcceptorMulti::StartAcception	pscommon.lib	common	nada	
+00415bf0	72	SAcceptorMulti::StopAcception	pscommon.lib	common	nada	
+00415c40	40	SAcceptorMulti::StartAcception	pscommon.lib	common	nada	
+00415c70	74	SAcceptorMulti::StopAcception	pscommon.lib	common	nada	
+00415cc0	35	SAcceptorMulti::GetAcceptor	pscommon.lib	common	nada	
+00415cf0	75	SAcceptor::Shutdown	pscommon.lib	common	nada	
+00415d40	39	SAcceptorEx::Shutdown	pscommon.lib	common	nada	
+00415d70	38	SAcceptorMulti::~SAcceptorMulti	pscommon.lib	common	nada	
+00415da0	70	SAcceptorMulti::Shutdown	pscommon.lib	common	nada	
+00415df0	33	SCompletionPort::AssociateDevice	pscommon.lib	common	nada	
+00415e20	9	SPacketBufferSend::Reset	pscommon.lib	common	nada	
+00415e30	7	SSyncQueueBufferSend::IsEmpty	pscommon.lib	common	nada	
+00415e40	24	SContext::SContext	pscommon.lib	common	nada	
+00415e60	1	SContext::~SContext	pscommon.lib	common	nada	
+00415e70	25	SContext::WsaBufReset	pscommon.lib	common	nada	
+00415e90	47	SContext::ResetRecv	pscommon.lib	common	nada	
+00415ec0	11	SContext::GetBufferFree	pscommon.lib	common	nada	
+00415ed0	12	SContextSend::Reset	pscommon.lib	common	nada	
+00415ee0	77	SContextSend::BufferFree	pscommon.lib	common	nada	
+00415f30	56	SContextAccept::SContextAccept	pscommon.lib	common	nada	
+00415f70	1	SContextAccept::~SContextAccept	pscommon.lib	common	nada	
+00415f80	11	SContextAccept::Reset	pscommon.lib	common	nada	
+00415f90	7	SSyncQueueBufferPriority::IsEmpty	pscommon.lib	common	nada	
+00415fa0	16	SConnectionParam::SetCloseType	pscommon.lib	common	nada	
+00415fb0	16	SConnectionParam::SetCloseErr	pscommon.lib	common	nada	
+00415fc0	7	SConnectionParam::GetSendBytes	pscommon.lib	common	nada	
+00415fd0	7	SConnectionParam::GetRecvBytes	pscommon.lib	common	nada	
+00415fe0	4	SConnectionParam::GetSendProcessing	pscommon.lib	common	nada	
+00415ff0	11	SConnectionParam::IncSendProcessing	pscommon.lib	common	nada	
+00416000	11	SConnectionParam::DecSendProcessing	pscommon.lib	common	nada	
+00416010	11	SConnectionParam::SendLock	pscommon.lib	common	nada	
+00416020	11	SConnectionParam::SendUnlock	pscommon.lib	common	nada	
+00416030	4	SAcceptorEx::IsAcception	pscommon.lib	common	nada	
+00416040	4	SAcceptorEx::GetID	pscommon.lib	common	nada	
+00416050	38	SWorker::SWorker	pscommon.lib	common	nada	
+00416080	35	SWorker::~SWorker	pscommon.lib	common	nada	
+004160b0	42	SWorker::Init	pscommon.lib	common	nada	
+004160e0	64	SWorker::Shutdown	pscommon.lib	common	nada	
+00416120	59	SWorker::Disconnect	pscommon.lib	common	nada	
+00416160	41	SWorker::AssociateDevice	pscommon.lib	common	nada	
+00416190	143	SWorker::RecvComplete	pscommon.lib	common	nada	
+00416220	20	SConnection::EnableSendProcessing	pscommon.lib	common	nada	
+00416240	27	SWorker::ErrorLog	pscommon.lib	common	nada	
+00416260	32	SWorker::ErrorLog	pscommon.lib	common	nada	
+00416280	41	SSyncHeapBlock<SContext,1024>::Free	pscommon.lib	common	nada	
+004162b0	41	SSyncHeapBlock<SContextSend,1024>::Free	pscommon.lib	common	nada	
+004162e0	41	SSyncHeapBlock<SContextAccept,1024>::Free	pscommon.lib	common	nada	
+00416310	30	SSyncHeapBlock<SContext,1024>::SNodeBlock::SNodeBlock	pscommon.lib	common	nada	
+00416330	33	SSyncHeapBlock<SContextAccept,1024>::SNodeBlock::SNodeBlock	pscommon.lib	common	nada	
+00416360	44	SHeap<SSyncHeapBlock<SContext,1024>::SNodeBlock>::Free	pscommon.lib	common	nada	
+00416390	44	SHeap<SSyncHeapBlock<SContextAccept,1024>::SNodeBlock>::Free	pscommon.lib	common	nada	
+004163c0	75	SWorker::FreeContext	pscommon.lib	common	nada	
+00416410	59	SWorker::FreeContextSend	pscommon.lib	common	nada	
+00416450	451	SWorker::IOAccept	pscommon.lib	common	nada	
+00416620	302	SWorker::Recv	pscommon.lib	common	nada	
+00416750	302	SWorker::Send	pscommon.lib	common	nada	
+00416880	261	SWorker::SendPost	pscommon.lib	common	nada	
+00416990	178	SWorker::SendPostQueuePriority	pscommon.lib	common	nada	
+00416a50	169	SWorker::SendComplete	pscommon.lib	common	nada	
+00416b00	140	SWorker::SendAll	pscommon.lib	common	nada	
+00416b90	211	SSyncHeapBlock<SContext,1024>::ReserveBlock	pscommon.lib	common	nada	
+00416c70	237	SSyncHeapBlock<SContextAccept,1024>::ReserveBlock	pscommon.lib	common	nada	
+00416d60	594	SWorker::IORecv	pscommon.lib	common	enlazado	include/eternity/net/framing.hpp
+00416fc0	295	SWorker::IOSend	pscommon.lib	common	nada	
+004170f0	129	SSyncHeapBlock<SContext,1024>::Alloc	pscommon.lib	common	nada	
+00417180	129	SSyncHeapBlock<SContextAccept,1024>::Alloc	pscommon.lib	common	nada	
+00417210	919	SWorker::Run	pscommon.lib	common	nada	
+004175b0	243	SWorker::AcceptPost	pscommon.lib	common	nada	
+004176b0	250	SWorker::RecvPost	pscommon.lib	common	nada	
+004177b0	8	SContext::ResetSendDispatch	pscommon.lib	common	nada	
+004177c0	8	SContext::ResetRecvDispatch	pscommon.lib	common	nada	
+004177d0	8	SContext::ResetDisconnectDispatch	pscommon.lib	common	nada	
+004177e0	38	SDispatcher::SDispatcher	pscommon.lib	common	nada	
+00417810	35	SDispatcher::~SDispatcher	pscommon.lib	common	nada	
+00417840	42	SDispatcher::Init	pscommon.lib	common	nada	
+00417870	64	SDispatcher::Shutdown	pscommon.lib	common	nada	
+004178b0	12	SDispatcher::OnSendDispatch	pscommon.lib	common	nada	
+004178c0	19	SDispatcher::OnDisconnectDispatch	pscommon.lib	common	nada	
+004178e0	27	SDispatcher::ErrorLog	pscommon.lib	common	nada	
+00417900	32	SDispatcher::ErrorLog	pscommon.lib	common	nada	
+00417920	94	SDispatcher::RecvPost	pscommon.lib	common	nada	
+00417980	66	SDispatcher::SendPost	pscommon.lib	common	nada	
+004179d0	66	SDispatcher::DisconnectPost	pscommon.lib	common	nada	
+00417a20	151	SDispatcher::OnRecvDispatch	pscommon.lib	common	nada	
+00417ac0	311	SDispatcher::Run	pscommon.lib	common	nada	
+00417c00	46	SSender::SSender	pscommon.lib	common	nada	
+00417c30	11	SSender::~SSender	pscommon.lib	common	nada	
+00417c40	38	SSender::AddAgent	pscommon.lib	common	nada	
+00417c70	40	SSender::OnUpdate	pscommon.lib	common	nada	
+00417ca0	46	SReply::SReply	pscommon.lib	common	nada	
+00417cd0	11	SReply::~SReply	pscommon.lib	common	nada	
+00417ce0	38	SReply::AddAgent	pscommon.lib	common	nada	
+00417d10	46	SReply::OnUpdate	pscommon.lib	common	nada	
+00417d40	74	SReply::CheckTime	pscommon.lib	common	enlazado	include/eternity/net/login_reply.hpp
+00417d90	96	SReply::CheckRecv	pscommon.lib	common	enlazado	include/eternity/net/login_reply.hpp
+00417df0	8	SSyncMap<unsigned long,int>::Lock	pscommon.lib	common	nada	
+00417e00	8	SSyncMap<unsigned long,int>::Unlock	pscommon.lib	common	nada	
+00417e10	18	std::_Tree<std::_Tmap_traits<unsigned long,int,std::less<unsigned long>,std::allocator<std::pair<unsigned long const ,int> >,0> >::const_iterator::operator==	pscommon.lib	crt	nada	
+00417e30	18	std::_Tree<std::_Tmap_traits<unsigned long,int,std::less<unsigned long>,std::allocator<std::pair<unsigned long const ,int> >,0> >::const_iterator::operator!=	pscommon.lib	crt	nada	
+00417e50	8	std::_Tree<std::_Tmap_traits<unsigned long,int,std::less<unsigned long>,std::allocator<std::pair<unsigned long const ,int> >,0> >::_Color	pscommon.lib	crt	nada	
+00417e60	8	std::_Tree<std::_Tmap_traits<unsigned long,int,std::less<unsigned long>,std::allocator<std::pair<unsigned long const ,int> >,0> >::_Isnil	pscommon.lib	crt	nada	
+00417e70	5	std::_Tree<std::_Tmap_traits<unsigned long,int,std::less<unsigned long>,std::allocator<std::pair<unsigned long const ,int> >,0> >::_Left	pscommon.lib	crt	nada	
+00417e80	8	std::_Tree<std::_Tmap_traits<unsigned long,int,std::less<unsigned long>,std::allocator<std::pair<unsigned long const ,int> >,0> >::_Parent	pscommon.lib	crt	nada	
+00417e90	8	std::_Tree<std::_Tmap_traits<unsigned long,int,std::less<unsigned long>,std::allocator<std::pair<unsigned long const ,int> >,0> >::_Right	pscommon.lib	crt	nada	
+00417ea0	4	std::_Tree<std::_Tmap_traits<unsigned long,int,std::less<unsigned long>,std::allocator<std::pair<unsigned long const ,int> >,0> >::_Lmost	pscommon.lib	crt	nada	
+00417eb0	28	std::_Tree<std::_Tmap_traits<unsigned long,int,std::less<unsigned long>,std::allocator<std::pair<unsigned long const ,int> >,0> >::_Max	pscommon.lib	crt	nada	
+00417ed0	27	std::_Tree<std::_Tmap_traits<unsigned long,int,std::less<unsigned long>,std::allocator<std::pair<unsigned long const ,int> >,0> >::_Min	pscommon.lib	crt	nada	
+00417ef0	7	std::_Tree<std::_Tmap_traits<unsigned long,int,std::less<unsigned long>,std::allocator<std::pair<unsigned long const ,int> >,0> >::_Rmost	pscommon.lib	crt	nada	
+00417f00	7	std::_Tree<std::_Tmap_traits<unsigned long,int,std::less<unsigned long>,std::allocator<std::pair<unsigned long const ,int> >,0> >::_Root	pscommon.lib	crt	nada	
+00417f10	82	std::_Tree<std::_Tmap_traits<unsigned long,int,std::less<unsigned long>,std::allocator<std::pair<unsigned long const ,int> >,0> >::_Rrotate	pscommon.lib	crt	nada	
+00417f70	5	std::_Tmap_traits<unsigned long,int,std::less<unsigned long>,std::allocator<std::pair<unsigned long const ,int> >,0>::_Kfn	pscommon.lib	crt	nada	
+00417f80	3	std::allocator<std::pair<unsigned long const ,int> >::allocator<std::pair<unsigned long const ,int> >	pscommon.lib	crt	nada	
+00417f90	14	std::allocator<std::_Tree_nod<std::_Tmap_traits<unsigned long,int,std::less<unsigned long>,std::allocator<std::pair<unsigned long const ,int> >,0> >::_Node>::deallocate	pscommon.lib	crt	nada	
+00417fa0	9	std::_Tree<std::_Tmap_traits<unsigned long,int,std::less<unsigned long>,std::allocator<std::pair<unsigned long const ,int> >,0> >::const_iterator::const_iterator	pscommon.lib	crt	nada	
+00417fb0	3	std::_Tree<std::_Tmap_traits<unsigned long,int,std::less<unsigned long>,std::allocator<std::pair<unsigned long const ,int> >,0> >::const_iterator::_Mynode	pscommon.lib	crt	nada	
+00417fc0	22	std::pair<std::_Tree<std::_Tmap_traits<unsigned long,int,std::less<unsigned long>,std::allocator<std::pair<unsigned long const ,int> >,0> >::iterator,bool>::pair<std::_Tree<std::_Tmap_traits<unsigned long,int,std::less<unsigned long>,std::allocator<std::pair<unsigned long const ,int> >,0> >::iterator,bool>	pscommon.lib	crt	nada	
+00417fe0	8	std::_Tree<std::_Tmap_traits<unsigned long,int,std::less<unsigned long>,std::allocator<std::pair<unsigned long const ,int> >,0> >::_Myval	pscommon.lib	crt	nada	
+00417ff0	5	std::allocator<std::pair<unsigned long const ,int> >::allocator<std::pair<unsigned long const ,int> >	pscommon.lib	crt	nada	
+00418000	11	std::_Tree<std::_Tmap_traits<unsigned long,int,std::less<unsigned long>,std::allocator<std::pair<unsigned long const ,int> >,0> >::const_iterator::const_iterator	pscommon.lib	crt	nada	
+00418010	6	std::_Tree<std::_Tmap_traits<unsigned long,int,std::less<unsigned long>,std::allocator<std::pair<unsigned long const ,int> >,0> >::const_iterator::operator*	pscommon.lib	crt	nada	
+00418020	7	std::_Tree<std::_Tmap_traits<unsigned long,int,std::less<unsigned long>,std::allocator<std::pair<unsigned long const ,int> >,0> >::_Root	pscommon.lib	crt	nada	
+00418030	6	std::allocator<std::pair<unsigned long const ,int> >::max_size	pscommon.lib	crt	nada	
+00418040	81	std::_Tree<std::_Tmap_traits<unsigned long,int,std::less<unsigned long>,std::allocator<std::pair<unsigned long const ,int> >,0> >::const_iterator::_Dec	pscommon.lib	crt	nada	
+004180a0	75	std::_Tree<std::_Tmap_traits<unsigned long,int,std::less<unsigned long>,std::allocator<std::pair<unsigned long const ,int> >,0> >::const_iterator::_Inc	pscommon.lib	crt	nada	
+004180f0	51	std::_Tree_nod<std::_Tmap_traits<unsigned long,int,std::less<unsigned long>,std::allocator<std::pair<unsigned long const ,int> >,0> >::_Node::_Node	pscommon.lib	crt	nada	
+00418130	5	std::_Tmap_traits<unsigned long,int,std::less<unsigned long>,std::allocator<std::pair<unsigned long const ,int> >,0>::_Tmap_traits<unsigned long,int,std::less<unsigned long>,std::allocator<std::pair<unsigned long const ,int> >,0>	pscommon.lib	crt	nada	
+00418140	19	std::pair<unsigned long const ,int>::pair<unsigned long const ,int><unsigned long,int>	pscommon.lib	crt	nada	
+00418160	1	std::_Destroy<std::_Tree_nod<std::_Tmap_traits<unsigned long,int,std::less<unsigned long>,std::allocator<std::pair<unsigned long const ,int> >,0> >::_Node>	pscommon.lib	crt	nada	
+00418170	1	std::_Destroy<std::_Tree_nod<std::_Tmap_traits<unsigned long,int,std::less<unsigned long>,std::allocator<std::pair<unsigned long const ,int> >,0> >::_Node *>	pscommon.lib	crt	nada	
+00418180	5	std::allocator<std::_Tree_nod<std::_Tmap_traits<unsigned long,int,std::less<unsigned long>,std::allocator<std::pair<unsigned long const ,int> >,0> >::_Node *>::allocator<std::_Tree_nod<std::_Tmap_traits<unsigned long,int,std::less<unsigned long>,std::allocator<std::pair<unsigned long const ,int> >,0> >::_Node *><std::pair<unsigned long const ,int> >	pscommon.lib	crt	nada	
+00418190	23	std::_Allocate<std::_Tree_nod<std::_Tmap_traits<unsigned long,int,std::less<unsigned long>,std::allocator<std::pair<unsigned long const ,int> >,0> >::_Node>	pscommon.lib	crt	nada	
+004181b0	5	std::allocator<std::_Tree_nod<std::_Tmap_traits<unsigned long,int,std::less<unsigned long>,std::allocator<std::pair<unsigned long const ,int> >,0> >::_Node>::allocator<std::_Tree_nod<std::_Tmap_traits<unsigned long,int,std::less<unsigned long>,std::allocator<std::pair<unsigned long const ,int> >,0> >::_Node><std::pair<unsigned long const ,int> >	pscommon.lib	crt	nada	
+004181c0	17	std::_Construct<std::_Tree_nod<std::_Tmap_traits<unsigned long,int,std::less<unsigned long>,std::allocator<std::pair<unsigned long const ,int> >,0> >::_Node *,std::_Tree_nod<std::_Tmap_traits<unsigned long,int,std::less<unsigned long>,std::allocator<std::pair<unsigned long const ,int> >,0> >::_Node *>	pscommon.lib	crt	nada	
+004181e0	22	std::pair<unsigned long,int>::pair<unsigned long,int>	pscommon.lib	crt	nada	
+00418200	9	std::_Tree<std::_Tmap_traits<unsigned long,int,std::less<unsigned long>,std::allocator<std::pair<unsigned long const ,int> >,0> >::iterator::iterator	pscommon.lib	crt	nada	
+00418210	8	std::_Tree<std::_Tmap_traits<unsigned long,int,std::less<unsigned long>,std::allocator<std::pair<unsigned long const ,int> >,0> >::_Key	pscommon.lib	crt	nada	
+00418220	78	std::_Tree<std::_Tmap_traits<unsigned long,int,std::less<unsigned long>,std::allocator<std::pair<unsigned long const ,int> >,0> >::_Lrotate	pscommon.lib	crt	nada	
+00418270	3	std::allocator<std::_Tree_nod<std::_Tmap_traits<unsigned long,int,std::less<unsigned long>,std::allocator<std::pair<unsigned long const ,int> >,0> >::_Node>::destroy	pscommon.lib	crt	nada	
+00418280	11	std::_Tree<std::_Tmap_traits<unsigned long,int,std::less<unsigned long>,std::allocator<std::pair<unsigned long const ,int> >,0> >::iterator::iterator	pscommon.lib	crt	nada	
+00418290	6	std::_Tree<std::_Tmap_traits<unsigned long,int,std::less<unsigned long>,std::allocator<std::pair<unsigned long const ,int> >,0> >::iterator::operator*	pscommon.lib	crt	nada	
+004182a0	6	std::_Tree<std::_Tmap_traits<unsigned long,int,std::less<unsigned long>,std::allocator<std::pair<unsigned long const ,int> >,0> >::max_size	pscommon.lib	crt	nada	
+004182b0	41	std::_Tree<std::_Tmap_traits<unsigned long,int,std::less<unsigned long>,std::allocator<std::pair<unsigned long const ,int> >,0> >::_Lbound	pscommon.lib	crt	nada	
+004182e0	3	std::allocator<std::_Tree_nod<std::_Tmap_traits<unsigned long,int,std::less<unsigned long>,std::allocator<std::pair<unsigned long const ,int> >,0> >::_Node *>::destroy	pscommon.lib	crt	nada	
+004182f0	12	std::_Tree<std::_Tmap_traits<unsigned long,int,std::less<unsigned long>,std::allocator<std::pair<unsigned long const ,int> >,0> >::const_iterator::operator++	pscommon.lib	crt	nada	
+00418300	12	std::_Tree<std::_Tmap_traits<unsigned long,int,std::less<unsigned long>,std::allocator<std::pair<unsigned long const ,int> >,0> >::const_iterator::operator--	pscommon.lib	crt	nada	
+00418310	25	std::allocator<std::_Tree_nod<std::_Tmap_traits<unsigned long,int,std::less<unsigned long>,std::allocator<std::pair<unsigned long const ,int> >,0> >::_Node>::allocate	pscommon.lib	crt	nada	
+00418330	5	std::_Tree_nod<std::_Tmap_traits<unsigned long,int,std::less<unsigned long>,std::allocator<std::pair<unsigned long const ,int> >,0> >::_Tree_nod<std::_Tmap_traits<unsigned long,int,std::less<unsigned long>,std::allocator<std::pair<unsigned long const ,int> >,0> >	pscommon.lib	crt	nada	
+00418340	19	std::allocator<std::_Tree_nod<std::_Tmap_traits<unsigned long,int,std::less<unsigned long>,std::allocator<std::pair<unsigned long const ,int> >,0> >::_Node *>::construct	pscommon.lib	crt	nada	
+00418360	18	std::make_pair<unsigned long,int>	pscommon.lib	crt	nada	
+00418380	12	std::_Tree<std::_Tmap_traits<unsigned long,int,std::less<unsigned long>,std::allocator<std::pair<unsigned long const ,int> >,0> >::end	pscommon.lib	crt	nada	
+00418390	6	std::_Tree<std::_Tmap_traits<unsigned long,int,std::less<unsigned long>,std::allocator<std::pair<unsigned long const ,int> >,0> >::iterator::operator->	pscommon.lib	crt	nada	
+004183a0	14	std::_Tree<std::_Tmap_traits<unsigned long,int,std::less<unsigned long>,std::allocator<std::pair<unsigned long const ,int> >,0> >::begin	pscommon.lib	crt	nada	
+004183b0	47	std::_Tree<std::_Tmap_traits<unsigned long,int,std::less<unsigned long>,std::allocator<std::pair<unsigned long const ,int> >,0> >::lower_bound	pscommon.lib	crt	nada	
+004183e0	53	std::_Tree<std::_Tmap_traits<unsigned long,int,std::less<unsigned long>,std::allocator<std::pair<unsigned long const ,int> >,0> >::_Erase	pscommon.lib	crt	nada	
+00418420	12	std::_Tree<std::_Tmap_traits<unsigned long,int,std::less<unsigned long>,std::allocator<std::pair<unsigned long const ,int> >,0> >::iterator::operator++	pscommon.lib	crt	nada	
+00418430	12	std::_Tree<std::_Tmap_traits<unsigned long,int,std::less<unsigned long>,std::allocator<std::pair<unsigned long const ,int> >,0> >::iterator::operator--	pscommon.lib	crt	nada	
+00418440	63	std::_Tree<std::_Tmap_traits<unsigned long,int,std::less<unsigned long>,std::allocator<std::pair<unsigned long const ,int> >,0> >::_Buynode	pscommon.lib	crt	nada	
+00418480	55	std::_Tree<std::_Tmap_traits<unsigned long,int,std::less<unsigned long>,std::allocator<std::pair<unsigned long const ,int> >,0> >::_Buynode	pscommon.lib	crt	nada	
+004184c0	5	std::_Tree_ptr<std::_Tmap_traits<unsigned long,int,std::less<unsigned long>,std::allocator<std::pair<unsigned long const ,int> >,0> >::_Tree_ptr<std::_Tmap_traits<unsigned long,int,std::less<unsigned long>,std::allocator<std::pair<unsigned long const ,int> >,0> >	pscommon.lib	crt	nada	
+004184d0	18	std::_Tree<std::_Tmap_traits<unsigned long,int,std::less<unsigned long>,std::allocator<std::pair<unsigned long const ,int> >,0> >::iterator::operator++	pscommon.lib	crt	nada	
+004184f0	18	SSyncMap<unsigned long,int>::SetValue	pscommon.lib	common	nada	
+00418510	43	std::_Tree<std::_Tmap_traits<unsigned long,int,std::less<unsigned long>,std::allocator<std::pair<unsigned long const ,int> >,0> >::clear	pscommon.lib	crt	nada	
+00418540	98	std::_Tree<std::_Tmap_traits<unsigned long,int,std::less<unsigned long>,std::allocator<std::pair<unsigned long const ,int> >,0> >::find	pscommon.lib	crt	nada	
+004185b0	41	std::_Tree<std::_Tmap_traits<unsigned long,int,std::less<unsigned long>,std::allocator<std::pair<unsigned long const ,int> >,0> >::_Init	pscommon.lib	crt	nada	
+004185e0	5	std::_Tree_val<std::_Tmap_traits<unsigned long,int,std::less<unsigned long>,std::allocator<std::pair<unsigned long const ,int> >,0> >::_Tree_val<std::_Tmap_traits<unsigned long,int,std::less<unsigned long>,std::allocator<std::pair<unsigned long const ,int> >,0> >	pscommon.lib	crt	nada	
+004185f0	62	SSyncMap<unsigned long,int>::Release	pscommon.lib	common	nada	
+00418630	72	SSyncMap<unsigned long,int>::Find	pscommon.lib	common	nada	
+00418680	43	SSyncMap<unsigned long,int>::FindFree	pscommon.lib	common	nada	
+004186b0	45	std::_Tree<std::_Tmap_traits<unsigned long,int,std::less<unsigned long>,std::allocator<std::pair<unsigned long const ,int> >,0> >::_Tree<std::_Tmap_traits<unsigned long,int,std::less<unsigned long>,std::allocator<std::pair<unsigned long const ,int> >,0> >	pscommon.lib	crt	nada	
+004186e0	107	SFilterIP::CheckEnableIP	pscommon.lib	common	nada	
+00418750	681	std::_Tree<std::_Tmap_traits<unsigned long,int,std::less<unsigned long>,std::allocator<std::pair<unsigned long const ,int> >,0> >::erase	pscommon.lib	crt	nada	
+00418a00	478	std::_Tree<std::_Tmap_traits<unsigned long,int,std::less<unsigned long>,std::allocator<std::pair<unsigned long const ,int> >,0> >::_Insert	pscommon.lib	crt	nada	
+00418be0	180	std::_Tree<std::_Tmap_traits<unsigned long,int,std::less<unsigned long>,std::allocator<std::pair<unsigned long const ,int> >,0> >::erase	pscommon.lib	crt	nada	
+00418ca0	87	SSyncMap<unsigned long,int>::Remove	pscommon.lib	common	nada	
+00418d00	185	std::_Tree<std::_Tmap_traits<unsigned long,int,std::less<unsigned long>,std::allocator<std::pair<unsigned long const ,int> >,0> >::insert	pscommon.lib	crt	nada	
+00418dc0	46	std::_Tree<std::_Tmap_traits<unsigned long,int,std::less<unsigned long>,std::allocator<std::pair<unsigned long const ,int> >,0> >::_Tidy	pscommon.lib	crt	nada	
+00418df0	100	SFilterIP::Remove	pscommon.lib	common	nada	
+00418e60	16	SFilterIP::RemoveEnable	pscommon.lib	common	nada	
+00418e70	16	SFilterIP::RemoveDisable	pscommon.lib	common	nada	
+00418e80	63	SSyncMap<unsigned long,int>::Add	pscommon.lib	common	nada	
+00418ec0	46	std::_Tree<std::_Tmap_traits<unsigned long,int,std::less<unsigned long>,std::allocator<std::pair<unsigned long const ,int> >,0> >::~_Tree<std::_Tmap_traits<unsigned long,int,std::less<unsigned long>,std::allocator<std::pair<unsigned long const ,int> >,0> >	pscommon.lib	crt	nada	
+00418ef0	162	SFilterIP::Add	pscommon.lib	common	nada	
+00418fa0	117	SFilterIP::AddEnable	pscommon.lib	common	nada	
+00419020	117	SFilterIP::AddDisable	pscommon.lib	common	nada	
+004190a0	46	std::map<unsigned long,int,std::less<unsigned long>,std::allocator<std::pair<unsigned long const ,int> > >::~map<unsigned long,int,std::less<unsigned long>,std::allocator<std::pair<unsigned long const ,int> > >	pscommon.lib	crt	nada	
+004190d0	43	std::map<unsigned long,int,std::less<unsigned long>,std::allocator<std::pair<unsigned long const ,int> > >::map<unsigned long,int,std::less<unsigned long>,std::allocator<std::pair<unsigned long const ,int> > >	pscommon.lib	crt	nada	
+00419100	112	SSyncMap<unsigned long,int>::SSyncMap<unsigned long,int>	pscommon.lib	common	nada	
+00419170	160	SSyncMap<unsigned long,int>::~SSyncMap<unsigned long,int>	pscommon.lib	common	nada	
+00419210	104	SFilterIP::SFilterIP	pscommon.lib	common	nada	
+00419280	90	SFilterIP::~SFilterIP	pscommon.lib	common	nada	
+004192e0	50	SPacketBufferSend::SetData	pscommon.lib	common	nada	
+00419320	87	SUdp::SUdp	pscommon.lib	common	nada	
+00419380	41	SUdp::~SUdp	pscommon.lib	common	nada	
+004193b0	27	SUdp::Close	pscommon.lib	common	nada	
+004193d0	51	SUdp::ShutDown	pscommon.lib	common	nada	
+00419410	242	SUdp::Open	pscommon.lib	common	nada	
+00419510	42	SUdp::SetTargetAddr	pscommon.lib	common	nada	
+00419540	102	SUdp::ErrLog	pscommon.lib	common	nada	
+004195b0	30	SUdp::`scalar deleting destructor'	pscommon.lib	common	nada	
+004195d0	267	SUdp::Send	pscommon.lib	common	nada	
+004196e0	360	SUdp::Send	pscommon.lib	common	nada	
+00419850	158	SUdp::Recv	pscommon.lib	common	nada	
+004198f0	56	SUdp::Run	pscommon.lib	common	nada	
+00419930	34	SSyncQueueStatus::Release	pscommon.lib	common	nada	
+00419960	13	SHeap<SSyncHeapBlock<SQueueStatusNode,1024>::SNodeBlock>::SHeap<SSyncHeapBlock<SQueueStatusNode,1024>::SNodeBlock>	pscommon.lib	common	nada	
+00419970	13	SHeap<SSyncHeapBlock<SQueueStatusNode,1024>::SNodeReserve>::SHeap<SSyncHeapBlock<SQueueStatusNode,1024>::SNodeReserve>	pscommon.lib	common	nada	
+00419980	40	SSyncHeapBlock<SQueueStatusNode,1024>::Free	pscommon.lib	common	nada	
+004199b0	61	SHeap<SSyncHeapBlock<SQueueStatusNode,1024>::SNodeBlock>::Release	pscommon.lib	common	nada	
+004199f0	14	SSyncHeapBlock<SQueueStatusNode,1024>::SNodeReserve::~SNodeReserve	pscommon.lib	common	nada	
+00419a00	44	SHeap<SSyncHeapBlock<SQueueStatusNode,1024>::SNodeBlock>::Free	pscommon.lib	common	nada	
+00419a30	108	SSyncQueueStatus::Reset	pscommon.lib	common	nada	
+00419aa0	107	SSyncQueueStatus::Pop	pscommon.lib	common	nada	
+00419b10	5	SHeap<SSyncHeapBlock<SQueueStatusNode,1024>::SNodeBlock>::~SHeap<SSyncHeapBlock<SQueueStatusNode,1024>::SNodeBlock>	pscommon.lib	common	nada	
+00419b20	121	SSyncHeapBlock<SQueueStatusNode,1024>::ReserveBlock	pscommon.lib	common	nada	
+00419ba0	40	SSyncHeapBlock<SQueueStatusNode,1024>::SNodeReserve::`scalar deleting destructor'	pscommon.lib	common	nada	
+00419bd0	128	SSyncHeapBlock<SQueueStatusNode,1024>::Alloc	pscommon.lib	common	nada	
+00419c50	78	SHeap<SSyncHeapBlock<SQueueStatusNode,1024>::SNodeReserve>::Release	pscommon.lib	common	nada	
+00419ca0	97	SSyncQueueStatus::Push	pscommon.lib	common	nada	
+00419d10	5	SHeap<SSyncHeapBlock<SQueueStatusNode,1024>::SNodeReserve>::~SHeap<SSyncHeapBlock<SQueueStatusNode,1024>::SNodeReserve>	pscommon.lib	common	nada	
+00419d20	43	SSyncQueueStatus::PushGetCount	pscommon.lib	common	nada	
+00419d50	52	SSyncHeapBlock<SQueueStatusNode,1024>::SSyncHeapBlock<SQueueStatusNode,1024>	pscommon.lib	common	nada	
+00419d90	30	SSyncHeapBlock<SQueueStatusNode,1024>::~SSyncHeapBlock<SQueueStatusNode,1024>	pscommon.lib	common	nada	
+00419db0	9	SSemaphore::SSemaphore	pscommon.lib	common	nada	
+00419dc0	14	SSemaphore::~SSemaphore	pscommon.lib	common	nada	
+00419dd0	190	SSemaphore::Create	pscommon.lib	common	nada	
+00419e90	24	SSemaphore::Release	pscommon.lib	common	nada	
+00419eb0	22	SSemaphore::Enter	pscommon.lib	common	nada	
+00419ed0	14	SSemaphore::Leave	pscommon.lib	common	nada	
+00419ee0	22	SSemaphore::Lock	pscommon.lib	common	nada	
+00419f00	14	SSemaphore::Unlock	pscommon.lib	common	nada	
+00419f10	13	SDatabase::SetLog	pscommon.lib	common	nada	
+00419f20	87	SDatabase::`vector deleting destructor'	pscommon.lib	common	nada	
+00419f80	43	SDatabasePool::Disconnect	pscommon.lib	common	nada	
+00419fb0	111	SDatabasePool::Reconnect	pscommon.lib	common	nada	
+0041a020	46	SSyncList<SDatabase>::SSyncList<SDatabase>	pscommon.lib	common	nada	
+0041a050	40	SSyncList<SDatabase>::Reset	pscommon.lib	common	nada	
+0041a080	58	SSyncList<SDatabase>::AddFront	pscommon.lib	common	nada	
+0041a0c0	56	SSyncList<SDatabase>::AddBack	pscommon.lib	common	nada	
+0041a100	95	SSyncList<SDatabase>::RemoveFront	pscommon.lib	common	nada	
+0041a160	30	SDatabase::`scalar deleting destructor'	pscommon.lib	common	nada	
+0041a180	114	SDatabasePool::Release	pscommon.lib	common	nada	
+0041a200	469	SDatabasePool::Connect	pscommon.lib	common	nada	
+0041a3e0	501	SDatabasePool::Connect	pscommon.lib	common	nada	
+0041a5e0	498	SDatabasePool::ConnectWithReconnect	pscommon.lib	common	nada	
+0041a7e0	185	SDatabasePool::AllocDB	pscommon.lib	common	nada	
+0041a8a0	143	SDatabasePool::FreeDB	pscommon.lib	common	nada	
+0041a930	86	SDatabasePoolAlloc::AllocDB	pscommon.lib	common	nada	
+0041a990	89	SDatabasePoolAlloc::FreeDB	pscommon.lib	common	nada	
+0041a9f0	142	SDatabasePoolAlloc::AllocDB	pscommon.lib	common	nada	
+0041aa80	109	SDatabasePoolAlloc::FreeDB	pscommon.lib	common	nada	
+0041aaf0	85	SSyncList<SDatabase>::Release	pscommon.lib	common	nada	
+0041ab50	68	SSyncList<SDatabase>::~SSyncList<SDatabase>	pscommon.lib	common	nada	
+0041aba0	92	SDatabasePool::SDatabasePool	pscommon.lib	common	nada	
+0041ac00	185	SDatabasePool::~SDatabasePool	pscommon.lib	common	nada	
+0041acc0	4	SShareMem::GetMemAddr	pscommon.lib	common	nada	
+0041acd0	4	SShareMemSync::GetMemAddr	pscommon.lib	common	nada	
+0041ace0	26	SShareMemAgentTCommand::SShareMemAgentTCommand	pscommon.lib	common	nada	
+0041ad00	22	SShareMemTCommandServer::Create	pscommon.lib	common	nada	
+0041ad20	72	BlinkGetToken	pscommon.lib	common	nada	
+0041ad70	34	BlinkGetTrimLeft	pscommon.lib	common	nada	
+0041ada0	72	BlinkCopyToken	pscommon.lib	common	nada	
+0041adf0	80	SConsole::Start	pscommon.lib	common	nada	
+0041ae40	51	CtrlHandler	pscommon.lib	common	nada	
+0041ae80	110	SServerServiceControl::SCInit	pscommon.lib	common	nada	
+0041aef0	163	SServerServiceControl::SCIsInstalled	pscommon.lib	common	nada	
+0041afa0	218	SServerServiceControl::SCInstall	pscommon.lib	common	nada	
+0041b080	186	SServerServiceControl::SCUninstall	pscommon.lib	common	nada	
+0041b140	186	SServerServiceControl::SCStart	pscommon.lib	common	nada	
+0041b200	186	SServerServiceControl::SCStop	pscommon.lib	common	nada	
+0041b2c0	18	SShareMemTCommandServer::SShareMemTCommandServer	pscommon.lib	common	nada	
+0041b2e0	5	SShareMemTCommandServer::~SShareMemTCommandServer	pscommon.lib	common	nada	
+0041b2f0	5	SShareMemAgentTCommand::~SShareMemAgentTCommand	pscommon.lib	common	nada	
+0041b300	108	SServerApplication::StartApplication	pscommon.lib	common	nada	
+0041b370	113	SServerApplication::StartServiceA	pscommon.lib	common	nada	
+0041b3f0	14	SServerApplication::Shutdown	pscommon.lib	common	nada	
+0041b400	14	SServerApplication::OnConsoleShutdown	pscommon.lib	common	nada	
+0041b410	30	SServerApplication::Run	pscommon.lib	common	nada	
+0041b430	23	SServerApplication::Stop	pscommon.lib	common	nada	
+0041b450	27	SList<SCommandType>::SList<SCommandType>	pscommon.lib	common	nada	
+0041b470	33	SList<SCommandType>::AddBack	pscommon.lib	common	nada	
+0041b4a0	21	SList<SCommandType>::Front	pscommon.lib	common	nada	
+0041b4c0	20	SList<SCommandType>::Next	pscommon.lib	common	nada	
+0041b4e0	13	SHeap<SCommandType>::SHeap<SCommandType>	pscommon.lib	common	nada	
+0041b4f0	39	SHeap<SCommandType>::Alloc	pscommon.lib	common	nada	
+0041b520	53	SList<SCommandType>::Release	pscommon.lib	common	nada	
+0041b560	58	SHeap<SCommandType>::Release	pscommon.lib	common	nada	
+0041b5a0	202	SConsole::AddCommand	pscommon.lib	common	nada	
+0041b670	423	SConsole::WriteHelp	pscommon.lib	common	nada	
+0041b820	53	SList<SCommandType>::~SList<SCommandType>	pscommon.lib	common	nada	
+0041b860	5	SHeap<SCommandType>::~SHeap<SCommandType>	pscommon.lib	common	nada	
+0041b870	286	SConsole::ConsoleCommandExit	pscommon.lib	common	nada	
+0041b990	124	SConsole::SConsole	pscommon.lib	common	nada	
+0041ba10	3	SConsole::IsShutdown	pscommon.lib	common	nada	
+0041ba20	125	SConsole::~SConsole	pscommon.lib	common	nada	
+0041baa0	137	SServerApplication::~SServerApplication	pscommon.lib	common	nada	
+0041bb30	1	SServerApplication::InitConsoleCommand	pscommon.lib	common	nada	
+0041bb40	5	SServerApplication::OnConsoleCommand	pscommon.lib	common	nada	
+0041bb50	713	SConsole::ParseCommand	pscommon.lib	common	nada	
+0041be20	286	SConsole::OnRead	pscommon.lib	common	nada	
+0041bf40	404	SConsole::ConsoleProcess	pscommon.lib	common	nada	
+0041c0e0	163	SServerApplication::SServerApplication	pscommon.lib	common	nada	
+0041c190	30	SServerApplication::`scalar deleting destructor'	pscommon.lib	common	nada	
+0041c1b0	53	SDatabase::SDatabase	pscommon.lib	common	nada	
+0041c1f0	11	SDatabase::IsConnected	pscommon.lib	common	nada	
+0041c200	4	SDatabase::Begin	pscommon.lib	common	nada	
+0041c210	54	SDatabase::Prepare	pscommon.lib	common	nada	
+0041c250	47	SDatabase::BeginTrans	pscommon.lib	common	nada	
+0041c280	43	SDatabase::EndTrans	pscommon.lib	common	nada	
+0041c2b0	45	SDatabase::Commit	pscommon.lib	common	nada	
+0041c2e0	45	SDatabase::Rollback	pscommon.lib	common	nada	
+0041c310	82	SDatabase::CommitEndTrans	pscommon.lib	common	nada	
+0041c370	82	SDatabase::RollbackEndTrans	pscommon.lib	common	nada	
+0041c3d0	66	SDatabase::GetData	pscommon.lib	common	nada	
+0041c420	46	SDatabase::CountRow	pscommon.lib	common	nada	
+0041c450	46	SDatabase::CountResultCol	pscommon.lib	common	nada	
+0041c480	66	SDatabase::BindCol	pscommon.lib	common	nada	
+0041c4d0	51	SDatabase::PutData	pscommon.lib	common	nada	
+0041c510	66	SDatabase::End	pscommon.lib	common	nada	
+0041c560	357	SDatabase::GetErrorMsg	pscommon.lib	common	nada	
+0041c6d0	158	SDatabase::Disconnect	pscommon.lib	common	nada	
+0041c770	259	SDatabase::VerifyReconnect	pscommon.lib	common	nada	
+0041c880	44	SDatabase::WriteErrorLog	pscommon.lib	common	nada	
+0041c8b0	81	SDatabase::SetQueryTimeOut	pscommon.lib	common	nada	
+0041c910	5	SDatabase::~SDatabase	pscommon.lib	common	nada	
+0041c920	586	SDatabase::Connect	pscommon.lib	common	nada	
+0041cb70	754	SDatabase::Connect	pscommon.lib	common	nada	
+0041ce70	64	SDatabase::Query	pscommon.lib	common	nada	
+0041ceb0	53	SDatabase::Fetch	pscommon.lib	common	nada	
+0041cef0	53	SDatabase::MoreResults	pscommon.lib	common	nada	
+0041cf30	123	SDatabase::BindParameter	pscommon.lib	common	nada	
+0041cfb0	93	SDatabase::PrepareSQL	pscommon.lib	common	nada	
+0041d010	53	SDatabase::ExcuteSQL	pscommon.lib	common	nada	
+0041d050	46	SContextSend::SContextSend	pscommon.lib	common	nada	
+0041d080	1	SContextSend::~SContextSend	pscommon.lib	common	nada	
+0041d090	55	SContextSend::AddBuffer	pscommon.lib	common	nada	
+0041d0d0	74	SContextSend::CheckAddBuffer	pscommon.lib	common	nada	
+0041d120	34	SSyncQueueBuffer::Release	pscommon.lib	common	nada	
+0041d150	75	SSyncQueueBuffer::Reset	pscommon.lib	common	nada	
+0041d1a0	84	SSyncQueueBuffer::Push	pscommon.lib	common	nada	
+0041d200	54	SSyncQueueBuffer::Pop	pscommon.lib	common	nada	
+0041d240	28	SSyncQueueBuffer::PopFree	pscommon.lib	common	nada	
+0041d260	37	SSyncQueueBufferSend::Release	pscommon.lib	common	nada	
+0041d290	13	SHeap<SSyncHeapBlock<SQueueSendNode,1024>::SNodeBlock>::SHeap<SSyncHeapBlock<SQueueSendNode,1024>::SNodeBlock>	pscommon.lib	common	nada	
+0041d2a0	13	SHeap<SSyncHeapBlock<SQueueSendNode,1024>::SNodeReserve>::SHeap<SSyncHeapBlock<SQueueSendNode,1024>::SNodeReserve>	pscommon.lib	common	nada	
+0041d2b0	41	SSyncHeapBlock<SQueueSendNode,1024>::Free	pscommon.lib	common	nada	
+0041d2e0	61	SHeap<SSyncHeapBlock<SQueueSendNode,1024>::SNodeBlock>::Release	pscommon.lib	common	nada	
+0041d320	33	SSyncHeapBlock<SContextSend,1024>::SNodeBlock::SNodeBlock	pscommon.lib	common	nada	
+0041d350	14	SSyncHeapBlock<SQueueSendNode,1024>::SNodeReserve::~SNodeReserve	pscommon.lib	common	nada	
+0041d360	44	SHeap<SSyncHeapBlock<SContextSend,1024>::SNodeBlock>::Free	pscommon.lib	common	nada	
+0041d390	44	SHeap<SSyncHeapBlock<SQueueSendNode,1024>::SNodeBlock>::Free	pscommon.lib	common	nada	
+0041d3c0	43	SSyncQueueBuffer::PushGetCount	pscommon.lib	common	nada	
+0041d3f0	144	SSyncQueueBufferSend::Reset	pscommon.lib	common	nada	
+0041d480	116	SSyncQueueBufferSend::Pop	pscommon.lib	common	nada	
+0041d500	5	SHeap<SSyncHeapBlock<SQueueSendNode,1024>::SNodeBlock>::~SHeap<SSyncHeapBlock<SQueueSendNode,1024>::SNodeBlock>	pscommon.lib	common	nada	
+0041d510	237	SSyncHeapBlock<SContextSend,1024>::ReserveBlock	pscommon.lib	common	nada	
+0041d600	126	SSyncHeapBlock<SQueueSendNode,1024>::ReserveBlock	pscommon.lib	common	nada	
+0041d680	40	SSyncHeapBlock<SQueueSendNode,1024>::SNodeReserve::`scalar deleting destructor'	pscommon.lib	common	nada	
+0041d6b0	129	SSyncHeapBlock<SContextSend,1024>::Alloc	pscommon.lib	common	nada	
+0041d740	129	SSyncHeapBlock<SQueueSendNode,1024>::Alloc	pscommon.lib	common	nada	
+0041d7d0	78	SHeap<SSyncHeapBlock<SQueueSendNode,1024>::SNodeReserve>::Release	pscommon.lib	common	nada	
+0041d820	121	SSyncQueueBufferSend::Push	pscommon.lib	common	nada	
+0041d8a0	133	SSyncQueueBufferSend::PushGetLength	pscommon.lib	common	nada	
+0041d930	465	SSyncQueueBufferSend::PushFillBuffersForGather	pscommon.lib	common	nada	
+0041db10	486	SSyncQueueBufferSend::PushFillBuffers	pscommon.lib	common	nada	
+0041dd00	279	SSyncQueueBufferSend::FillBuffersForGather	pscommon.lib	common	nada	
+0041de20	260	SSyncQueueBufferSend::FillBuffers	pscommon.lib	common	nada	
+0041df30	5	SHeap<SSyncHeapBlock<SQueueSendNode,1024>::SNodeReserve>::~SHeap<SSyncHeapBlock<SQueueSendNode,1024>::SNodeReserve>	pscommon.lib	common	nada	
+0041df40	43	SSyncQueueBufferSend::PushGetCount	pscommon.lib	common	nada	
+0041df70	52	SSyncHeapBlock<SQueueSendNode,1024>::SSyncHeapBlock<SQueueSendNode,1024>	pscommon.lib	common	nada	
+0041dfb0	30	SSyncHeapBlock<SQueueSendNode,1024>::~SSyncHeapBlock<SQueueSendNode,1024>	pscommon.lib	common	nada	
+0041dfd0	29	SPacketBufferSend::SPacketBufferSend	pscommon.lib	common	nada	
+0041dff0	7	SPacketBufferSend::~SPacketBufferSend	pscommon.lib	common	nada	
+0041e000	13	SHeap<SSyncHeapBlock<SPacketBufferSendN<32>,1024>::SNodeBlock>::SHeap<SSyncHeapBlock<SPacketBufferSendN<32>,1024>::SNodeBlock>	pscommon.lib	common	nada	
+0041e010	13	SHeap<SSyncHeapBlock<SPacketBufferSendN<32>,1024>::SNodeReserve>::SHeap<SSyncHeapBlock<SPacketBufferSendN<32>,1024>::SNodeReserve>	pscommon.lib	common	nada	
+0041e020	41	SSyncHeapBlock<SPacketBufferSendN<32>,1024>::Free	pscommon.lib	common	nada	
+0041e050	13	SHeap<SSyncHeapBlock<SPacketBufferSendN<128>,1024>::SNodeBlock>::SHeap<SSyncHeapBlock<SPacketBufferSendN<128>,1024>::SNodeBlock>	pscommon.lib	common	nada	
+0041e060	13	SHeap<SSyncHeapBlock<SPacketBufferSendN<128>,1024>::SNodeReserve>::SHeap<SSyncHeapBlock<SPacketBufferSendN<128>,1024>::SNodeReserve>	pscommon.lib	common	nada	
+0041e070	41	SSyncHeapBlock<SPacketBufferSendN<128>,1024>::Free	pscommon.lib	common	nada	
+0041e0a0	13	SHeap<SSyncHeapBlock<SPacketBufferSendN<2048>,1024>::SNodeBlock>::SHeap<SSyncHeapBlock<SPacketBufferSendN<2048>,1024>::SNodeBlock>	pscommon.lib	common	nada	
+0041e0b0	13	SHeap<SSyncHeapBlock<SPacketBufferSendN<2048>,1024>::SNodeReserve>::SHeap<SSyncHeapBlock<SPacketBufferSendN<2048>,1024>::SNodeReserve>	pscommon.lib	common	nada	
+0041e0c0	41	SSyncHeapBlock<SPacketBufferSendN<2048>,1024>::Free	pscommon.lib	common	nada	
+0041e0f0	7	SPacketBufferSendN<32>::~SPacketBufferSendN<32>	pscommon.lib	common	nada	
+0041e100	7	SPacketBufferSendN<128>::~SPacketBufferSendN<128>	pscommon.lib	common	nada	
+0041e110	7	SPacketBufferSendN<2048>::~SPacketBufferSendN<2048>	pscommon.lib	common	nada	
+0041e120	26	SPacketBufferSendN<32>::SPacketBufferSendN<32>	pscommon.lib	common	nada	
+0041e140	6	SPacketBufferSendN<32>::GetBufferSize	pscommon.lib	common	nada	
+0041e150	26	SPacketBufferSendN<128>::SPacketBufferSendN<128>	pscommon.lib	common	nada	
+0041e170	6	SPacketBufferSendN<128>::GetBufferSize	pscommon.lib	common	nada	
+0041e180	26	SPacketBufferSendN<2048>::SPacketBufferSendN<2048>	pscommon.lib	common	nada	
+0041e1a0	6	SPacketBufferSendN<2048>::GetBufferSize	pscommon.lib	common	nada	
+0041e1b0	30	SSyncHeapBlock<SPacketBufferSendN<32>,1024>::SNodeReserve::~SNodeReserve	pscommon.lib	common	nada	
+0041e1d0	30	SSyncHeapBlock<SPacketBufferSendN<128>,1024>::SNodeReserve::~SNodeReserve	pscommon.lib	common	nada	
+0041e1f0	30	SSyncHeapBlock<SPacketBufferSendN<2048>,1024>::SNodeReserve::~SNodeReserve	pscommon.lib	common	nada	
+0041e210	30	SPacketBufferSendN<32>::`scalar deleting destructor'	pscommon.lib	common	nada	
+0041e230	30	SPacketBufferSendN<128>::`scalar deleting destructor'	pscommon.lib	common	nada	
+0041e250	30	SPacketBufferSendN<2048>::`scalar deleting destructor'	pscommon.lib	common	nada	
+0041e270	44	SHeap<SSyncHeapBlock<SPacketBufferSendN<32>,1024>::SNodeBlock>::Free	pscommon.lib	common	nada	
+0041e2a0	44	SHeap<SSyncHeapBlock<SPacketBufferSendN<128>,1024>::SNodeBlock>::Free	pscommon.lib	common	nada	
+0041e2d0	44	SHeap<SSyncHeapBlock<SPacketBufferSendN<2048>,1024>::SNodeBlock>::Free	pscommon.lib	common	nada	
+0041e300	31	SPacketBufferSend::`scalar deleting destructor'	pscommon.lib	common	nada	
+0041e320	161	SPacketBufferSend::Free	pscommon.lib	common	nada	
+0041e3d0	57	SSyncHeapBlock<SPacketBufferSendN<32>,1024>::SNodeReserve::`scalar deleting destructor'	pscommon.lib	common	nada	
+0041e410	30	SSyncHeapBlock<SPacketBufferSendN<32>,1024>::SNodeBlock::SNodeBlock	pscommon.lib	common	nada	
+0041e430	57	SSyncHeapBlock<SPacketBufferSendN<128>,1024>::SNodeReserve::`scalar deleting destructor'	pscommon.lib	common	nada	
+0041e470	33	SSyncHeapBlock<SPacketBufferSendN<128>,1024>::SNodeBlock::SNodeBlock	pscommon.lib	common	nada	
+0041e4a0	57	SSyncHeapBlock<SPacketBufferSendN<2048>,1024>::SNodeReserve::`scalar deleting destructor'	pscommon.lib	common	nada	
+0041e4e0	33	SSyncHeapBlock<SPacketBufferSendN<2048>,1024>::SNodeBlock::SNodeBlock	pscommon.lib	common	nada	
+0041e510	19	SSyncHeapBlock<SPacketBufferSendN<32>,1024>::SNodeBlock::~SNodeBlock	pscommon.lib	common	nada	
+0041e530	22	SSyncHeapBlock<SPacketBufferSendN<128>,1024>::SNodeBlock::~SNodeBlock	pscommon.lib	common	nada	
+0041e550	22	SSyncHeapBlock<SPacketBufferSendN<2048>,1024>::SNodeBlock::~SNodeBlock	pscommon.lib	common	nada	
+0041e570	95	SHeap<SSyncHeapBlock<SPacketBufferSendN<32>,1024>::SNodeReserve>::Release	pscommon.lib	common	nada	
+0041e5d0	211	SSyncHeapBlock<SPacketBufferSendN<32>,1024>::ReserveBlock	pscommon.lib	common	nada	
+0041e6b0	95	SHeap<SSyncHeapBlock<SPacketBufferSendN<128>,1024>::SNodeReserve>::Release	pscommon.lib	common	nada	
+0041e710	237	SSyncHeapBlock<SPacketBufferSendN<128>,1024>::ReserveBlock	pscommon.lib	common	nada	
+0041e800	95	SHeap<SSyncHeapBlock<SPacketBufferSendN<2048>,1024>::SNodeReserve>::Release	pscommon.lib	common	nada	
+0041e860	237	SSyncHeapBlock<SPacketBufferSendN<2048>,1024>::ReserveBlock	pscommon.lib	common	nada	
+0041e950	30	SSyncHeapBlock<SPacketBufferSendN<32>,1024>::SNodeBlock::`scalar deleting destructor'	pscommon.lib	common	nada	
+0041e970	30	SSyncHeapBlock<SPacketBufferSendN<128>,1024>::SNodeBlock::`scalar deleting destructor'	pscommon.lib	common	nada	
+0041e990	30	SSyncHeapBlock<SPacketBufferSendN<2048>,1024>::SNodeBlock::`scalar deleting destructor'	pscommon.lib	common	nada	
+0041e9b0	5	SHeap<SSyncHeapBlock<SPacketBufferSendN<32>,1024>::SNodeReserve>::~SHeap<SSyncHeapBlock<SPacketBufferSendN<32>,1024>::SNodeReserve>	pscommon.lib	common	nada	
+0041e9c0	129	SSyncHeapBlock<SPacketBufferSendN<32>,1024>::Alloc	pscommon.lib	common	nada	
+0041ea50	5	SHeap<SSyncHeapBlock<SPacketBufferSendN<128>,1024>::SNodeReserve>::~SHeap<SSyncHeapBlock<SPacketBufferSendN<128>,1024>::SNodeReserve>	pscommon.lib	common	nada	
+0041ea60	129	SSyncHeapBlock<SPacketBufferSendN<128>,1024>::Alloc	pscommon.lib	common	nada	
+0041eaf0	5	SHeap<SSyncHeapBlock<SPacketBufferSendN<2048>,1024>::SNodeReserve>::~SHeap<SSyncHeapBlock<SPacketBufferSendN<2048>,1024>::SNodeReserve>	pscommon.lib	common	nada	
+0041eb00	129	SSyncHeapBlock<SPacketBufferSendN<2048>,1024>::Alloc	pscommon.lib	common	nada	
+0041eb90	73	SHeap<SSyncHeapBlock<SPacketBufferSendN<32>,1024>::SNodeBlock>::Release	pscommon.lib	common	nada	
+0041ebe0	73	SHeap<SSyncHeapBlock<SPacketBufferSendN<128>,1024>::SNodeBlock>::Release	pscommon.lib	common	nada	
+0041ec30	73	SHeap<SSyncHeapBlock<SPacketBufferSendN<2048>,1024>::SNodeBlock>::Release	pscommon.lib	common	nada	
+0041ec80	23	SPacketBufferSend::Alloc	pscommon.lib	common	nada	
+0041eca0	112	SPacketBufferSend::AllocBuffer	pscommon.lib	common	nada	
+0041ed10	5	SHeap<SSyncHeapBlock<SPacketBufferSendN<32>,1024>::SNodeBlock>::~SHeap<SSyncHeapBlock<SPacketBufferSendN<32>,1024>::SNodeBlock>	pscommon.lib	common	nada	
+0041ed20	5	SHeap<SSyncHeapBlock<SPacketBufferSendN<128>,1024>::SNodeBlock>::~SHeap<SSyncHeapBlock<SPacketBufferSendN<128>,1024>::SNodeBlock>	pscommon.lib	common	nada	
+0041ed30	5	SHeap<SSyncHeapBlock<SPacketBufferSendN<2048>,1024>::SNodeBlock>::~SHeap<SSyncHeapBlock<SPacketBufferSendN<2048>,1024>::SNodeBlock>	pscommon.lib	common	nada	
+0041ed40	52	SSyncHeapBlock<SPacketBufferSendN<32>,1024>::SSyncHeapBlock<SPacketBufferSendN<32>,1024>	pscommon.lib	common	nada	
+0041ed80	87	SSyncHeapBlock<SPacketBufferSendN<32>,1024>::~SSyncHeapBlock<SPacketBufferSendN<32>,1024>	pscommon.lib	common	nada	
+0041ede0	52	SSyncHeapBlock<SPacketBufferSendN<128>,1024>::SSyncHeapBlock<SPacketBufferSendN<128>,1024>	pscommon.lib	common	nada	
+0041ee20	87	SSyncHeapBlock<SPacketBufferSendN<128>,1024>::~SSyncHeapBlock<SPacketBufferSendN<128>,1024>	pscommon.lib	common	nada	
+0041ee80	52	SSyncHeapBlock<SPacketBufferSendN<2048>,1024>::SSyncHeapBlock<SPacketBufferSendN<2048>,1024>	pscommon.lib	common	nada	
+0041eec0	87	SSyncHeapBlock<SPacketBufferSendN<2048>,1024>::~SSyncHeapBlock<SPacketBufferSendN<2048>,1024>	pscommon.lib	common	nada	
+0041ef20	31	GetNumProcess	pscommon.lib	common	nada	
+0041ef40	98	GetMSToTime	pscommon.lib	common	nada	
+0041efb0	115	GetMSToTime	pscommon.lib	common	nada	
+0041f030	30	CalculateNumberOfThreads	pscommon.lib	common	nada	
+0041f050	40	SThreadMulti::SThreadMulti	pscommon.lib	common	nada	
+0041f080	7	SThreadMulti::~SThreadMulti	pscommon.lib	common	nada	
+0041f090	69	SThreadMulti::SetThreadPriority	pscommon.lib	common	nada	
+0041f0e0	1	SThreadMulti::End	pscommon.lib	common	nada	
+0041f0f0	35	SThreadMulti::Wait	pscommon.lib	common	nada	
+0041f120	150	SThreadMulti::WaitShutdown	pscommon.lib	common	nada	
+0041f1c0	17	SThreadMulti::ThreadFunction	pscommon.lib	common	nada	
+0041f1e0	100	SThreadMulti::Start	pscommon.lib	common	nada	
+0041f250	13	SHeap<SSyncHeapBlock<SContext,1024>::SNodeBlock>::SHeap<SSyncHeapBlock<SContext,1024>::SNodeBlock>	pscommon.lib	common	nada	
+0041f260	13	SHeap<SSyncHeapBlock<SContext,1024>::SNodeReserve>::SHeap<SSyncHeapBlock<SContext,1024>::SNodeReserve>	pscommon.lib	common	nada	
+0041f270	13	SHeap<SSyncHeapBlock<SContextSend,1024>::SNodeBlock>::SHeap<SSyncHeapBlock<SContextSend,1024>::SNodeBlock>	pscommon.lib	common	nada	
+0041f280	13	SHeap<SSyncHeapBlock<SContextSend,1024>::SNodeReserve>::SHeap<SSyncHeapBlock<SContextSend,1024>::SNodeReserve>	pscommon.lib	common	nada	
+0041f290	13	SHeap<SSyncHeapBlock<SContextAccept,1024>::SNodeBlock>::SHeap<SSyncHeapBlock<SContextAccept,1024>::SNodeBlock>	pscommon.lib	common	nada	
+0041f2a0	13	SHeap<SSyncHeapBlock<SContextAccept,1024>::SNodeReserve>::SHeap<SSyncHeapBlock<SContextAccept,1024>::SNodeReserve>	pscommon.lib	common	nada	
+0041f2b0	19	SSyncHeapBlock<SContext,1024>::SNodeBlock::~SNodeBlock	pscommon.lib	common	nada	
+0041f2d0	22	SSyncHeapBlock<SContextSend,1024>::SNodeBlock::~SNodeBlock	pscommon.lib	common	nada	
+0041f2f0	22	SSyncHeapBlock<SContextAccept,1024>::SNodeBlock::~SNodeBlock	pscommon.lib	common	nada	
+0041f310	77	SContext::`vector deleting destructor'	pscommon.lib	common	nada	
+0041f360	80	SContextSend::`vector deleting destructor'	pscommon.lib	common	nada	
+0041f3b0	80	SContextAccept::`vector deleting destructor'	pscommon.lib	common	nada	
+0041f400	30	SSyncHeapBlock<SContext,1024>::SNodeBlock::`scalar deleting destructor'	pscommon.lib	common	nada	
+0041f420	30	SSyncHeapBlock<SContextSend,1024>::SNodeBlock::`scalar deleting destructor'	pscommon.lib	common	nada	
+0041f440	30	SSyncHeapBlock<SContextAccept,1024>::SNodeBlock::`scalar deleting destructor'	pscommon.lib	common	nada	
+0041f460	38	SSyncHeapBlock<SContext,1024>::SNodeReserve::~SNodeReserve	pscommon.lib	common	nada	
+0041f490	41	SSyncHeapBlock<SContextSend,1024>::SNodeReserve::~SNodeReserve	pscommon.lib	common	nada	
+0041f4c0	41	SSyncHeapBlock<SContextAccept,1024>::SNodeReserve::~SNodeReserve	pscommon.lib	common	nada	
+0041f4f0	73	SHeap<SSyncHeapBlock<SContext,1024>::SNodeBlock>::Release	pscommon.lib	common	nada	
+0041f540	73	SHeap<SSyncHeapBlock<SContextSend,1024>::SNodeBlock>::Release	pscommon.lib	common	nada	
+0041f590	73	SHeap<SSyncHeapBlock<SContextAccept,1024>::SNodeBlock>::Release	pscommon.lib	common	nada	
+0041f5e0	62	SSyncHeapBlock<SContext,1024>::SNodeReserve::`scalar deleting destructor'	pscommon.lib	common	nada	
+0041f620	65	SSyncHeapBlock<SContextSend,1024>::SNodeReserve::`scalar deleting destructor'	pscommon.lib	common	nada	
+0041f670	65	SSyncHeapBlock<SContextAccept,1024>::SNodeReserve::`scalar deleting destructor'	pscommon.lib	common	nada	
+0041f6c0	5	SHeap<SSyncHeapBlock<SContext,1024>::SNodeBlock>::~SHeap<SSyncHeapBlock<SContext,1024>::SNodeBlock>	pscommon.lib	common	nada	
+0041f6d0	5	SHeap<SSyncHeapBlock<SContextSend,1024>::SNodeBlock>::~SHeap<SSyncHeapBlock<SContextSend,1024>::SNodeBlock>	pscommon.lib	common	nada	
+0041f6e0	5	SHeap<SSyncHeapBlock<SContextAccept,1024>::SNodeBlock>::~SHeap<SSyncHeapBlock<SContextAccept,1024>::SNodeBlock>	pscommon.lib	common	nada	
+0041f6f0	99	SHeap<SSyncHeapBlock<SContext,1024>::SNodeReserve>::Release	pscommon.lib	common	nada	
+0041f760	102	SHeap<SSyncHeapBlock<SContextSend,1024>::SNodeReserve>::Release	pscommon.lib	common	nada	
+0041f7d0	102	SHeap<SSyncHeapBlock<SContextAccept,1024>::SNodeReserve>::Release	pscommon.lib	common	nada	
+0041f840	5	SHeap<SSyncHeapBlock<SContext,1024>::SNodeReserve>::~SHeap<SSyncHeapBlock<SContext,1024>::SNodeReserve>	pscommon.lib	common	nada	
+0041f850	5	SHeap<SSyncHeapBlock<SContextSend,1024>::SNodeReserve>::~SHeap<SSyncHeapBlock<SContextSend,1024>::SNodeReserve>	pscommon.lib	common	nada	
+0041f860	5	SHeap<SSyncHeapBlock<SContextAccept,1024>::SNodeReserve>::~SHeap<SSyncHeapBlock<SContextAccept,1024>::SNodeReserve>	pscommon.lib	common	nada	
+0041f870	52	SSyncHeapBlock<SContext,1024>::SSyncHeapBlock<SContext,1024>	pscommon.lib	common	nada	
+0041f8b0	87	SSyncHeapBlock<SContext,1024>::~SSyncHeapBlock<SContext,1024>	pscommon.lib	common	nada	
+0041f910	52	SSyncHeapBlock<SContextSend,1024>::SSyncHeapBlock<SContextSend,1024>	pscommon.lib	common	nada	
+0041f950	87	SSyncHeapBlock<SContextSend,1024>::~SSyncHeapBlock<SContextSend,1024>	pscommon.lib	common	nada	
+0041f9b0	52	SSyncHeapBlock<SContextAccept,1024>::SSyncHeapBlock<SContextAccept,1024>	pscommon.lib	common	nada	
+0041f9f0	87	SSyncHeapBlock<SContextAccept,1024>::~SSyncHeapBlock<SContextAccept,1024>	pscommon.lib	common	nada	
+0041fa50	37	SSyncQueueBufferPriority::Release	pscommon.lib	common	nada	
+0041fa80	13	SHeap<SSyncHeapBlock<SQueuePrioritySendNode,1024>::SNodeBlock>::SHeap<SSyncHeapBlock<SQueuePrioritySendNode,1024>::SNodeBlock>	pscommon.lib	common	nada	
+0041fa90	13	SHeap<SSyncHeapBlock<SQueuePrioritySendNode,1024>::SNodeReserve>::SHeap<SSyncHeapBlock<SQueuePrioritySendNode,1024>::SNodeReserve>	pscommon.lib	common	nada	
+0041faa0	41	SSyncHeapBlock<SQueuePrioritySendNode,1024>::Free	pscommon.lib	common	nada	
+0041fad0	61	SHeap<SSyncHeapBlock<SQueuePrioritySendNode,1024>::SNodeBlock>::Release	pscommon.lib	common	nada	
+0041fb10	14	SSyncHeapBlock<SQueuePrioritySendNode,1024>::SNodeReserve::~SNodeReserve	pscommon.lib	common	nada	
+0041fb20	44	SHeap<SSyncHeapBlock<SQueuePrioritySendNode,1024>::SNodeBlock>::Free	pscommon.lib	common	nada	
+0041fb50	145	SSyncQueueBufferPriority::Reset	pscommon.lib	common	nada	
+0041fbf0	117	SSyncQueueBufferPriority::Pop	pscommon.lib	common	nada	
+0041fc70	5	SHeap<SSyncHeapBlock<SQueuePrioritySendNode,1024>::SNodeBlock>::~SHeap<SSyncHeapBlock<SQueuePrioritySendNode,1024>::SNodeBlock>	pscommon.lib	common	nada	
+0041fc80	126	SSyncHeapBlock<SQueuePrioritySendNode,1024>::ReserveBlock	pscommon.lib	common	nada	
+0041fd00	40	SSyncHeapBlock<SQueuePrioritySendNode,1024>::SNodeReserve::`scalar deleting destructor'	pscommon.lib	common	nada	
+0041fd30	129	SSyncHeapBlock<SQueuePrioritySendNode,1024>::Alloc	pscommon.lib	common	nada	
+0041fdc0	78	SHeap<SSyncHeapBlock<SQueuePrioritySendNode,1024>::SNodeReserve>::Release	pscommon.lib	common	nada	
+0041fe10	261	SSyncQueueBufferPriority::Push	pscommon.lib	common	nada	
+0041ff20	267	SSyncQueueBufferPriority::PushGetLength	pscommon.lib	common	nada	
+00420030	261	SSyncQueueBufferPriority::FillBuffers	pscommon.lib	common	nada	
+00420140	5	SHeap<SSyncHeapBlock<SQueuePrioritySendNode,1024>::SNodeReserve>::~SHeap<SSyncHeapBlock<SQueuePrioritySendNode,1024>::SNodeReserve>	pscommon.lib	common	nada	
+00420150	53	SSyncQueueBufferPriority::PushGetCount	pscommon.lib	common	nada	
+00420190	52	SSyncHeapBlock<SQueuePrioritySendNode,1024>::SSyncHeapBlock<SQueuePrioritySendNode,1024>	pscommon.lib	common	nada	
+004201d0	30	SSyncHeapBlock<SQueuePrioritySendNode,1024>::~SSyncHeapBlock<SQueuePrioritySendNode,1024>	pscommon.lib	common	nada	
+004201f0	5	_tcsrchr	pscommon.lib	common	nada	
+00420200	25	IsEqualGUID	pscommon.lib	common	nada	
+00420220	84	StdioOutputCallbacks::QueryInterface	pscommon.lib	common	nada	
+00420280	8	StdioOutputCallbacks::AddRef	pscommon.lib	common	nada	
+00420290	5	StdioOutputCallbacks::Release	pscommon.lib	common	nada	
+004202a0	30	StdioOutputCallbacks::Output	pscommon.lib	common	nada	
+004202c0	52	SCrashDump::SCrashDump	pscommon.lib	common	nada	
+00420300	24	SCrashDump::~SCrashDump	pscommon.lib	common	nada	
+00420320	72	SCrashDump::InitStackTrace	pscommon.lib	common	nada	
+00420370	284	SCrashDump::ShowModuleInfo	pscommon.lib	common	nada	
+00420490	3	IUnknown::IUnknown	pscommon.lib	common	nada	
+004204a0	361	SnapCurrentProcessMiniDump	pscommon.lib	common	nada	
+00420610	111	MiniDump	pscommon.lib	common	nada	
+00420680	450	ConvertAddress	pscommon.lib	common	nada	
+00420850	345	BuildStackTrace	pscommon.lib	common	nada	
+004209b0	3	IDebugOutputCallbacks::IDebugOutputCallbacks	pscommon.lib	common	nada	
+004209c0	81	StackTrace	pscommon.lib	common	nada	
+00420a20	9	StdioOutputCallbacks::StdioOutputCallbacks	pscommon.lib	common	nada	
+00420a30	799	SCrashDump::StackTraceAllThread	pscommon.lib	common	nada	
+00420d50	361	SCrashDump::ExceptionHandler	pscommon.lib	common	nada	
+00420ec0	474	SCrashDump::GenerateExceptionHandler	pscommon.lib	common	nada	
+004210a0	11	SCrashDump::ExceptionHandlerFunction	pscommon.lib	common	nada	
+004210b0	73	SCrashDump::Init	pscommon.lib	common	nada	
+00421100	360	InitCrashDump	pscommon.lib	common	nada	
+00421270	9	SMutex::SMutex	pscommon.lib	common	nada	
+00421280	14	SMutex::~SMutex	pscommon.lib	common	nada	
+00421290	147	SMutex::Create	pscommon.lib	common	nada	
+00421330	24	SMutex::Release	pscommon.lib	common	nada	
+00421350	22	SMutex::Enter	pscommon.lib	common	nada	
+00421370	10	SMutex::Leave	pscommon.lib	common	nada	
+00421380	22	SMutex::Lock	pscommon.lib	common	nada	
+004213a0	10	SMutex::Unlock	pscommon.lib	common	nada	
+004213b0	24	SEvent::Release	pscommon.lib	common	nada	
+004213d0	16	SShareMem::SShareMem	pscommon.lib	common	nada	
+004213e0	230	SShareMem::CreateCheck	pscommon.lib	common	nada	
+004214d0	215	SShareMem::Create	pscommon.lib	common	nada	
+004215b0	203	SShareMem::Open	pscommon.lib	common	nada	
+00421680	45	SShareMem::Release	pscommon.lib	common	nada	
+004216b0	38	SShareMem::Read	pscommon.lib	common	nada	
+004216e0	38	SShareMem::Write	pscommon.lib	common	nada	
+00421710	16	SShareMemSyncObj::SShareMemSyncObj	pscommon.lib	common	nada	
+00421720	32	SShareMemSyncObj::~SShareMemSyncObj	pscommon.lib	common	nada	
+00421740	546	SShareMemSync::Create	pscommon.lib	common	nada	
+00421970	115	SShareMemSync::Release	pscommon.lib	common	nada	
+004219f0	38	SShareMemSync::Read	pscommon.lib	common	nada	
+00421a20	38	SShareMemSync::Write	pscommon.lib	common	nada	
+00421a50	48	SShareMemSync::ReadData	pscommon.lib	common	nada	
+00421a80	11	SShareMemSync::ReadComplete	pscommon.lib	common	nada	
+00421a90	4	SShareMemSync::ReadRequest	pscommon.lib	common	nada	
+00421aa0	96	SShareMemAgent::SShareMemAgent	pscommon.lib	common	nada	
+00421b00	31	SShareMemAgent::~SShareMemAgent	pscommon.lib	common	nada	
+00421b20	76	SShareMemAgent::Add	pscommon.lib	common	nada	
+00421b70	11	SShareMemAgent::ReadRequest	pscommon.lib	common	nada	
+00421b80	116	SShareMemAgent::RunRead	pscommon.lib	common	nada	
+00421c00	32	SSyncQueue<SShareMemSyncWriteObj>::SSyncQueue<SShareMemSyncWriteObj>	pscommon.lib	common	nada	
+00421c20	54	SSyncQueue<SShareMemSyncWriteObj>::Pop	pscommon.lib	common	nada	
+00421c60	54	SSyncQueue<SShareMemSyncWriteObj>::PopFree	pscommon.lib	common	nada	
+00421ca0	66	SSyncQueue<SShareMemSyncWriteObj>::PushGetCount	pscommon.lib	common	nada	
+00421cf0	11	SSyncQueue<SShareMemSyncWriteObj>::Lock	pscommon.lib	common	nada	
+00421d00	11	SSyncQueue<SShareMemSyncWriteObj>::Unlock	pscommon.lib	common	nada	
+00421d10	32	SSyncHeap<SShareMemSyncWriteObj>::SSyncHeap<SShareMemSyncWriteObj>	pscommon.lib	common	nada	
+00421d30	75	SSyncHeap<SShareMemSyncWriteObj>::Alloc	pscommon.lib	common	nada	
+00421d80	73	SSyncHeap<SShareMemSyncWriteObj>::Free	pscommon.lib	common	nada	
+00421dd0	75	SSyncQueue<SShareMemSyncWriteObj>::Release	pscommon.lib	common	nada	
+00421e20	70	SSyncHeap<SShareMemSyncWriteObj>::Release	pscommon.lib	common	nada	
+00421e70	45	SShareMem::~SShareMem	pscommon.lib	common	nada	
+00421ea0	386	SShareMemSync::WriteData	pscommon.lib	common	nada	
+00422030	204	SShareMemSync::ResetWriteQueue	pscommon.lib	common	nada	
+00422100	126	SShareMemSync::WriteComplete	pscommon.lib	common	nada	
+00422180	12	SShareMemAgent::WriteComplete	pscommon.lib	common	nada	
+00422190	148	SShareMemAgent::RunReadWrite	pscommon.lib	common	nada	
+00422230	115	SShareMemAgent::RunWrite	pscommon.lib	common	nada	
+004222b0	20	SSyncQueue<SShareMemSyncWriteObj>::~SSyncQueue<SShareMemSyncWriteObj>	pscommon.lib	common	nada	
+004222d0	20	SSyncHeap<SShareMemSyncWriteObj>::~SSyncHeap<SShareMemSyncWriteObj>	pscommon.lib	common	nada	
+004222f0	86	SShareMemSync::SShareMemSync	pscommon.lib	common	nada	
+00422350	1	SShareMemSync::OnWrite	pscommon.lib	common	nada	
+00422360	127	SShareMemSync::~SShareMemSync	pscommon.lib	common	nada	
+004223e0	39	SShareMemAgent::Run	pscommon.lib	common	nada	
+00422410	6	SServiceControl::SServiceControl	pscommon.lib	common	nada	
+00422420	1	SServiceControl::~SServiceControl	pscommon.lib	common	nada	
+00422430	42	SServiceControl::Init	pscommon.lib	common	nada	
+00422460	85	SServiceControl::IsInstalled	pscommon.lib	common	nada	
+004224c0	186	SServiceControl::Install	pscommon.lib	common	nada	
+00422580	159	SServiceControl::Uninstall	pscommon.lib	common	nada	
+00422620	6	SServiceControl::ChangeConfig	pscommon.lib	common	nada	
+00422630	6	SServiceControl::ChangeConfigDesc	pscommon.lib	common	nada	
+00422640	160	SServiceControl::ChangeConfigFailureAction	pscommon.lib	common	nada	
+004226e0	315	SServiceControl::GetServiceInfo	pscommon.lib	common	nada	
+00422820	260	SServiceControl::GetStatus	pscommon.lib	common	nada	
+00422930	292	SServiceControl::GetStatusWithPending	pscommon.lib	common	nada	
+00422a60	514	SServiceControl::ServiceStart	pscommon.lib	common	nada	
+00422c70	110	SServiceControl::ServiceStop	pscommon.lib	common	nada	
+00422ce0	110	SServiceControl::ServicePause	pscommon.lib	common	nada	
+00422d50	27	SServiceControl::ErrorLog	pscommon.lib	common	nada	
+00422d70	32	SServiceControl::ErrorLog	pscommon.lib	common	nada	
+00422d90	68	SService::SService	pscommon.lib	common	nada	
+00422de0	3	SService::Init	pscommon.lib	common	nada	
+00422df0	1	SService::Destroy	pscommon.lib	common	nada	
+00422e00	7	SService::~SService	pscommon.lib	common	nada	
+00422e10	47	SService::SetStatus	pscommon.lib	common	nada	
+00422e40	27	SService::ErrorLog	pscommon.lib	common	nada	
+00422e60	32	SService::ErrorLog	pscommon.lib	common	nada	
+00422e80	31	SService::`scalar deleting destructor'	pscommon.lib	common	nada	
+00422ea0	116	SService::StartApplication	pscommon.lib	common	nada	
+00422f20	532	SService::ServiceCtrlHandler	pscommon.lib	common	nada	
+00423140	304	SService::ServiceCtrlDispatcher	pscommon.lib	common	nada	
+00423270	121	SService::StartServiceA	pscommon.lib	common	nada	
+0042e502	36	operator new	libcpmt.lib	crt	nada	
+0042e526	64	std::_String_base::_Xran	libcpmt.lib	crt	nada	
+0042e566	64	std::_String_base::_Xlen	libcpmt.lib	crt	nada	
+0042e5a6	5	operator new[]	libcpmt.lib	crt	nada	
+0042e5ab	25	std::bad_alloc::bad_alloc	libcpmt.lib	crt	nada	
+0042e5c4	11	std::bad_alloc::~bad_alloc	libcpmt.lib	crt	nada	
+0042e5cf	28	std::bad_alloc::`scalar deleting destructor'	libcpmt.lib	crt	nada	
+0042e5eb	24	std::bad_alloc::bad_alloc	libcpmt.lib	crt	nada	
+0042e603	97	std::_Nomemory	libcpmt.lib	crt	nada	
+0042e664	5	operator delete	LIBCMT.lib	crt	nada	
+0042e669	70	type_info::~type_info	LIBCMT.lib	crt	nada	
+0042e6af	28	type_info::`scalar deleting destructor'	LIBCMT.lib	crt	nada	
+0042e6cb	27	type_info::operator==	LIBCMT.lib	crt	nada	
+0042e6e6	28	type_info::operator!=	LIBCMT.lib	crt	nada	
+0042e702	31	type_info::before	LIBCMT.lib	crt	nada	
+0042e721	4	type_info::raw_name	LIBCMT.lib	crt	nada	
+0042e725	11	type_info::type_info	LIBCMT.lib	crt	nada	
+0042e730	5	type_info::operator=	LIBCMT.lib	crt	nada	
+0042e735	17	exception::exception	LIBCMT.lib	crt	nada	
+0042e746	72	exception::exception	LIBCMT.lib	crt	nada	
+0042e78e	82	exception::exception	LIBCMT.lib	crt	nada	
+0042e7e0	22	exception::~exception	LIBCMT.lib	crt	nada	
+0042e7f6	13	exception::what	LIBCMT.lib	crt	nada	
+0042e803	25	bad_cast::bad_cast	LIBCMT.lib	crt	nada	
+0042e81c	24	bad_cast::bad_cast	LIBCMT.lib	crt	nada	
+0042e834	11	bad_cast::~bad_cast	LIBCMT.lib	crt	nada	
+0042e83f	25	bad_typeid::bad_typeid	LIBCMT.lib	crt	nada	
+0042e858	24	bad_typeid::bad_typeid	LIBCMT.lib	crt	nada	
+0042e870	11	bad_typeid::~bad_typeid	LIBCMT.lib	crt	nada	
+0042e87b	24	__non_rtti_object::__non_rtti_object	LIBCMT.lib	crt	nada	
+0042e893	24	__non_rtti_object::__non_rtti_object	LIBCMT.lib	crt	nada	
+0042e8ab	11	__non_rtti_object::~__non_rtti_object	LIBCMT.lib	crt	nada	
+0042e8b6	28	exception::`scalar deleting destructor'	LIBCMT.lib	crt	nada	
+0042e8d2	31	exception::operator=	LIBCMT.lib	crt	nada	
+0042e8f1	28	bad_cast::`scalar deleting destructor'	LIBCMT.lib	crt	nada	
+0042e90d	28	bad_typeid::`scalar deleting destructor'	LIBCMT.lib	crt	nada	
+0042e929	28	__non_rtti_object::`scalar deleting destructor'	LIBCMT.lib	crt	nada	
+0042e950	829	memmove	LIBCMT.lib	crt	nada	
+0042ec8d	20	_purecall	LIBCMT.lib	crt	nada	
+0042eca1	16	_set_purecall_handler	LIBCMT.lib	crt	nada	
+0042ecb1	13	srand	LIBCMT.lib	crt	nada	
+0042ecbe	34	rand	LIBCMT.lib	crt	nada	
+0042ece0	128	_onexit_lk	LIBCMT.lib	crt	nada	
+0042ed60	40	__onexitinit	LIBCMT.lib	crt	nada	
+0042ed88	56	_onexit	LIBCMT.lib	crt	nada	
+0042edc0	18	atexit	LIBCMT.lib	crt	nada	
+0042edd2	88	sprintf	LIBCMT.lib	crt	nada	
+0042ee2a	49	_scprintf	LIBCMT.lib	crt	nada	
+0042ee5b	136	atol	LIBCMT.lib	crt	nada	
+0042eee3	5	atoi	LIBCMT.lib	crt	nada	
+0042eee8	167	_atoi64	LIBCMT.lib	crt	nada	
+0042ef8f	52	sscanf	LIBCMT.lib	crt	nada	
+0042efc3	57	time	LIBCMT.lib	crt	nada	
+0042effc	98	`eh vector constructor iterator'	LIBCMT.lib	crt	nada	
+0042f05e	18	ArrayUnwindFilter	LIBCMT.lib	crt	nada	
+0042f070	94	__ArrayUnwind	LIBCMT.lib	crt	nada	
+0042f0ce	96	`eh vector destructor iterator'	LIBCMT.lib	crt	nada	
+0042f12e	191	strtok	LIBCMT.lib	crt	nada	
+0042f1ed	37	_amsg_exit	LIBCMT.lib	crt	nada	
+0042f212	36	fast_error_exit	LIBCMT.lib	crt	nada	
+0042f236	86	check_managed_app	LIBCMT.lib	crt	nada	
+0042f28c	448	mainCRTStartup	LIBCMT.lib	crt	nada	
+0042f44c	48	_JumpToContinuation	LIBCMT.lib	crt	nada	
+0042f47c	7	_CallMemberFunction0	LIBCMT.lib	crt	nada	
+0042f483	7	_CallMemberFunction1	LIBCMT.lib	crt	nada	
+0042f48a	7	_CallMemberFunction2	LIBCMT.lib	crt	nada	
+0042f491	82	_UnwindNestedFrames	LIBCMT.lib	crt	nada	
+0042f4e3	54	__CxxFrameHandler	LIBCMT.lib	crt	nada	
+0042f519	26	__CxxLongjmpUnwind	LIBCMT.lib	crt	nada	
+0042f533	59	CatchGuardHandler	LIBCMT.lib	crt	nada	
+0042f56e	199	_CallSETranslator	LIBCMT.lib	crt	nada	
+0042f635	178	TranslatorGuardHandler	LIBCMT.lib	crt	nada	
+0042f6e7	122	_GetRangeOfTrysToCheck	LIBCMT.lib	crt	nada	
+0042f761	40	_CreateFrameInfo	LIBCMT.lib	crt	nada	
+0042f789	33	IsExceptionObjectToBeDestroyed	LIBCMT.lib	crt	nada	
+0042f7aa	76	_FindAndUnlinkFrame	LIBCMT.lib	crt	nada	
+0042f7f6	89	_CallCatchBlock2	LIBCMT.lib	crt	nada	
+0042f850	32	__global_unwind2	LIBCMT.lib	crt	nada	
+0042f870	34	__unwind_handler	LIBCMT.lib	crt	nada	
+0042f892	104	__local_unwind2	LIBCMT.lib	crt	nada	
+0042f8fa	35	__abnormal_termination	LIBCMT.lib	crt	nada	
+0042f91d	9	_NLG_Notify1	LIBCMT.lib	crt	nada	
+0042f926	24	_NLG_Notify	LIBCMT.lib	crt	nada	
+0042f93e	49	report_failure	LIBCMT.lib	crt	nada	
+0042f96f	14	__security_check_cookie	LIBCMT.lib	crt	nada	
+0042f97d	62	_endthread	LIBCMT.lib	crt	nada	
+0042f9bb	146	_threadstart	LIBCMT.lib	crt	nada	
+0042fa4d	145	_beginthread	LIBCMT.lib	crt	nada	
+0042fade	76	_fclose_lk	LIBCMT.lib	crt	nada	
+0042fb2a	81	fclose	LIBCMT.lib	crt	nada	
+0042fb7b	92	_fsopen	LIBCMT.lib	crt	nada	
+0042fbd7	19	fopen	LIBCMT.lib	crt	nada	
+0042fbea	93	_flush	LIBCMT.lib	crt	nada	
+0042fc47	46	_fflush_lk	LIBCMT.lib	crt	nada	
+0042fc75	213	flsall	LIBCMT.lib	crt	nada	
+0042fd4a	80	fflush	LIBCMT.lib	crt	nada	
+0042fd9a	9	_flushall	LIBCMT.lib	crt	nada	
+0042fda3	94	fprintf	LIBCMT.lib	crt	nada	
+0042fe01	87	vsprintf	LIBCMT.lib	crt	nada	
+0042fe58	48	_vscprintf	LIBCMT.lib	crt	nada	
+0042fe90	61	_chkstk	LIBCMT.lib	crt	nada	
+0042fecd	263	_fwrite_lk	LIBCMT.lib	crt	nada	
+0042ffd4	76	fwrite	LIBCMT.lib	crt	nada	
+00430020	104	_aulldiv	LIBCMT.lib	crt	nada	
+00430088	1	_fpclear	LIBCMT.lib	crt	nada	
+00430089	56	_cfltcvt_init	LIBCMT.lib	crt	nada	
+004300c1	16	__setfflag	LIBCMT.lib	crt	nada	
+004300d1	30	_fpmath	LIBCMT.lib	crt	nada	
+004300ef	102	printf	LIBCMT.lib	crt	nada	
+00430155	5	operator delete[]	LIBCMT.lib	crt	nada	
+0043015a	58	_CxxThrowException	LIBCMT.lib	crt	nada	
+00430194	86	_vsnprintf	LIBCMT.lib	crt	nada	
+004301f0	292	strncpy	LIBCMT.lib	crt	nada	
+00430314	743	_tsopen_lk	LIBCMT.lib	crt	nada	
+004305fb	85	_open	LIBCMT.lib	crt	nada	
+00430650	85	_sopen	LIBCMT.lib	crt	nada	
+004306b0	57	strncmp	LIBCMT.lib	crt	nada	
+004306e9	33	_ungetch_lk	LIBCMT.lib	crt	nada	
+0043070a	173	_getextendedkeycode	LIBCMT.lib	crt	nada	
+004307b7	193	_getch_lk	LIBCMT.lib	crt	nada	
+00430878	55	_getche_lk	LIBCMT.lib	crt	nada	
+004308af	296	_kbhit_lk	LIBCMT.lib	crt	nada	
+004309d7	65	_ungetch	LIBCMT.lib	crt	nada	
+00430a18	59	_getch	LIBCMT.lib	crt	nada	
+00430a53	59	_getche	LIBCMT.lib	crt	nada	
+00430a8e	59	_kbhit	LIBCMT.lib	crt	nada	
+00430ad0	149	_aulldvrm	LIBCMT.lib	crt	nada	
+00430b65	107	_mbsrchr	LIBCMT.lib	crt	nada	
+00430bd0	263	gmtime	LIBCMT.lib	crt	nada	
+00430ce0	230	_except_handler3	LIBCMT.lib	crt	nada	
+00430dc6	27	__seh_longjmp_unwind@4	LIBCMT.lib	crt	nada	
+00430de1	0	$$$00003	LIBCMT.lib	crt	nada	
+00430e27	434	realloc	LIBCMT.lib	crt	nada	
+00430fd9	24	abort	LIBCMT.lib	crt	nada	
+00430ff1	6	__iob_func	LIBCMT.lib	crt	nada	
+00430ff7	169	__initstdio	LIBCMT.lib	crt	nada	
+004310a0	20	__endstdio	LIBCMT.lib	crt	nada	
+004310b4	47	_lock_file	LIBCMT.lib	crt	nada	
+004310e3	35	_lock_file2	LIBCMT.lib	crt	nada	
+00431106	47	_unlock_file	LIBCMT.lib	crt	nada	
+00431135	35	_unlock_file2	LIBCMT.lib	crt	nada	
+00431158	123	_heap_alloc	LIBCMT.lib	crt	nada	
+004311d3	44	_nh_malloc	LIBCMT.lib	crt	nada	
+004311ff	18	malloc	LIBCMT.lib	crt	nada	
+00431211	113	free	LIBCMT.lib	crt	nada	
+00431284	39	_ftol	LIBCMT.lib	crt	nada	
+004312ab	6	__pwctype_func	LIBCMT.lib	crt	nada	
+004312b1	6	__pctype_func	LIBCMT.lib	crt	nada	
+004312b7	119	__isctype_mt	LIBCMT.lib	crt	nada	
+0043132e	39	_isctype	LIBCMT.lib	crt	nada	
+00431355	36	_set_new_handler	LIBCMT.lib	crt	nada	
+00431379	6	_query_new_handler	LIBCMT.lib	crt	nada	
+0043137f	27	_callnewh	LIBCMT.lib	crt	nada	
+004313a0	139	strlen	LIBCMT.lib	crt	nada	
+00431430	829	memcpy	LIBCMT.lib	crt	nada	
+00431770	31	__EH_prolog	LIBCMT.lib	crt	nada	
+0043178f	73	_mtinitlocks	LIBCMT.lib	crt	nada	
+004317d8	85	_mtdeletelocks	LIBCMT.lib	crt	nada	
+0043182d	21	_unlock	LIBCMT.lib	crt	nada	
+00431842	24	_lockerr_exit	LIBCMT.lib	crt	nada	
+0043185a	160	_mtinitlocknum	LIBCMT.lib	crt	nada	
+004318fa	49	_lock	LIBCMT.lib	crt	nada	
+0043192c	59	__SEH_prolog	LIBCMT.lib	crt	nada	
+00431967	17	__SEH_epilog	LIBCMT.lib	crt	nada	
+00431980	136	strcmp	LIBCMT.lib	crt	nada	
+00431a10	7	strcpy	LIBCMT.lib	crt	nada	
+00431a20	232	strcat	LIBCMT.lib	crt	nada	
+00431b08	9	__crtTlsAlloc	LIBCMT.lib	crt	nada	
+00431b11	29	_mtterm	LIBCMT.lib	crt	nada	
+00431b2e	19	_initptd	LIBCMT.lib	crt	nada	
+00431b41	113	_getptd	LIBCMT.lib	crt	nada	
+00431bb2	327	_freefls	LIBCMT.lib	crt	nada	
+00431cf9	47	_freeptd	LIBCMT.lib	crt	nada	
+00431d28	6	__threadid	LIBCMT.lib	crt	nada	
+00431d2e	6	__threadhandle	LIBCMT.lib	crt	nada	
+00431d34	239	_mtinit	LIBCMT.lib	crt	nada	
+00431e23	48	__crtExitProcess	LIBCMT.lib	crt	nada	
+00431e53	9	_lockexit	LIBCMT.lib	crt	nada	
+00431e5c	9	_unlockexit	LIBCMT.lib	crt	nada	
+00431e65	24	_initterm	LIBCMT.lib	crt	nada	
+00431e7d	30	_initterm_e	LIBCMT.lib	crt	nada	
+00431e9b	106	_cinit	LIBCMT.lib	crt	nada	
+00431f05	195	doexit	LIBCMT.lib	crt	nada	
+00431fc8	17	exit	LIBCMT.lib	crt	nada	
+00431fd9	17	_exit	LIBCMT.lib	crt	nada	
+00431fea	15	_cexit	LIBCMT.lib	crt	nada	
+00431ff9	15	_c_exit	LIBCMT.lib	crt	nada	
+00432008	118	_msize	LIBCMT.lib	crt	nada	
+0043207e	281	_flsbuf	LIBCMT.lib	crt	nada	
+00432197	51	write_char	LIBCMT.lib	crt	nada	
+004321ca	36	write_multi_char	LIBCMT.lib	crt	nada	
+004321ee	55	write_string	LIBCMT.lib	crt	nada	
+00432225	9	get_int_arg	LIBCMT.lib	crt	nada	
+0043222e	12	get_int64_arg	LIBCMT.lib	crt	nada	
+0043223a	10	get_short_arg	LIBCMT.lib	crt	nada	
+00432244	1980	_output	LIBCMT.lib	crt	nada	
+00432a00	6	___setlc_active_func	LIBCMT.lib	crt	nada	
+00432a06	6	___unguarded_readlc_active_add_func	LIBCMT.lib	crt	nada	
+00432a0c	208	__freetlocinfo	LIBCMT.lib	crt	nada	
+00432adc	193	__updatetlocinfo_lk	LIBCMT.lib	crt	nada	
+00432b9d	3	__init_dummy	LIBCMT.lib	crt	nada	
+00432ba0	36	_strcats	LIBCMT.lib	crt	nada	
+00432bc4	220	__lc_strtolc	LIBCMT.lib	crt	nada	
+00432ca0	78	__lc_lctostr	LIBCMT.lib	crt	nada	
+00432cee	59	__updatetlocinfo	LIBCMT.lib	crt	nada	
+00432d29	218	_setlocale_get_all	LIBCMT.lib	crt	nada	
+00432e03	352	_expandlocale	LIBCMT.lib	crt	nada	
+00432f63	660	_setlocale_set_cat	LIBCMT.lib	crt	nada	
+004331f7	477	_setlocale_lk	LIBCMT.lib	crt	nada	
+004333d4	346	setlocale	LIBCMT.lib	crt	nada	
+00433530	52	_allmul	LIBCMT.lib	crt	nada	
+00433564	24	_hextodec	LIBCMT.lib	crt	nada	
+0043357c	22	_inc	LIBCMT.lib	crt	nada	
+00433592	13	_un_inc	LIBCMT.lib	crt	nada	
+0043359f	29	_whiteout	LIBCMT.lib	crt	nada	
+004335bc	3627	_input	LIBCMT.lib	crt	nada	
+004343e7	53	terminate	LIBCMT.lib	crt	nada	
+0043441c	24	unexpected	LIBCMT.lib	crt	nada	
+00434434	45	_inconsistency	LIBCMT.lib	crt	nada	
+00434461	376	_NMSG_WRITE	LIBCMT.lib	crt	nada	
+004345d9	42	_GET_RTERRMSG	LIBCMT.lib	crt	nada	
+00434603	57	_FF_MSGBANNER	LIBCMT.lib	crt	nada	
+0043463c	44	xcptlookup	LIBCMT.lib	crt	nada	
+00434668	356	_XcptFilter	LIBCMT.lib	crt	nada	
+004347cc	27	__CppXcptFilter	LIBCMT.lib	crt	nada	
+004347e7	199	_setenvp	LIBCMT.lib	crt	nada	
+004348ae	364	parse_cmdline	LIBCMT.lib	crt	nada	
+00434a1a	162	_setargv	LIBCMT.lib	crt	nada	
+00434abc	290	__crtGetEnvironmentStringsA	LIBCMT.lib	crt	nada	
+00434bde	510	_ioinit	LIBCMT.lib	crt	nada	
+00434ddc	76	_ioterm	LIBCMT.lib	crt	nada	
+00434e28	68	_RTC_Initialize	LIBCMT.lib	crt	nada	
+00434e6c	68	_RTC_Terminate	LIBCMT.lib	crt	nada	
+00434eb0	26	__heap_select	LIBCMT.lib	crt	nada	
+00434eca	81	_heap_init	LIBCMT.lib	crt	nada	
+00434f1b	127	_heap_term	LIBCMT.lib	crt	nada	
+00434f9a	6	_get_heap_handle	LIBCMT.lib	crt	nada	
+00434fa0	79	TypeMatch	LIBCMT.lib	crt	nada	
+00434fef	30	FrameUnwindFilter	LIBCMT.lib	crt	nada	
+0043500d	206	__FrameUnwindToState	LIBCMT.lib	crt	nada	
+004350db	48	ExFilterRethrow	LIBCMT.lib	crt	nada	
+0043510b	69	__DestructExceptionObject	LIBCMT.lib	crt	nada	
+00435150	31	AdjustPointer	LIBCMT.lib	crt	nada	
+0043516f	19	__uncaught_exception	LIBCMT.lib	crt	nada	
+00435182	163	__CxxRegisterExceptionObject	LIBCMT.lib	crt	nada	
+00435225	56	__CxxDetectRethrow	LIBCMT.lib	crt	nada	
+0043525d	158	__CxxUnregisterExceptionObject	LIBCMT.lib	crt	nada	
+004352fb	4	__CxxQueryExceptionSize	LIBCMT.lib	crt	nada	
+004352ff	46	__CxxCallUnwindDtor	LIBCMT.lib	crt	nada	
+0043532d	55	__CxxCallUnwindVecDtor	LIBCMT.lib	crt	nada	
+00435364	452	CallCatchBlock	LIBCMT.lib	crt	nada	
+00435528	380	BuildCatchObject	LIBCMT.lib	crt	nada	
+004356a4	293	__CxxExceptionFilter	LIBCMT.lib	crt	nada	
+004357c9	103	CatchIt	LIBCMT.lib	crt	nada	
+00435830	190	FindHandlerForForeignException	LIBCMT.lib	crt	nada	
+004358ee	516	FindHandler	LIBCMT.lib	crt	nada	
+00435af2	162	__InternalCxxFrameHandler	LIBCMT.lib	crt	nada	
+00435ba0	76	_CallSettingFrame	LIBCMT.lib	crt	nada	
+00435bec	102	__security_init_cookie	LIBCMT.lib	crt	nada	
+00435c52	331	__security_error_handler	LIBCMT.lib	crt	nada	
+00435d9d	16	_set_security_error_handler	LIBCMT.lib	crt	nada	
+00435dad	12	__buffer_overrun	LIBCMT.lib	crt	nada	
+00435db9	16	__set_buffer_overrun_handler	LIBCMT.lib	crt	nada	
+00435dc9	9	_errno	LIBCMT.lib	crt	nada	
+00435dd2	9	__doserrno	LIBCMT.lib	crt	nada	
+00435ddb	115	_dosmaperr	LIBCMT.lib	crt	nada	
+00435e4e	215	calloc	LIBCMT.lib	crt	nada	
+00435f25	131	_close_lk	LIBCMT.lib	crt	nada	
+00435fa8	155	_close	LIBCMT.lib	crt	nada	
+00436043	43	_freebuf	LIBCMT.lib	crt	nada	
+0043606e	360	_openfile	LIBCMT.lib	crt	nada	
+004361d6	290	_getstream	LIBCMT.lib	crt	nada	
+004362f8	444	_write_lk	LIBCMT.lib	crt	nada	
+004364b4	171	_write	LIBCMT.lib	crt	nada	
+0043655f	188	_commit	LIBCMT.lib	crt	nada	
+0043661b	136	_stbuf	LIBCMT.lib	crt	nada	
+004366a3	42	_ftbuf	LIBCMT.lib	crt	nada	
+004366cd	60	_forcdecpt	LIBCMT.lib	crt	nada	
+00436709	75	_cropzeros	LIBCMT.lib	crt	nada	
+00436754	26	_positive	LIBCMT.lib	crt	nada	
+0043676e	62	_fassign	LIBCMT.lib	crt	nada	
+004367ac	29	_shift	LIBCMT.lib	crt	nada	
+004367c9	174	_cftoe2	LIBCMT.lib	crt	nada	
+00436877	112	_cftoe	LIBCMT.lib	crt	nada	
+004368e7	156	_cftof2	LIBCMT.lib	crt	nada	
+00436983	103	_cftof	LIBCMT.lib	crt	nada	
+004369ea	159	_cftog	LIBCMT.lib	crt	nada	
+00436a89	81	_cfltcvt	LIBCMT.lib	crt	nada	
+00436ada	18	_setdefaultprecision	LIBCMT.lib	crt	nada	
+00436aec	64	_ms_p5_test_fdiv	LIBCMT.lib	crt	nada	
+00436b2c	41	_ms_p5_mp_test_fdiv	LIBCMT.lib	crt	nada	
+00436b55	78	__CxxUnhandledExceptionFilter	LIBCMT.lib	crt	nada	
+00436ba3	19	__CxxSetUnhandledExceptionFilter	LIBCMT.lib	crt	nada	
+00436bb6	13	__CxxRestoreUnhandledExceptionFilter	LIBCMT.lib	crt	nada	
+00436bc3	325	_chsize_lk	LIBCMT.lib	crt	nada	
+00436d08	151	_chsize	LIBCMT.lib	crt	nada	
+00436d9f	477	_read_lk	LIBCMT.lib	crt	nada	
+00436f7c	171	_read	LIBCMT.lib	crt	nada	
+00437027	116	_lseek_lk	LIBCMT.lib	crt	nada	
+0043709b	171	_lseek	LIBCMT.lib	crt	nada	
+00437146	124	_set_osfhnd	LIBCMT.lib	crt	nada	
+004371c2	127	_free_osfhnd	LIBCMT.lib	crt	nada	
+00437241	65	_get_osfhandle	LIBCMT.lib	crt	nada	
+00437282	160	_lock_fhandle	LIBCMT.lib	crt	nada	
+00437322	34	_unlock_fhandle	LIBCMT.lib	crt	nada	
+00437344	380	_alloc_osfhnd	LIBCMT.lib	crt	nada	
+004374c0	199	_open_osfhandle	LIBCMT.lib	crt	nada	
+00437587	31	__initconin	LIBCMT.lib	crt	nada	
+004375a6	31	__initconout	LIBCMT.lib	crt	nada	
+004375c5	45	__termcon	LIBCMT.lib	crt	nada	
+004375f2	68	_putch_lk	LIBCMT.lib	crt	nada	
+00437636	63	_putch	LIBCMT.lib	crt	nada	
+00437675	227	_resetstkoflw	LIBCMT.lib	crt	nada	
+00437760	45	strrchr	LIBCMT.lib	crt	nada	
+0043778d	70	getSystemCP	LIBCMT.lib	crt	nada	
+004377d3	47	CPtoLCID	LIBCMT.lib	crt	nada	
+00437802	41	setSBCS	LIBCMT.lib	crt	nada	
+0043782b	411	setSBUpLow	LIBCMT.lib	crt	nada	
+004379c6	111	__updatetmbcinfo	LIBCMT.lib	crt	nada	
+00437a35	404	_setmbcp_lk	LIBCMT.lib	crt	nada	
+00437bc9	16	_getmbcp	LIBCMT.lib	crt	nada	
+00437bd9	336	_setmbcp	LIBCMT.lib	crt	nada	
+00437d29	30	__initmbctable	LIBCMT.lib	crt	nada	
+00437d47	553	_ValidateEH3RN	LIBCMT.lib	crt	nada	
+00437f70	21	_get_sbh_threshold	LIBCMT.lib	crt	nada	
+00437f85	72	__sbh_heap_init	LIBCMT.lib	crt	nada	
+00437fcd	43	__sbh_find_block	LIBCMT.lib	crt	nada	
+00437ff8	792	__sbh_free_block	LIBCMT.lib	crt	nada	
+00438310	183	__sbh_alloc_new_region	LIBCMT.lib	crt	nada	
+004383c7	262	__sbh_alloc_new_group	LIBCMT.lib	crt	nada	
+004384cd	735	__sbh_resize_block	LIBCMT.lib	crt	nada	
+004387ac	209	__sbh_heapmin	LIBCMT.lib	crt	nada	
+0043887d	793	__sbh_heap_check	LIBCMT.lib	crt	nada	
+00438b96	91	_set_sbh_threshold	LIBCMT.lib	crt	nada	
+00438bf1	764	__sbh_alloc_block	LIBCMT.lib	crt	nada	
+00438eed	143	ctrlevent_capture	LIBCMT.lib	crt	nada	
+00438f7c	46	siglookup	LIBCMT.lib	crt	nada	
+00438faa	9	__fpecode	LIBCMT.lib	crt	nada	
+00438fb3	9	__pxcptinfoptrs	LIBCMT.lib	crt	nada	
+00438fbc	417	signal	LIBCMT.lib	crt	nada	
+0043915d	377	raise	LIBCMT.lib	crt	nada	
+004392d6	155	_fcloseall	LIBCMT.lib	crt	nada	
+00439371	442	__crtGetStringTypeA	LIBCMT.lib	crt	nada	
+0043952b	16	__crtInitCritSecNoSpinCount	LIBCMT.lib	crt	nada	
+0043953b	139	__crtInitCritSecAndSpinCount	LIBCMT.lib	crt	nada	
+004395c6	68	_getbuf	LIBCMT.lib	crt	nada	
+0043960a	42	_isatty	LIBCMT.lib	crt	nada	
+00439634	96	__wctomb_mt	LIBCMT.lib	crt	nada	
+00439694	39	wctomb	LIBCMT.lib	crt	nada	
+004396bb	127	_Getdays	LIBCMT.lib	crt	nada	
+0043973a	149	_Getmonths	LIBCMT.lib	crt	nada	
+004397cf	563	_Gettnames	LIBCMT.lib	crt	nada	
+00439a02	32	_store_str	LIBCMT.lib	crt	nada	
+00439a22	54	_store_number	LIBCMT.lib	crt	nada	
+00439a58	121	_store_num	LIBCMT.lib	crt	nada	
+00439ad1	614	_expandtime	LIBCMT.lib	crt	nada	
+00439d37	1162	_store_winword	LIBCMT.lib	crt	nada	
+0043a1c1	195	_Strftime_mt	LIBCMT.lib	crt	nada	
+0043a284	50	_Strftime	LIBCMT.lib	crt	nada	
+0043a2b6	27	strftime	LIBCMT.lib	crt	nada	
+0043a2d1	6	localeconv	LIBCMT.lib	crt	nada	
+0043a2d7	871	_get_lc_time	LIBCMT.lib	crt	nada	
+0043a63e	400	__free_lc_time	LIBCMT.lib	crt	nada	
+0043a7ce	95	__init_time	LIBCMT.lib	crt	nada	
+0043a82d	51	fix_grouping	LIBCMT.lib	crt	nada	
+0043a860	95	__free_lconv_num	LIBCMT.lib	crt	nada	
+0043a8bf	461	__init_numeric	LIBCMT.lib	crt	nada	
+0043aa8c	51	fix_grouping	LIBCMT.lib	crt	nada	
+0043aabf	217	__free_lconv_mon	LIBCMT.lib	crt	nada	
+0043ab98	575	__init_monetary	LIBCMT.lib	crt	nada	
+0043add7	494	__init_ctype	LIBCMT.lib	crt	nada	
+0043afc5	6	___mb_cur_max_func	LIBCMT.lib	crt	nada	
+0043afcb	25	___lc_codepage_func	LIBCMT.lib	crt	nada	
+0043afe4	25	___lc_collate_cp_func	LIBCMT.lib	crt	nada	
+0043affd	25	___lc_handle_func	LIBCMT.lib	crt	nada	
+0043b016	3	__init_collate	LIBCMT.lib	crt	nada	
+0043b020	70	strcspn	LIBCMT.lib	crt	nada	
+0043b070	96	memset	LIBCMT.lib	crt	nada	
+0043b0d0	96	TranslateName	LIBCMT.lib	crt	nada	
+0043b130	26	GetLcidFromDefault	LIBCMT.lib	crt	nada	
+0043b14a	122	ProcessCodePage	LIBCMT.lib	crt	nada	
+0043b1c4	30	TestDefaultCountry	LIBCMT.lib	crt	nada	
+0043b1e2	227	crtGetLocaleInfoA	LIBCMT.lib	crt	nada	
+0043b2c5	53	LcidFromHexString	LIBCMT.lib	crt	nada	
+0043b2fa	29	GetPrimaryLen	LIBCMT.lib	crt	nada	
+0043b317	152	CountryEnumProc	LIBCMT.lib	crt	nada	
+0043b3af	117	TestDefaultLanguage	LIBCMT.lib	crt	nada	
+0043b424	542	LangCountryEnumProc	LIBCMT.lib	crt	nada	
+0043b642	207	LanguageEnumProc	LIBCMT.lib	crt	nada	
+0043b711	55	GetLcidFromCountry	LIBCMT.lib	crt	nada	
+0043b748	134	GetLcidFromLangCountry	LIBCMT.lib	crt	nada	
+0043b7ce	85	GetLcidFromLanguage	LIBCMT.lib	crt	nada	
+0043b823	437	__get_qualified_locale	LIBCMT.lib	crt	nada	
+0043b9e0	184	memcmp	LIBCMT.lib	crt	nada	
+0043baa0	64	strpbrk	LIBCMT.lib	crt	nada	
+0043bae0	63	isalpha	LIBCMT.lib	crt	nada	
+0043bb1f	58	isupper	LIBCMT.lib	crt	nada	
+0043bb59	58	islower	LIBCMT.lib	crt	nada	
+0043bb93	58	isdigit	LIBCMT.lib	crt	nada	
+0043bbcd	63	isxdigit	LIBCMT.lib	crt	nada	
+0043bc0c	58	isspace	LIBCMT.lib	crt	nada	
+0043bc46	58	ispunct	LIBCMT.lib	crt	nada	
+0043bc80	63	isalnum	LIBCMT.lib	crt	nada	
+0043bcbf	63	isprint	LIBCMT.lib	crt	nada	
+0043bcfe	63	isgraph	LIBCMT.lib	crt	nada	
+0043bd3d	58	iscntrl	LIBCMT.lib	crt	nada	
+0043bd77	13	__isascii	LIBCMT.lib	crt	nada	
+0043bd84	8	__toascii	LIBCMT.lib	crt	nada	
+0043bd8c	26	__iscsymf	LIBCMT.lib	crt	nada	
+0043bda6	26	__iscsym	LIBCMT.lib	crt	nada	
+0043bdc0	225	_filbuf	LIBCMT.lib	crt	nada	
+0043bea1	108	_ungetc_lk	LIBCMT.lib	crt	nada	
+0043bf0d	69	ungetc	LIBCMT.lib	crt	nada	
+0043bf52	192	__mbtowc_mt	LIBCMT.lib	crt	nada	
+0043c012	43	mbtowc	LIBCMT.lib	crt	nada	
+0043c03d	249	__crtMessageBoxA	LIBCMT.lib	crt	nada	
+0043c136	28	_ValidateRead	LIBCMT.lib	crt	nada	
+0043c152	28	_ValidateWrite	LIBCMT.lib	crt	nada	
+0043c16e	24	_ValidateExecute	LIBCMT.lib	crt	nada	
+0043c186	131	_lseeki64_lk	LIBCMT.lib	crt	nada	
+0043c209	190	_lseeki64	LIBCMT.lib	crt	nada	
+0043c2c7	8	_tolower	LIBCMT.lib	crt	nada	
+0043c2cf	200	__tolower_mt	LIBCMT.lib	crt	nada	
+0043c397	34	tolower	LIBCMT.lib	crt	nada	
+0043c3b9	50	_ZeroTail	LIBCMT.lib	crt	nada	
+0043c3eb	77	_IncMan	LIBCMT.lib	crt	nada	
+0043c438	114	_RoundMan	LIBCMT.lib	crt	nada	
+0043c4aa	27	_CopyMan	LIBCMT.lib	crt	nada	
+0043c4c5	12	_FillZeroMan	LIBCMT.lib	crt	nada	
+0043c4d1	25	_IsZeroMan	LIBCMT.lib	crt	nada	
+0043c4ea	123	_ShrMan	LIBCMT.lib	crt	nada	
+0043c565	344	_ld12cvt	LIBCMT.lib	crt	nada	
+0043c6bd	22	_ld12tod	LIBCMT.lib	crt	nada	
+0043c6d3	22	_ld12tof	LIBCMT.lib	crt	nada	
+0043c6e9	124	_ld12told	LIBCMT.lib	crt	nada	
+0043c765	69	_atodbl	LIBCMT.lib	crt	nada	
+0043c7aa	70	_atoldbl	LIBCMT.lib	crt	nada	
+0043c7f0	69	_atoflt	LIBCMT.lib	crt	nada	
+0043c835	119	_fptostr	LIBCMT.lib	crt	nada	
+0043c8ac	186	__dtold	LIBCMT.lib	crt	nada	
+0043c966	120	_fltout2	LIBCMT.lib	crt	nada	
+0043c9de	9	_fptrap	LIBCMT.lib	crt	nada	
+0043c9e7	43	_fpreset	LIBCMT.lib	crt	nada	
+0043ca12	146	_abstract_cw	LIBCMT.lib	crt	nada	
+0043caa4	142	_hw_cw	LIBCMT.lib	crt	nada	
+0043cb32	57	_abstract_sw	LIBCMT.lib	crt	nada	
+0043cb6b	16	_statusfp	LIBCMT.lib	crt	nada	
+0043cb7b	17	_clearfp	LIBCMT.lib	crt	nada	
+0043cb8c	50	_control87	LIBCMT.lib	crt	nada	
+0043cbbe	22	_controlfp	LIBCMT.lib	crt	nada	
+0043cbd4	108	_setmode_lk	LIBCMT.lib	crt	nada	
+0043cc40	151	_setmode	LIBCMT.lib	crt	nada	
+0043ccd7	28	strncnt	LIBCMT.lib	crt	nada	
+0043ccf3	982	__crtLCMapStringA	LIBCMT.lib	crt	nada	
+0043d0c9	71	__ansicp	LIBCMT.lib	crt	nada	
+0043d110	474	__convertcp	LIBCMT.lib	crt	nada	
+0043d2ea	680	_tzset_lk	LIBCMT.lib	crt	nada	
+0043d592	440	cvtdate	LIBCMT.lib	crt	nada	
+0043d74a	391	_isindst_lk	LIBCMT.lib	crt	nada	
+0043d8d1	76	__tzset	LIBCMT.lib	crt	nada	
+0043d91d	53	_tzset	LIBCMT.lib	crt	nada	
+0043d952	62	_isindst	LIBCMT.lib	crt	nada	
+0043d990	78	__ascii_stricmp	LIBCMT.lib	crt	nada	
+0043d9de	304	__getlocaleinfo	LIBCMT.lib	crt	nada	
+0043db0e	105	_stricmp	LIBCMT.lib	crt	nada	
+0043db77	127	_strnicmp	LIBCMT.lib	crt	nada	
+0043dbf6	62	xtoa	LIBCMT.lib	crt	nada	
+0043dc34	42	_itoa	LIBCMT.lib	crt	nada	
+0043dc5e	39	_ltoa	LIBCMT.lib	crt	nada	
+0043dc85	26	_ultoa	LIBCMT.lib	crt	nada	
+0043dc9f	109	x64toa	LIBCMT.lib	crt	nada	
+0043dd0c	49	_i64toa	LIBCMT.lib	crt	nada	
+0043dd3d	27	_ui64toa	LIBCMT.lib	crt	nada	
+0043dd58	33	__addl	LIBCMT.lib	crt	nada	
+0043dd79	94	__add_12	LIBCMT.lib	crt	nada	
+0043ddd7	46	__shl_12	LIBCMT.lib	crt	nada	
+0043de05	45	__shr_12	LIBCMT.lib	crt	nada	
+0043de32	232	__mtold12	LIBCMT.lib	crt	nada	
+0043df1a	1088	__strgtold12	LIBCMT.lib	crt	nada	
+0043e35a	85	__STRINGTOLD	LIBCMT.lib	crt	nada	
+0043e3af	668	$I10_OUTPUT	LIBCMT.lib	crt	nada	
+0043e64b	129	_getenv_lk	LIBCMT.lib	crt	nada	
+0043e6cc	63	getenv	LIBCMT.lib	crt	nada	
+0043e70b	304	__crtGetLocaleInfoW	LIBCMT.lib	crt	nada	
+0043e83b	320	__crtGetLocaleInfoA	LIBCMT.lib	crt	nada	
+0043e980	97	__ascii_strnicmp	LIBCMT.lib	crt	nada	
+0043e9e1	566	__ld12mul	LIBCMT.lib	crt	nada	
+0043ec17	142	__multtenpow12	LIBCMT.lib	crt	nada	
+0043eca5	78	_mbsnbicoll	LIBCMT.lib	crt	nada	
+0043ecf3	144	__wtomb_environ	LIBCMT.lib	crt	nada	
+0043ed83	28	strncnt	LIBCMT.lib	crt	nada	
+0043ed9f	906	__crtCompareStringA	LIBCMT.lib	crt	nada	
+0043f129	77	findenv	LIBCMT.lib	crt	nada	
+0043f176	97	copy_environ	LIBCMT.lib	crt	nada	
+0043f1d7	470	__crtsetenv	LIBCMT.lib	crt	nada	
+0043f3ad	43	_strdup	LIBCMT.lib	crt	nada	
+0043f3d8	123	_mbschr	LIBCMT.lib	crt	nada	
+0043f460	16	$$$00001	LIBCMT.lib	crt	nada	
+0043f470	190	strchr	LIBCMT.lib	crt	nada	
+0043f738	17	_tell	LIBCMT.lib	crt	nada	
+004403c0	22	$E3	Global.obj	game	nada	
+004403e0	26	$E6	Global.obj	game	nada	
+00440400	12	$E9	Global.obj	game	nada	
+00440410	22	$E12	Global.obj	game	nada	
+00440430	26	$E1	Main.obj	game	nada	
+00440450	22	$E1	ServerApp.obj	game	nada	
+00440470	16	$E1	Crypt.lib	common	nada	
+00440480	22	$E1	pscommon.lib	common	nada	
+004404a0	12	$E1	pscommon.lib	common	nada	
+004404b0	22	$E1	pscommon.lib	common	nada	
+004404d0	22	$E1	pscommon.lib	common	nada	
+004404f0	22	$E4	pscommon.lib	common	nada	
+00440510	22	$E7	pscommon.lib	common	nada	
+00440530	22	$E1	pscommon.lib	common	nada	
+00440550	22	$E4	pscommon.lib	common	nada	
+00440570	22	$E7	pscommon.lib	common	nada	
+00440590	22	$E1	pscommon.lib	common	nada	
+004405b0	22	$E1	pscommon.lib	common	nada	
+004405d0	10	$E4	Global.obj	game	nada	
+004405e0	22	$E7	Global.obj	game	nada	
+00440600	1	$E10	Global.obj	game	nada	
+00440610	11	$E13	Global.obj	game	nada	
+00440620	10	$E2	Main.obj	game	nada	
+00440630	11	$E2	ServerApp.obj	game	nada	
+00440640	24	$E4	Crypt.lib	common	nada	
+00440660	10	$E6	Crypt.lib	common	nada	
+00440670	10	$E2	pscommon.lib	common	nada	
+00440680	10	$E2	pscommon.lib	common	nada	
+00440690	10	$E2	pscommon.lib	common	nada	
+004406a0	10	$E2	pscommon.lib	common	nada	
+004406b0	10	$E5	pscommon.lib	common	nada	
+004406c0	10	$E8	pscommon.lib	common	nada	
+004406d0	10	$E2	pscommon.lib	common	nada	
+004406e0	10	$E5	pscommon.lib	common	nada	
+004406f0	10	$E8	pscommon.lib	common	nada	
+00440700	10	$E2	pscommon.lib	common	nada	
+00440710	27	$E2	pscommon.lib	common	nada	
+00440730	10	$E2	pscommon.lib	common	nada	
+0044073a	10	$E2	libcpmt.lib	crt	nada	
