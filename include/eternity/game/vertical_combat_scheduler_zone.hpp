@@ -18,6 +18,7 @@
 #include "eternity/game/party_runtime_membership_send.hpp"
 #include "eternity/game/party_runtime_registry.hpp"
 #include "eternity/game/vertical_session_registry.hpp"
+#include "eternity/game/vertical_combat_spend_party.hpp"
 #include "eternity/game/random.hpp"
 #include <utility>
 namespace eternity::game {
@@ -388,6 +389,15 @@ public:
  virtual std::array<std::uint8_t,2> party_move_opcode_scratch()=0;
 private:
  Actor& actor_;ZoneEntryState& entry_;PartyMembershipUser& member_;PartyMembershipSendWorld& party_world_;
+};
+// Reuses the skill-spend party lease; registry lookup proves the concrete
+// 30-slot party identity before constructing the aliasing retained pointer.
+class VerticalCombatRebirthRegistryPartyServices:public VerticalCombatRebirthPartyMoveServices {
+public:
+ VerticalCombatRebirthRegistryPartyServices(Actor&,ZoneEntryState&,PartyMembershipUser&,PartyMembershipSendWorld&,PartyRegistry&,PartyRegistryPorts&,VerticalCombatPartyLease&);
+ std::shared_ptr<PartyRegistryParty> retain_rebirth_move_party(PartyNormalMembership&) final;
+private:
+ PartyRegistry& registry_;PartyRegistryPorts& ports_;VerticalCombatPartyLease& lease_;
 };
 bool vertical_combat_rebirth_move_local(Actor&,RuntimeZone&,ZoneEntryState&,std::uint32_t,UserPosition,UserViewActorTransport&,VerticalCombatRebirthLocalServices&);
 // Joins CZone::MoveUser's retained vehicle prefix to the actual local move.

@@ -394,6 +394,13 @@ void VerticalCombatRebirthPartyMoveServices::send_party_move(Actor& actor){
  auto* selected=member_.party;auto retained=retain_rebirth_move_party(*selected);if(!retained || retained.get()!=selected || member_.party!=selected)throw std::logic_error("Party move requires the selected retained registry party");
  vertical_combat_rebirth_party_move(actor,member_,*retained,entry_,party_world_,party_move_opcode_scratch());
 }
+VerticalCombatRebirthRegistryPartyServices::VerticalCombatRebirthRegistryPartyServices(Actor& actor,ZoneEntryState& entry,PartyMembershipUser& member,PartyMembershipSendWorld& world,PartyRegistry& registry,PartyRegistryPorts& ports,VerticalCombatPartyLease& lease):VerticalCombatRebirthPartyMoveServices(actor,entry,member,world),registry_(registry),ports_(ports),lease_(lease){}
+std::shared_ptr<PartyRegistryParty> VerticalCombatRebirthRegistryPartyServices::retain_rebirth_move_party(PartyNormalMembership& party){
+ auto* registered=find_registry_party(registry_,party.id,ports_);if(!registered || static_cast<PartyNormalMembership*>(registered)!=&party)return {};
+ auto retained=lease_.retain(party);if(!retained || retained.get()!=&party)return {};
+ if(find_registry_party(registry_,party.id,ports_)!=registered)return {};
+ return {std::move(retained),registered};
+}
 void VerticalCombatRebirthMoveGameServices::move_by_game(Actor& actor){
  if(&actor!=&actor_ || admission_.character_id!=actor.id())throw std::invalid_argument("MoveByGame bound to another actor");
  const auto tick=rebirth_move_tick();auto& check=actor.movement_check();
