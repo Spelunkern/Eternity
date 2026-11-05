@@ -23,7 +23,6 @@ public:
     virtual GroundItemPool& shop_item_pool()=0; // CObjectMgr::CreateItem 0040a510 / FreeItem 0040a590.
     virtual std::uint32_t shop_system_time()=0; // GetSystemTime 004cb8e0.
     virtual std::uint64_t next_shop_item_uid()=0; // SUniqueIDGenByServer::GenID 00457a50.
-    virtual void initialize_shop_item_craft(GroundItem&)=0; // CItem::InitCraftExpansion 004ba280.
     virtual void send_shop_database(const net::Packet&)=0;
     virtual std::string shop_item_name(const ItemDefinition&)=0; // Original bytes, at most 31.
     virtual void close_shop_connection(Actor&,std::uint32_t reason)=0; // SConnection::Close 004d43a0.

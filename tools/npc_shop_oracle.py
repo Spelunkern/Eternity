@@ -51,6 +51,8 @@ class Case:
         self.create = int(rng.random() > .1)
         self.interaction = rng.choice((0, rng.randint(1, 900)))
         self.quality = rng.randint(0, 2000)
+        self.server = rng.choice((0, 1, 1, 9))
+        self.wisdom = rng.choice((0, 1, 50, 99, 100, 101))
         self.items = {}
         density = rng.choice((0, .05, .3, 1.0))
         for bag in range(1, 6):
@@ -174,7 +176,7 @@ def main():
         0x416d10: find_npc, 0x466c30: shop, 0x402710: item_info, 0x44b3d0: plain("C"), 0x478520: plain("E"),
         0x42b800: guild_lock, 0x430ac0: rate, 0x40a510: create, 0x40a590: free, 0x45b0d0: lambda machine: result(machine, 0),
         0x4cb8e0: lambda machine: result(machine, 0x1234abcd),
-        0x457a50: lambda machine: result(machine, 0x55667788, 0, 0x11223344), 0x4ba280: plain("K"),
+        0x457a50: lambda machine: result(machine, 0x55667788, 0, 0x11223344),
         0x46c700: money, 0x4d4d20: send("S"), 0x4d4f10: send("D"), 0x4d4e50: send("L"), 0x4d43a0: close,
         0x505316: lambda machine: result(machine, 0)}
 
@@ -187,10 +189,10 @@ def main():
         cpu.hook_add(UC_HOOK_CODE, hook, begin=address, end=address)
 
     rng = random.Random(0x46af10)
-    print(f"# ps_game.exe SHA256 {digest}; CUser::PacketShop 0046af10, opcodes 0702/0703; real handler and CItem::Init 004b9f80 "
+    print(f"# ps_game.exe SHA256 {digest}; CUser::PacketShop 0046af10, opcodes 0702/0703; real handler, CItem::Init 004b9f80 and InitCraftExpansion 004ba280 "
           "execute, world lookups/transports are observed ports; SetGameLogMain 0045b0d0 header bytes stay zero")
     print("# opcode life bags money stack buy sell real type type_id npc kind shop shop_type shop_type_id shop_items definition "
-          "guild_zone guild rate_result rate detail create interaction quality body item_count items... events money final_count final...")
+          "guild_zone guild rate_result rate detail create interaction quality server wisdom body item_count items... events money final_count final...")
     for index in range(CASES):
         case = Case(rng, index)
         state.update(case=case, allocated=0)
@@ -222,6 +224,8 @@ def main():
         write(cpu, DEFS + 0x24, "<BB", case.type, case.type_id)
         write(cpu, DEFS + 0x4b, "<B", case.stack)
         write(cpu, DEFS + 0x4c, "<H", case.quality)
+        write(cpu, DEFS + 0x3e, "<H", case.wisdom)
+        write(cpu, DEFS + 0x4a, "<B", case.server)
         write(cpu, DEFS + 0x80, "<II", case.buy, case.sell)
         write(cpu, DEFS + 0xa0, "<i", case.real)
         other = DEFS + 0x400
@@ -263,7 +267,7 @@ def main():
                  for (bag, slot), item in sorted(case.items.items())]
         fields = [case.opcode, case.life, case.bags, case.money, case.stack, case.buy, case.sell, case.real, case.type, case.type_id, case.npc,
                   case.kind, case.shop, case.shop_type, case.shop_type_id, case.shop_items, case.definition, case.guild_zone, case.guild,
-                  case.rate_result, repr(case.rate), case.detail, case.create, case.interaction, case.quality, case.body.hex(), len(items), *items,
+                  case.rate_result, repr(case.rate), case.detail, case.create, case.interaction, case.quality, case.server, case.wisdom, case.body.hex(), len(items), *items,
                   ",".join(events) or "-", read(cpu, USER + 0x140, "<I"), len(final), *final]
         print("\t".join(str(field) for field in fields))
 

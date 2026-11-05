@@ -93,7 +93,7 @@ NpcShopResult buy(Actor& actor,const net::Packet& packet,NpcShopWorld& world) {
         item->item.uid=world.next_shop_item_uid();
         const auto b=static_cast<std::uint8_t>(bag);const auto s=static_cast<std::uint8_t>(slot);
         if(!actor.claim_inventory_item(b,slot,*item,pool))throw std::logic_error("Shop slot changed during purchase");
-        world.initialize_shop_item_craft(*item);
+        initialize_ground_item_craft(*item);
         if(!actor.sync_inventory_item(b,slot,item))throw std::logic_error("Shop item mirror changed during purchase");
         actor.money()-=price;actor.send_money_database(world);
         world.send_shop_database(inventory_add_packet(actor.account_id(),b,s,*item));

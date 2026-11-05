@@ -10,6 +10,8 @@ void initialize_ground_item(GroundItem&);
 void initialize_ground_item(GroundItem&,std::uint8_t type,std::uint8_t type_id,std::uint8_t count,std::uint32_t made_at,std::uint8_t make_type);
 // Writes a CItem craft string without clearing bytes beyond its terminating NUL.
 void set_ground_item_craft(GroundItem&,std::string_view);
+// CItem::InitCraftExpansion 004ba280: craftable definitions start with twenty zeros.
+void initialize_ground_item_craft(GroundItem&);
 struct ItemPoolStatistics {std::uint32_t serial=1,fresh_attempts=0;std::size_t owned=0,available=0;};
 // One server-wide item pool, with its own CObjectMgr+4 counter. Reused IDs stay
 // stable; IDs here are distinct from persisted item UIDs and definition IDs.

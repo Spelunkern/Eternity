@@ -46,7 +46,6 @@ struct World final:NpcShopWorld {
     GroundItemPool& shop_item_pool() override {return pool;}
     std::uint32_t shop_system_time() override {return 0x1234abcd;}
     std::uint64_t next_shop_item_uid() override {return 0x1122334455667788ULL;}
-    void initialize_shop_item_craft(GroundItem&) override {events.push_back("K");}
     void send_shop_database(const net::Packet& p) override {events.push_back("D"+hex(p));}
     std::string shop_item_name(const ItemDefinition& item) override {return item.id==40000?"Other item":"Shop item";}
     void close_shop_connection(Actor&,std::uint32_t reason) override {events.push_back("F"+std::to_string(reason));}
@@ -75,6 +74,7 @@ int main(int argc,char** argv) {
             const auto shop_type_id=pop<std::uint16_t>(f,at);const auto shop_items=pop<std::size_t>(f,at);const auto has_definition=pop<int>(f,at);
             const auto guild_zone=pop<int>(f,at);const auto guild=pop<int>(f,at);const auto rate_result=pop<std::uint32_t>(f,at);const auto rate=std::stod(f.at(at++));
             const auto detail=pop<std::uint8_t>(f,at);const auto create=pop<int>(f,at);const auto interaction=pop<std::uint32_t>(f,at);const auto quality=pop<std::uint16_t>(f,at);
+            definition.server=pop<std::uint8_t>(f,at);definition.required_wisdom=pop<std::uint16_t>(f,at);
             definition.quality={quality,0,0};auto body=unhex(f.at(at++));
             ItemDefinition other=definition;other.id=40000;other.type=static_cast<std::uint8_t>(definition.type%100+1);
             NpcDefinition shop;shop.record[2]=static_cast<std::uint8_t>(shop_type_id);shop.record[3]=static_cast<std::uint8_t>(shop_type_id>>8);shop.shop_type=shop_type;

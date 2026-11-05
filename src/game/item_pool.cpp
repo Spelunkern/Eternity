@@ -18,6 +18,11 @@ void initialize_ground_item(GroundItem& item,std::uint8_t type,std::uint8_t type
     initialize_ground_item(item);item.item.type=type;item.item.type_id=type_id;item.item.count=count;item.item.quality=item.definition->quality[0];
     item.item.made_at=made_at;if(make_type!=0) item.item.make_type.assign(1,static_cast<char>(make_type));
 }
+void initialize_ground_item_craft(GroundItem& item) {
+    const auto* definition=item.definition;
+    if(!definition || definition->server==0 || definition->required_wisdom==0 || definition->required_wisdom>=100) return;
+    set_ground_item_craft(item,"00000000000000000000");
+}
 void set_ground_item_craft(GroundItem& item,std::string_view name) {
     if(name.size()>20 || name.find('\0')!=std::string_view::npos) throw std::invalid_argument("Invalid original item craft string");
     item.item.craft.assign(name);std::copy(name.begin(),name.end(),item.craft_storage.begin());item.craft_storage[name.size()]=0;
