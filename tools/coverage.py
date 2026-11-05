@@ -374,7 +374,7 @@ def update_readme(maps, canonical, today):
 def run():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--ref", default="HEAD", help="ref to report (default: HEAD)")
-    parser.add_argument("--compare", nargs="*", default=["main", "coordinator/foundation", "overnight/*"],
+    parser.add_argument("--compare", nargs="*", default=["main", "overnight/*"],
                         help="refs or patterns compared in the per-branch table")
     parser.add_argument("--copy", type=Path, help="also copy the report to this path")
     args = parser.parse_args()

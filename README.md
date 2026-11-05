@@ -16,7 +16,7 @@ Project code only: excludes the CRT and shared libraries (`pscommon`, `snet`).
 | `ps_gameLog` | 143 | 0 | 0.0% | 21 KB | 0 KB | 0.0% | `░░░░░░░░░░░░` |
 | `ps_userLog` | 132 | 0 | 0.0% | 7 KB | 0 KB | 0.0% | `░░░░░░░░░░░░` |
 
-Full map: [PROGRESS.md](PROGRESS.md). Generated on 2026-11-05 from `coordinator/foundation`.
+Full map: [PROGRESS.md](PROGRESS.md). Generated on 2026-11-05 from `main`.
 <!-- progress:end -->
 
 Native Linux reconstruction of the Shaiya EP4.5 server in C++20, using SQL Server.

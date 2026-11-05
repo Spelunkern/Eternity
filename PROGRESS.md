@@ -1,6 +1,6 @@
 # Eternity progress
 
-Generated on 2026-11-05 by `python3 tools/coverage.py` from `coordinator/foundation`. Do not edit by hand.
+Generated on 2026-11-05 by `python3 tools/coverage.py` from `main`. Do not edit by hand.
 
 **The server is not playable yet.** These figures show which original functions are cited by code, not that behavior is identical, and a function's bytes count in full even when incomplete, so the percentages are ceilings. The goal is met only when an original EP4 client connects and plays.
 
@@ -45,8 +45,7 @@ A function counts when the branch has code citing it, whole or in part.
 
 | Branch | Functions with code | % bytes |
 |---|---:|---:|
-| `main` | 507 | 41.4% |
-| `coordinator/foundation` | 675 | 52.8% |
+| `main` | 675 | 52.8% |
 | `overnight/01-entry` | 546 | 43.5% |
 | `overnight/02-world` | 585 | 45.1% |
 | `overnight/03-movement` | 548 | 43.6% |
