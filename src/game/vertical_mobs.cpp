@@ -1017,6 +1017,14 @@ std::shared_ptr<void> VerticalMobsSharedPriorityCells::retain(Actor& actor){retu
 UserPosition VerticalMobsSharedPriorityCells::origin(){return mob_.position;}
 PartyMembershipUser& VerticalMobsSharedPriorityCells::connection(Actor& actor){return connections_.connection(actor);}
 UserPriorityQueue& VerticalMobsSharedPriorityCells::connection_queue(Actor& actor){return connections_.queue(actor);}
+VerticalMobsSkillPriorityWorld::VerticalMobsSkillPriorityWorld(VerticalMobsPriorityHitTailWorld& views):views_(views) {}
+void VerticalMobsSkillPriorityWorld::send_skill(MobRuntime& mob,Actor& actor,const MobTargetingBindingSkill& skill) {
+    net::Packet packet{0x0b,0x06,4};const auto append=[&](std::uint32_t n,unsigned bytes){for(unsigned i=0;i<bytes;++i)packet.push_back(static_cast<std::uint8_t>(n>>(i*8)));};
+    append(mob.id,4);const auto target=actor.id();append(target,4);append(static_cast<std::uint32_t>(mob.current_attack),1);
+    append(std::to_integer<std::uint32_t>(skill.record[0]),1);append(std::to_integer<std::uint32_t>(skill.record[1]),1);
+    append(std::to_integer<std::uint32_t>(skill.record[2]),1);packet.resize(21,0);
+    if(mob.zone)views_.send_hit(mob,target,packet);
+}
 MobCombatCredit vertical_mobs_reflected_credit(const Actor& actor) noexcept{return {1,actor.id(),0,0,0};}
 void VerticalMobsPriorityHitTailWorld::send(MobRuntime& mob,std::uint32_t target,const net::Packet& packet){
     if(mob.zone!=&mobs_)throw std::invalid_argument("Mob priority view requires its retained zone");

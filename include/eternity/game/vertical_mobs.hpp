@@ -646,6 +646,14 @@ private:
     void send(MobRuntime&,std::uint32_t,const net::Packet&);
     ZoneMobs& mobs_;ZoneUsers& users_;UserPriorityAreaServices& area_;
 };
+// Bind CMob::SendUseSkill 004a3f50 to the actual retained paired-zone
+// priority view owner. Remaining skill attack operations are still required.
+class VerticalMobsSkillPriorityWorld:public VerticalMobsSkillAttackWorld {
+public:
+    explicit VerticalMobsSkillPriorityWorld(VerticalMobsPriorityHitTailWorld&);
+    void send_skill(MobRuntime&,Actor&,const MobTargetingBindingSkill&) final;
+private:VerticalMobsPriorityHitTailWorld& views_;
+};
 MobCombatCredit vertical_mobs_reflected_credit(const Actor&) noexcept;
 // Bind existing retained stand and live mob-damage owners. The stand owner
 // must expose status_stand(Actor&); the damage owner must expose

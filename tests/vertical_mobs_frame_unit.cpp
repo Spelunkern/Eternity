@@ -282,6 +282,29 @@ struct MobPriorityWorld final:VerticalMobsPriorityHitTailWorld {
     bool damage_mob(MobRuntime&,Actor&,std::array<std::int32_t,3>&) override {throw std::logic_error("Unexpected mob damage");}
     void final_attack_effects(MobRuntime&,Actor&) override {throw std::logic_error("Unexpected final effects");}
 };
+struct SkillPriorityFixture final:VerticalMobsSkillPriorityWorld {
+    using VerticalMobsSkillPriorityWorld::VerticalMobsSkillPriorityWorld;
+    void attack_user(MobRuntime&,Actor&,const MobTargetingBindingSkill&,bool) override {throw std::logic_error("unexpected skill hit");}
+    bool self_damage(MobRuntime&,std::uint32_t,const MobCombatCredit&) override {throw std::logic_error("unexpected self damage");}
+    void range(MobRuntime&,Actor&,const MobTargetingBindingSkill&) override {throw std::logic_error("unexpected area");}
+    void range_select(MobRuntime&,Actor&,const MobTargetingBindingSkill&) override {throw std::logic_error("unexpected area select");}
+};
+void check_skill_priority(MobPrimaryZones& root,Frame& frame,ActorScene& scene,const ActorEquipmentRules& equipment,const std::filesystem::path& fixture) {
+    std::ifstream in(fixture);check(in.good());auto* mob=root.mob_pool().allocate();check(mob);mob->definition=frame.runtime.find(1);mob->lua_ai=0;mob->position={10,0,10};
+    const auto geometry=frame.maps->all()[0].definition.geometry();ZoneMobs mobs(geometry,frame.backend);ZoneUsers users(geometry,0);MobPriorityArea area;
+    MobPriorityWorld views(mobs,users,area);SkillPriorityFixture world(views);MobTargetingBindingSkill skill;std::string line;unsigned count=0;
+    while(std::getline(in,line)) {
+        if(line.empty() || line[0]=='#')continue;std::istringstream row(line);std::uint32_t id,target,sid,level,zone;int slot;std::string expected;
+        row>>id>>target>>slot>>sid>>level>>zone>>expected;check(bool(row));mob->id=id;mob->current_attack=slot;
+        skill.record[0]=static_cast<std::byte>(sid&255);skill.record[1]=static_cast<std::byte>(sid>>8);skill.record[2]=static_cast<std::byte>(level);
+        auto actor=std::make_shared<Actor>(target,EffectStatus{},PlayerResources{1,0,0},std::vector<PersistedEffect>{},scene,equipment);
+        area.actors={actor};area.packets.clear();area.immediate_ids.clear();area.priority_ids.clear();check(users.attach_at_position(*actor,{20,0,10}));if(zone)check(mobs.enter(*mob));
+        world.send_skill(*mob,*actor,skill);std::string packet;if(!area.packets.empty()){static constexpr char hex[]="0123456789abcdef";for(auto b:area.packets[0]){packet+=hex[b>>4];packet+=hex[b&15];}}
+        check((packet.empty()?"-":packet)==expected && area.packets.size()==zone && area.immediate_ids.size()==zone && (!zone || area.immediate_ids[0]==target));
+        if(zone)check(mobs.leave(*mob));check(users.detach(target));++count;
+    }
+    check(count==4);root.mob_pool().release(*mob);
+}
 struct MobSharedPool final:PartyMembershipSendWorld {
     PartyMembershipSendBuffer buffer;bool active=false,allow=true;unsigned allocations=0,frees=0;std::vector<std::uint32_t> immediate;std::vector<eternity::net::Packet> frames;
     PartyMembershipSendBuffer* allocate_send_buffer(std::uint16_t) override {++allocations;if(!allow)return nullptr;check(!active);active=true;return &buffer;}
@@ -1491,6 +1514,7 @@ int main(int argc,char** argv) {try {
     check_attack_ai_self(*root,*f,player,argv[16]);
     check_use_skill(*root,player,std::filesystem::path(argv[43]).parent_path()/"vertical-mobs-use-skill-oracle.tsv");
     check_skill_attack(*root,player,std::filesystem::path(argv[43]).parent_path()/"vertical-mobs-skill-attack-oracle.tsv");
+    check_skill_priority(*root,*f,scene,equipment,std::filesystem::path(argv[43]).parent_path()/"vertical-mobs-skill-view-oracle.tsv");
     check_attack_range(*root,*f,argv[17]);
     check_stationary_attack(*root,*f,player,argv[18],argv[19],argv[20]);
     check_chase_prefix(*root,*f,argv[21]);
