@@ -654,6 +654,9 @@ public:
     void send_skill(MobRuntime&,Actor&,const MobTargetingBindingSkill&) final;
 private:VerticalMobsPriorityHitTailWorld& views_;
 };
+// SendUseSkill can announce an area skill with original extra ID zero.
+void vertical_mobs_skill_announcement(MobRuntime&,std::uint32_t target,
+    const MobTargetingBindingSkill&,VerticalMobsPriorityHitTailWorld&);
 // CMob::Heal 004909e0 uses the retained raw mob definition, actual damage
 // ledger reset and actual linked-mob log owner; amounts are HP, MP, SP.
 void vertical_mobs_heal(MobRuntime&,std::array<std::int32_t,3>&,
@@ -663,6 +666,20 @@ public:
     virtual ~VerticalMobsSkillHealWorld()=default;
     virtual void remove_state(MobRuntime&,const MobTargetingBindingSkill&)=0;
     virtual void range(MobRuntime&,Actor&,const MobTargetingBindingSkill&)=0;
+};
+// Actual ZoneMobs cell traversal for SkillHealRange 004a5520. Providers
+// must pin every visited mob and return its own live log context; state removal
+// remains the required actual CMob::RemStateSkill owner.
+class VerticalMobsAreaSkillHealWorld:public VerticalMobsSkillHealWorld {
+public:
+    VerticalMobsAreaSkillHealWorld(ZoneMobs&,const MobTargetingBindingCatalog&,
+        VerticalMobsPriorityHitTailWorld&,MobLogTransport&);
+    void range(MobRuntime&,Actor&,const MobTargetingBindingSkill&) final;
+    virtual std::shared_ptr<void> retain(MobRuntime&)=0;
+    virtual const MobLogContext& context(MobRuntime&)=0;
+private:
+    ZoneMobs& mobs_;const MobTargetingBindingCatalog& catalog_;
+    VerticalMobsPriorityHitTailWorld& views_;MobLogTransport& log_;
 };
 // Binds SkillHeal 004a54e0 self-target behavior to actual mob heal, log and
 // priority view owners. The host must still supply real area heal and debuff.

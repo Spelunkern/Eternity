@@ -843,6 +843,29 @@ void check_skill_heal(MobPrimaryZones& root,Frame& frame,ActorScene& scene,const
     }
     check(count==2304);if(mob->zone)check(mobs.leave(*mob));check(users.detach(actor->id()));mob->damage->reset();root.mob_pool().release(*mob);std::copy(saved.begin(),saved.end(),raw.begin());
 }
+struct AreaHealObserver final:VerticalMobsAreaSkillHealWorld {
+    using VerticalMobsAreaSkillHealWorld::VerticalMobsAreaSkillHealWorld;
+    std::vector<std::uint32_t> selected;std::shared_ptr<int> pin=std::make_shared<int>(1);MobLogContext info{0,"Mob"};
+    std::shared_ptr<void> retain(MobRuntime& mob) override {selected.push_back(mob.id);return pin;}
+    const MobLogContext& context(MobRuntime&) override {return info;}
+    void remove_state(MobRuntime&,const MobTargetingBindingSkill&) override {throw std::logic_error("unexpected state removal");}
+};
+void check_heal_range(MobPrimaryZones& root,Frame& frame,Actor& actor,const std::filesystem::path& fixture) {
+    std::ifstream in(fixture);check(in.good());const auto geometry=frame.maps->all()[0].definition.geometry();ZoneMobs mobs(geometry,frame.backend);ZoneUsers users(geometry,0);MobPriorityArea area;MobPriorityWorld views(mobs,users,area);AttackLogTransport log;
+    std::array<MobRuntime*,9> subjects{};constexpr std::array<float,3> pos{10,45,80};
+    for(unsigned i=0;i<subjects.size();++i){auto* m=root.mob_pool().allocate();check(m);subjects[i]=m;m->id=100+i;m->definition=frame.runtime.find(i==4?1:i%2?3:2);check(m->definition);m->lua_ai=0;m->respawn=nullptr;m->position={pos[i%3],0,pos[i/3]};check(mobs.enter(*m));}
+    auto first=frame.full.mutable_mob_record(1),even=frame.full.mutable_mob_record(2),odd=frame.full.mutable_mob_record(3);const std::vector<std::byte> save1(first.begin(),first.end()),save2(even.begin(),even.end()),save3(odd.begin(),odd.end());
+    auto put_country=[](std::span<std::byte> raw,std::uint32_t n){for(unsigned i=0;i<4;++i)raw[0x78+i]=static_cast<std::byte>((n>>(8*i))&255);};put_country(even,0);put_country(odd,1);
+    AreaHealObserver world(mobs,frame.full,views,log);MobLogContext context{0,"Mob"};SkillHealEffectsTest effects(frame.full,views,context,log,world);MobTargetingBindingSkill skill;skill.record[0x56]=std::byte{3};skill.record[0x32]=std::byte{40};
+    std::string line;unsigned count=0;while(std::getline(in,line)){
+        if(line.empty() || line[0]=='#')continue;std::istringstream row(line);unsigned country,radius,deadmask;std::string expected;row>>country>>radius>>deadmask>>expected;check(bool(row));put_country(first,country);skill.record[0x57]=static_cast<std::byte>(radius);
+        for(unsigned i=0;i<9;++i)subjects[i]->status=i!=4 && ((deadmask>>i)&1)?2:1;
+        world.selected.clear();area.packets.clear();effects.heal(*subjects[4],actor,skill);
+        std::ostringstream actual;for(auto id:world.selected){if(actual.tellp()>0)actual<<',';actual<<id;}
+        check((world.selected.empty()?"-":actual.str())==expected && area.packets.size()==1 && log.packets.empty());++count;
+    }
+    check(count==24);for(auto* m:subjects){check(mobs.leave(*m));root.mob_pool().release(*m);}std::copy(save1.begin(),save1.end(),first.begin());std::copy(save2.begin(),save2.end(),even.begin());std::copy(save3.begin(),save3.end(),odd.begin());
+}
 void check_use_skill(MobPrimaryZones& root,Actor& actor,const std::filesystem::path& fixture) {
     std::ifstream in(fixture);check(in.good());auto* mob=root.mob_pool().allocate();check(mob);MobTargetingBindingSkill skill;
     StationaryWorld ordinary;ordinary.subject=mob;ordinary.target=&actor;SkillEffectObserver effects;effects.mob=mob;effects.actor=&actor;effects.skill=&skill;
@@ -1544,6 +1567,7 @@ int main(int argc,char** argv) {try {
     check_skill_attack(*root,player,std::filesystem::path(argv[43]).parent_path()/"vertical-mobs-skill-attack-oracle.tsv");
     check_skill_priority(*root,*f,scene,equipment,std::filesystem::path(argv[43]).parent_path()/"vertical-mobs-skill-view-oracle.tsv");
     check_skill_heal(*root,*f,scene,equipment,std::filesystem::path(argv[43]).parent_path()/"vertical-mobs-skill-heal-oracle.tsv");
+    check_heal_range(*root,*f,player,std::filesystem::path(argv[43]).parent_path()/"vertical-mobs-heal-range-oracle.tsv");
     check_attack_range(*root,*f,argv[17]);
     check_stationary_attack(*root,*f,player,argv[18],argv[19],argv[20]);
     check_chase_prefix(*root,*f,argv[21]);
