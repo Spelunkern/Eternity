@@ -182,6 +182,10 @@ public:
         return ports_.entry_state(session);
     }
     const SocialCatalog& social(VerticalWorldSession& session) override {require_strand();auto context=find(session);if(!context->social)throw std::logic_error("Session has no social selection");return context->social->catalog();}
+    bool update_social_timeout(VerticalWorldSession& session,std::uint32_t tick) {
+        require_strand();auto context=find(session);if(!context->social_ready || !context->social_timeout)throw std::logic_error("Runtime social owner is not ready");
+        auto update=context->social_timeout;return update(tick);
+    }
     VerticalWorldSessionSocial& social_session(VerticalWorldSession& session) {require_strand();auto context=find(session);if(!context->social)throw std::logic_error("Session has no social selection");return *context->social;}
     VerticalWorldSocialAccounts& social_accounts() {require_strand();return social_accounts_;}
     void assert_shutdown_ready() const {
@@ -201,6 +205,7 @@ public:
             throw std::invalid_argument("Runtime social owners differ");
         context->social_type=typeid(Database);context->social_world=owner;
         context->social_receive=[owner](const net::Packet& packet){return owner->social().receive(packet);};
+        context->social_timeout=[owner](std::uint32_t tick){return owner->social().update_timeout(tick);};
         context->social_entry=[owner](EntryDeliveryPorts ports){return owner->social().bind_entry(std::move(ports));};
         context->social_bound=[owner](const Binding& binding){return binding.binds_social(owner->social());};
     }
@@ -327,7 +332,7 @@ private:
     }
     struct Disconnect {std::shared_ptr<VerticalWorldSession> owner;bool completing=false;};
     struct Context {std::weak_ptr<VerticalWorldSession> owner;std::shared_ptr<void> social_world;std::type_index social_type{typeid(void)};
-        std::function<EntryCatalogUpdate(const net::Packet&)> social_receive;std::function<EntryDeliveryPorts(EntryDeliveryPorts)> social_entry;
+        std::function<EntryCatalogUpdate(const net::Packet&)> social_receive;std::function<bool(std::uint32_t)> social_timeout;std::function<EntryDeliveryPorts(EntryDeliveryPorts)> social_entry;
         std::function<bool(const Binding&)> social_bound;bool social_ready=false;std::unique_ptr<VerticalWorldSessionSocial> social;std::shared_ptr<Preparation> preparation;std::shared_ptr<Teardown> teardown;std::function<void()> construction_cancel;bool attached=false,constructing=false,preparing=false,invalid_preparation=false,guild_released=false,guild_releasing=false,social_release_required=false,social_released=false,social_releasing=false;};
     bool dispatch_owned(VerticalWorldSession& session,const net::Packet& packet) {
         if(guild_client_ignored(packet))return true;

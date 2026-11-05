@@ -871,7 +871,6 @@ int main(){try {
    runtime_shop_owners.on_shop=[&]{live->admission().zone=nullptr;};bool lost_zone=false;
    try{retained_expiry->dispatch(*live,{1,0x0a,43,0,0,0});}catch(const std::logic_error&){lost_zone=true;}live->admission().zone=&live_zone;runtime_shop_owners.on_shop={};
    check(lost_zone && actor.exchange().mode==0 && runtime_exchange_timer==0,"exchange accepted a reentrant zone change");
-   auto retained_expiry=runtime_exchange_owner.lock();check(bool(retained_expiry),"gameplay did not expose its retained exchange owner");
    {struct Clock final:ItemIdClock {std::uint32_t ticks_ms() override{return 1;}std::uint32_t packed_local_calendar() override{return 1;}};
     auto clock=std::make_shared<Clock>();auto ids=std::make_shared<ItemIds>(7,*clock);auto scratch=std::make_shared<VerticalWorldInventorySettlementScratch>();
     scratch->db.resize(57);scratch->outgoing_item.resize(181);scratch->receiver.resize(36);scratch->incoming_item.resize(179);scratch->outgoing_money.resize(126);scratch->incoming_money.resize(111);

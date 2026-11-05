@@ -6,8 +6,8 @@ namespace eternity::game {
 // must execute CUser::UpdateTimeover through 0048e3be (exchange and party);
 // the real suffix starts at 0048e402 (vehicle and later timers). All run on
 // the world strand, and the scheduler/registry/zone outlive this synchronous call.
-template<class Resource,class Store,class Database>
-void vertical_social_timeover(VerticalWorldSessionRuntime<Resource,Store,Database>& runtime,
+template<class Resource,class Store>
+void vertical_social_timeover(VerticalWorldSessionRuntime<Resource,Store>& runtime,
     VerticalWorldSession::Registry& registry,RuntimeZone& zone,Actor& actor,std::uint32_t tick,
     const std::function<void(VerticalWorldSession&,Actor&,std::uint32_t)>& prefix,
     const std::function<void(VerticalWorldSession&,Actor&,std::uint32_t)>& suffix) {

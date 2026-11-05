@@ -288,6 +288,7 @@ public:
     // After old-zone interaction cleanup and outside quest callbacks, replace
     // both NPC lookups together; the caller retains both zones during transfer.
     void rebind_npc_zone(ZoneNpcs& expected,ZoneNpcs& destination);
+    bool uses_interaction(const VerticalNpcInteraction& value) const noexcept {return &interaction_==&value;}
 private:
     Actor& actor_;VerticalQuests& quests_;ZoneNpcs* zone_;VerticalNpcInteraction& interaction_;
     VerticalQuestPacketActions& quest_actions_;VerticalNpcPacketActions& npc_actions_;
