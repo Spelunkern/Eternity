@@ -1025,6 +1025,40 @@ void VerticalMobsSkillPriorityWorld::send_skill(MobRuntime& mob,Actor& actor,con
     append(std::to_integer<std::uint32_t>(skill.record[2]),1);packet.resize(21,0);
     if(mob.zone)views_.send_hit(mob,target,packet);
 }
+void vertical_mobs_heal(MobRuntime& mob,std::array<std::int32_t,3>& values,
+    const MobTargetingBindingCatalog& catalog,const MobLogContext& context,MobLogTransport& log) {
+    if(!mob.definition)throw std::logic_error("Mob heal requires its retained definition");
+    const auto* def=catalog.mob(mob.definition->id);if(!def)throw std::logic_error("Mob heal requires its retained catalog record");
+    const auto read=[&](std::size_t at,unsigned n){std::uint32_t out=0;for(unsigned i=0;i<n;++i)out|=std::to_integer<std::uint32_t>(def->record[at+i])<<(8*i);return out;};
+    const auto max_hp=read(0x30,4),max_mp=read(0x34,2),max_sp=read(0x36,2),before=mob.hp;
+    auto hp=mob.hp+static_cast<std::uint32_t>(values[0]);if(hp>max_hp){values[0]=std::bit_cast<std::int32_t>(max_hp-mob.hp);hp=max_hp;}
+    const auto clamp=[&](std::uint16_t current,std::int32_t& amount,std::uint32_t maximum){
+        const auto result=static_cast<std::uint32_t>(current)+static_cast<std::uint32_t>(amount);
+        if(std::bit_cast<std::int32_t>(result)>static_cast<std::int32_t>(maximum))amount=std::bit_cast<std::int32_t>(maximum-static_cast<std::uint32_t>(current));
+        return static_cast<std::uint16_t>(static_cast<std::uint32_t>(current)+static_cast<std::uint32_t>(amount));
+    };
+    const auto mp=clamp(mob.mp,values[1],max_mp),sp=clamp(mob.sp,values[2],max_sp);
+    const bool reset=hp==max_hp && before!=hp;if(reset && !mob.damage)throw std::logic_error("Mob heal requires its retained damage ledger");
+    mob.hp=hp;mob.mp=mp;mob.sp=sp;if(reset)mob.damage->reset();
+    if(mob.lua_ai!=0 || (mob.respawn && mob.respawn->both))send_mob_log(mob,context,3,std::nullopt,std::nullopt,std::bit_cast<std::uint32_t>(values[0]),log);
+}
+VerticalMobsBoundSkillHealEffects::VerticalMobsBoundSkillHealEffects(const MobTargetingBindingCatalog& catalog,
+    VerticalMobsPriorityHitTailWorld& views,const MobLogContext& context,MobLogTransport& log,VerticalMobsSkillHealWorld& world)
+    :catalog_(catalog),views_(views),log_context_(context),log_(log),world_(world) {}
+void VerticalMobsBoundSkillHealEffects::heal(MobRuntime& mob,Actor& actor,const MobTargetingBindingSkill& skill) {
+    if(std::to_integer<std::uint8_t>(skill.record[0x56])!=2){world_.range(mob,actor,skill);return;}
+    const auto word=[&](std::size_t at){return std::to_integer<std::uint32_t>(skill.record[at])|(std::to_integer<std::uint32_t>(skill.record[at+1])<<8);};
+    const auto detail=word(0x32);std::array<std::int32_t,3> values{};
+    if(detail==41){
+        values={static_cast<std::int32_t>(word(0x88)),static_cast<std::int32_t>(word(0x8a)),static_cast<std::int32_t>(word(0x8c))};
+        if(values[0]!=0){if(!mob.definition)throw std::logic_error("Mob skill heal requires its definition");const auto* def=catalog_.mob(mob.definition->id);if(!def)throw std::logic_error("Mob skill heal requires its catalog record");values[0]+=static_cast<std::int32_t>(std::to_integer<std::uint32_t>(def->record[0x3a])|(std::to_integer<std::uint32_t>(def->record[0x3b])<<8));}
+        vertical_mobs_heal(mob,values,catalog_,log_context_,log_);
+    }else if(detail==42)world_.remove_state(mob,skill);else return;
+    net::Packet packet{0x0b,0x06,0};const auto append=[&](std::uint32_t n,unsigned bytes){for(unsigned i=0;i<bytes;++i)packet.push_back(static_cast<std::uint8_t>(n>>(i*8)));};
+    append(mob.id,4);append(0,4);append(static_cast<std::uint32_t>(mob.current_attack),1);append(word(0),2);append(std::to_integer<std::uint8_t>(skill.record[2]),1);
+    for(const auto value:values)append(std::bit_cast<std::uint32_t>(value),2);
+    if(mob.zone)views_.send_hit(mob,actor.id(),packet);
+}
 MobCombatCredit vertical_mobs_reflected_credit(const Actor& actor) noexcept{return {1,actor.id(),0,0,0};}
 void VerticalMobsPriorityHitTailWorld::send(MobRuntime& mob,std::uint32_t target,const net::Packet& packet){
     if(mob.zone!=&mobs_)throw std::invalid_argument("Mob priority view requires its retained zone");

@@ -815,6 +815,34 @@ void check_skill_attack(MobPrimaryZones& root,Actor& actor,const std::filesystem
     }
     check(count==1152);effects.heal(*mob,actor,skill);effects.debuff(*mob,actor,skill);check(other.heals==1 && other.debuffs==1);mob->damage->reset();actor.attack_state().mode=0;root.mob_pool().release(*mob);
 }
+struct SkillHealObserver final:VerticalMobsSkillHealWorld {
+    unsigned cleanses=0,ranges=0;void remove_state(MobRuntime&,const MobTargetingBindingSkill&) override {++cleanses;}
+    void range(MobRuntime&,Actor&,const MobTargetingBindingSkill&) override {++ranges;}
+};
+struct SkillHealEffectsTest final:VerticalMobsBoundSkillHealEffects {
+    using VerticalMobsBoundSkillHealEffects::VerticalMobsBoundSkillHealEffects;
+    void debuff(MobRuntime&,Actor&,const MobTargetingBindingSkill&) override {throw std::logic_error("unexpected debuff");}
+};
+void check_skill_heal(MobPrimaryZones& root,Frame& frame,ActorScene& scene,const ActorEquipmentRules& equipment,const std::filesystem::path& fixture) {
+    std::ifstream in(fixture);check(in.good());auto* mob=root.mob_pool().allocate();check(mob && mob->damage);mob->id=77;mob->definition=frame.runtime.find(1);mob->lua_ai=0;mob->respawn=nullptr;mob->position={10,0,10};mob->current_attack=2;
+    auto raw=frame.full.mutable_mob_record(1);const std::vector<std::byte> saved(raw.begin(),raw.end());auto put=[&](std::size_t at,std::uint32_t value,unsigned size){for(unsigned i=0;i<size;++i)raw[at+i]=static_cast<std::byte>((value>>(i*8))&255);};put(0x30,100,4);put(0x34,50,2);put(0x36,70,2);
+    const auto geometry=frame.maps->all()[0].definition.geometry();ZoneMobs mobs(geometry,frame.backend);ZoneUsers users(geometry,0);MobPriorityArea area;
+    auto actor=std::make_shared<Actor>(42,EffectStatus{},PlayerResources{1,0,0},std::vector<PersistedEffect>{},scene,equipment);check(users.attach_at_position(*actor,{20,0,10}));area.actors={actor};MobPriorityWorld views(mobs,users,area);
+    MobLogContext context{0,"Mob"};AttackLogTransport log;SkillHealObserver world;SkillHealEffectsTest effects(frame.full,views,context,log,world);MobTargetingBindingSkill skill;skill.record[0]=std::byte{123};skill.record[2]=std::byte{4};
+    std::string line;unsigned count=0;
+    while(std::getline(in,line)) {
+        if(line.empty() || line[0]=='#')continue;std::istringstream row(line);unsigned target,detail,hp,mp,sp,hh,hm,hs,wis,zone,fh,fm,fs;std::string trace,packet;
+        row>>target>>detail>>hp>>mp>>sp>>hh>>hm>>hs>>wis>>zone>>trace>>fh>>fm>>fs>>packet;check(bool(row));
+        if(zone && !mob->zone)check(mobs.enter(*mob));else if(!zone && mob->zone)check(mobs.leave(*mob));
+        mob->hp=hp;mob->mp=mp;mob->sp=sp;mob->damage->reset();mob->damage->add(1,55,7,0,0);put(0x3a,wis,2);skill.record[0x56]=static_cast<std::byte>(target);skill.record[0x32]=static_cast<std::byte>(detail);skill.record[0x33]=std::byte{0};
+        const auto skill_word=[&](std::size_t at,unsigned value){skill.record[at]=static_cast<std::byte>(value&255);skill.record[at+1]=static_cast<std::byte>(value>>8);};skill_word(0x88,hh);skill_word(0x8a,hm);skill_word(0x8c,hs);
+        world.cleanses=world.ranges=0;area.packets.clear();area.immediate_ids.clear();effects.heal(*mob,*actor,skill);
+        std::string actual;if(mob->damage->records().empty())actual+='D';if(world.cleanses)actual+='C';if(world.ranges)actual+='R';if(!area.packets.empty())actual+='P';
+        std::string wire;if(!area.packets.empty()){static constexpr char hex[]="0123456789abcdef";for(auto b:area.packets[0]){wire+=hex[b>>4];wire+=hex[b&15];}}
+        check((actual.empty()?"-":actual)==trace && (wire.empty()?"-":wire)==packet && mob->hp==fh && mob->mp==fm && mob->sp==fs && log.packets.empty());++count;
+    }
+    check(count==2304);if(mob->zone)check(mobs.leave(*mob));check(users.detach(actor->id()));mob->damage->reset();root.mob_pool().release(*mob);std::copy(saved.begin(),saved.end(),raw.begin());
+}
 void check_use_skill(MobPrimaryZones& root,Actor& actor,const std::filesystem::path& fixture) {
     std::ifstream in(fixture);check(in.good());auto* mob=root.mob_pool().allocate();check(mob);MobTargetingBindingSkill skill;
     StationaryWorld ordinary;ordinary.subject=mob;ordinary.target=&actor;SkillEffectObserver effects;effects.mob=mob;effects.actor=&actor;effects.skill=&skill;
@@ -1515,6 +1543,7 @@ int main(int argc,char** argv) {try {
     check_use_skill(*root,player,std::filesystem::path(argv[43]).parent_path()/"vertical-mobs-use-skill-oracle.tsv");
     check_skill_attack(*root,player,std::filesystem::path(argv[43]).parent_path()/"vertical-mobs-skill-attack-oracle.tsv");
     check_skill_priority(*root,*f,scene,equipment,std::filesystem::path(argv[43]).parent_path()/"vertical-mobs-skill-view-oracle.tsv");
+    check_skill_heal(*root,*f,scene,equipment,std::filesystem::path(argv[43]).parent_path()/"vertical-mobs-skill-heal-oracle.tsv");
     check_attack_range(*root,*f,argv[17]);
     check_stationary_attack(*root,*f,player,argv[18],argv[19],argv[20]);
     check_chase_prefix(*root,*f,argv[21]);

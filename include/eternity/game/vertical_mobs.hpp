@@ -654,6 +654,27 @@ public:
     void send_skill(MobRuntime&,Actor&,const MobTargetingBindingSkill&) final;
 private:VerticalMobsPriorityHitTailWorld& views_;
 };
+// CMob::Heal 004909e0 uses the retained raw mob definition, actual damage
+// ledger reset and actual linked-mob log owner; amounts are HP, MP, SP.
+void vertical_mobs_heal(MobRuntime&,std::array<std::int32_t,3>&,
+    const MobTargetingBindingCatalog&,const MobLogContext&,MobLogTransport&);
+class VerticalMobsSkillHealWorld {
+public:
+    virtual ~VerticalMobsSkillHealWorld()=default;
+    virtual void remove_state(MobRuntime&,const MobTargetingBindingSkill&)=0;
+    virtual void range(MobRuntime&,Actor&,const MobTargetingBindingSkill&)=0;
+};
+// Binds SkillHeal 004a54e0 self-target behavior to actual mob heal, log and
+// priority view owners. The host must still supply real area heal and debuff.
+class VerticalMobsBoundSkillHealEffects:public VerticalMobsSkillOtherEffects {
+public:
+    VerticalMobsBoundSkillHealEffects(const MobTargetingBindingCatalog&,VerticalMobsPriorityHitTailWorld&,
+        const MobLogContext&,MobLogTransport&,VerticalMobsSkillHealWorld&);
+    void heal(MobRuntime&,Actor&,const MobTargetingBindingSkill&) final;
+private:
+    const MobTargetingBindingCatalog& catalog_;VerticalMobsPriorityHitTailWorld& views_;
+    const MobLogContext& log_context_;MobLogTransport& log_;VerticalMobsSkillHealWorld& world_;
+};
 MobCombatCredit vertical_mobs_reflected_credit(const Actor&) noexcept;
 // Bind existing retained stand and live mob-damage owners. The stand owner
 // must expose status_stand(Actor&); the damage owner must expose
