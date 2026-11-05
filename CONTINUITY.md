@@ -11,6 +11,9 @@ superseded where it differs, including its estimates and resource restrictions.
   world asset loading; selecting a character does not enter the world.
 - No workers or scheduled sessions run, and their worktrees and branches were removed.
   Worker evidence is in `reports/`; the coordination log is in git history.
+- Unfinished worker edits that conflicted with `main` or failed validation were discarded:
+  entry manager authorization, persistence, inventory scene, quest dispatch, world thread,
+  mob retention and preauthentication routing. Reconstruct them from the original if needed.
 - Ghidra 12.1.4 is no longer installed. Use 12.1.3 with its project in
   `work/ghidra-12.1.3`.
 

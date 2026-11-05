@@ -324,7 +324,7 @@ address	size	name	object	scope	status	witness
 0040b630	1	SConnection::OnSend	Connection.obj	game	none	
 0040b640	13	CWorld::SetKillCount	Connection.obj	game	none	
 0040b650	16	CWorld::GetKillCount	Connection.obj	game	none	
-0040b660	27	CWorld::GetWorldDay	Connection.obj	game	none	
+0040b660	27	CWorld::GetWorldDay	Connection.obj	game	mentioned	reports/overnight/02-world.md
 0040b680	7	SPacketBufferSend::GetLength	Connection.obj	game	none	
 0040b690	7	SPacketBufferSend::GetPacket	Connection.obj	game	none	
 0040b6a0	68	SSyncQueueBuffer::~SSyncQueueBuffer	Connection.obj	game	none	
@@ -349,7 +349,7 @@ address	size	name	object	scope	status	witness
 0040c820	13	CServer::AllocConnection	Server.obj	game	none	
 0040c830	79	CServer::FreeConnection	Server.obj	game	none	
 0040c880	144	CServer::OnConnect	Server.obj	game	none	
-0040c910	62	CServer::OnDisconnect	Server.obj	game	none	
+0040c910	62	CServer::OnDisconnect	Server.obj	game	mentioned	reports/overnight/09-network.md
 0040c950	248	CServer::EndRemoveConnection	Server.obj	game	untested	include/eternity/game/world_db_agent_disconnect.hpp
 0040ca50	70	SSyncList2<SConnection>::~SSyncList2<SConnection>	Server.obj	game	none	
 0040caa0	28	SSyncHeap<CConnection>::SSyncHeap<CConnection>	Server.obj	game	none	
@@ -363,7 +363,7 @@ address	size	name	object	scope	status	witness
 0040cd30	77	SSyncList2<SConnection>::Reset	Server.obj	game	none	
 0040cd80	93	SSyncHeap<CConnection>::Release	Server.obj	game	none	
 0040cde0	132	SSyncList<CConnection>::Release	Server.obj	game	none	
-0040ce70	27	CConnection::`scalar deleting destructor'	Server.obj	game	none	
+0040ce70	27	CConnection::`scalar deleting destructor'	Server.obj	game	mentioned	reports/overnight/01-entry.md
 0040ce90	13	SServerTA::SetMaxConnection	Server.obj	game	none	
 0040cea0	7	SAgent::SetMaxConnection	Server.obj	game	none	
 0040ceb0	7	SServerTA::GetMaxConnection	Server.obj	game	none	
@@ -484,7 +484,7 @@ address	size	name	object	scope	status	witness
 0040ec90	38	CWorld::CWorld	WorldDay.obj	game	none	
 0040ecc0	1	CWorld::~CWorld	WorldDay.obj	game	none	
 0040ecd0	303	CWorld::DBKillCountLoad	WorldDB.obj	game	untested	include/eternity/game/world_kill_count_bootstrap.hpp
-0040ee00	307	CWorld::DBKillCountSave	WorldDB.obj	game	none	
+0040ee00	307	CWorld::DBKillCountSave	WorldDB.obj	game	mentioned	reports/overnight/02-world.md
 0040ef40	303	CWorld::DBWorldDayLoad	WorldDB.obj	game	mentioned	include/eternity/game/characters.hpp
 0040f070	264	CWorld::DBWorldDaySave	WorldDB.obj	game	none	
 0040f180	53	CWorld::GetWorldBaseDay	WorldDB.obj	game	none	
@@ -767,7 +767,7 @@ address	size	name	object	scope	status	witness
 00417040	417	CMarketMgr::ItemTender	MarketMgr.obj	game	none	
 004171f0	190	CMarketMgr::ItemGet	MarketMgr.obj	game	none	
 004172b0	219	CMarketMgr::MoneyGet	MarketMgr.obj	game	none	
-00417390	601	CMarketMgr::Expire	MarketMgr.obj	game	none	
+00417390	601	CMarketMgr::Expire	MarketMgr.obj	game	mentioned	reports/overnight/06-inventory.md
 004175f0	245	CMarketMgr::AddCharResultItem	MarketMgr.obj	game	none	
 004176f0	256	CMarketMgr::AddCharResultMoney	MarketMgr.obj	game	none	
 004177f0	16	stdext::hash_map<unsigned long,CMarket *,stdext::hash_compare<unsigned long,std::less<unsigned long> >,std::allocator<std::pair<unsigned long const ,CMarket *> > >::hash_map<unsigned long,CMarket *,stdext::hash_compare<unsigned long,std::less<unsigned long> >,std::allocator<std::pair<unsigned long const ,CMarket *> > >	MarketMgr.obj	crt	none	
@@ -1285,14 +1285,14 @@ address	size	name	object	scope	status	witness
 0041d200	9	std::_Construct<std::_Tree_nod<std::_Tmap_traits<unsigned long,CUser *,std::less<unsigned long>,std::allocator<std::pair<unsigned long const ,CUser *> >,0> >::_Node *,std::_Tree_nod<std::_Tmap_traits<unsigned long,CUser *,std::less<unsigned long>,std::allocator<std::pair<unsigned long const ,CUser *> >,0> >::_Node *>	UserMgr.obj	crt	none	
 0041d210	16	std::pair<unsigned long,CUser *>::pair<unsigned long,CUser *>	UserMgr.obj	crt	none	
 0041d220	7	CUser::SetConnection	UserMgr.obj	game	none	
-0041d230	188	CUserMgr::UpdateUserSave	UserMgrSave.obj	game	none	
+0041d230	188	CUserMgr::UpdateUserSave	UserMgrSave.obj	game	untested	include/eternity/game/world_db_agent_users.hpp
 0041d2f0	506	CUserMgr::SaveAll	UserMgrSave.obj	game	untested	include/eternity/game/world_db_agent_disconnect.hpp
 0041d4f0	27	SSyncMap<unsigned long,CUser *>::Next	UserMgrSave.obj	game	none	
 0041d510	7	CUser::GetConnection	UserMgrSave.obj	game	none	
-0041d520	84	CUserSaveThread::CUserSaveThread	UserSaveThread.obj	game	none	
+0041d520	84	CUserSaveThread::CUserSaveThread	UserSaveThread.obj	game	mentioned	reports/overnight/02-world.md
 0041d580	27	CUserSaveThread::~CUserSaveThread	UserSaveThread.obj	game	none	
 0041d5a0	1	CUserSaveThread::Init	UserSaveThread.obj	game	none	
-0041d5b0	205	CUserSaveThread::Run	UserSaveThread.obj	game	untested	include/eternity/game/world_db_agent_save.hpp
+0041d5b0	205	CUserSaveThread::Run	UserSaveThread.obj	game	untested	include/eternity/game/world_db_agent_lifecycle.hpp
 0041d680	24	CUserSaveThread::Shutdown	UserSaveThread.obj	game	untested	include/eternity/game/world_db_agent_save_driver.hpp
 0041d6a0	324	DBCharacter::RenameCharacter	DBCharacter.obj	game	none	
 0041d7f0	308	DBCharacter::LoadCharacterListCount	DBCharacter.obj	game	none	
@@ -1448,7 +1448,7 @@ address	size	name	object	scope	status	witness
 0042d740	82	`PCryptoPasswdGenKey'::`2'::keyv::Set	crypt.lib	common	none	
 0042d7a0	239	PCryptoPasswdEncToHex	crypt.lib	common	none	
 0042d890	469	PCryptoPasswdDecFromHex	crypt.lib	common	none	
-0042da70	10651	sha256_transform	crypt.lib	common	none	
+0042da70	10651	sha256_transform	crypt.lib	common	mentioned	reports/overnight/08-social.md
 00430410	70	sha256_init	crypt.lib	common	none	
 00430460	170	sha256_update	crypt.lib	common	none	
 00430510	407	sha256_final	crypt.lib	common	none	
@@ -2640,7 +2640,7 @@ address	size	name	object	scope	status	witness
 0044a855	65	_get_osfhandle	LIBCMT.lib	crt	none	
 0044a896	160	_lock_fhandle	LIBCMT.lib	crt	none	
 0044a936	34	_unlock_fhandle	LIBCMT.lib	crt	none	
-0044a958	380	_alloc_osfhnd	LIBCMT.lib	crt	none	
+0044a958	380	_alloc_osfhnd	LIBCMT.lib	crt	mentioned	reports/overnight/08-social.md
 0044aad4	199	_open_osfhandle	LIBCMT.lib	crt	none	
 0044ab9b	9	_errno	LIBCMT.lib	crt	none	
 0044aba4	9	__doserrno	LIBCMT.lib	crt	none	

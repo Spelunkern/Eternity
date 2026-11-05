@@ -228,7 +228,7 @@ address	size	name	object	scope	status	witness
 00404930	129	CUser::LoginOK	User.obj	game	none	
 004049c0	63	CUser::LoginFailed	User.obj	game	none	
 00404a00	14	CUser::NetDisconnected	User.obj	game	none	
-00404a10	247	CUser::OnDispatchDB	User.obj	game	none	
+00404a10	247	CUser::OnDispatchDB	User.obj	game	mentioned	reports/overnight/09-network.md
 00404b10	1	SConnection::OnSend	User.obj	game	none	
 00404b20	25	SDBDispatchClient::Reset	User.obj	game	none	
 00404b40	11	SInternetAddress::GetAddress	User.obj	game	none	
@@ -381,7 +381,7 @@ address	size	name	object	scope	status	witness
 00408d00	34	SFile::SeekEnd	pscommon.lib	common	none	
 00408d30	160	Printf	pscommon.lib	common	none	
 00408dd0	1003	PS_ServerAppMain	pscommon.lib	common	none	
-004091c0	1451	PS_ServerAppMain	pscommon.lib	common	none	
+004091c0	1451	PS_ServerAppMain	pscommon.lib	common	mentioned	reports/overnight/09-network.md
 00409770	42	md5_init	Crypt.lib	common	none	
 004097a0	2496	md5_process	Crypt.lib	common	none	
 0040a160	167	md5_update	Crypt.lib	common	none	
@@ -584,7 +584,7 @@ address	size	name	object	scope	status	witness
 00412720	11	SAgent::SendRequestQueuePriority	pscommon.lib	common	none	
 00412730	11	SAgent::SendNowRequest	pscommon.lib	common	none	
 00412740	100	SAgent::UpdateStatitics	pscommon.lib	common	none	
-004127b0	69	SAgent::PacketSystem	pscommon.lib	common	none	
+004127b0	69	SAgent::PacketSystem	pscommon.lib	common	mentioned	reports/overnight/09-network.md
 00412800	27	SAgent::ErrorLog	pscommon.lib	common	none	
 00412820	32	SAgent::ErrorLog	pscommon.lib	common	none	
 00412840	19	SAgent::AllocSocket	pscommon.lib	common	none	
@@ -845,7 +845,7 @@ address	size	name	object	scope	status	witness
 00417c30	11	SSender::~SSender	pscommon.lib	common	none	
 00417c40	38	SSender::AddAgent	pscommon.lib	common	none	
 00417c70	40	SSender::OnUpdate	pscommon.lib	common	none	
-00417ca0	46	SReply::SReply	pscommon.lib	common	none	
+00417ca0	46	SReply::SReply	pscommon.lib	common	mentioned	reports/overnight/09-network.md
 00417cd0	11	SReply::~SReply	pscommon.lib	common	none	
 00417ce0	38	SReply::AddAgent	pscommon.lib	common	none	
 00417d10	46	SReply::OnUpdate	pscommon.lib	common	none	

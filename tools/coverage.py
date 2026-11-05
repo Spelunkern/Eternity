@@ -9,7 +9,6 @@ import argparse
 import bisect
 import collections
 import datetime
-import fnmatch
 from pathlib import Path
 import re
 import shutil
@@ -309,7 +308,7 @@ NOT_PLAYABLE = ("**The server is not playable yet.** These figures show which or
 SCOPE = "Project code only: excludes the CRT and shared libraries (`pscommon`, `snet`)."
 
 
-def report(maps, refs, canonical, today):
+def report(maps, canonical, today):
     game = [item for item in maps["ps_game"] if item["scope"] == "game"]
     lines = [
         "# Eternity progress", "",
@@ -331,12 +330,6 @@ def report(maps, refs, canonical, today):
     for status in STATUS_ORDER:
         lines.append(f"| {STATUS_LABEL[status]} | {counts[status]} | {size_text(weights[status])} | "
                      f"{percent(weights[status], total)} |")
-    lines += ["", "## `ps_game` by branch", "",
-              "A function counts when the branch has code citing it, whole or in part.", "",
-              "| Branch | Functions with code | % bytes |", "|---|---:|---:|"]
-    for ref, items in refs:
-        done = covered([i for i in items if i["scope"] == "game"])
-        lines.append(f"| `{ref}` | {len(done)} | {percent(sum(i['size'] for i in done), total)} |")
     lines += ["", "## `ps_game` by original source file", "",
               "| File | Functions | With code | Bytes | % bytes | Progress |", "|---|---:|---:|---:|---:|---|"]
     groups = collections.defaultdict(list)
@@ -374,29 +367,13 @@ def update_readme(maps, canonical, today):
 def run():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--ref", default="HEAD", help="ref to report (default: HEAD)")
-    parser.add_argument("--compare", nargs="*", default=["main", "overnight/*"],
-                        help="refs or patterns compared in the per-branch table")
     parser.add_argument("--copy", type=Path, help="also copy the report to this path")
     args = parser.parse_args()
     inventory = {service: read_functions(service, ROOT / "originals" / service / f"{service}.pdb") for service in SERVICES}
-    branches = git("for-each-ref", "--format=%(refname:short)", "refs/heads").decode().split()
-    compared = []
-    for pattern in args.compare:
-        compared += [b for b in sorted(branches) if fnmatch.fnmatchcase(b, pattern) and b not in compared]
     canonical_files = read_tree(args.ref)
     evidence = Evidence()
     evidence.add(canonical_files, wired_files(canonical_files))
     maps = {service: classify(functions, evidence, service) for service, functions in inventory.items()}
-    rows = []
-    union = Evidence()
-    for ref in compared:
-        files = read_tree(ref)
-        single = Evidence()
-        single.add(files, wired_files(files))
-        union.add(files, set())
-        rows.append((ref, classify(inventory["ps_game"], single, "ps_game")))
-    if compared:
-        rows.append(("all compared branches", classify(inventory["ps_game"], union, "ps_game")))
     output = ROOT / "research" / "coverage"
     output.mkdir(parents=True, exist_ok=True)
     for service, items in maps.items():
@@ -408,7 +385,7 @@ def run():
     label = git("rev-parse", "--abbrev-ref", args.ref).decode().strip()
     name = label if label != "HEAD" else args.ref
     today = datetime.date.today().isoformat()
-    (ROOT / "PROGRESS.md").write_text(report(maps, rows, name, today), encoding="utf8")
+    (ROOT / "PROGRESS.md").write_text(report(maps, name, today), encoding="utf8")
     update_readme(maps, name, today)
     if args.copy:
         shutil.copyfile(ROOT / "PROGRESS.md", args.copy)

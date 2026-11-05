@@ -8,7 +8,7 @@ address	size	name	object	scope	status	witness
 004011c0	44	SUniqueIDGenByServer::SUniqueIDGenByServer	Global.obj	game	mentioned	tests/data/mob-drops-uid-oracle.tsv
 004011f0	17	SUniqueIDGenByServer::~SUniqueIDGenByServer	Global.obj	game	none	
 00401210	32	SUniqueIDGenByServer::`scalar deleting destructor'	Global.obj	game	none	
-00401230	125	ChkTimeExp2X	Global.obj	game	none	
+00401230	125	ChkTimeExp2X	Global.obj	game	mentioned	reports/overnight/02-world.md
 004012b0	39	std::map<int,tagStringDB *,std::less<int>,std::allocator<std::pair<int const ,tagStringDB *> > >::map<int,tagStringDB *,std::less<int>,std::allocator<std::pair<int const ,tagStringDB *> > >	Global.obj	crt	none	
 004012e0	44	std::_Tree<std::_Tmap_traits<int,tagStringDB *,std::less<int>,std::allocator<std::pair<int const ,tagStringDB *> >,0> >::~_Tree<std::_Tmap_traits<int,tagStringDB *,std::less<int>,std::allocator<std::pair<int const ,tagStringDB *> >,0> >	Global.obj	crt	none	
 00401310	8	std::_Tree<std::_Tmap_traits<int,tagStringDB *,std::less<int>,std::allocator<std::pair<int const ,tagStringDB *> >,0> >::begin	Global.obj	crt	none	
@@ -120,7 +120,7 @@ address	size	name	object	scope	status	witness
 00402690	50	main	Main.obj	game	none	
 004026d0	62	CGameData::GetMobInfo	ServerApp.obj	game	linked	src/game/equipment.cpp
 00402710	83	CGameData::GetItemInfo	ServerApp.obj	game	oracle	include/eternity/game/npc_shop.hpp
-00402770	99	CGameData::GetSkillInfo	ServerApp.obj	game	none	
+00402770	99	CGameData::GetSkillInfo	ServerApp.obj	game	mentioned	reports/overnight/04-mobs.md
 004027e0	42	CGameData::GetMobSkillInfo	ServerApp.obj	game	mentioned	tests/data/mob-targeting-bindings-full-oracle.tsv
 00402810	7	CWorld::GetUserCount	ServerApp.obj	game	none	
 00402820	295	CAIStringDB::LoadStringDB	ServerApp.obj	game	none	
@@ -134,7 +134,7 @@ address	size	name	object	scope	status	witness
 00402ce0	3276	CServerApp::OnConsoleCommand	ServerApp.obj	game	none	
 004039b0	87	ServerStart	ServerApp.obj	game	none	
 00403a10	604	ServerShutdown	ServerApp.obj	game	none	
-00403c70	375	InitLogFile	ServerApp.obj	game	none	
+00403c70	375	InitLogFile	ServerApp.obj	game	mentioned	reports/overnight/01-entry.md
 00403df0	515	InitDB	ServerApp.obj	game	none	
 00404000	428	InitDBTest	ServerApp.obj	game	none	
 004041b0	1650	InitServer	ServerApp.obj	game	partial	src/auth/login_protocol.cpp
@@ -171,7 +171,7 @@ address	size	name	object	scope	status	witness
 00404da0	50	std::length_error::~length_error	ServerApp.obj	crt	none	
 00404de0	25	std::length_error::length_error	ServerApp.obj	crt	none	
 00404e00	7	SDatabasePool::SetLog	ServerApp.obj	game	none	
-00404e10	4	SInternetAddress::GetIP	ServerApp.obj	game	oracle	src/game/vertical_inventory.cpp
+00404e10	4	SInternetAddress::GetIP	ServerApp.obj	game	oracle	include/eternity/game/vertical_world_inventory_settlement.hpp
 00404e20	71	SInternetAddress::Set	ServerApp.obj	game	none	
 00404e70	3	SInternetAddress::SInternetAddress	ServerApp.obj	game	none	
 00404e80	10	SConnection::IsConnected	ServerApp.obj	game	none	
@@ -214,7 +214,7 @@ address	size	name	object	scope	status	witness
 00406340	68	CServer::AllocConnection	Server.obj	game	none	
 00406390	97	CServer::FreeConnection	Server.obj	game	none	
 00406400	35	CServer::OnConnect	Server.obj	game	none	
-00406430	355	CServer::OnDisconnect	Server.obj	game	none	
+00406430	355	CServer::OnDisconnect	Server.obj	game	mentioned	reports/overnight/09-network.md
 004065a0	3	CServer::OnUpdateStatistics	Server.obj	game	none	
 004065b0	20	SSyncList2<SConnection>::~SSyncList2<SConnection>	Server.obj	game	none	
 004065d0	77	SSyncList2<SConnection>::Reset	Server.obj	game	none	
@@ -243,7 +243,7 @@ address	size	name	object	scope	status	witness
 004067e0	15	SInternetAddress::GetPort	Server.obj	game	none	
 004067f0	4	CWorldThread::SetWorld	ServerWorldThread.obj	game	none	
 00406800	126	CServer::AddZone	ServerWorldThread.obj	game	none	
-00406880	126	CServer::AddWaitZone	ServerWorldThread.obj	game	none	
+00406880	126	CServer::AddWaitZone	ServerWorldThread.obj	game	mentioned	reports/overnight/02-world.md
 00406900	120	CServer::StartWorldThread	ServerWorldThread.obj	game	partial	include/eternity/game/vertical_social_packet_jobs.hpp
 00406980	848	CServer::InitWorldThread	ServerWorldThread.obj	game	partial	src/game/interface_replica.cpp
 00406cd0	4	SSyncList<CObjectLink>::Count	ServerWorldThread.obj	game	none	
@@ -264,21 +264,21 @@ address	size	name	object	scope	status	witness
 00406ee0	88	CWorldSendThread::CWorldSendThread	WorldThread.obj	game	none	
 00406f40	27	CWorldSendThread::~CWorldSendThread	WorldThread.obj	game	none	
 00406f60	7	CWorldSendThread::Init	WorldThread.obj	game	none	
-00406f70	24	CWorldSendThread::Shutdown	WorldThread.obj	game	none	
+00406f70	24	CWorldSendThread::Shutdown	WorldThread.obj	game	mentioned	reports/overnight/02-world.md
 00406f90	366	CWorldSendThread::Run	WorldThread.obj	game	untested	include/eternity/game/world_send_driver.hpp
 00407100	268	CWorldThread::CWorldThread	WorldThread.obj	game	untested	include/eternity/game/world_instance_cleanup_phase.hpp
 00407210	115	CWorldThread::~CWorldThread	WorldThread.obj	game	partial	src/game/point_items.cpp
-00407290	24	CWorldThread::Shutdown	WorldThread.obj	game	none	
-004072b0	57	CWorldThread::AddZone	WorldThread.obj	game	untested	include/eternity/game/world_thread_zones.hpp
+00407290	24	CWorldThread::Shutdown	WorldThread.obj	game	mentioned	reports/overnight/02-world.md
+004072b0	57	CWorldThread::AddZone	WorldThread.obj	game	oracle	include/eternity/game/world_thread_zones.hpp
 004072f0	57	CWorldThread::AddWaitZone	WorldThread.obj	game	untested	include/eternity/game/world_thread_zones.hpp
 00407330	87	CWorldThread::Run	WorldThread.obj	game	untested	include/eternity/game/world_frame_cadence.hpp
-00407390	2196	CWorldThread::Update	WorldThread.obj	game	untested	include/eternity/game/world_primary_frame_prefix.hpp
+00407390	2196	CWorldThread::Update	WorldThread.obj	game	oracle	include/eternity/game/world_primary_frame_prefix.hpp
 00407c30	489	CWorldThread::UpdateKillCount	WorldThread.obj	game	untested	include/eternity/game/world_kill_count_composition.hpp
 00407e20	244	CWorldThread::SendAllKillCount	WorldThread.obj	game	untested	include/eternity/game/world_kill_count_phase.hpp
 00407f20	19	std::less<unsigned long>::operator()	WorldThread.obj	crt	none	
 00407f40	4	SSyncList<CUser>::Count	WorldThread.obj	game	none	
 00407f50	80	SSyncMap<unsigned long,CZone *>::Remove	WorldThread.obj	game	none	
-00407fa0	72	SSyncList<CZone>::Remove	WorldThread.obj	game	none	
+00407fa0	72	SSyncList<CZone>::Remove	WorldThread.obj	game	mentioned	tests/data/vertical-world-scheduler-extended.tsv
 00407ff0	57	SSyncHeap<CZone>::Free	WorldThread.obj	game	none	
 00408030	42	SSyncList<CZoneLink>::SSyncList<CZoneLink>	WorldThread.obj	game	none	
 00408060	20	SSyncList<CZoneLink>::~SSyncList<CZoneLink>	WorldThread.obj	game	none	
@@ -287,7 +287,7 @@ address	size	name	object	scope	status	witness
 004080c0	11	SSyncList<CZoneLink>::Unlock	WorldThread.obj	game	none	
 004080d0	46	SSyncList<CZoneLink>::AddBack	WorldThread.obj	game	none	
 00408100	56	SSyncList<CZoneLink>::Remove	WorldThread.obj	game	none	
-00408140	90	SSyncList<CZoneLink>::RemoveFront	WorldThread.obj	game	none	
+00408140	90	SSyncList<CZoneLink>::RemoveFront	WorldThread.obj	game	mentioned	tests/data/vertical-world-scheduler-extended.tsv
 004081a0	19	SSyncList<CZoneLink>::Front	WorldThread.obj	game	none	
 004081c0	20	SSyncList<CZoneLink>::Next	WorldThread.obj	game	none	
 004081e0	6	std::_Tree<std::_Tmap_traits<unsigned long,CZone *,std::less<unsigned long>,std::allocator<std::pair<unsigned long const ,CZone *> >,0> >::end	WorldThread.obj	crt	none	
@@ -339,7 +339,7 @@ address	size	name	object	scope	status	witness
 00408a00	3	CGuildMgr::SetMaxID	ClientToDBAgent.obj	game	none	
 00408a10	13	CUser::LockMove	ClientToDBAgent.obj	game	none	
 00408a20	13	CUser::UnlockMove	ClientToDBAgent.obj	game	none	
-00408a30	19	CWorld::SetWorldDay	ClientToDBAgent.obj	game	none	
+00408a30	19	CWorld::SetWorldDay	ClientToDBAgent.obj	game	mentioned	reports/overnight/02-world.md
 00408a50	30	CClientToDBAgent::CClientToDBAgent	ClientToDBAgent.obj	game	none	
 00408a70	11	CClientToDBAgent::~CClientToDBAgent	ClientToDBAgent.obj	game	none	
 00408a80	93	CClientToDBAgent::SendConnect	ClientToDBAgent.obj	game	none	
@@ -363,7 +363,7 @@ address	size	name	object	scope	status	witness
 004096c0	5	SConnectionCustomRecv::~SConnectionCustomRecv	ClientToDBAgent.obj	game	none	
 004096d0	16	SConnectionCustomRecv::SConnectionCustomRecv	ClientToDBAgent.obj	game	none	
 004096e0	23	CClientToGameLog::CClientToGameLog	ClientToGameLog.obj	game	none	
-00409700	11	CClientToGameLog::~CClientToGameLog	ClientToGameLog.obj	game	none	
+00409700	11	CClientToGameLog::~CClientToGameLog	ClientToGameLog.obj	game	mentioned	reports/overnight/09-network.md
 00409710	3	CClientToGameLog::OnRecv	ClientToGameLog.obj	game	none	
 00409720	82	CClientToGameLog::SendConnect	ClientToGameLog.obj	game	none	
 00409780	22	CClientToGameLog::SendDisconnect	ClientToGameLog.obj	game	none	
@@ -375,7 +375,7 @@ address	size	name	object	scope	status	witness
 00409800	13	CGuild::Unlock	ClientToMgr.obj	game	none	
 00409810	33	CClientToMgr::CClientToMgr	ClientToMgr.obj	game	none	
 00409840	11	CClientToMgr::~CClientToMgr	ClientToMgr.obj	game	none	
-00409850	1880	CClientToMgr::OnRecv	ClientToMgr.obj	game	partial	include/eternity/game/interface_replica.hpp
+00409850	1880	CClientToMgr::OnRecv	ClientToMgr.obj	game	untested	include/eternity/game/vertical_world_session_auto_character.hpp
 00409fb0	199	CClientToMgr::SendConnect	ClientToMgr.obj	game	none	
 0040a080	60	CClientToMgr::SendStatus	ClientToMgr.obj	game	none	
 0040a0c0	8	CSkill::CSkill	ObjectMgr.obj	game	none	
@@ -418,7 +418,7 @@ address	size	name	object	scope	status	witness
 0040acc0	99	SSyncHeap<CNpc>::Alloc	ObjectMgr.obj	game	untested	src/game/zone_npcs.cpp
 0040ad30	57	SSyncHeap<CNpc>::Free	ObjectMgr.obj	game	none	
 0040ad70	28	SSyncHeap<CItem>::SSyncHeap<CItem>	ObjectMgr.obj	game	none	
-0040ad90	20	SSyncHeap<CItem>::~SSyncHeap<CItem>	ObjectMgr.obj	game	none	
+0040ad90	20	SSyncHeap<CItem>::~SSyncHeap<CItem>	ObjectMgr.obj	game	mentioned	reports/overnight/08-social.md
 0040adb0	118	SSyncHeap<CItem>::Alloc	ObjectMgr.obj	game	linked	src/game/item_pool.cpp
 0040ae30	57	SSyncHeap<CItem>::Free	ObjectMgr.obj	game	none	
 0040ae70	28	SSyncHeap<CDead>::SSyncHeap<CDead>	ObjectMgr.obj	game	none	
@@ -471,8 +471,8 @@ address	size	name	object	scope	status	witness
 0040bac0	393	CWorld::~CWorld	World.obj	game	none	
 0040bc50	82	CZoneNode::`vector deleting destructor'	World.obj	game	none	
 0040bcb0	82	CMap::`vector deleting destructor'	World.obj	game	none	
-0040bd10	194	CWorld::WorldInsZoneSendAllPush	World.obj	game	none	
-0040bde0	420	CWorld::UpdateInsZoneSendAllPush	World.obj	game	none	
+0040bd10	194	CWorld::WorldInsZoneSendAllPush	World.obj	game	mentioned	reports/overnight/02-world.md
+0040bde0	420	CWorld::UpdateInsZoneSendAllPush	World.obj	game	mentioned	reports/overnight/02-world.md
 0040bf90	537	CWorld::UpdatePackets	World.obj	game	oracle	include/eternity/game/vertical_world_session_admission.hpp
 0040c1b0	253	CWorld::UpdateNetSend	World.obj	game	untested	include/eternity/game/world_admission.hpp
 0040c2b0	116	CWorld::UpdateSessionLost	World.obj	game	untested	include/eternity/game/world_session_lost_phase.hpp
@@ -489,7 +489,7 @@ address	size	name	object	scope	status	witness
 0040d000	177	CWorld::ZoneEnterUserMove	World.obj	game	oracle	include/eternity/game/world_admission.hpp
 0040d0c0	259	CWorld::ZoneLeaveUserMove	World.obj	game	none	
 0040d1d0	265	CWorld::ZoneLeaveUserMoveLocal	World.obj	game	untested	include/eternity/game/world_admission.hpp
-0040d2e0	118	CWorld::EnterUserWorldBill	World.obj	game	none	
+0040d2e0	118	CWorld::EnterUserWorldBill	World.obj	game	mentioned	reports/overnight/09-network.md
 0040d360	123	CWorld::LeaveUserWorldBill	World.obj	game	none	
 0040d3e0	107	CWorld::LeaveUserBill	World.obj	game	none	
 0040d450	113	CWorld::EnterUserWorld	World.obj	game	oracle	include/eternity/game/vertical_world_session_admission.hpp
@@ -499,8 +499,8 @@ address	size	name	object	scope	status	witness
 0040d5c0	113	CWorld::FindUserBill	World.obj	game	linked	src/session/registry.cpp
 0040d640	79	CWorld::FindUser	World.obj	game	oracle	include/eternity/game/party_runtime_raid_requests.hpp
 0040d690	110	CWorld::FindUser	World.obj	game	untested	include/eternity/game/party_runtime_raid_requests.hpp
-0040d700	87	CWorld::FindUserZone	World.obj	game	none	
-0040d760	118	CWorld::FindUserZone	World.obj	game	none	
+0040d700	87	CWorld::FindUserZone	World.obj	game	mentioned	reports/overnight/01-entry.md
+0040d760	118	CWorld::FindUserZone	World.obj	game	mentioned	reports/overnight/01-entry.md
 0040d7e0	96	CWorld::FindUserZoneMove	World.obj	game	untested	include/eternity/game/social_friend_request.hpp
 0040d840	127	CWorld::FindUserZoneMove	World.obj	game	oracle	include/eternity/game/social_friend_request.hpp
 0040d8c0	96	CWorld::GetOffCharMoney	World.obj	game	none	
@@ -591,7 +591,7 @@ address	size	name	object	scope	status	witness
 0040eeb0	106	std::vector<std::list<std::pair<unsigned long const ,unsigned long>,std::allocator<std::pair<unsigned long const ,unsigned long> > >::iterator,std::allocator<std::list<std::pair<unsigned long const ,unsigned long>,std::allocator<std::pair<unsigned long const ,unsigned long> > >::iterator> >::_Xlen	World.obj	crt	none	
 0040ef20	3	std::_Vector_val<std::list<std::pair<unsigned long const ,unsigned long>,std::allocator<std::pair<unsigned long const ,unsigned long> > >::iterator,std::allocator<std::list<std::pair<unsigned long const ,unsigned long>,std::allocator<std::pair<unsigned long const ,unsigned long> > >::iterator> >::_Vector_val<std::list<std::pair<unsigned long const ,unsigned long>,std::allocator<std::pair<unsigned long const ,unsigned long> > >::iterator,std::allocator<std::list<std::pair<unsigned long const ,unsigned long>,std::allocator<std::pair<unsigned long const ,unsigned long> > >::iterator> >	World.obj	crt	none	
 0040ef30	1	std::allocator<std::list<std::pair<unsigned long const ,unsigned long>,std::allocator<std::pair<unsigned long const ,unsigned long> > >::iterator>::allocator<std::list<std::pair<unsigned long const ,unsigned long>,std::allocator<std::pair<unsigned long const ,unsigned long> > >::iterator>	World.obj	crt	none	
-0040ef40	8	std::allocator<std::list<std::pair<unsigned long const ,unsigned long>,std::allocator<std::pair<unsigned long const ,unsigned long> > >::iterator>::deallocate	World.obj	crt	none	
+0040ef40	8	std::allocator<std::list<std::pair<unsigned long const ,unsigned long>,std::allocator<std::pair<unsigned long const ,unsigned long> > >::iterator>::deallocate	World.obj	crt	mentioned	reports/overnight/02-world.md
 0040ef50	17	std::allocator<std::list<std::pair<unsigned long const ,unsigned long>,std::allocator<std::pair<unsigned long const ,unsigned long> > >::iterator>::allocate	World.obj	crt	none	
 0040ef70	3	std::list<std::pair<unsigned long const ,unsigned long>,std::allocator<std::pair<unsigned long const ,unsigned long> > >::const_iterator::const_iterator	World.obj	crt	none	
 0040ef80	3	std::vector<std::list<std::pair<unsigned long const ,unsigned long>,std::allocator<std::pair<unsigned long const ,unsigned long> > >::iterator,std::allocator<std::list<std::pair<unsigned long const ,unsigned long>,std::allocator<std::pair<unsigned long const ,unsigned long> > >::iterator> >::iterator::iterator	World.obj	crt	none	
@@ -936,18 +936,18 @@ address	size	name	object	scope	status	witness
 00412cf0	1	stString::~stString	World.obj	game	none	
 00412d00	19	stString::stString	World.obj	game	none	
 00412d20	45	CGameData::GetKCStatus	WorldUpdate.obj	game	none	
-00412d50	109	CGameData::GetKCStatusByCount	WorldUpdate.obj	game	none	
+00412d50	109	CGameData::GetKCStatusByCount	WorldUpdate.obj	game	mentioned	reports/overnight/02-world.md
 00412dc0	23	CGameData::GetKCStatusMax	WorldUpdate.obj	game	none	
 00412de0	13	CWorld::LockKCStatus	WorldUpdate.obj	game	none	
 00412df0	13	CWorld::UnlockKCStatus	WorldUpdate.obj	game	none	
 00412e00	14	SendGameLog	WorldUpdate.obj	game	none	
 00412e10	161	CWorld::UpdateLogout	WorldUpdate.obj	game	untested	include/eternity/game/world_primary_logout_phase.hpp
-00412ec0	141	CWorld::SendAll	WorldUpdate.obj	game	none	
-00412f50	146	CWorld::SendAllCountry	WorldUpdate.obj	game	none	
-00412ff0	161	CWorld::PSendAll	WorldUpdate.obj	game	none	
-004130a0	167	CWorld::PSendAllCountry	WorldUpdate.obj	game	none	
+00412ec0	141	CWorld::SendAll	WorldUpdate.obj	game	mentioned	reports/overnight/02-world.md
+00412f50	146	CWorld::SendAllCountry	WorldUpdate.obj	game	mentioned	reports/overnight/02-world.md
+00412ff0	161	CWorld::PSendAll	WorldUpdate.obj	game	mentioned	reports/overnight/02-world.md
+004130a0	167	CWorld::PSendAllCountry	WorldUpdate.obj	game	mentioned	reports/overnight/02-world.md
 00413150	284	CWorld::InitKillCount	WorldUpdate.obj	game	untested	include/eternity/game/world_kill_count_state.hpp
-00413270	138	CWorld::ResetKillCount	WorldUpdate.obj	game	none	
+00413270	138	CWorld::ResetKillCount	WorldUpdate.obj	game	mentioned	reports/overnight/02-world.md
 00413300	266	CWorld::UpdateKillCount	WorldUpdate.obj	game	untested	include/eternity/game/world_kill_count_composition.hpp
 00413410	486	CWorld::AddKillCountGrade	WorldUpdate.obj	game	untested	include/eternity/game/world_kill_count_state.hpp
 00413600	330	CWorld::AddKillCount	WorldUpdate.obj	game	untested	include/eternity/game/world_kill_count_state.hpp
@@ -957,7 +957,7 @@ address	size	name	object	scope	status	witness
 004138c0	20	CWorld::GetKCStatusApply	WorldUpdate.obj	game	none	
 004138e0	223	CWorld::SetKillCount	WorldUpdate.obj	game	untested	include/eternity/game/world_kill_count_state.hpp
 004139c0	301	CWorld::ApplyKillCount	WorldUpdate.obj	game	untested	include/eternity/game/world_kill_count_composition.hpp
-00413af0	88	CWorld::SendAllKillCount	WorldUpdate.obj	game	none	
+00413af0	88	CWorld::SendAllKillCount	WorldUpdate.obj	game	mentioned	reports/overnight/02-world.md
 00413b50	57	CWorld::SendDBAgentKillCount	WorldUpdate.obj	game	none	
 00413b90	53	CWorld::SendDBObeliskList	WorldUpdate.obj	game	oracle	include/eternity/game/obelisk_runtime_world_publication.hpp
 00413bd0	361	CWorld::SetKeepObelisk	WorldUpdate.obj	game	oracle	include/eternity/game/obelisk_runtime_ownership.hpp
@@ -1046,7 +1046,7 @@ address	size	name	object	scope	status	witness
 00416990	54	CZone::LeaveMob	Zone.obj	game	linked	include/eternity/game/zone_mobs.hpp
 004169d0	576	CZone::MoveMob	Zone.obj	game	linked	include/eternity/game/zone_mobs.hpp
 00416c10	133	CZone::AddNpc	Zone.obj	game	none	
-00416ca0	106	CZone::RemoveNpc	Zone.obj	game	none	
+00416ca0	106	CZone::RemoveNpc	Zone.obj	game	mentioned	reports/overnight/02-world.md
 00416d10	82	CZone::FindNpc	Zone.obj	game	untested	include/eternity/game/npc_shop.hpp
 00416d70	283	CZone::EnterNpc	Zone.obj	game	oracle	src/game/zone_npcs.cpp
 00416e90	157	CZone::LeaveNpc	Zone.obj	game	oracle	src/game/zone_npcs.cpp
@@ -1074,7 +1074,7 @@ address	size	name	object	scope	status	witness
 00417c40	104	SSyncMap<unsigned long,CNpc *>::SSyncMap<unsigned long,CNpc *>	Zone.obj	game	none	
 00417cb0	156	SSyncMap<unsigned long,CNpc *>::~SSyncMap<unsigned long,CNpc *>	Zone.obj	game	none	
 00417d50	60	SSyncMap<unsigned long,CNpc *>::Add	Zone.obj	game	none	
-00417d90	80	SSyncMap<unsigned long,CNpc *>::Remove	Zone.obj	game	none	
+00417d90	80	SSyncMap<unsigned long,CNpc *>::Remove	Zone.obj	game	mentioned	reports/overnight/09-network.md
 00417de0	60	SSyncMap<unsigned long,CNpc *>::Find	Zone.obj	game	none	
 00417e20	104	SSyncMap<unsigned long,CItem *>::SSyncMap<unsigned long,CItem *>	Zone.obj	game	none	
 00417e90	156	SSyncMap<unsigned long,CItem *>::~SSyncMap<unsigned long,CItem *>	Zone.obj	game	none	
@@ -1429,7 +1429,7 @@ address	size	name	object	scope	status	witness
 00420250	194	CZone::WorldSendAllPush	ZoneSendFromWorld.obj	game	untested	include/eternity/game/world_zone_send_queue.hpp
 00420320	372	CZone::WorldSendAllProcessing	ZoneSendFromWorld.obj	game	untested	include/eternity/game/world_zone_send_queue.hpp
 004204a0	56	SSyncList<SNodeSendAll>::RemoveFrontFree	ZoneSendFromWorld.obj	game	none	
-004204e0	167	CZone::SendAllCountry	ZoneSendView.obj	game	none	
+004204e0	167	CZone::SendAllCountry	ZoneSendView.obj	game	mentioned	reports/overnight/02-world.md
 00420590	110	CZone::SendAllCountry	ZoneSendView.obj	game	untested	include/eternity/game/world_native_send_services.hpp
 00420600	265	CZone::SendAllCountryWithEnterWaitUser	ZoneSendView.obj	game	untested	include/eternity/game/world_retained_kill_count_zone.hpp
 00420710	220	CZone::SendAllCountryWithEnterWaitUser	ZoneSendView.obj	game	untested	include/eternity/game/world_retained_kill_count_zone.hpp
@@ -1438,10 +1438,10 @@ address	size	name	object	scope	status	witness
 004208c0	224	CZone::SendView	ZoneSendView.obj	game	linked	include/eternity/game/actor_actions.hpp
 004209a0	401	CZone::SendView	ZoneSendView.obj	game	linked	include/eternity/game/actor_actions.hpp
 00420b40	406	CZone::SendView	ZoneSendView.obj	game	linked	include/eternity/game/actor_actions.hpp
-00420ce0	277	CZone::PSendAllCountry	ZoneSendView.obj	game	none	
-00420e00	260	CZone::PSendAllCountry	ZoneSendView.obj	game	none	
-00420f10	284	CZone::PSendAll	ZoneSendView.obj	game	none	
-00421030	230	CZone::PSendAll	ZoneSendView.obj	game	none	
+00420ce0	277	CZone::PSendAllCountry	ZoneSendView.obj	game	mentioned	reports/overnight/02-world.md
+00420e00	260	CZone::PSendAllCountry	ZoneSendView.obj	game	mentioned	reports/overnight/02-world.md
+00420f10	284	CZone::PSendAll	ZoneSendView.obj	game	mentioned	reports/overnight/02-world.md
+00421030	230	CZone::PSendAll	ZoneSendView.obj	game	mentioned	reports/overnight/02-world.md
 00421120	252	CZone::PSendView	ZoneSendView.obj	game	oracle	include/eternity/game/vertical_combat.hpp
 00421220	430	CZone::PSendView	ZoneSendView.obj	game	oracle	include/eternity/game/user_priority_area.hpp
 004213d0	435	CZone::PSendView	ZoneSendView.obj	game	untested	include/eternity/game/user_priority_area.hpp
@@ -1470,7 +1470,7 @@ address	size	name	object	scope	status	witness
 00422f00	232	CZone::ApplyKillCountAllUser	ZoneUpdate.obj	game	untested	include/eternity/game/world_retained_kill_count_zone.hpp
 00422ff0	47	CZone::UpdateCloseGuildRanking	ZoneUpdate.obj	game	none	
 00423020	46	CZone::SendAllGuildRankNotices	ZoneUpdate.obj	game	none	
-00423050	236	CZone::MoveAllBindPos	ZoneUpdate.obj	game	none	
+00423050	236	CZone::MoveAllBindPos	ZoneUpdate.obj	game	mentioned	reports/overnight/02-world.md
 00423140	10	CZone::GetCurUserCount	ZoneUpdate.obj	game	none	
 00423150	406	CZone::UpdateAllCall	ZoneUpdate.obj	game	partial	include/eternity/game/character_core_save.hpp
 004232f0	33	CZone::UpdateMarket	ZoneUpdate.obj	game	none	
@@ -1581,7 +1581,7 @@ address	size	name	object	scope	status	witness
 004272d0	40	stBothZone::stBothZone	Map.obj	game	none	
 00427300	6682	CMap::LoadObelisk	Map.obj	game	linked	include/eternity/game/linked_mob_config.hpp
 00428d20	199	CMap::IsGuildRankMapOpenTime	Map.obj	game	untested	src/game/zones.cpp
-00428df0	183	CMap::IsGuildRankMapCloseTime	Map.obj	game	none	
+00428df0	183	CMap::IsGuildRankMapCloseTime	Map.obj	game	mentioned	reports/overnight/02-world.md
 00428eb0	362	CMap::GetGuildRankNotices	Map.obj	game	none	
 00429020	159	CMap::IsPartyInsZoneOpenTime	Map.obj	game	none	
 004290c0	9	Min<int>	Map.obj	game	none	
@@ -1630,8 +1630,8 @@ address	size	name	object	scope	status	witness
 0042b5d0	186	SendDBGuildCreate	GuildMgr.obj	game	none	
 0042b690	36	SendDBGuildDelete	GuildMgr.obj	game	none	
 0042b6c0	44	SendDBGuildUserCreate	GuildMgr.obj	game	none	
-0042b6f0	40	SendDBGuildUserDelete	GuildMgr.obj	game	none	
-0042b720	44	SendDBGuildUserUpdate	GuildMgr.obj	game	none	
+0042b6f0	40	SendDBGuildUserDelete	GuildMgr.obj	game	mentioned	reports/overnight/08-social.md
+0042b720	44	SendDBGuildUserUpdate	GuildMgr.obj	game	mentioned	reports/overnight/08-social.md
 0042b750	79	SendDBGuildUpdateRemark	GuildMgr.obj	game	untested	include/eternity/game/guild_client_remark.hpp
 0042b7a0	52	CGuildCreateLock::CGuildCreateLock	GuildMgr.obj	game	none	
 0042b7e0	17	CGuildCreateLock::~CGuildCreateLock	GuildMgr.obj	game	none	
@@ -1663,7 +1663,7 @@ address	size	name	object	scope	status	witness
 0042e120	521	CGuild::JoinRequest	GuildMgr.obj	game	linked	include/eternity/game/guild_catalog.hpp
 0042e330	758	CGuild::JoinOK	GuildMgr.obj	game	untested	include/eternity/game/guild_client_accept.hpp
 0042e630	365	CGuild::JoinNO	GuildMgr.obj	game	untested	include/eternity/game/guild_client_decline.hpp
-0042e7a0	578	CGuild::JoinUser	GuildMgr.obj	game	none	
+0042e7a0	578	CGuild::JoinUser	GuildMgr.obj	game	untested	include/eternity/game/guild_invitation_join.hpp
 0042e9f0	469	CGuild::ChangeGuildUserLevel	GuildMgr.obj	game	oracle	include/eternity/game/guild_client_rank.hpp
 0042ebd0	136	CGuild::ChangeUserLevel	GuildMgr.obj	game	none	
 0042ec60	390	CGuild::DeleteCharChangeMaster	GuildMgr.obj	game	none	
@@ -1702,7 +1702,7 @@ address	size	name	object	scope	status	witness
 004315d0	11	CGuildCreate::~CGuildCreate	GuildMgr.obj	game	none	
 004315e0	331	CGuildMgr::Reset	GuildMgr.obj	game	none	
 00431730	89	CGuildMgr::ConnectUser	GuildMgr.obj	game	linked	include/eternity/game/guild_membership.hpp
-00431790	210	CGuildMgr::InitAddGuild	GuildMgr.obj	game	none	
+00431790	210	CGuildMgr::InitAddGuild	GuildMgr.obj	game	mentioned	reports/overnight/08-social.md
 00431870	289	CGuildMgr::InitAddGuild	GuildMgr.obj	game	linked	include/eternity/game/guild_catalog.hpp
 004319a0	1627	CGuildMgr::InitGuildHouseIniFile	GuildMgr.obj	game	linked	include/eternity/game/guild_npc_config.hpp
 00432000	476	CGuildMgr::SendGuildList	GuildMgr.obj	game	linked	include/eternity/game/entry_catalogs.hpp
@@ -1801,7 +1801,7 @@ address	size	name	object	scope	status	witness
 004343c0	8	SSyncMap<unsigned long,stGuildUserInfo *>::Unlock	GuildMgr.obj	game	none	
 004343d0	60	SSyncMap<unsigned long,stGuildUserInfo *>::Add	GuildMgr.obj	game	none	
 00434410	65	SSyncMap<unsigned long,stGuildUserInfo *>::Remove	GuildMgr.obj	game	none	
-00434460	80	SSyncMap<unsigned long,stGuildUserInfo *>::Remove	GuildMgr.obj	game	none	
+00434460	80	SSyncMap<unsigned long,stGuildUserInfo *>::Remove	GuildMgr.obj	game	mentioned	reports/overnight/08-social.md
 004344b0	60	SSyncMap<unsigned long,stGuildUserInfo *>::Find	GuildMgr.obj	game	none	
 004344f0	19	SSyncMap<unsigned long,stGuildUserInfo *>::Front	GuildMgr.obj	game	none	
 00434510	27	SSyncMap<unsigned long,stGuildUserInfo *>::Next	GuildMgr.obj	game	none	
@@ -2143,7 +2143,7 @@ address	size	name	object	scope	status	witness
 00438fb0	101	CMarketMgr::LoadMarket	MarketMgr.obj	game	none	
 00439020	322	CMarketMgr::LoadCharResultItem	MarketMgr.obj	game	none	
 00439170	199	CMarketMgr::LoadCharResultMoney	MarketMgr.obj	game	none	
-00439240	2290	CMarketMgr::CheckMarketItemEndDate	MarketMgr.obj	game	none	
+00439240	2290	CMarketMgr::CheckMarketItemEndDate	MarketMgr.obj	game	mentioned	reports/overnight/02-world.md
 00439b40	62	CMarketMgr::DeleteCharRegItem	MarketMgr.obj	game	none	
 00439b80	199	CMarketMgr::AddCharRegItem	MarketMgr.obj	game	none	
 00439c50	62	CMarketMgr::DeleteCharTenderItem	MarketMgr.obj	game	none	
@@ -3032,7 +3032,7 @@ address	size	name	object	scope	status	witness
 0044b3d0	447	CUser::CancleActionExc	User.obj	game	oracle	include/eternity/game/npc_shop.hpp
 0044b590	11	CUser::CancleActionMyShop	User.obj	game	none	
 0044b5a0	37	CUser::GetPartyIndex	User.obj	game	none	
-0044b5d0	212	CUser::NProtectCSAInit	User.obj	game	none	
+0044b5d0	212	CUser::NProtectCSAInit	User.obj	game	mentioned	reports/overnight/09-network.md
 0044b6b0	41	CUser::NProtectCSARelease	User.obj	game	none	
 0044b6e0	27	CUser::NProtectCSARecvCheck	User.obj	game	none	
 0044b700	209	CUser::NProtectCSASend	User.obj	game	linked	include/eternity/game/zone_lifecycle.hpp
@@ -3098,7 +3098,7 @@ address	size	name	object	scope	status	witness
 0044eac0	125	CUser::SendUseSkillError	UserAttackSkill.obj	game	none	
 0044eb40	776	CUser::EnableUseSkillUser	UserAttackSkill.obj	game	oracle	include/eternity/game/user_skill_runtime_cost.hpp
 0044ee50	702	CUser::EnableUseSkillMob	UserAttackSkill.obj	game	oracle	include/eternity/game/user_skill_runtime_cost.hpp
-0044f110	448	CUser::UseSkillUser	UserAttackSkill.obj	game	none	
+0044f110	448	CUser::UseSkillUser	UserAttackSkill.obj	game	mentioned	reports/overnight/05-combat.md
 0044f2d0	489	CUser::UseSkillMob	UserAttackSkill.obj	game	partial	include/eternity/game/vertical_combat_skill_view.hpp
 0044f4c0	2244	CUser::AttackUser	UserAttackSkill.obj	game	untested	include/eternity/game/user_skill_runtime_strike.hpp
 0044fd90	2062	CUser::AttackMob	UserAttackSkill.obj	game	oracle	include/eternity/game/mob_combat_attack.hpp
@@ -3375,7 +3375,7 @@ address	size	name	object	scope	status	witness
 00473970	3788	CUser::PacketAdminCmdD	UserPacketExtAdminCmd.obj	game	none	
 00474840	3708	CUser::PacketAdminCmdE	UserPacketExtAdminCmd.obj	game	none	
 004756c0	11	SBitValue<unsigned short>::Set	UserPacketExtAdminCmd.obj	game	none	
-004756d0	196	CUser::InitFriend	UserPacketFriend.obj	game	none	
+004756d0	196	CUser::InitFriend	UserPacketFriend.obj	game	mentioned	reports/overnight/08-social.md
 004757a0	196	CUser::ReleaseFriend	UserPacketFriend.obj	game	linked	src/game/entry_catalogs.cpp
 00475870	2620	CUser::PacketComm	UserPacketFriend.obj	game	linked	include/eternity/game/entry_catalogs.hpp
 004762b0	8	CItem::IsEtin	UserPacketGuild.obj	game	none	
@@ -3570,7 +3570,7 @@ address	size	name	object	scope	status	witness
 0047f630	56	CUser::QuestEndChkClickNPC	UserQuestChk.obj	game	oracle	include/eternity/game/quest_requests.hpp
 0047f670	106	CUser::QuestEndChkItemPick	UserQuestChk.obj	game	mentioned	tests/data/quest-requests-progress-oracle.tsv
 0047f6e0	86	CUser::QuestEndChkKillMOB	UserQuestChk.obj	game	none	
-0047f740	75	CUser::QuestEndChkKillPC	UserQuestChk.obj	game	oracle	include/eternity/game/quest_requests.hpp
+0047f740	75	CUser::QuestEndChkKillPC	UserQuestChk.obj	game	untested	include/eternity/game/quest_requests.hpp
 0047f790	331	CUser::QuestFindItem	UserQuestChk.obj	game	linked	include/eternity/game/actor.hpp
 0047f8e0	1751	CUser::QuestFindItem	UserQuestChk.obj	game	linked	include/eternity/game/actor.hpp
 0047ffc0	24	CMobQuestData::GetQuestLink	UserQuestKill.obj	game	none	
@@ -3721,9 +3721,9 @@ address	size	name	object	scope	status	witness
 0048d210	44	CUser::UpdateLogout	UserUpdate.obj	game	none	
 0048d240	460	CUser::UpdateRebirth	UserUpdate.obj	game	oracle	include/eternity/game/vertical_combat_scheduler_zone.hpp
 0048d410	83	CUser::SetMovePosition	UserUpdate.obj	game	none	
-0048d470	2991	CUser::UpdateResetPosition	UserUpdate.obj	game	none	
+0048d470	2991	CUser::UpdateResetPosition	UserUpdate.obj	game	mentioned	reports/overnight/02-world.md
 0048e020	100	CUser::UpdateAdminCmd	UserUpdate.obj	game	none	
-0048e090	615	CUser::UpdateAdminNotice	UserUpdate.obj	game	none	
+0048e090	615	CUser::UpdateAdminNotice	UserUpdate.obj	game	mentioned	reports/overnight/02-world.md
 0048e300	8	CUser::UpdateTimeoverSec	UserUpdate.obj	game	none	
 0048e310	404	CUser::UpdateTimeover	UserUpdate.obj	game	oracle	include/eternity/game/social_friend_request.hpp
 0048e4b0	14	AStarNode::SetPos	AStar.obj	game	none	
@@ -3812,14 +3812,14 @@ address	size	name	object	scope	status	witness
 004906d0	157	CMob::SendSpeed	Mob.obj	game	mentioned	tests/data/mob-applied-skills-effects-oracle.tsv
 00490770	65	CMob::SendHP	Mob.obj	game	none	
 004907c0	174	CMob::SendState	Mob.obj	game	none	
-00490870	48	CMob::GetAttackSpeed	Mob.obj	game	none	
+00490870	48	CMob::GetAttackSpeed	Mob.obj	game	mentioned	reports/overnight/04-mobs.md
 004908a0	24	CMob::GetAttackSpeedNow	Mob.obj	game	none	
 004908c0	57	CMob::GetMoveSpeed	Mob.obj	game	mentioned	tests/data/mob_ai_states_idle-oracle.tsv
 00490900	24	CMob::GetMoveSpeedNow	Mob.obj	game	mentioned	tests/data/mob_ai_states_idle-oracle.tsv
 00490920	7	CMob::StatusSet	Mob.obj	game	none	
 00490930	75	CMob::StatusChange	Mob.obj	game	none	
 00490980	89	CMob::StatusAttackStop	Mob.obj	game	oracle	include/eternity/game/vertical_combat_skill_select.hpp
-004909e0	201	CMob::Heal	Mob.obj	game	none	
+004909e0	201	CMob::Heal	Mob.obj	game	oracle	include/eternity/game/vertical_mobs.hpp
 00490ab0	225	CMob::ReTargetByAggro	Mob.obj	game	oracle	include/eternity/game/vertical_combat_retarget.hpp
 00490ba0	113	CMob::GetMaxAttackUserID	Mob.obj	game	none	
 00490c20	19	CMob::GetMinDamageRand	Mob.obj	game	none	
@@ -4704,22 +4704,22 @@ address	size	name	object	scope	status	witness
 004a2920	1857	CMob::AttackDamage	MobAttack.obj	game	oracle	include/eternity/game/vertical_mobs.hpp
 004a3070	2916	CMob::AttackDamage	MobAttack.obj	game	oracle	include/eternity/game/vertical_mobs.hpp
 004a3be0	872	CMob::TimeDamage	MobAttack.obj	game	linked	include/eternity/game/mob_applied_skills_time_damage.hpp
-004a3f50	132	CMob::SendUseSkill	MobAttackSkill.obj	game	none	
-004a3fe0	2292	CMob::AttackUser	MobAttackSkill.obj	game	none	
+004a3f50	132	CMob::SendUseSkill	MobAttackSkill.obj	game	oracle	include/eternity/game/vertical_mobs.hpp
+004a3fe0	2292	CMob::AttackUser	MobAttackSkill.obj	game	mentioned	reports/overnight/04-mobs.md
 004a48e0	174	CMob::UseSkill	MobAttackSkill.obj	game	oracle	include/eternity/game/vertical_mobs.hpp
 004a4990	61	CMob::SkillAttack	MobAttackSkill.obj	game	oracle	include/eternity/game/vertical_mobs.hpp
 004a49d0	204	CMob::SkillAttackSelect	MobAttackSkill.obj	game	oracle	include/eternity/game/vertical_mobs.hpp
 004a4aa0	744	CMob::SkillAttackRange	MobAttackSkill.obj	game	none	
 004a4d90	768	CMob::SkillAttackRangeSelect	MobAttackSkill.obj	game	none	
-004a5090	51	CMob::SkillDebuff	MobAttackSkill.obj	game	none	
+004a5090	51	CMob::SkillDebuff	MobAttackSkill.obj	game	mentioned	reports/overnight/04-mobs.md
 004a50d0	11	CMob::SkillDebuffSelect	MobAttackSkill.obj	game	none	
 004a50e0	494	CMob::SkillDebuffRange	MobAttackSkill.obj	game	none	
 004a52d0	524	CMob::SkillDebuffRangeSelect	MobAttackSkill.obj	game	none	
-004a54e0	33	CMob::SkillHeal	MobAttackSkill.obj	game	none	
+004a54e0	33	CMob::SkillHeal	MobAttackSkill.obj	game	oracle	include/eternity/game/vertical_mobs.hpp
 004a5510	12	CMob::SkillHealSelf	MobAttackSkill.obj	game	none	
-004a5520	599	CMob::SkillHealRange	MobAttackSkill.obj	game	none	
-004a5780	679	CMob::HealUser	MobAttackSkill.obj	game	none	
-004a5a30	864	CMob::RemStateSkill	MobAttackSkill.obj	game	none	
+004a5520	599	CMob::SkillHealRange	MobAttackSkill.obj	game	oracle	include/eternity/game/vertical_mobs.hpp
+004a5780	679	CMob::HealUser	MobAttackSkill.obj	game	mentioned	tests/data/vertical-mobs-skill-heal-oracle.tsv
+004a5a30	864	CMob::RemStateSkill	MobAttackSkill.obj	game	mentioned	reports/overnight/04-mobs.md
 004a5d90	164	CMob::CancleApplySkillDebuff	MobAttackSkill.obj	game	none	
 004a5e40	29	GetDropRate1	MobItemDrop.obj	game	none	
 004a5e60	29	GetDropRate2	MobItemDrop.obj	game	none	
@@ -5275,7 +5275,7 @@ address	size	name	object	scope	status	witness
 004b6120	72	CMob::OnAttacked	MobLuaFSM.obj	game	mentioned	tests/data/mob-targeting-actor-oracle.tsv
 004b6170	72	CMob::OnAttackable	MobLuaFSM.obj	game	none	
 004b61c0	89	CMob::OnNormalReset	MobLuaFSM.obj	game	none	
-004b6220	71	CMob::OnDeath	MobLuaFSM.obj	game	none	
+004b6220	71	CMob::OnDeath	MobLuaFSM.obj	game	mentioned	reports/overnight/05-combat.md
 004b6270	71	CMob::OnReturnHome	MobLuaFSM.obj	game	oracle	include/eternity/game/mob_events.hpp
 004b62c0	111	CMob::SetReTarget	MobLuaFSM.obj	game	none	
 004b6330	684	CMob::FindTargetEx	MobLuaFSM.obj	game	none	
@@ -5410,10 +5410,10 @@ address	size	name	object	scope	status	witness
 004b9750	157	CFriend::FriendFind	Friend.obj	game	none	
 004b97f0	159	CFriend::FriendAdd	Friend.obj	game	none	
 004b9890	219	CFriend::FriendRemove	Friend.obj	game	linked	src/game/entry_catalogs.cpp
-004b9970	290	CFriend::FriendRemove	Friend.obj	game	mentioned	research/vertical-movement-continuation.md
-004b9aa0	96	CFriend::BlockFind	Friend.obj	game	none	
-004b9b00	169	CFriend::BlockFind	Friend.obj	game	none	
-004b9bb0	146	CFriend::BlockAdd	Friend.obj	game	none	
+004b9970	290	CFriend::FriendRemove	Friend.obj	game	mentioned	reports/overnight/08-social.md
+004b9aa0	96	CFriend::BlockFind	Friend.obj	game	mentioned	reports/overnight/08-social.md
+004b9b00	169	CFriend::BlockFind	Friend.obj	game	mentioned	reports/overnight/08-social.md
+004b9bb0	146	CFriend::BlockAdd	Friend.obj	game	mentioned	reports/overnight/08-social.md
 004b9c50	276	CFriend::BlockRemove	Friend.obj	game	none	
 004b9d70	356	CFriend::BlockRemove	Friend.obj	game	none	
 004b9ee0	30	CItem::IsAccessory	Item.obj	game	mentioned	tests/data/mob-drops-creation-oracle.tsv
@@ -5466,7 +5466,7 @@ address	size	name	object	scope	status	witness
 004bbe60	25	CNpc::UpdateAttack	Npc.obj	game	none	
 004bbe80	35	CNpc::UpdateIdle	Npc.obj	game	none	
 004bbeb0	484	CNpc::UpdateMove	Npc.obj	game	oracle	include/eternity/game/npc_patrol.hpp
-004bc0a0	85	CNpc::UpdateGuard	Npc.obj	game	none	
+004bc0a0	85	CNpc::UpdateGuard	Npc.obj	game	mentioned	reports/overnight/02-world.md
 004bc100	126	CNpc::UpdateAttackAI	Npc.obj	game	none	
 004bc180	1473	CNpc::FindTarget	Npc.obj	game	oracle	include/eternity/game/npc_targets.hpp
 004bc750	58	CNpc::SetTarget	Npc.obj	game	oracle	src/game/npc_targets.cpp
@@ -5504,10 +5504,10 @@ address	size	name	object	scope	status	witness
 004bd690	43	CObject::PSendViewCombat	Object.obj	game	none	
 004bd6c0	40	CObject::PSendViewChat	Object.obj	game	none	
 004bd6f0	83	CObjectConnection::PSend	ObjectConnection.obj	game	untested	include/eternity/game/user_priority_cell.hpp
-004bd750	21	CObjectConnection::PSendNow	ObjectConnection.obj	game	none	
+004bd750	21	CObjectConnection::PSendNow	ObjectConnection.obj	game	mentioned	reports/overnight/03-movement.md
 004bd770	40	CObjectConnection::PSendZone	ObjectConnection.obj	game	none	
 004bd7a0	33	CObjectConnection::PSendWorld	ObjectConnection.obj	game	none	
-004bd7d0	54	CObjectConnection::PSendView	ObjectConnection.obj	game	none	
+004bd7d0	54	CObjectConnection::PSendView	ObjectConnection.obj	game	mentioned	reports/overnight/03-movement.md
 004bd810	53	CObjectConnection::PSendViewRange	ObjectConnection.obj	game	none	
 004bd850	58	CObjectConnection::PSendViewRange	ObjectConnection.obj	game	none	
 004bd890	53	CObjectConnection::PSendViewAction	ObjectConnection.obj	game	untested	include/eternity/game/vertical_move_bound_operations.hpp
@@ -5892,10 +5892,10 @@ address	size	name	object	scope	status	witness
 004d4390	8	SConnection::ResetSocket	pscommon.lib	common	none	
 004d43a0	55	SConnection::Close	pscommon.lib	common	untested	include/eternity/game/npc_shop.hpp
 004d43e0	13	SConnection::Disconnect	pscommon.lib	common	none	
-004d43f0	57	SConnection::Open	pscommon.lib	common	none	
+004d43f0	57	SConnection::Open	pscommon.lib	common	mentioned	reports/overnight/09-network.md
 004d4430	53	SConnection::Open	pscommon.lib	common	mentioned	tests/data/world-reply-baseline-oracle.tsv
 004d4470	26	SConnection::SendQueuePriority	pscommon.lib	common	mentioned	tools/vertical_move_worker_gate_probe.py
-004d4490	19	SConnection::SendNow	pscommon.lib	common	none	
+004d4490	19	SConnection::SendNow	pscommon.lib	common	mentioned	reports/overnight/02-world.md
 004d44b0	20	SConnection::SendRequest	pscommon.lib	common	none	
 004d44d0	19	SConnection::RecvRequest	pscommon.lib	common	none	
 004d44f0	5	SConnection::SendComplete	pscommon.lib	common	none	
@@ -5918,9 +5918,9 @@ address	size	name	object	scope	status	witness
 004d4c50	158	SConnection::SConnection	pscommon.lib	common	linked	src/net/world_protocol.cpp
 004d4cf0	42	SConnection::Send	pscommon.lib	common	oracle	include/eternity/game/party_runtime_membership_send.hpp
 004d4d20	107	SConnection::Send	pscommon.lib	common	oracle	include/eternity/game/mob_combat_scheduler.hpp
-004d4d90	119	SConnection::SendNow	pscommon.lib	common	none	
-004d4e10	54	SConnection::SendNow	pscommon.lib	common	none	
-004d4e50	17	SConnectionTBaseReconnect::Send	pscommon.lib	common	none	
+004d4d90	119	SConnection::SendNow	pscommon.lib	common	mentioned	reports/overnight/02-world.md
+004d4e10	54	SConnection::SendNow	pscommon.lib	common	mentioned	reports/overnight/02-world.md
+004d4e50	17	SConnectionTBaseReconnect::Send	pscommon.lib	common	mentioned	reports/overnight/05-combat.md
 004d4e70	51	SConnectionTBaseReconnect::Send	pscommon.lib	common	none	
 004d4eb0	17	SConnectionTBaseReconnect::SendNow	pscommon.lib	common	none	
 004d4ed0	63	SConnectionTBaseReconnect::SendNow	pscommon.lib	common	none	
@@ -6103,7 +6103,7 @@ address	size	name	object	scope	status	witness
 004d85d0	38	SAcceptorMulti::~SAcceptorMulti	pscommon.lib	common	none	
 004d8600	70	SAcceptorMulti::Shutdown	pscommon.lib	common	none	
 004d8650	41	SNode2::RemoveLink2	pscommon.lib	common	none	
-004d8680	198	SAgentParam::SAgentParam	pscommon.lib	common	none	
+004d8680	198	SAgentParam::SAgentParam	pscommon.lib	common	mentioned	reports/overnight/09-network.md
 004d8750	31	SAgentParam::SetParamSocket	pscommon.lib	common	none	
 004d8770	45	SAgentParam::SetParamReply	pscommon.lib	common	none	
 004d87a0	31	SAgentParam::SetParamSender	pscommon.lib	common	none	
@@ -6270,7 +6270,7 @@ address	size	name	object	scope	status	witness
 004dbd40	59	SWorker::FreeContextSend	pscommon.lib	common	none	
 004dbd80	451	SWorker::IOAccept	pscommon.lib	common	none	
 004dbf50	302	SWorker::Recv	pscommon.lib	common	none	
-004dc080	302	SWorker::Send	pscommon.lib	common	none	
+004dc080	302	SWorker::Send	pscommon.lib	common	mentioned	reports/overnight/03-movement.md
 004dc1b0	261	SWorker::SendPost	pscommon.lib	common	none	
 004dc2c0	178	SWorker::SendPostQueuePriority	pscommon.lib	common	oracle	include/eternity/game/world_connection_priority_flush.hpp
 004dc380	169	SWorker::SendComplete	pscommon.lib	common	none	
@@ -6304,7 +6304,7 @@ address	size	name	object	scope	status	witness
 004dd560	11	SSender::~SSender	pscommon.lib	common	none	
 004dd570	38	SSender::AddAgent	pscommon.lib	common	none	
 004dd5a0	40	SSender::OnUpdate	pscommon.lib	common	none	
-004dd5d0	46	SReply::SReply	pscommon.lib	common	none	
+004dd5d0	46	SReply::SReply	pscommon.lib	common	mentioned	reports/overnight/09-network.md
 004dd600	11	SReply::~SReply	pscommon.lib	common	none	
 004dd610	38	SReply::AddAgent	pscommon.lib	common	none	
 004dd640	46	SReply::OnUpdate	pscommon.lib	common	none	
@@ -6903,14 +6903,14 @@ address	size	name	object	scope	status	witness
 0050727f	80	fgetc	LIBCMT.lib	crt	none	
 005072cf	80	getc	LIBCMT.lib	crt	none	
 0050731f	113	fputs	LIBCMT.lib	crt	none	
-00507390	63	isalpha	LIBCMT.lib	crt	mentioned	tools/parallel.py
+00507390	63	isalpha	LIBCMT.lib	crt	none	
 005073cf	58	isupper	LIBCMT.lib	crt	none	
 00507409	58	islower	LIBCMT.lib	crt	none	
 00507443	58	isdigit	LIBCMT.lib	crt	none	
 0050747d	63	isxdigit	LIBCMT.lib	crt	none	
 005074bc	58	isspace	LIBCMT.lib	crt	none	
 005074f6	58	ispunct	LIBCMT.lib	crt	none	
-00507530	63	isalnum	LIBCMT.lib	crt	mentioned	tools/parallel.py
+00507530	63	isalnum	LIBCMT.lib	crt	mentioned	tools/vertical_entry_integration.py
 0050756f	63	isprint	LIBCMT.lib	crt	none	
 005075ae	63	isgraph	LIBCMT.lib	crt	none	
 005075ed	58	iscntrl	LIBCMT.lib	crt	none	
@@ -7228,7 +7228,7 @@ address	size	name	object	scope	status	witness
 0051307a	46	siglookup	LIBCMT.lib	crt	none	
 005130a8	9	__fpecode	LIBCMT.lib	crt	none	
 005130b1	9	__pxcptinfoptrs	LIBCMT.lib	crt	none	
-005130ba	417	signal	LIBCMT.lib	crt	oracle	include/eternity/game/vertical_world_session_resource_open.hpp
+005130ba	417	signal	LIBCMT.lib	crt	untested	include/eternity/game/vertical_world_session_resource_open.hpp
 0051325b	377	raise	LIBCMT.lib	crt	none	
 005133d4	155	_fcloseall	LIBCMT.lib	crt	none	
 0051346f	442	__crtGetStringTypeA	LIBCMT.lib	crt	none	

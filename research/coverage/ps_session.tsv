@@ -161,7 +161,7 @@ address	size	name	object	scope	status	witness
 004048a0	27	std::allocator<std::_Tree_nod<std::_Tmap_traits<stString,unsigned long,std::less<stString>,std::allocator<std::pair<stString const ,unsigned long> >,0> >::_Node>::allocate	PacketLogin.obj	crt	none	
 004048c0	81	std::_Tree<std::_Tmap_traits<stString,unsigned long,std::less<stString>,std::allocator<std::pair<stString const ,unsigned long> >,0> >::const_iterator::_Dec	PacketLogin.obj	crt	none	
 00404920	44	std::_Tree_nod<std::_Tmap_traits<stString,unsigned long,std::less<stString>,std::allocator<std::pair<stString const ,unsigned long> >,0> >::_Node::_Node	PacketLogin.obj	crt	none	
-00404950	234	std::basic_string<char,std::char_traits<char>,std::allocator<char> >::assign	PacketLogin.obj	crt	none	
+00404950	234	std::basic_string<char,std::char_traits<char>,std::allocator<char> >::assign	PacketLogin.obj	crt	mentioned	reports/overnight/09-network.md
 00404a40	57	std::basic_string<char,std::char_traits<char>,std::allocator<char> >::_Inside	PacketLogin.obj	crt	none	
 00404a80	41	std::make_pair<stString,unsigned long>	PacketLogin.obj	crt	none	
 00404ab0	22	std::pair<stString const ,unsigned long>::pair<stString const ,unsigned long><stString,unsigned long>	PacketLogin.obj	crt	none	
@@ -265,7 +265,7 @@ address	size	name	object	scope	status	witness
 00406410	35	CGUMNet::SyncStart	GUMNet.obj	game	none	
 00406440	239	CGUMNet::ConnectServer	GUMNet.obj	game	none	
 00406530	87	CGUMNet::OnUpdate	GUMNet.obj	game	none	
-00406590	2962	CGUMNet::OnRecv	GUMNet.obj	game	none	
+00406590	2962	CGUMNet::OnRecv	GUMNet.obj	game	mentioned	reports/overnight/09-network.md
 00407130	98	CGUMNet::OnDisconnect	GUMNet.obj	game	none	
 004071a0	14	GUM_EXPIRE_OTHER_ACK::ntoh	GUMNet.obj	game	none	
 004071b0	14	GUM_EXPIRE_DIS_ACK::ntoh	GUMNet.obj	game	none	

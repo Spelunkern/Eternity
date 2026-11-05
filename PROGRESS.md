@@ -21,8 +21,8 @@ Project code only: excludes the CRT and shared libraries (`pscommon`, `snet`).
 
 | Binary | Functions | With code | % functions | Bytes | With code | % bytes | Progress by bytes |
 |---|---:|---:|---:|---:|---:|---:|---|
-| `ps_game` | 2559 | 675 | 26.4% | 646 KB | 341 KB | 52.8% | `██████░░░░░░` |
-| `ps_dbAgent` | 644 | 43 | 6.7% | 129 KB | 34 KB | 26.7% | `███░░░░░░░░░` |
+| `ps_game` | 2559 | 680 | 26.6% | 646 KB | 343 KB | 53.1% | `██████░░░░░░` |
+| `ps_dbAgent` | 644 | 44 | 6.8% | 129 KB | 35 KB | 26.8% | `███░░░░░░░░░` |
 | `ps_login` | 218 | 6 | 2.8% | 18 KB | 3 KB | 13.8% | `██░░░░░░░░░░` |
 | `ps_session` | 299 | 1 | 0.3% | 34 KB | 1 KB | 3.4% | `░░░░░░░░░░░░` |
 | `ps_gameLog` | 143 | 0 | 0.0% | 21 KB | 0 KB | 0.0% | `░░░░░░░░░░░░` |
@@ -33,38 +33,19 @@ Project code only: excludes the CRT and shared libraries (`pscommon`, `snet`).
 | Status | Functions | Bytes | % bytes |
 |---|---:|---:|---:|
 | In code linked into the executable | 265 | 144 KB | 22.3% |
-| Code with a test or oracle | 276 | 152 KB | 23.6% |
-| Code without a test | 105 | 28 KB | 4.4% |
-| Internal range only | 29 | 17 KB | 2.6% |
-| Mentioned only | 114 | 26 KB | 4.0% |
-| No trace | 1770 | 278 KB | 43.1% |
-
-## `ps_game` by branch
-
-A function counts when the branch has code citing it, whole or in part.
-
-| Branch | Functions with code | % bytes |
-|---|---:|---:|
-| `main` | 675 | 52.8% |
-| `overnight/01-entry` | 546 | 43.5% |
-| `overnight/02-world` | 585 | 45.1% |
-| `overnight/03-movement` | 548 | 43.6% |
-| `overnight/04-mobs` | 567 | 45.7% |
-| `overnight/05-combat` | 568 | 45.1% |
-| `overnight/06-inventory` | 565 | 44.8% |
-| `overnight/07-quests` | 557 | 44.4% |
-| `overnight/08-social` | 570 | 45.9% |
-| `overnight/09-network` | 546 | 43.7% |
-| `overnight/snapshot-20261105` | 543 | 43.5% |
-| `all compared branches` | 681 | 53.1% |
+| Code with a test or oracle | 281 | 155 KB | 24.0% |
+| Code without a test | 106 | 29 KB | 4.5% |
+| Internal range only | 28 | 15 KB | 2.3% |
+| Mentioned only | 169 | 42 KB | 6.6% |
+| No trace | 1710 | 261 KB | 40.4% |
 
 ## `ps_game` by original source file
 
 | File | Functions | With code | Bytes | % bytes | Progress |
 |---|---:|---:|---:|---:|---|
 | `GameData.obj` | 50 | 19 | 40 KB | 64.7% | `████████░░░░` |
-| `GuildMgr.obj` | 172 | 37 | 35 KB | 40.5% | `█████░░░░░░░` |
-| `Mob.obj` | 102 | 25 | 30 KB | 75.4% | `█████████░░░` |
+| `GuildMgr.obj` | 172 | 38 | 35 KB | 42.1% | `█████░░░░░░░` |
+| `Mob.obj` | 102 | 26 | 30 KB | 76.1% | `█████████░░░` |
 | `MarketMgr.obj` | 109 | 1 | 24 KB | 0.1% | `░░░░░░░░░░░░` |
 | `UserItemRepairGem.obj` | 25 | 1 | 22 KB | 1.4% | `░░░░░░░░░░░░` |
 | `UserPacket.obj` | 31 | 13 | 20 KB | 92.4% | `███████████░` |
@@ -85,7 +66,7 @@ A function counts when the branch has code citing it, whole or in part.
 | `UserAttackSkill.obj` | 15 | 7 | 9 KB | 70.4% | `████████░░░░` |
 | `UserState.obj` | 25 | 14 | 9 KB | 73.5% | `█████████░░░` |
 | `ServerApp.obj` | 52 | 5 | 9 KB | 20.6% | `██░░░░░░░░░░` |
-| `MobAttackSkill.obj` | 17 | 3 | 8 KB | 5.6% | `█░░░░░░░░░░░` |
+| `MobAttackSkill.obj` | 17 | 6 | 8 KB | 15.4% | `██░░░░░░░░░░` |
 | `ZoneUpdate.obj` | 32 | 17 | 7 KB | 85.5% | `██████████░░` |
 | `Cell.obj` | 68 | 10 | 7 KB | 45.4% | `█████░░░░░░░` |
 | `UserSkillApply.obj` | 11 | 10 | 7 KB | 99.4% | `████████████` |

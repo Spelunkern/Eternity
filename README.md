@@ -9,8 +9,8 @@ Project code only: excludes the CRT and shared libraries (`pscommon`, `snet`).
 
 | Binary | Functions | With code | % functions | Bytes | With code | % bytes | Progress by bytes |
 |---|---:|---:|---:|---:|---:|---:|---|
-| `ps_game` | 2559 | 675 | 26.4% | 646 KB | 341 KB | 52.8% | `██████░░░░░░` |
-| `ps_dbAgent` | 644 | 43 | 6.7% | 129 KB | 34 KB | 26.7% | `███░░░░░░░░░` |
+| `ps_game` | 2559 | 680 | 26.6% | 646 KB | 343 KB | 53.1% | `██████░░░░░░` |
+| `ps_dbAgent` | 644 | 44 | 6.8% | 129 KB | 35 KB | 26.8% | `███░░░░░░░░░` |
 | `ps_login` | 218 | 6 | 2.8% | 18 KB | 3 KB | 13.8% | `██░░░░░░░░░░` |
 | `ps_session` | 299 | 1 | 0.3% | 34 KB | 1 KB | 3.4% | `░░░░░░░░░░░░` |
 | `ps_gameLog` | 143 | 0 | 0.0% | 21 KB | 0 KB | 0.0% | `░░░░░░░░░░░░` |
