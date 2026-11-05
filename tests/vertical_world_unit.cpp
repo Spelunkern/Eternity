@@ -17,6 +17,7 @@
 #include "eternity/game/world_db_agent_world.hpp"
 #include "eternity/game/world_db_agent_save_driver.hpp"
 #include "eternity/game/world_db_agent_disconnect.hpp"
+#include "eternity/game/world_db_agent_users.hpp"
 #include "eternity/game/world_kill_count_entry.hpp"
 #include "eternity/game/world_kill_count_composition.hpp"
 #include "eternity/game/world_retained_kill_count_zone.hpp"
@@ -99,6 +100,10 @@ struct AgentSaveDriverFixture {
 struct AgentDisconnectFixture {
     std::vector<unsigned>& events;
     WorldDbAgentSaveResult save_all(){events.push_back(2);WorldDbAgentSaveResult result;result.due=true;result.saved={true,false,true};return result;}
+};
+struct AgentUserFixture {
+    UserLifecycleState& state;std::vector<std::uint32_t>& jobs;
+    bool update_save(std::uint32_t now,std::uint32_t& last){return update_character_save_tick(state.status,now,state.next_save_tick,last,[&](std::uint32_t job){jobs.push_back(job);});}
 };
 struct SavePhaseFixture {
     std::vector<unsigned>& events;unsigned id;bool ok=true,throws=false;
@@ -702,6 +707,18 @@ int main(int argc,char** argv) {try {
         WorldDbAgentDisconnect<Connection,AgentDisconnectFixture> disconnect(world,[&](Connection& actual){check(&actual==&connection && actual.id==9);events.push_back(1);});
         const auto saved=disconnect.removed_game_connection(connection);check((events==std::vector<unsigned>{1,2}) && saved.due && !saved.success() && !saved.saved[1]);
         bool missing=false;try{WorldDbAgentDisconnect<Connection,AgentDisconnectFixture> invalid(world,{});}catch(const std::invalid_argument&){missing=true;}check(missing);
+    }
+    {
+        struct Connection {unsigned id;};Connection one{1},two{2};std::vector<std::uint32_t> jobs1,jobs2;unsigned retired=0;
+        UserLifecycleState active{1,2,100,false},idle{2,1,0,false},other{3,2,100,false};
+        auto user1=std::make_shared<AgentUserFixture>(AgentUserFixture{active,jobs1});auto user2=std::make_shared<AgentUserFixture>(AgentUserFixture{idle,jobs2});auto user3=std::make_shared<AgentUserFixture>(AgentUserFixture{other,jobs2});
+        WorldDbAgentUsers<Connection,AgentUserFixture> users;
+        users.retain(1,one,user1,active,[&](auto job){jobs1.push_back(job);},[&]{++retired;});
+        users.retain(2,one,user2,idle,[&](auto job){jobs2.push_back(job);},[&]{++retired;});
+        users.retain(3,two,user3,other,[&](auto job){jobs2.push_back(job);},[&]{++retired;});
+        users.update_user_save(100);check((jobs1==std::vector<std::uint32_t>{8}) && (jobs2==std::vector<std::uint32_t>{8}) && users.last_save_tick()==900100);
+        users.connection_removed(one);check((jobs1==std::vector<std::uint32_t>{8,22}) && retired==1 && users.size()==2);
+        check(!users.release(1,*user3) && users.release(1,*user1) && users.size()==1 && users.release(3,*user3));
     }
     {
         asio::io_context io;auto strand=asio::make_strand(io);std::vector<unsigned> events;
