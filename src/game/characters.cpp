@@ -124,7 +124,11 @@ CharacterRoster Characters::load(std::uint32_t user_id) {
         value.strength=word(row,11);value.dexterity=word(row,12);value.recovery=word(row,13);
         value.intelligence=word(row,14);value.luck=word(row,15);value.wisdom=word(row,16);
         value.hp=word(row,17);value.mp=word(row,18);value.sp=word(row,19);value.map=word(row,20);
-        value.rename=byte(row,21)!=0;value.remaining_time=integer(row,22)!=0;
+        value.rename=byte(row,21);
+        const auto remaining=integer(row,22);
+        if(remaining<std::numeric_limits<std::int32_t>::min() || remaining>std::numeric_limits<std::int32_t>::max())
+            throw std::runtime_error("Character remaining time outside original signed DWORD range");
+        value.remaining_time=static_cast<std::int32_t>(remaining);
         const auto created=calendar(static_cast<int>(integer(row,23)),static_cast<unsigned int>(integer(row,24)),
             static_cast<unsigned int>(integer(row,25)),static_cast<int>(integer(row,26)),
             static_cast<int>(integer(row,27)),static_cast<int>(integer(row,28)));
@@ -241,7 +245,7 @@ std::vector<net::Packet> character_list(const CharacterRoster& roster,bool inclu
         std::copy(c.equipment_id.begin(),c.equipment_id.end(),packet.begin()+48);
         std::copy_n(c.name.begin(),std::min<std::size_t>(c.name.size(),19),packet.begin()+56);
         // Assembly writes remaining-time and rename flags over the final two bytes of szName[21].
-        packet[75]=c.remaining_time;packet[76]=c.rename;
+        packet[75]=c.remaining_time!=0;packet[76]=c.rename!=0;
         std::copy(c.cloak.begin(),c.cloak.end(),packet.begin()+77);packets.push_back(std::move(packet));
     }
     return packets;

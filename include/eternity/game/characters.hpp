@@ -23,8 +23,8 @@ struct CharacterSummary {
     std::array<std::uint8_t,8> equipment_type{}, equipment_id{};
     std::array<std::uint8_t,6> cloak{};
     std::string name;
-    bool rename = false;
-    bool remaining_time = false;
+    std::uint8_t rename = 0;
+    std::int32_t remaining_time = 0;
 };
 
 struct CharacterRoster {

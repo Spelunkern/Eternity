@@ -23,7 +23,7 @@ def main():
             cpu.mem_write(user+0x3b6c+i*0x5c,struct.pack('<I',ident))
             cpu.mem_write(user+0x3bc4+i*0x5c,struct.pack('<i',rename))
             cpu.mem_write(user+0x3b94+i*0x5c,struct.pack('<i',remain))
-            fields.extend((ident,int(rename!=0),int(remain!=0)))
+            fields.extend((ident,rename,remain))
         cpu.mem_write(request+6,struct.pack('<I',target));cpu.reg_write(UC_X86_REG_ESI,user);cpu.reg_write(UC_X86_REG_EDI,request)
         cpu.emu_start(0x4059e2,0,count=1000);end=cpu.reg_read(UC_X86_REG_EIP)
         if end not in (0x40591f,0x405a2b):raise RuntimeError('Original roster gate failed to reach branch')
