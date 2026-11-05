@@ -123,6 +123,21 @@ public:
  virtual void drop_experience(Actor&,std::int32_t penalty)=0; // CUser::ExpDrop 0045ad50
  virtual MobTargetingLifecycleWorld& rebirth_world(Actor&)=0;
 };
+// Registry lookups are lifetime guards; the selected party must stay
+// registered, and lease callbacks must not mutate membership or the registry.
+std::shared_ptr<PartyRegistryParty> vertical_combat_retain_registry_party(PartyNormalMembership&,PartyRegistry&,PartyRegistryPorts&,VerticalCombatPartyLease&);
+class VerticalCombatRegistryPartySoulWorld:public VerticalCombatPartySoulWorld {
+public:
+ VerticalCombatRegistryPartySoulWorld(VerticalCombatPartySoulWorld&,PartyRegistry&,PartyRegistryPorts&,VerticalCombatPartyLease&);
+ std::shared_ptr<PartyRegistryParty> retain_party(PartyNormalMembership&) override;
+ VerticalCombatSoulLeader retain_leader(PartyMembershipUser&) override;
+ PartyMembershipWorld& membership_world() override;
+ UserPosition leader_position(const Actor&) override;
+ void drop_experience(Actor&,std::int32_t) override;
+ MobTargetingLifecycleWorld& rebirth_world(Actor&) override;
+private:
+ VerticalCombatPartySoulWorld& delegate_;PartyRegistry& registry_;PartyRegistryPorts& ports_;VerticalCombatPartyLease& lease_;
+};
 // CUser::KillSoulParty 004596a0: GetPartyBoth under the captured party lock,
 // EqualZone on live selected leader, ExpDrop, then the actual Rebirth owner.
 // Solo KillSoul remains a required provider inherited from the base.

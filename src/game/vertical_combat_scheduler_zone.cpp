@@ -73,6 +73,19 @@ void VerticalCombatRecoveryVehicleServices::update_vehicle_prefix(Actor& actor,s
  if(&actor!=&vehicle_actor_)throw std::invalid_argument("Vehicle prefix bound to another actor");
  vertical_combat_vehicle_prefix(actor,tick,*this);
 }
+std::shared_ptr<PartyRegistryParty> vertical_combat_retain_registry_party(PartyNormalMembership& party,PartyRegistry& registry,PartyRegistryPorts& ports,VerticalCombatPartyLease& lease){
+ auto* registered=find_registry_party(registry,party.id,ports);if(!registered || static_cast<PartyNormalMembership*>(registered)!=&party)return {};
+ auto retained=lease.retain(party);if(!retained || retained.get()!=&party)return {};
+ if(find_registry_party(registry,party.id,ports)!=registered)return {};
+ return {std::move(retained),registered};
+}
+VerticalCombatRegistryPartySoulWorld::VerticalCombatRegistryPartySoulWorld(VerticalCombatPartySoulWorld& delegate,PartyRegistry& registry,PartyRegistryPorts& ports,VerticalCombatPartyLease& lease):delegate_(delegate),registry_(registry),ports_(ports),lease_(lease){}
+std::shared_ptr<PartyRegistryParty> VerticalCombatRegistryPartySoulWorld::retain_party(PartyNormalMembership& party){return vertical_combat_retain_registry_party(party,registry_,ports_,lease_);}
+VerticalCombatSoulLeader VerticalCombatRegistryPartySoulWorld::retain_leader(PartyMembershipUser& member){return delegate_.retain_leader(member);}
+PartyMembershipWorld& VerticalCombatRegistryPartySoulWorld::membership_world(){return delegate_.membership_world();}
+UserPosition VerticalCombatRegistryPartySoulWorld::leader_position(const Actor& actor){return delegate_.leader_position(actor);}
+void VerticalCombatRegistryPartySoulWorld::drop_experience(Actor& actor,std::int32_t penalty){delegate_.drop_experience(actor,penalty);}
+MobTargetingLifecycleWorld& VerticalCombatRegistryPartySoulWorld::rebirth_world(Actor& actor){return delegate_.rebirth_world(actor);}
 VerticalCombatRecoveryPartySoulServices::VerticalCombatRecoveryPartySoulServices(Actor& actor,PartyMembershipUser& member,PartyRequestState& state,VerticalCombatPartySoulWorld& world)
  :VerticalCombatRecoveryVehicleServices(actor,member),soul_actor_(actor),soul_member_(member),soul_state_(state),soul_world_(world){}
 void VerticalCombatRecoveryPartySoulServices::expire_party_soul(Actor& actor){
@@ -396,10 +409,7 @@ void VerticalCombatRebirthPartyMoveServices::send_party_move(Actor& actor){
 }
 VerticalCombatRebirthRegistryPartyServices::VerticalCombatRebirthRegistryPartyServices(Actor& actor,ZoneEntryState& entry,PartyMembershipUser& member,PartyMembershipSendWorld& world,PartyRegistry& registry,PartyRegistryPorts& ports,VerticalCombatPartyLease& lease):VerticalCombatRebirthPartyMoveServices(actor,entry,member,world),registry_(registry),ports_(ports),lease_(lease){}
 std::shared_ptr<PartyRegistryParty> VerticalCombatRebirthRegistryPartyServices::retain_rebirth_move_party(PartyNormalMembership& party){
- auto* registered=find_registry_party(registry_,party.id,ports_);if(!registered || static_cast<PartyNormalMembership*>(registered)!=&party)return {};
- auto retained=lease_.retain(party);if(!retained || retained.get()!=&party)return {};
- if(find_registry_party(registry_,party.id,ports_)!=registered)return {};
- return {std::move(retained),registered};
+ return vertical_combat_retain_registry_party(party,registry_,ports_,lease_);
 }
 VerticalCombatRebirthMovementServices::VerticalCombatRebirthMovementServices(Actor& actor,ZoneEntryState& entry,PartyMembershipUser& member,PartyMembershipSendWorld& world,PartyRegistry& registry,PartyRegistryPorts& ports,VerticalCombatPartyLease& lease,VerticalMovePacketServices& movement):VerticalCombatRebirthRegistryPartyServices(actor,entry,member,world,registry,ports,lease),actor_(actor),movement_(movement){}
 std::uint32_t VerticalCombatRebirthMovementServices::rebirth_move_tick(){return movement_.tick_ms();}
